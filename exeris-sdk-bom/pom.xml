@@ -16,7 +16,7 @@
     <description>Single Source of Truth for Exeris SDK module versions and third-party deps.</description>
 
     <properties>
-        <jackson.version>3.1.1</jackson.version>
+        <jackson.version>3.1.2</jackson.version>
         <jackson.annotations.version>3.0-rc5</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.3</assertj.version>
