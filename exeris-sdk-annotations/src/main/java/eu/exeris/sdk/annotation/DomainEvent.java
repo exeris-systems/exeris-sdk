@@ -66,7 +66,7 @@ import java.lang.annotation.*;
  * public record HighValueOrderUpdatedEvent(...) implements DomainEvent {}
  * }</pre>
  *
- * @author Exeris platform Team
+ * @author Exeris SDK Team
  * @version 1.0.0
  * @since 1.0.0
  */

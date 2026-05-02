@@ -18,7 +18,7 @@ import java. lang.annotation.*;
  * public void syncBalance() { ... }
  * }</pre>
  *
- * @author Exeris platform Team
+ * @author Exeris SDK Team
  * @version 1.0.0
  * @since 1.0.0
  */

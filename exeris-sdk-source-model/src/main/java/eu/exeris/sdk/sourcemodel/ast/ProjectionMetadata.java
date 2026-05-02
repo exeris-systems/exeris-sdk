@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Metadata for projections (read-only views).
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

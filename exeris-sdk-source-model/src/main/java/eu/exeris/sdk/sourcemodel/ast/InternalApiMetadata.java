@@ -8,7 +8,7 @@ import java.util.List;
  * Metadata for internal API visibility and access control.
  * Supports read-only mode, disabled actions, and internal-only access.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

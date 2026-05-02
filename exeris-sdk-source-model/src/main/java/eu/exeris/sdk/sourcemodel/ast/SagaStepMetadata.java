@@ -8,7 +8,7 @@ import java.util.List;
  * Metadata for saga steps with full configuration for parallel execution,
  * conditions, dependencies, and compensation.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

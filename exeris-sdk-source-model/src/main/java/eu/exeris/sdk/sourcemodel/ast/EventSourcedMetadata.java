@@ -8,7 +8,7 @@ import java.util.List;
  * Metadata for event sourcing configuration.
  * Supports full event sourcing with snapshots, projections, and archival.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

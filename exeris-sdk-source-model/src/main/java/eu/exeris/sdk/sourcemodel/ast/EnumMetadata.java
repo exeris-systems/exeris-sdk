@@ -8,7 +8,7 @@ import java.util.List;
  * Metadata for enum types used by domain entities.
  * Used by code generators to create proper enum types in target languages.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.2.0
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)

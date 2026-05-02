@@ -8,7 +8,7 @@ import java.util.List;
  * Metadata for saga orchestrations.
  * Supports full saga configuration including triggers, compensation, and monitoring.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
