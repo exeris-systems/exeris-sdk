@@ -71,7 +71,7 @@ import java.lang.annotation.*;
  * @since 1.0.0
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @Repeatable(DomainEvent.DomainEvents.class)
 @SuppressWarnings({"PMD.ExcessivePublicCount", "PMD.TooManyMethods"})
@@ -866,7 +866,7 @@ public @interface DomainEvent {
      * @see DomainEvent
      */
     @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
+    @Retention(RetentionPolicy.SOURCE)
     @Documented
     @interface DomainEvents {
         /**

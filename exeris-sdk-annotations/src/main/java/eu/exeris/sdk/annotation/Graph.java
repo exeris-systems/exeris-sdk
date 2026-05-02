@@ -58,7 +58,7 @@ import java.lang.annotation.*;
  * @since 1.0.0
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings({"PMD.ExcessivePublicCount", "PMD.TooManyMethods"})
 public @interface Graph {

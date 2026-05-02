@@ -142,7 +142,7 @@ import java.lang.annotation.*;
  * @see UI
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface Relationship {
 

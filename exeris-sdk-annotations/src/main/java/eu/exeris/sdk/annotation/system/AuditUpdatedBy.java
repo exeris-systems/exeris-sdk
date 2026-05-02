@@ -22,7 +22,7 @@ import java.lang.annotation.Target;
  * @since 1.0.0
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface AuditUpdatedBy {
 

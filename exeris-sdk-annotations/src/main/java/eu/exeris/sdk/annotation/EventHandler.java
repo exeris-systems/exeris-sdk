@@ -52,7 +52,7 @@ import java.lang.annotation.*;
  * @see DomainEvent
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @Repeatable(EventHandler.EventHandlers.class)
 public @interface EventHandler {
@@ -342,7 +342,7 @@ public @interface EventHandler {
      * @see EventHandler
      */
     @Target({ElementType.METHOD, ElementType.TYPE})
-    @Retention(RetentionPolicy.RUNTIME)
+    @Retention(RetentionPolicy.SOURCE)
     @Documented
     @interface EventHandlers {
         /**

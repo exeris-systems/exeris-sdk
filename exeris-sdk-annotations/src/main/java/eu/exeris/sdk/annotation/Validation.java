@@ -145,7 +145,7 @@ import java.lang.annotation.*;
  * @see Field
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface Validation {
 

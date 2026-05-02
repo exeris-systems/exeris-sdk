@@ -28,7 +28,7 @@ import java.lang.annotation.*;
  * @see GraphQuery
  */
 @Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface QueryParam {
 

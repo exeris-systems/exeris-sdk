@@ -63,7 +63,7 @@ import java.lang.annotation.*;
  * @see DomainEvent
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @Repeatable(SagaSteps.class)
 @SuppressWarnings({"PMD.ExcessivePublicCount", "PMD.TooManyMethods"})
@@ -735,7 +735,7 @@ public @interface SagaStep {
  * Container for multiple @SagaStep annotations.
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @interface SagaSteps {
     SagaStep[] value();

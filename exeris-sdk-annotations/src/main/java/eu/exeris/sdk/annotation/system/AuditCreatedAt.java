@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  * @see eu.exeris.sdk.annotation.ExerisDomain#audited()
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface AuditCreatedAt {
 

@@ -67,7 +67,7 @@ import java.lang.annotation.*;
  * @since 1.0.0
  */
 @Target({ElementType.TYPE, ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface UI {
 

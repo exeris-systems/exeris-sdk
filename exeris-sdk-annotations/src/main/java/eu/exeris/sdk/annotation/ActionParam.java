@@ -87,7 +87,7 @@ import java.lang.annotation.*;
  * @see Validation
  */
 @Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings("PMD.ExcessivePublicCount")
 public @interface ActionParam {

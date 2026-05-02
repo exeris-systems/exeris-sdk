@@ -51,7 +51,7 @@ import java.lang.annotation.*;
  * @see GraphProperty
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @Repeatable(GraphEdges.class)
 @SuppressWarnings({"PMD.ExcessivePublicCount", "PMD.TooManyMethods"})
@@ -488,7 +488,7 @@ public @interface GraphEdge {
  * Container for multiple @GraphEdge annotations.
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @interface GraphEdges {
     GraphEdge[] value();

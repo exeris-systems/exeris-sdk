@@ -36,7 +36,7 @@ import java.lang.annotation.*;
  * @see Graph
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface GraphProperty {
 

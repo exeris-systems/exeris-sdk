@@ -85,7 +85,7 @@ import java.lang.annotation.*;
  * @see ExerisDomain
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface NavMenu {
 

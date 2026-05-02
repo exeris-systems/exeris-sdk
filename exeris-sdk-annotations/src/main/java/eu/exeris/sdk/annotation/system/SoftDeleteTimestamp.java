@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * @see SoftDelete
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface SoftDeleteTimestamp {
 

@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
  * @see eu.exeris.sdk.annotation.ExerisDomain#softDelete()
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface SoftDelete {
 

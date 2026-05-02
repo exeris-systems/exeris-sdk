@@ -150,7 +150,7 @@ import java.lang.annotation.*;
  * @see Relationship
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings("PMD.ShortMethodName")
 public @interface Field {

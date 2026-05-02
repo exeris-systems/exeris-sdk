@@ -151,7 +151,7 @@ import java.lang.annotation.*;
  * @see ExerisDomain
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings("PMD.ShortMethodName")
 public @interface Action {
