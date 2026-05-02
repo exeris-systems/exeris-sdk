@@ -9,7 +9,6 @@ import java.util.Objects;
 
 /**
  * Metadata for action parameters defined with @ActionParam annotation.
- * Migrated from {@code com.corelio.sdk.processor.model.ActionParamMetadata}.
  *
  * @author Exeris Team
  * @since 0.1.0

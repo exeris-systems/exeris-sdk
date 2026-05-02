@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a field as the primary key.
- * <p>By default, Corelio expects an {@code id} field of type {@code UUID}.
+ * <p>By default, Exeris expects an {@code id} field of type {@code UUID}.
  * Use this annotation to customize primary key behavior.
  *
  * <h2>Usage:</h2>

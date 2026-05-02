@@ -11,7 +11,6 @@ import java.util.Objects;
 
 /**
  * Metadata for domain actions defined with @Action annotation.
- * Migrated from {@code com.corelio.sdk.processor.model.ActionMetadata}.
  *
  * @author Exeris Team
  * @since 0.1.0

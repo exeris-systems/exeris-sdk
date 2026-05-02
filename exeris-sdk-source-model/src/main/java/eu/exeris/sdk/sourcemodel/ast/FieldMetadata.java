@@ -11,7 +11,6 @@ import java.util.Objects;
 
 /**
  * Metadata for entity fields defined with @Field annotation.
- * Migrated from {@code com.corelio.sdk.processor.model.FieldMetadata}.
  *
  * @author Exeris Team
  * @since 0.1.0

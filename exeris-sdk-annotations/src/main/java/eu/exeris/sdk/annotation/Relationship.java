@@ -3,7 +3,7 @@ package eu.exeris.sdk.annotation;
 import java.lang.annotation.*;
 
 /**
- * Configures relationship display and behavior for foreign key fields in Corelio domain entities.
+ * Configures relationship display and behavior for foreign key fields in Exeris domain entities.
  * <p>This annotation works in conjunction with {@link Field} to define how related entities
  * are displayed and managed in the UI. It supports:
  * <ul>
@@ -183,9 +183,9 @@ public @interface Relationship {
      *
      * <p><strong>Examples:</strong>
      * <ul>
-     *   <li>{@code "{name} ({email})"} â†’ "John Doe (john@example.com)"</li>
-     *   <li>{@code "{code} - {name}"} â†’ "PROD-001 - Widget"</li>
-     *   <li>{@code "{firstName} {lastName}"} â†’ "John Doe"</li>
+     *   <li>{@code "{name} ({email})"} → "John Doe (john@example.com)"</li>
+     *   <li>{@code "{code} - {name}"} → "PROD-001 - Widget"</li>
+     *   <li>{@code "{firstName} {lastName}"} → "John Doe"</li>
      * </ul>
      *
      * <p>If not specified, only {@code displayField} is shown.
@@ -244,14 +244,14 @@ public @interface Relationship {
      *
      * <p><strong>Use with caution!</strong> Only enable for:
      * <ul>
-     *   <li>Dependent entities (order â†’ order items)</li>
+     *   <li>Dependent entities (order → order items)</li>
      *   <li>Owned relationships where child cannot exist without parent</li>
      * </ul>
      *
      * <p><strong>Do NOT enable for:</strong>
      * <ul>
-     *   <li>Shared entities (product â†’ category)</li>
-     *   <li>Independent entities (order â†’ customer)</li>
+     *   <li>Shared entities (product → category)</li>
+     *   <li>Independent entities (order → customer)</li>
      * </ul>
      *
      * @return true to cascade deletes
@@ -502,16 +502,16 @@ public @interface Relationship {
      * Relationship type enum.
      */
     enum RelationshipType {
-        /** Many entities reference one entity (e.g., many orders â†’ one customer) */
+        /** Many entities reference one entity (e.g., many orders → one customer) */
         MANY_TO_ONE,
 
-        /** One entity references one entity (e.g., user â†’ profile) */
+        /** One entity references one entity (e.g., user → profile) */
         ONE_TO_ONE,
 
-        /** One entity has many related entities (e.g., order â†’ order items) */
+        /** One entity has many related entities (e.g., order → order items) */
         ONE_TO_MANY,
 
-        /** Many entities reference many entities (e.g., products â†” tags) */
+        /** Many entities reference many entities (e.g., products ↔ tags) */
         MANY_TO_MANY
     }
 
