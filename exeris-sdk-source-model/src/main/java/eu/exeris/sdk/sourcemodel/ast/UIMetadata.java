@@ -9,7 +9,7 @@ import java.util.List;
  * Metadata for UI rendering including Grid Layout, component types, and groups.
  * Supports Atom v3 Enterprise UI features.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

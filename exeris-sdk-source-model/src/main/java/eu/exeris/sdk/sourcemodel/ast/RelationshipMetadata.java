@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Metadata for entity relationships with UI configuration for autocomplete/select.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

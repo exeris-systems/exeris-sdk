@@ -135,7 +135,7 @@ import java.lang.annotation.*;
  *   <li><strong>MODAL</strong> - Complex entity selection with filters</li>
  * </ul>
  *
- * @author Exeris platform Team
+ * @author Exeris SDK Team
  * @version 1.0.0
  * @since 1.0.0
  * @see Field

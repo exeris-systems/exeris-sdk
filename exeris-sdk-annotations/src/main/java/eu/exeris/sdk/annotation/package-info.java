@@ -141,7 +141,7 @@
  *   <li>Document complex validations with {@code message} attribute</li>
  * </ul>
  *
- * @author Exeris Platform Team
+ * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
  */

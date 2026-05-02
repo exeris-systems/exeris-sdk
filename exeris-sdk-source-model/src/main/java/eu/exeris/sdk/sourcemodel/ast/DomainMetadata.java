@@ -22,7 +22,7 @@ import java.util.List;
  *
  * <p>Field names match {@code @ExerisDomain} annotation attributes.
  *
- * @author Exeris Team
+ * @author Exeris SDK Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

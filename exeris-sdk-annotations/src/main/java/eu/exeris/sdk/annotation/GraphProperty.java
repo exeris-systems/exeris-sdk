@@ -30,7 +30,7 @@ import java.lang.annotation.*;
  * private BigDecimal amount;
  * }</pre>
  *
- * @author Exeris platform Team
+ * @author Exeris SDK Team
  * @version 1.0.0
  * @since 1.0.0
  * @see Graph
