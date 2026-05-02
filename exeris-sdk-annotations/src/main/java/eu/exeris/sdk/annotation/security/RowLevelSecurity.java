@@ -73,7 +73,7 @@ import java.lang.annotation.*;
  * @see Encrypted
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface RowLevelSecurity {
 

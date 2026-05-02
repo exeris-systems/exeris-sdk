@@ -39,7 +39,7 @@ import java.lang.annotation.*;
  *     httpMethod = "POST",
  *     path = "/{id}/reject",
  *     roles = {"ROLE_MANAGER", "ROLE_ADMIN"},
- *     confirmationMessage = "Are you sure you want to reject this order?"
+ *     confirm = "Are you sure you want to reject this order?"
  * )
  * public void reject(
  *     @ActionParam(label = "Reason", required = true) String reason,
@@ -80,7 +80,7 @@ import java.lang.annotation.*;
  *     path = "/bulk-approve",
  *     bulk = true,
  *     roles = {"ROLE_MANAGER"},
- *     confirmationMessage = "Approve {count} selected orders?",
+ *     confirm = "Approve {count} selected orders?",
  *     ui = @UI(
  *         icon = "check_circle",
  *         cssClass = "btn-success"
@@ -101,7 +101,7 @@ import java.lang.annotation.*;
  *     label = "Cancel Order",
  *     httpMethod = "POST",
  *     path = "/{id}/cancel",
- *     condition = "status == 'PENDING' || status == 'APPROVED'",
+ *     visibleWhen = "status == 'PENDING' || status == 'APPROVED'",
  *     roles = {"ROLE_USER"},
  *     ui = @UI(
  *         icon = "cancel",
@@ -151,7 +151,7 @@ import java.lang.annotation.*;
  * @see ExerisDomain
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings("PMD.ShortMethodName")
 public @interface Action {
@@ -269,9 +269,8 @@ public @interface Action {
     boolean bulk() default false;
 
     /**
-     * Condition expression for showing/enabling the action.
-     * <p>Uses SpEL (Spring Expression Language) syntax.
-     * Evaluated against entity state.
+     * Expression that determines when the action is visible/enabled.
+     * <p>Uses SpEL (Spring Expression Language) syntax. Evaluated against entity state.
      *
      * <p><strong>Examples:</strong>
      * <ul>
@@ -280,14 +279,13 @@ public @interface Action {
      *   <li>{@code "createdAt < T(java.time.LocalDateTime).now().minusDays(7)"}</li>
      * </ul>
      *
-     * @return condition expression
+     * @return visibility/enable expression
      */
-    String condition() default "";
+    String visibleWhen() default "";
 
     /**
      * Confirmation message to show before executing action.
-     * <p>If specified, shows a confirmation dialog.
-     * Can include placeholders for entity fields.
+     * <p>If specified, shows a confirmation dialog. Can include placeholders for entity fields.
      *
      * <p><strong>Examples:</strong>
      * <ul>
@@ -298,7 +296,7 @@ public @interface Action {
      *
      * @return confirmation message
      */
-    String confirmationMessage() default "";
+    String confirm() default "";
 
     /**
      * Success message to show after action completes.
@@ -430,14 +428,6 @@ public @interface Action {
     String description() default "";
 
     /**
-     * Alias for {@link #confirmationMessage()}.
-     * <p>Provided for compatibility with task specification.
-     *
-     * @return confirmation message
-     */
-    String confirm() default "";
-
-    /**
      * Visual style variant for the button.
      * <p>Determines button color and emphasis level.
      *
@@ -446,33 +436,15 @@ public @interface Action {
     Variant variant() default Variant.PRIMARY;
 
     /**
-     * <p>Provided for compatibility with task specification.
      * Location determines where the action button appears.
      *
      * @return button location
      */
     Location location() default Location.DETAIL;
 
-    /**
-     * Alias for {@link #condition()}.
-     * <p>Provided for compatibility with task specification.
-     * Expression that determines when action is visible.
-     *
-     * @return visibility condition
-     */
-    String visibleWhen() default "";
-
-    /**
-     * Alias for {@link #httpMethod()}.
-     * <p>Provided for compatibility with task specification.
-     *
-     * @return HTTP method
-     */
-    String method() default "";
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
     // STREAMING & REAL-TIME
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
 
     /**
      * Whether this action returns a streaming response.

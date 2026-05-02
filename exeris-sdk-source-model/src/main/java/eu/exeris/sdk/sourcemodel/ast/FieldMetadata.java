@@ -1,106 +1,53 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Metadata for entity fields defined with @Field annotation.
- * Migrated from {@code com.corelio.sdk.processor.model.FieldMetadata}.
  *
  * @author Exeris Team
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public final class FieldMetadata {
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+public record FieldMetadata(
+        String name,
+        String type,
+        String columnName,
+        String displayName,
+        String description,
+        boolean required,
+        boolean unique,
+        boolean indexed,
+        boolean searchable,
+        boolean sortable,
+        boolean filterable,
+        boolean audited,
+        boolean readOnly,
+        boolean hidden,
+        String defaultValue,
+        Integer minLength,
+        Integer maxLength,
+        Long min,
+        Long max,
+        String pattern,
+        String format,
+        String enumType,
+        boolean computed,
+        List<String> computedFrom,
+        boolean inCreate,
+        boolean inUpdate
+) {
 
-    private final String name;
-    private final String type;
-    private final String columnName;
-    private final String displayName;
-    private final String description;
-    private final boolean required;
-    private final boolean unique;
-    private final boolean indexed;
-    private final boolean searchable;
-    private final boolean sortable;
-    private final boolean filterable;
-    private final boolean audited;
-    private final boolean readOnly;
-    private final boolean hidden;
-    private final String defaultValue;
-    private final Integer minLength;
-    private final Integer maxLength;
-    private final Long min;
-    private final Long max;
-    private final String pattern;
-    private final String format;
-    private final String enumType;
-    private final boolean computed;
-    private final List<String> computedFrom;
-    private final boolean inCreate;
-    private final boolean inUpdate;
-
-    @JsonCreator
-    public FieldMetadata(
-            @JsonProperty("name") String name,
-            @JsonProperty("type") String type,
-            @JsonProperty("columnName") String columnName,
-            @JsonProperty("displayName") String displayName,
-            @JsonProperty("description") String description,
-            @JsonProperty("required") boolean required,
-            @JsonProperty("unique") boolean unique,
-            @JsonProperty("indexed") boolean indexed,
-            @JsonProperty("searchable") boolean searchable,
-            @JsonProperty("sortable") boolean sortable,
-            @JsonProperty("filterable") boolean filterable,
-            @JsonProperty("audited") boolean audited,
-            @JsonProperty("readOnly") boolean readOnly,
-            @JsonProperty("hidden") boolean hidden,
-            @JsonProperty("defaultValue") String defaultValue,
-            @JsonProperty("minLength") Integer minLength,
-            @JsonProperty("maxLength") Integer maxLength,
-            @JsonProperty("min") Long min,
-            @JsonProperty("max") Long max,
-            @JsonProperty("pattern") String pattern,
-            @JsonProperty("format") String format,
-            @JsonProperty("enumType") String enumType,
-            @JsonProperty("computed") boolean computed,
-            @JsonProperty("computedFrom") List<String> computedFrom,
-            @JsonProperty("inCreate") boolean inCreate,
-            @JsonProperty("inUpdate") boolean inUpdate) {
-        this.name = Objects.requireNonNull(name, "name is required");
-        this.type = Objects.requireNonNull(type, "type is required");
-        this.columnName = columnName;
-        this.displayName = displayName;
-        this.description = description;
-        this.required = required;
-        this.unique = unique;
-        this.indexed = indexed;
-        this.searchable = searchable;
-        this.sortable = sortable;
-        this.filterable = filterable;
-        this.audited = audited;
-        this.readOnly = readOnly;
-        this.hidden = hidden;
-        this.defaultValue = defaultValue;
-        this.minLength = minLength;
-        this.maxLength = maxLength;
-        this.min = min;
-        this.max = max;
-        this.pattern = pattern;
-        this.format = format;
-        this.enumType = enumType;
-        this.computed = computed;
-        this.computedFrom = computedFrom != null ? computedFrom : List.of();
-        this.inCreate = inCreate;
-        this.inUpdate = inUpdate;
+    public FieldMetadata {
+        Objects.requireNonNull(name, "name is required");
+        Objects.requireNonNull(type, "type is required");
+        if (computedFrom == null) computedFrom = List.of();
     }
 
     public static FieldMetadata simple(String name, String type) {
@@ -114,60 +61,6 @@ public final class FieldMetadata {
     public static Builder builder(String name, String type) {
         return new Builder(name, type);
     }
-
-    // Getters
-    @JsonProperty("name")
-    public String name() { return name; }
-    @JsonProperty("type")
-    public String type() { return type; }
-    @JsonProperty("columnName")
-    public String columnName() { return columnName; }
-    @JsonProperty("displayName")
-    public String displayName() { return displayName; }
-    @JsonProperty("description")
-    public String description() { return description; }
-    @JsonProperty("required")
-    public boolean required() { return required; }
-    @JsonProperty("unique")
-    public boolean unique() { return unique; }
-    @JsonProperty("indexed")
-    public boolean indexed() { return indexed; }
-    @JsonProperty("searchable")
-    public boolean searchable() { return searchable; }
-    @JsonProperty("sortable")
-    public boolean sortable() { return sortable; }
-    @JsonProperty("filterable")
-    public boolean filterable() { return filterable; }
-    @JsonProperty("audited")
-    public boolean audited() { return audited; }
-    @JsonProperty("readOnly")
-    public boolean readOnly() { return readOnly; }
-    @JsonProperty("hidden")
-    public boolean hidden() { return hidden; }
-    @JsonProperty("defaultValue")
-    public String defaultValue() { return defaultValue; }
-    @JsonProperty("minLength")
-    public Integer minLength() { return minLength; }
-    @JsonProperty("maxLength")
-    public Integer maxLength() { return maxLength; }
-    @JsonProperty("min")
-    public Long min() { return min; }
-    @JsonProperty("max")
-    public Long max() { return max; }
-    @JsonProperty("pattern")
-    public String pattern() { return pattern; }
-    @JsonProperty("format")
-    public String format() { return format; }
-    @JsonProperty("enumType")
-    public String enumType() { return enumType; }
-    @JsonProperty("computed")
-    public boolean computed() { return computed; }
-    @JsonProperty("computedFrom")
-    public List<String> computedFrom() { return computedFrom; }
-    @JsonProperty("inCreate")
-    public boolean inCreate() { return inCreate; }
-    @JsonProperty("inUpdate")
-    public boolean inUpdate() { return inUpdate; }
 
     @JsonIgnore
     public boolean hasValidation() {
@@ -201,21 +94,6 @@ public final class FieldMetadata {
 
     private static String toSnakeCase(String input) {
         return input.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof FieldMetadata that)) return false;
-        return Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() { return Objects.hash(name); }
-
-    @Override
-    public String toString() {
-        return "FieldMetadata{name='" + name + "', type='" + type + "', required=" + required + "}";
     }
 
     public static final class Builder {

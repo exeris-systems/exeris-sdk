@@ -20,7 +20,7 @@
  * // 1. Add SDK dependency to your pom.xml
  * <dependency>
  *     <groupId>eu.exeris</groupId>
- *     <artifactId>exeris-api</artifactId>
+ *     <artifactId>exeris-sdk-annotations</artifactId>
  *     <version>0.1.0-SNAPSHOT</version>
  * </dependency>
  *

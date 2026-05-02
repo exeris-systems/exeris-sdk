@@ -3,7 +3,7 @@ package eu.exeris.sdk.annotation;
 import java.lang.annotation.*;
 
 /**
- * Configures field-level metadata for Corelio domain entities.
+ * Configures field-level metadata for Exeris domain entities.
  * <p>This annotation provides comprehensive field configuration including:
  * <ul>
  *   <li>Display labels and descriptions</li>
@@ -150,7 +150,7 @@ import java.lang.annotation.*;
  * @see Relationship
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 @SuppressWarnings("PMD.ShortMethodName")
 public @interface Field {
@@ -228,11 +228,11 @@ public @interface Field {
      * Whether this field can be used for filtering.
      * <p>When {@code true}, generates filter controls in list views:
      * <ul>
-     *   <li>Text fields â†’ Text input filter</li>
-     *   <li>Enums â†’ Dropdown filter</li>
-     *   <li>Booleans â†’ Checkbox filter</li>
-     *   <li>Dates â†’ Date range filter</li>
-     *   <li>Numbers â†’ Range filter</li>
+     *   <li>Text fields → Text input filter</li>
+     *   <li>Enums → Dropdown filter</li>
+     *   <li>Booleans → Checkbox filter</li>
+     *   <li>Dates → Date range filter</li>
+     *   <li>Numbers → Range filter</li>
      * </ul>
      *
      * <p>Best for fields used to segment data:
@@ -357,12 +357,12 @@ public @interface Field {
      *
      * <p><strong>Auto-detection rules:</strong>
      * <ul>
-     *   <li>String â†’ TEXT_INPUT</li>
-     *   <li>Integer/Long/BigDecimal â†’ NUMBER_INPUT</li>
-     *   <li>Boolean â†’ CHECKBOX</li>
-     *   <li>LocalDate â†’ DATE_PICKER</li>
-     *   <li>LocalDateTime/Instant â†’ DATETIME_PICKER</li>
-     *   <li>Enum â†’ SELECT</li>
+     *   <li>String → TEXT_INPUT</li>
+     *   <li>Integer/Long/BigDecimal → NUMBER_INPUT</li>
+     *   <li>Boolean → CHECKBOX</li>
+     *   <li>LocalDate → DATE_PICKER</li>
+     *   <li>LocalDateTime/Instant → DATETIME_PICKER</li>
+     *   <li>Enum → SELECT</li>
      * </ul>
      *
      * <p>Override for custom behavior:
@@ -484,15 +484,15 @@ public @interface Field {
     String group() default "";
 
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
     // SECURITY & PRIVACY
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
 
     /**
      * Whether this field contains sensitive/PII data.
      * <p>When {@code true}:
      * <ul>
-     *   <li>Field is masked in logs (e.g., "email" â†’ "j***@example.com")</li>
+     *   <li>Field is masked in logs (e.g., "email" → "j***@example.com")</li>
      *   <li>Included in GDPR data export</li>
      *   <li>Subject to data retention policies</li>
      *   <li>Enhanced audit logging for access</li>
@@ -539,7 +539,7 @@ public @interface Field {
      *   <li>"card" - ****-****-****-1234</li>
      *   <li>"full" - ********</li>
      *   <li>"partial:3" - abc***</li>
-     *   <li>Custom regex: "(?&lt;=.{3}).(?=.{4})" â†’ "abc****xyz"</li>
+     *   <li>Custom regex: "(?&lt;=.{3}).(?=.{4})" → "abc****xyz"</li>
      * </ul>
      *
      * @return masking pattern
@@ -559,9 +559,9 @@ public @interface Field {
      */
     boolean writeOnly() default false;
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
     // INDEXING
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════════════════════
 
     /**
      * Whether to create a database index on this field.

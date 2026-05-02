@@ -44,7 +44,7 @@ import java.lang.annotation.Target;
  * @see eu.exeris.sdk.annotation.ExerisDomain#versioned()
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface Version {
 

@@ -23,7 +23,7 @@ import java. lang.annotation.*;
  * @since 1.0.0
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface InternalApi {
 

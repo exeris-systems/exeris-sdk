@@ -3,7 +3,7 @@ package eu.exeris.sdk.annotation;
 import java.lang.annotation.*;
 
 /**
- * Configures UI component generation for Corelio domain entities and fields.
+ * Configures UI component generation for Exeris domain entities and fields.
  * <p>This annotation can be used at two levels:
  * <ul>
  *   <li><strong>Entity level:</strong> Defines which views should be generated (list, detail, forms)</li>
@@ -67,7 +67,7 @@ import java.lang.annotation.*;
  * @since 1.0.0
  */
 @Target({ElementType.TYPE, ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface UI {
 
@@ -258,12 +258,12 @@ public @interface UI {
      * The UI component type to use for this field.
      * <p>If set to {@code AUTO}, the SDK will choose based on the Java field type:
      * <ul>
-     *   <li>String â†’ TEXT_INPUT</li>
-     *   <li>Integer/Long/BigDecimal â†’ NUMBER_INPUT</li>
-     *   <li>Boolean â†’ CHECKBOX</li>
-     *   <li>LocalDate â†’ DATE_PICKER</li>
-     *   <li>LocalDateTime/Instant â†’ DATETIME_PICKER</li>
-     *   <li>Enum â†’ SELECT</li>
+     *   <li>String → TEXT_INPUT</li>
+     *   <li>Integer/Long/BigDecimal → NUMBER_INPUT</li>
+     *   <li>Boolean → CHECKBOX</li>
+     *   <li>LocalDate → DATE_PICKER</li>
+     *   <li>LocalDateTime/Instant → DATETIME_PICKER</li>
+     *   <li>Enum → SELECT</li>
      * </ul>
      *
      * @return the component type

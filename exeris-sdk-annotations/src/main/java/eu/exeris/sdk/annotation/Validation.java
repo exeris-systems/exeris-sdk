@@ -3,7 +3,7 @@ package eu.exeris.sdk.annotation;
 import java.lang.annotation.*;
 
 /**
- * Defines validation rules for Corelio domain entity fields.
+ * Defines validation rules for Exeris domain entity fields.
  * <p>Validation rules are enforced in both backend (Spring Validation) and
  * frontend (Angular Forms), ensuring consistent data integrity across the stack.
  *
@@ -145,7 +145,7 @@ import java.lang.annotation.*;
  * @see Field
  */
 @Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface Validation {
 
