@@ -1,0 +1,37 @@
+{
+  "name": "@exeris/ui-kit",
+  "version": "0.1.0",
+  "description": "Exeris UI Kit - Base styles and assets for generated components",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles": "./src/styles/index.css",
+    "./styles/*": "./src/styles/*"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:css": "tailwindcss -i src/styles/index.css -o dist/styles.css"
+  },
+  "keywords": [
+    "exeris",
+    "ui-kit",
+    "components",
+    "angular",
+    "tailwind"
+  ],
+  "author": "Exeris Team",
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "tailwindcss": ">=3.4.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.7.0"
+  }
+}
+
