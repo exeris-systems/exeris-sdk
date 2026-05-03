@@ -17,7 +17,10 @@
 
     <properties>
         <jackson.version>3.1.2</jackson.version>
-        <jackson.annotations.version>3.0-rc5</jackson.annotations.version>
+        <!-- Jackson 3.x deliberately keeps annotations on the legacy 2.x line
+             (see jackson-bom 3.x: jackson.version.annotations=2.20). The 3.0-rc*
+             annotations track was abandoned. -->
+        <jackson.annotations.version>2.21</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.3</assertj.version>
     </properties>
