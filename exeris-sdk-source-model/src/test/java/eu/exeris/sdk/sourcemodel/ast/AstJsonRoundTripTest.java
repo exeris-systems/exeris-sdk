@@ -114,7 +114,7 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("ActionParamMetadata round-trips (class with @JsonCreator)")
+    @DisplayName("ActionParamMetadata round-trips (record with NON_NULL inclusion)")
     void actionParamMetadataRoundTrips() {
         ActionParamMetadata original = ActionParamMetadata.builder("amount", "BigDecimal")
                 .required(true)
@@ -188,6 +188,35 @@ class AstJsonRoundTripTest {
                 List.of(new GraphQueryMetadata("recentOrders", "MATCH (o:Order) ...", "Last 24h")));
 
         assertRoundTrip(original, GraphMetadata.class);
+    }
+
+    // The three graph leaves below are tested directly in addition to their
+    // transitive coverage via GraphMetadata, so a future regression on a leaf's
+    // own annotations surfaces as a focused failure rather than a confusing
+    // GraphMetadata trace.
+
+    @Test
+    @DisplayName("GraphPropertyMetadata round-trips (graph leaf)")
+    void graphPropertyMetadataRoundTrips() {
+        assertRoundTrip(
+                new GraphPropertyMetadata("amount", "BigDecimal", true),
+                GraphPropertyMetadata.class);
+    }
+
+    @Test
+    @DisplayName("GraphEdgeMetadata round-trips (graph leaf)")
+    void graphEdgeMetadataRoundTrips() {
+        assertRoundTrip(
+                new GraphEdgeMetadata("placedBy", "Customer", "PLACED_BY"),
+                GraphEdgeMetadata.class);
+    }
+
+    @Test
+    @DisplayName("GraphQueryMetadata round-trips (graph leaf)")
+    void graphQueryMetadataRoundTrips() {
+        assertRoundTrip(
+                new GraphQueryMetadata("recentOrders", "MATCH (o:Order) RETURN o LIMIT 10", "Last N orders"),
+                GraphQueryMetadata.class);
     }
 
     @Test
