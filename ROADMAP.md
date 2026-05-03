@@ -22,11 +22,11 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > Goal: CI exists, contract is testable, POMs are publishable.
 
 - [ ] **CI** — `.github/workflows/build.yml` (`mvn -B verify` on push/PR, JDK 26)
-- [ ] **JSON round-trip tests per AST record** — wire-format guard against accidental breakage
+- [x] **JSON round-trip tests per AST record** — `AstJsonRoundTripTest` exercises every AST record (16 in total) through Jackson 3 serialize → deserialize and asserts deep equality. Caught two real wire-format bugs on first run: (a) `ActionParamMetadata` was a class with record-style accessors that Jackson 3 didn't recognize as getters, dropping every field on serialization — fixed by migrating to a record (consistent with all other AST types); (b) Jackson 3 strict-mode rejects `null → primitive` coercion that Jackson 2 tolerated — documented and consumers must configure `FAIL_ON_NULL_FOR_PRIMITIVES=false`. Known limitation: `@JsonInclude(NON_DEFAULT)` on `FieldMetadata` drops `Long(0)` because Jackson 3's NON_DEFAULT treats boxed-zero as "empty" — tracked under Field/Validation overlap fix
 - [ ] **Java 26 baseline rationale** in README (kernel ↔ Panama/VT requirement)
 - [ ] **Field/Validation overlap fix** — pick canonical location for `required`, `inCreate`/`inUpdate` vs `Validation.validateOn`
 - [ ] **Pre-publish POM metadata** — `<scm>`, `<url>`, `<developers>`, `<distributionManagement>` in root POM
-- [ ] **Bump `jackson-annotations` `3.0-rc5` → GA** when stable 3.0.x ships
+- [x] **Bump `jackson-annotations` `3.0-rc5` → `2.21`** — Jackson 3.x deliberately keeps annotations on the legacy 2.x line (per jackson-bom 3.x: `jackson.version.annotations=2.20+`). The 3.0-rc* annotations track was abandoned. Required for Jackson 3 databind 3.1.2 to load (`JsonSerializeAs` is a 2.21 addition)
 
 ## 0.3.0 — source-model parser + writer
 

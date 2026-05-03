@@ -1,9 +1,8 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
@@ -15,44 +14,23 @@ import java.util.Objects;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class ActionParamMetadata {
+public record ActionParamMetadata(
+        String name,
+        String type,
+        String displayName,
+        String description,
+        boolean required,
+        String defaultValue,
+        String pattern,
+        Integer minLength,
+        Integer maxLength,
+        Long min,
+        Long max
+) {
 
-    private final String name;
-    private final String type;
-    private final String displayName;
-    private final String description;
-    private final boolean required;
-    private final String defaultValue;
-    private final String pattern;
-    private final Integer minLength;
-    private final Integer maxLength;
-    private final Long min;
-    private final Long max;
-
-    @JsonCreator
-    public ActionParamMetadata(
-            @JsonProperty("name") String name,
-            @JsonProperty("type") String type,
-            @JsonProperty("displayName") String displayName,
-            @JsonProperty("description") String description,
-            @JsonProperty("required") boolean required,
-            @JsonProperty("defaultValue") String defaultValue,
-            @JsonProperty("pattern") String pattern,
-            @JsonProperty("minLength") Integer minLength,
-            @JsonProperty("maxLength") Integer maxLength,
-            @JsonProperty("min") Long min,
-            @JsonProperty("max") Long max) {
-        this.name = Objects.requireNonNull(name, "name is required");
-        this.type = Objects.requireNonNull(type, "type is required");
-        this.displayName = displayName;
-        this.description = description;
-        this.required = required;
-        this.defaultValue = defaultValue;
-        this.pattern = pattern;
-        this.minLength = minLength;
-        this.maxLength = maxLength;
-        this.min = min;
-        this.max = max;
+    public ActionParamMetadata {
+        Objects.requireNonNull(name, "name is required");
+        Objects.requireNonNull(type, "type is required");
     }
 
     public static ActionParamMetadata required(String name, String type) {
@@ -67,40 +45,14 @@ public final class ActionParamMetadata {
         return new Builder(name, type);
     }
 
-    // Getters
-    public String name() { return name; }
-    public String type() { return type; }
-    public String displayName() { return displayName; }
-    public String description() { return description; }
-    public boolean required() { return required; }
-    public String defaultValue() { return defaultValue; }
-    public String pattern() { return pattern; }
-    public Integer minLength() { return minLength; }
-    public Integer maxLength() { return maxLength; }
-    public Long min() { return min; }
-    public Long max() { return max; }
-
+    @JsonIgnore
     public boolean hasValidation() {
         return pattern != null || minLength != null || maxLength != null || min != null || max != null;
     }
 
+    @JsonIgnore
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ActionParamMetadata that)) return false;
-        return Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() { return Objects.hash(name); }
-
-    @Override
-    public String toString() {
-        return "ActionParamMetadata{name='" + name + "', type='" + type + "', required=" + required + "}";
     }
 
     public static final class Builder {
