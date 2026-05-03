@@ -151,15 +151,15 @@ public @interface Validation {
 
     /**
      * Whether the field is required (cannot be null or empty).
-     * <p>When {@code true}:
-     * <ul>
-     *   <li>Backend: Generates {@code @NotNull} or {@code @NotBlank} annotation</li>
-     *   <li>Frontend: Adds {@code Validators.required}</li>
-     *   <li>API: Marks field as required in OpenAPI spec</li>
-     * </ul>
      *
+     * @deprecated Use {@link Field#required()} instead. {@code @Field.required}
+     *     is the canonical location for this concept — required-ness is a
+     *     field-shape property, not a validation rule. The processor reads
+     *     {@code @Field.required} when populating {@code FieldMetadata.required}
+     *     and ignores this alias. Will be removed in 1.0.0.
      * @return true if field is required
      */
+    @Deprecated(since = "0.2.0", forRemoval = true)
     boolean required() default false;
 
     /**
@@ -424,28 +424,18 @@ public @interface Validation {
 
     /**
      * Whether to validate only on specific operations.
-     * <p>Options:
-     * <ul>
-     *   <li>"CREATE" - Validate only when creating new entities</li>
-     *   <li>"UPDATE" - Validate only when updating existing entities</li>
-     *   <li>"" (empty) - Validate on both operations (default)</li>
-     * </ul>
      *
-     * <p><strong>Example:</strong>
-     * <pre>{@code
-     * @Field(
-     *     label = "Password",
-     *     validation = @Validation(
-     *         required = true,
-     *         validateOn = "CREATE",  // Password required only on creation
-     *         minLength = 8
-     *     )
-     * )
-     * private String password;
-     * }</pre>
-     *
+     * @deprecated Use {@link Field#inCreate()} / {@link Field#inUpdate()}
+     *     instead. The form-lifecycle scope of a field belongs on
+     *     {@code @Field}, not on {@code @Validation}: a field that isn't
+     *     present on the create form ({@code inCreate=false}) shouldn't have
+     *     create-scoped validation rules to begin with. Will be removed in
+     *     1.0.0. The processor will not honour this attribute going forward;
+     *     drive operation-specific behaviour from {@code @Field.inCreate} /
+     *     {@code @Field.inUpdate}.
      * @return operation type for validation
      */
+    @Deprecated(since = "0.2.0", forRemoval = true)
     String validateOn() default "";
 
     /**
