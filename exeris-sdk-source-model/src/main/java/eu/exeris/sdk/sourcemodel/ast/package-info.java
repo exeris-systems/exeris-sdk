@@ -18,9 +18,10 @@
  *       owns the constraint rules: {@code minLength}, {@code maxLength},
  *       {@code min}, {@code max}, {@code pattern}, {@code email}, {@code url},
  *       {@code future}, {@code past}. {@code notNull} / {@code notBlank} are
- *       <em>derived</em> from {@code FieldMetadata.required} when the
- *       processor builds a {@code ValidationMetadata}, not separately
- *       configurable on {@code @Validation}.</li>
+ *       <em>expected to be derived</em> from {@code FieldMetadata.required}
+ *       at processor-build time (see {@code ExerisDomainProcessor} in the
+ *       tooling repo) — they are not separately configurable on
+ *       {@code @Validation} since 0.2.0.</li>
  * </ul>
  * <p>{@code FieldMetadata} also carries a few constraint-shaped fields
  * ({@code minLength}, {@code maxLength}, {@code min}, {@code max},

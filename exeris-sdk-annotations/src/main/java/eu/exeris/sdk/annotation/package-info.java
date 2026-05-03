@@ -72,6 +72,12 @@
  *
  *   <dt>{@link eu.exeris.sdk.annotation.Validation @Validation}</dt>
  *   <dd>Defines validation rules applied in both backend and frontend</dd>
+ *
+ *   <dt>{@link eu.exeris.sdk.annotation.Relationship @Relationship}</dt>
+ *   <dd>Configures how relationships are displayed in the UI</dd>
+ *
+ *   <dt>{@link eu.exeris.sdk.annotation.Action @Action}</dt>
+ *   <dd>Exposes domain methods as API endpoints with UI buttons</dd>
  * </dl>
  *
  * <h2>Field vs Validation — canonical scoping</h2>
@@ -94,14 +100,10 @@
  *       {@link eu.exeris.sdk.annotation.Field#inUpdate()} (form-lifecycle scope is a field
  *       property, not a validation rule).</li>
  * </ul>
- * <dl>
- *
- *   <dt>{@link eu.exeris.sdk.annotation.Relationship @Relationship}</dt>
- *   <dd>Configures how relationships are displayed in the UI</dd>
- *
- *   <dt>{@link eu.exeris.sdk.annotation.Action @Action}</dt>
- *   <dd>Exposes domain methods as API endpoints with UI buttons</dd>
- * </dl>
+ * <p>During the 0.2.x window the processor reads the deprecated attributes as
+ * a fallback and emits a build warning so existing user code keeps working
+ * while migrating. Both attributes are removed in 1.0.0; see
+ * {@code MIGRATION.md} in the repo root for the upgrade snippet.
  *
  * <h2>Architecture Principles</h2>
  * <ul>
