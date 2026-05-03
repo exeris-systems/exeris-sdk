@@ -11,8 +11,8 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Email Address",
+ *     required = true,
  *     validation = @Validation(
- *         required = true,
  *         email = true,
  *         message = "Please enter a valid email address"
  *     )
@@ -24,8 +24,8 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Username",
+ *     required = true,
  *     validation = @Validation(
- *         required = true,
  *         minLength = 3,
  *         maxLength = 20,
  *         pattern = "^[a-zA-Z0-9_]+$",
@@ -39,8 +39,8 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Age",
+ *     required = true,
  *     validation = @Validation(
- *         required = true,
  *         min = 18,
  *         max = 120,
  *         message = "Age must be between 18 and 120"
@@ -53,8 +53,8 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Price",
+ *     required = true,
  *     validation = @Validation(
- *         required = true,
  *         min = 0,
  *         decimalMin = "0.01",
  *         decimalMax = "999999.99",
@@ -113,8 +113,8 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Password",
+ *     required = true,
  *     validation = @Validation(
- *         required = true,
  *         minLength = 8,
  *         maxLength = 128,
  *         pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
@@ -151,15 +151,19 @@ public @interface Validation {
 
     /**
      * Whether the field is required (cannot be null or empty).
-     * <p>When {@code true}:
-     * <ul>
-     *   <li>Backend: Generates {@code @NotNull} or {@code @NotBlank} annotation</li>
-     *   <li>Frontend: Adds {@code Validators.required}</li>
-     *   <li>API: Marks field as required in OpenAPI spec</li>
-     * </ul>
      *
+     * @deprecated Use {@link Field#required()} instead. {@code @Field.required}
+     *     is the canonical location for this concept — required-ness is a
+     *     field-shape property, not a validation rule.
+     *     <p>During the 0.2.x deprecation window the processor still reads
+     *     this attribute as a fallback when {@code @Field.required} is unset,
+     *     and emits a build warning pointing the user at the canonical
+     *     attribute. <strong>Removed in 1.0.0</strong>: callers that have not
+     *     migrated by then will silently lose required-ness — fix the
+     *     warnings during 0.2.x.
      * @return true if field is required
      */
+    @Deprecated(since = "0.2.0", forRemoval = true)
     boolean required() default false;
 
     /**
@@ -424,28 +428,19 @@ public @interface Validation {
 
     /**
      * Whether to validate only on specific operations.
-     * <p>Options:
-     * <ul>
-     *   <li>"CREATE" - Validate only when creating new entities</li>
-     *   <li>"UPDATE" - Validate only when updating existing entities</li>
-     *   <li>"" (empty) - Validate on both operations (default)</li>
-     * </ul>
      *
-     * <p><strong>Example:</strong>
-     * <pre>{@code
-     * @Field(
-     *     label = "Password",
-     *     validation = @Validation(
-     *         required = true,
-     *         validateOn = "CREATE",  // Password required only on creation
-     *         minLength = 8
-     *     )
-     * )
-     * private String password;
-     * }</pre>
-     *
+     * @deprecated Use {@link Field#inCreate()} / {@link Field#inUpdate()}
+     *     instead. The form-lifecycle scope of a field belongs on
+     *     {@code @Field}, not on {@code @Validation}: a field that isn't
+     *     present on the create form ({@code inCreate=false}) shouldn't have
+     *     create-scoped validation rules to begin with.
+     *     <p>During the 0.2.x deprecation window the processor still reads
+     *     this attribute and emits a build warning suggesting the
+     *     {@code @Field.inCreate} / {@code @Field.inUpdate} replacement.
+     *     <strong>Removed in 1.0.0.</strong>
      * @return operation type for validation
      */
+    @Deprecated(since = "0.2.0", forRemoval = true)
     String validateOn() default "";
 
     /**
@@ -455,15 +450,15 @@ public @interface Validation {
      *
      * <p><strong>Example:</strong>
      * <pre>{@code
-     * @Validation(
+     * @Field(
      *     required = true,
-     *     groups = {"BasicInfo", "FullProfile"}
+     *     validation = @Validation(groups = {"BasicInfo", "FullProfile"})
      * )
      * private String name;
      *
-     * @Validation(
+     * @Field(
      *     required = true,
-     *     groups = {"FullProfile"}
+     *     validation = @Validation(groups = {"FullProfile"})
      * )
      * private String bio;
      * }</pre>

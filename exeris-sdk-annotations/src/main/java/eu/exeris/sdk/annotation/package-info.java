@@ -80,6 +80,31 @@
  *   <dd>Exposes domain methods as API endpoints with UI buttons</dd>
  * </dl>
  *
+ * <h2>Field vs Validation — canonical scoping</h2>
+ * <p>{@code @Field} and {@code @Validation} historically overlapped on a few
+ * attributes. The canonical model (effective 0.2.0; the duplicates are
+ * {@code @Deprecated(forRemoval = true)} and dropped in 1.0.0) is:
+ * <ul>
+ *   <li><strong>{@code @Field}</strong> describes <em>what the field is</em> —
+ *       data shape, persistence, UI placement, lifecycle. {@code required},
+ *       {@code inCreate}, {@code inUpdate} all live here.</li>
+ *   <li><strong>{@code @Validation}</strong> describes <em>what values are
+ *       allowed</em> — constraint rules: {@code min}, {@code max},
+ *       {@code minLength}, {@code maxLength}, {@code pattern}, {@code email},
+ *       {@code url}, {@code positive}, etc.</li>
+ * </ul>
+ * <p>Specifically deprecated:
+ * <ul>
+ *   <li>{@code @Validation.required} → use {@link eu.exeris.sdk.annotation.Field#required()}</li>
+ *   <li>{@code @Validation.validateOn} → use {@link eu.exeris.sdk.annotation.Field#inCreate()} /
+ *       {@link eu.exeris.sdk.annotation.Field#inUpdate()} (form-lifecycle scope is a field
+ *       property, not a validation rule).</li>
+ * </ul>
+ * <p>During the 0.2.x window the processor reads the deprecated attributes as
+ * a fallback and emits a build warning so existing user code keeps working
+ * while migrating. Both attributes are removed in 1.0.0; see
+ * {@code MIGRATION.md} in the repo root for the upgrade snippet.
+ *
  * <h2>Architecture Principles</h2>
  * <ul>
  *   <li><strong>Java 26 Only:</strong> Built for Virtual Threads (Project Loom)</li>
