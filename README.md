@@ -39,6 +39,29 @@ never depends on them.
 - Maven 3.9+
 - Node 18+ (only for `exeris-sdk-ui-kit`)
 
+### Why JDK 26?
+
+Most consumer teams run JDK 21 LTS, so this baseline is the most common surprise on
+first build. The SDK is pinned to JDK 26 because the **Exeris platform kernel** is,
+and the annotation processor (`exeris-tooling/exeris-processor`) that consumes
+`@ExerisDomain` runs in the same `javac` invocation as your project — it cannot lag
+behind the kernel it generates code for.
+
+The kernel's hard requirements:
+
+- **Virtual Threads** (stable since 21, refined through JDK 24's `synchronized`
+  pinning fix in JEP 491) — request handling, saga execution, and IO are
+  virtual-thread-first. Generated controllers and saga runners assume virtual-thread
+  semantics, and the pinning fix is load-bearing under contention.
+- **Foreign Function & Memory API** (stable since 22, JEP 454) — used for native
+  interop without JNI in kernel capability code paths.
+- **Records and pattern matching** — used pervasively in the AST
+  (`exeris-sdk-source-model`) and in the Java emitted by `exeris-tooling`.
+
+This is not an oversight, and we will not be backporting to 21 LTS. If you need to
+call into Exeris from a JDK 21 service, keep the Exeris-annotated module on JDK 26
+(built and packaged separately) and consume it over the platform's wire protocol.
+
 ## Build
 
 ```bash
