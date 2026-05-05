@@ -55,8 +55,10 @@ The kernel's hard requirements:
   semantics, and the pinning fix is load-bearing under contention.
 - **Foreign Function & Memory API** (stable since 22, JEP 454) — used for native
   interop without JNI in kernel capability code paths.
-- **Records and pattern matching** — used pervasively in the AST
-  (`exeris-sdk-source-model`) and in the Java emitted by `exeris-tooling`.
+
+The AST (`exeris-sdk-source-model`) and the Java emitted by `exeris-tooling` also
+use records and pattern matching, but those landed in 16 and 21 — they're not what
+fixes the floor at 26.
 
 This is not an oversight, and we will not be backporting to 21 LTS. If you need to
 call into Exeris from a JDK 21 service, keep the Exeris-annotated module on JDK 26
