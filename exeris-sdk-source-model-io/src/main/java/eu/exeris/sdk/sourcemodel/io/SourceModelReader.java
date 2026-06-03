@@ -68,16 +68,31 @@ import java.util.TreeSet;
 public final class SourceModelReader {
 
     /**
-     * Annotation simple names whose metadata {@link #read} does NOT yet model
-     * (0.3.0 reader covers {@code @ExerisDomain[name]}, {@code @Field},
-     * {@code @Relationship}, {@code @Action}/{@code @ActionParam}, {@code @UI}).
-     * Their presence means {@code read()} returns an incomplete view — see
-     * {@link #unmodeledFacets}.
+     * Every SDK annotation simple name whose metadata {@link #read} does NOT yet
+     * incorporate into {@link DomainMetadata}. It is the complement of the
+     * <em>modeled</em> set ({@code @ExerisDomain}, {@code @Field},
+     * {@code @Relationship}, {@code @Action}, {@code @ActionParam}, {@code @UI}):
+     * presence of any name here means {@code read()} returns an incomplete view
+     * (see {@link #unmodeledFacets}). As reader slices land, a name graduates out
+     * of this set into the modeled set.
+     *
+     * <p>Note: matched by simple name (the reader does no import resolution), so a
+     * same-named third-party annotation would also be flagged — conservative, the
+     * safe direction for a reattach guard.
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
+            // entity-level facets (own metadata objects on DomainMetadata)
             "DomainEvent", "EventHandler", "EventSourced",
             "Graph", "GraphEdge", "GraphProperty", "GraphQuery",
-            "Saga", "SagaStep", "Projection");
+            "Saga", "SagaStep", "Projection", "NavMenu", "InternalApi",
+            // field- and parameter-level metadata the reader doesn't read yet
+            "Validation", "Tab", "UIGroup", "QueryParam",
+            // system fields (eu.exeris.sdk.annotation.system.* -> SystemFieldsMetadata)
+            "PrimaryKey", "Version", "TenantId",
+            "AuditCreatedAt", "AuditCreatedBy", "AuditUpdatedAt", "AuditUpdatedBy",
+            "SoftDelete", "SoftDeleteTimestamp", "SoftDeletedBy",
+            // security (eu.exeris.sdk.annotation.security.*)
+            "Encrypted", "RowLevelSecurity");
 
     private final JavaParser javaParser;
 
@@ -131,17 +146,24 @@ public final class SourceModelReader {
      * result means the {@code DomainMetadata} from {@code read()} is an
      * <b>incomplete</b> view of the source: round-trip / reattach callers must treat
      * it as unsafe for conflict detection (the dropped facets would be misattributed
-     * as user edits). An empty result means {@code read()} is faithful for this
-     * source.
+     * as user edits).
      *
-     * <p>Detected gaps: any of {@code @DomainEvent}, {@code @EventHandler},
-     * {@code @EventSourced}, {@code @Graph}/{@code @GraphEdge}/{@code @GraphProperty}/
-     * {@code @GraphQuery}, {@code @Saga}/{@code @SagaStep}, {@code @Projection}
-     * appearing in the source, plus {@code @ExerisDomain} carrying attributes beyond
-     * {@code name} (the reader reads only {@code name} today). Returns simple,
-     * human-readable labels. (Attribute-level gaps within {@code @Field}/
-     * {@code @Action} — e.g. an unread {@code searchable} — are a separate, narrower
-     * fidelity concern and are not reported here.)
+     * <p>Detected: any SDK annotation the reader does not model
+     * ({@link #UNMODELED_FACET_ANNOTATIONS} — entity-level facets like
+     * {@code @DomainEvent}/{@code @Graph}/{@code @Saga}/{@code @Projection}/
+     * {@code @NavMenu}, field/param-level {@code @Validation}/{@code @Tab}/
+     * {@code @UIGroup}/{@code @QueryParam}, and the {@code system}/{@code security}
+     * annotations), plus {@code @ExerisDomain} carrying attributes beyond
+     * {@code name}. Returns human-readable labels.
+     *
+     * <p><b>Scope of the empty guarantee.</b> An empty result means none of those
+     * whole-annotation drops are present — i.e. {@code read()} captures every SDK
+     * annotation it sees. The one fidelity gap it does <em>not</em> report is
+     * attribute-level loss <em>within</em> a modeled annotation (e.g. an unread
+     * {@code @Field(searchable=false)} or {@code @UI(icon=...)} that the reader
+     * leaves at a default); those are a separate, narrower concern. Matching is by
+     * simple name (no import resolution). Note this re-parses {@code javaSource}
+     * independently of {@link #read} — call it once per source if latency matters.
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -164,7 +186,7 @@ public final class SourceModelReader {
                 .filter(ann -> ann.getPairs().stream()
                         .anyMatch(pair -> !pair.getNameAsString().equals("name")))
                 .ifPresent(ann -> facets.add("@ExerisDomain attributes beyond name"));
-        return facets;
+        return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
     private String simpleName(String annotationName) {

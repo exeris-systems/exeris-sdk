@@ -618,7 +618,10 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Saga;
                     import eu.exeris.sdk.annotation.Projection;
                     import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.NavMenu;
+                    import eu.exeris.sdk.annotation.Validation;
                     import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey;
 
                     @ExerisDomain(name = "Order", tenantScoped = true)
                     @EventSourced
@@ -626,12 +629,16 @@ class SourceModelIoTest {
                     @Saga
                     @Projection
                     @DomainEvent
+                    @NavMenu
                     public class Order {
+                        @PrimaryKey private Long id;        // system-level, unread
+                        @Validation(email = true) private String contact; // field-level, unread
                         @Field private String code;
                     }
                     """;
             assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
                     "@EventSourced", "@Graph", "@Saga", "@Projection", "@DomainEvent",
+                    "@NavMenu", "@PrimaryKey", "@Validation",
                     "@ExerisDomain attributes beyond name");
         }
 
