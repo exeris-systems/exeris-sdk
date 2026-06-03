@@ -242,6 +242,13 @@ class SourceModelIoTest {
         }
 
         @Test
+        void addRelationshipThrowsIllegalArgumentOnMalformedType() {
+            // a type string that yields an unparseable annotation -> IllegalArgumentException
+            assertThatThrownBy(() -> writer.addRelationship(ACCOUNT, "x", "Customer", "BAD)SYNTAX"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
         void removeRelationshipRemovesOnlyRelationshipFields() {
             String withRel = writer.addRelationship(ACCOUNT, "customer", "Customer", "ONE_TO_ONE");
 

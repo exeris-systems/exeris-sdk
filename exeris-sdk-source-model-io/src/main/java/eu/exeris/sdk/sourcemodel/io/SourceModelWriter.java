@@ -3,12 +3,12 @@ package eu.exeris.sdk.sourcemodel.io;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import java.util.Optional;
@@ -144,10 +144,13 @@ public final class SourceModelWriter {
      * No-op if a field of that name already exists.
      *
      * <p>{@code relationshipType} is the {@code RelationshipType} constant name
-     * (e.g. {@code "ONE_TO_MANY"}); it is written verbatim, not validated.
+     * (e.g. {@code "ONE_TO_MANY"}); it is written verbatim into the annotation,
+     * not validated against the enum.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
+     * @throws IllegalArgumentException if the source is not valid Java, has no
+     *                                  {@code @ExerisDomain} type, or
+     *                                  {@code relationshipType} produces a
+     *                                  malformed annotation
      */
     public String addRelationship(String javaSource, String fieldName, String targetType, String relationshipType) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -155,10 +158,18 @@ public final class SourceModelWriter {
         if (findVariable(domain, fieldName).isPresent()) {
             return javaSource;
         }
+        // Parse via the instance parser (not StaticJavaParser) to keep the
+        // configured language level and the class's single-parser threading
+        // contract; validate before mutating so a bad type throws cleanly.
+        ParseResult<AnnotationExpr> annotation = javaParser.parseAnnotation(
+                "@Relationship(relationshipType = RelationshipType." + relationshipType + ")");
+        if (!annotation.isSuccessful() || annotation.getResult().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Invalid relationshipType '" + relationshipType + "': " + annotation.getProblems());
+        }
         LexicalPreservingPrinter.setup(cu);
-        FieldDeclaration field = domain.addField(targetType, fieldName, Modifier.Keyword.PRIVATE);
-        field.addAnnotation(StaticJavaParser.parseAnnotation(
-                "@Relationship(relationshipType = RelationshipType." + relationshipType + ")"));
+        domain.addField(targetType, fieldName, Modifier.Keyword.PRIVATE)
+                .addAnnotation(annotation.getResult().get());
         return LexicalPreservingPrinter.print(cu);
     }
 
@@ -175,10 +186,13 @@ public final class SourceModelWriter {
         CompilationUnit cu = parseOrThrow(javaSource);
         ClassOrInterfaceDeclaration domain = domainOrThrow(cu);
         Optional<VariableDeclarator> target = findVariable(domain, fieldName);
-        if (target.isEmpty()
-                || target.get().findAncestor(FieldDeclaration.class).get()
-                        .getAnnotationByName("Relationship").isEmpty()) {
+        if (target.isEmpty()) {
             return javaSource;
+        }
+        // Invariant: a variable from getFields() always has an enclosing FieldDeclaration.
+        FieldDeclaration declaration = target.get().findAncestor(FieldDeclaration.class).get();
+        if (declaration.getAnnotationByName("Relationship").isEmpty()) {
+            return javaSource; // present, but not a relationship -> no-op
         }
         LexicalPreservingPrinter.setup(cu);
         removeVariable(target.get());
