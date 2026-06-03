@@ -21,6 +21,22 @@
         by exeris-tooling processors and generators.
     </description>
 
+    <dependencies>
+        <!-- Test-only: contract test for SOURCE retention + @Target invariants.
+             No runtime/compile dependencies are added to this jar — the
+             published artifact remains pure annotations. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
