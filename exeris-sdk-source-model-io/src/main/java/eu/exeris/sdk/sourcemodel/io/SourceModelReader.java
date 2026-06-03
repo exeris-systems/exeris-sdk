@@ -24,6 +24,7 @@ import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,8 @@ import java.util.Optional;
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
- * does. UI is not yet read; that lands in a subsequent 0.3.0 slice.
+ * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
+ * matching the processor's default-true convention).
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -127,10 +129,55 @@ public final class SourceModelReader {
         }
 
         String entityName = exerisDomainName(type).orElse(type.getNameAsString());
-        return DomainMetadata.builder(entityName, packageName(cu))
+        DomainMetadata.Builder builder = DomainMetadata.builder(entityName, packageName(cu))
                 .fields(fields)
                 .relationships(relationships(type))
-                .actions(actions(type))
+                .actions(actions(type));
+        UIMetadata ui = uiMetadata(type);
+        if (ui != null) {
+            builder.uiMetadata(ui);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Class-level standalone {@code @UI} → {@link UIMetadata}, or {@code null} when
+     * absent (matching {@code ExerisDomainProcessor.extractUIMetadata}, which reads
+     * a directly-present {@code @UI} via {@code findAnnotation}).
+     *
+     * <p>Parity note: like the processor, the view flags default to {@code true}
+     * when their {@code @UI} attribute is absent (and {@code exportable} to
+     * {@code false}) — the "you added @UI, so the views are on" convention,
+     * intentionally stronger than the {@code @UI} annotation's own
+     * {@code default false}.
+     *
+     * <p>Deliberately <b>not</b> mapped, all matching the processor so reader- and
+     * processor-produced {@code DomainMetadata} stay identical:
+     * <ul>
+     *   <li>The nested {@code @ExerisDomain(ui = @UI(...))} form — the processor's
+     *       {@code findAnnotation} only sees directly-present annotations, so it
+     *       reads neither; the {@code @ExerisDomain.ui()} attribute is effectively
+     *       unconsumed SDK-wide. Changing this must move processor + reader together.</li>
+     *   <li>{@code icon}/{@code color}/{@code label} — present on {@code @UI} but
+     *       not read by the processor.</li>
+     *   <li>{@code bulkActions}/{@code columns}/{@code defaultLayout}/{@code groups}/
+     *       {@code fieldOverrides} — no {@code @UI} attribute exists for them; they
+     *       stay at {@link UIMetadata} builder defaults.</li>
+     * </ul>
+     */
+    private UIMetadata uiMetadata(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> ui = type.getAnnotationByName("UI");
+        if (ui.isEmpty()) {
+            return null;
+        }
+        return UIMetadata.builder()
+                .listView(boolAttr(ui.get(), "listView", true))
+                .detailView(boolAttr(ui.get(), "detailView", true))
+                .createForm(boolAttr(ui.get(), "createForm", true))
+                .editForm(boolAttr(ui.get(), "editForm", true))
+                .searchable(boolAttr(ui.get(), "searchable", true))
+                .filterable(boolAttr(ui.get(), "filterable", true))
+                .exportable(boolAttr(ui.get(), "exportable", false))
                 .build();
     }
 
