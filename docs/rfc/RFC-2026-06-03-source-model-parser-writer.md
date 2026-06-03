@@ -129,8 +129,6 @@ The ADR that accepts this RFC should land the module half-scaffolded-proof — t
 
 ## Decision Record
 
-<Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN.>
-
 | Field                | Value     |
 |:---------------------|:----------|
 | **Outcome**          | ACCEPTED  |
@@ -143,4 +141,4 @@ The ADR that accepts this RFC should land the module half-scaffolded-proof — t
 - ~~Which LGPL version?~~ **Resolved: LGPL-3.0** (verified against upstream `LICENSE.LGPL` "Version 3, 29 June 2007" + Maven Central). Remaining action: pin the **Apache-2.0** election + enforcement mechanism (see §ADR prerequisites).
 - Verify pinned JavaParser version parses **JDK 26** source constructs (records, sealed, pattern matching) — owner: author, gates the spike.
 - Writer conflict-resolution semantics (user edits since last codegen vs. tooling-driven mutations) — roadmap 0.3.0 line; may warrant its own RFC if non-trivial.
-- **0.5.0 `MutationOp`/`MutationResult` home.** Recommended split: the **records stay in `source-model`** (pure data, no JavaParser) so the LSP and codegen can import the mutation vocabulary without dragging the parser; the **application of mutations** (rewriting source) lives in `exeris-sdk-source-model-io`. Confirm at 0.5.0 scoping — flagged now so the `-io` boundary is drawn with it in mind.
+- **0.5.0 `MutationOp`/`MutationResult` home.** Recommended split: the **records stay in `source-model`** (pure data, no JavaParser) so the LSP and codegen can import the mutation vocabulary without dragging the parser; the **application of mutations** (rewriting source) lives in `exeris-sdk-source-model-io`. **ADR-037 rules on this pre-emptively** (same isolation rationale as the core decision); revisit at 0.5.0 scoping only if a contradicting force surfaces.

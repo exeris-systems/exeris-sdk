@@ -10,6 +10,8 @@
 | **Driven By**   | [RFC-2026-06-03](../rfc/RFC-2026-06-03-source-model-parser-writer.md) (ACCEPTED)               |
 | **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) Entity-First |
 
+> ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](../../../exeris-docs/adr-index.md). The gap between ADR-003 and ADR-037 in this repo is expected — 004–036 are owned by other Exeris repos.
+
 ## Context and Problem Statement
 
 The 0.3.0 milestone adds a standalone `.java` → `DomainMetadata` parser and an idempotent `DomainMetadata` → `.java` writer (preserving user comments, formatting, and non-Exeris annotations). Both need [JavaParser](https://javaparser.org/) — the first heavy third-party dependency the SDK would carry. The SDK's defining invariant is *zero runtime coupling*: `exeris-sdk-annotations` has no dependencies, and `exeris-sdk-source-model` pulls only `jackson-annotations` at compile scope (`jackson-databind` is `test`-scope on purpose).
@@ -31,9 +33,10 @@ The module is named `-io` (not `-parser`) because it owns both directions of sou
 3. **The dependency arrow points one way.** `-io` depends on `source-model`; `source-model` and `annotations` never depend on `-io`.
 4. **AST records stay in `source-model`.** The Jackson-serializable AST records — the surface frozen at 1.0 — remain in `exeris-sdk-source-model`. The parser/writer (free to evolve) lives in `-io`, so the two version independently.
 5. **Consumers depend on the narrowest coordinate.** Codegen and the processor's JSON layer depend on `source-model` (no JavaParser); only consumers that parse or rewrite source (LSP, future tooling) add `-io`.
-6. **License election is recorded.** The BOM `dependencyManagement` entry for `javaparser-core` carries a comment electing **Apache-2.0** (JavaParser is dual-licensed Apache-2.0 OR LGPL-3.0; the Apache-2.0 election keeps the SDK's Apache-2.0 + Maven Central distribution clean). A note lands in `CONTRIBUTING.md`; optionally a `maven-enforcer` banned-dependency rule fails the build if an LGPL-classified variant resolves.
+6. **License election is recorded.** The BOM `dependencyManagement` entry for `javaparser-core` carries a comment electing **Apache-2.0** (JavaParser is dual-licensed Apache-2.0 OR LGPL-3.0; the Apache-2.0 election keeps the SDK's Apache-2.0 + Maven Central distribution clean). A note lands in `CONTRIBUTING.md` (creating the file if absent); optionally a `maven-enforcer` banned-dependency rule fails the build if an LGPL-classified variant resolves.
 7. **`-io` is publishable.** It mirrors the `attach-sources` + `attach-javadoc` executions of the existing jar modules, gets a BOM `dependencyManagement` entry, and a `<module>` line in the root reactor.
-8. **0.5.0 mutation vocabulary follows the same split.** When `MutationOp`/`MutationResult` (ADR-pending, 0.5.0) land, the **records** live in `source-model` (pure data, importable by LSP and codegen without JavaParser); the **application** of mutations to source lives in `-io`.
+
+**Pre-emptive ruling (not a testable obligation — design intent for 0.5.0):** When `MutationOp`/`MutationResult` (0.5.0) land, the **records** should live in `source-model` (pure data, importable by LSP and codegen without JavaParser) and the **application** of mutations to source in `-io` — the same isolation rationale as obligations 1–5. RFC-2026-06-03 flagged this for 0.5.0 scoping; this ADR rules on it pre-emptively (no separate RFC required) so the `-io` boundary is drawn with it in mind. It binds only if the 0.5.0 design does not surface a contradicting force; revisit there.
 
 ## Consequences
 
