@@ -180,6 +180,8 @@ class SourceModelIoTest {
             assertThat(writer.renameField(ACCOUNT, "missing", "x")).isEqualTo(ACCOUNT);
             // 'iban' already exists -> renaming onto it would duplicate, so no-op
             assertThat(writer.renameField(ACCOUNT, "label", "iban")).isEqualTo(ACCOUNT);
+            // from == to -> 'to' is by definition present, so also a no-op
+            assertThat(writer.renameField(ACCOUNT, "label", "label")).isEqualTo(ACCOUNT);
         }
 
         @Test
@@ -215,8 +217,8 @@ class SourceModelIoTest {
                     public class Point { private int a, b; }
                     """;
             String removed = writer.removeField(src, "a");
-            assertThat(removed).doesNotContain("int a"); // 'a' dropped from the declaration
-            assertThat(removed).contains("b");           // sibling variable kept
+            assertThat(removed).doesNotContain("int a");   // 'a' dropped from the declaration
+            assertThat(removed).contains("int b");         // sibling kept, separator not mangled
         }
     }
 

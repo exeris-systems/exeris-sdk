@@ -72,7 +72,9 @@ public final class SourceModelWriter {
     /**
      * Renames field {@code fromName} to {@code toName} on the declaration.
      * No-op if {@code fromName} is absent (already renamed / never present) or
-     * {@code toName} already exists (renaming would create a duplicate).
+     * {@code toName} already exists (renaming would create a duplicate). The
+     * {@code fromName.equals(toName)} case is therefore also a no-op, since
+     * {@code toName} is by definition present.
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
@@ -91,7 +93,11 @@ public final class SourceModelWriter {
 
     /**
      * Changes the declared type of {@code fieldName} to {@code newType}. No-op if
-     * the field is absent or already has that type.
+     * the field is absent or already has that type. The "already that type" check
+     * is <em>textual</em> (no symbol solving): a field declared {@code String} is
+     * not recognised as equal to {@code java.lang.String}, so passing a
+     * fully-qualified name where the source writes it unqualified (or vice versa)
+     * will rewrite the declaration rather than no-op.
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
@@ -126,7 +132,9 @@ public final class SourceModelWriter {
         }
         LexicalPreservingPrinter.setup(cu);
         VariableDeclarator variable = target.get();
-        FieldDeclaration declaration = variable.findAncestor(FieldDeclaration.class).orElseThrow();
+        // Invariant: findVariable only returns variables streamed from getFields(),
+        // so the enclosing FieldDeclaration is always present.
+        FieldDeclaration declaration = variable.findAncestor(FieldDeclaration.class).get();
         if (declaration.getVariables().size() == 1) {
             declaration.remove();
         } else {
