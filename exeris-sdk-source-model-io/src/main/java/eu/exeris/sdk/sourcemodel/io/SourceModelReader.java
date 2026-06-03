@@ -29,6 +29,8 @@ import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
@@ -48,6 +50,13 @@ import java.util.Optional;
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention).
  *
+ * <p><b>Round-trip safety.</b> {@code read()} models only the facets above —
+ * it does <em>not</em> yet read events, projections, graph, saga, event-sourcing,
+ * or {@code @ExerisDomain} attributes beyond {@code name}. A round-trip /
+ * reattach caller MUST consult {@link #unmodeledFacets} first and refuse (or
+ * warn) when it is non-empty, otherwise the dropped metadata is silently
+ * misattributed as a user edit during conflict detection.
+ *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
  * resolution — activating JavaParser symbol-solving would pull heavy optional
@@ -57,6 +66,33 @@ import java.util.Optional;
  * @since 0.3.0
  */
 public final class SourceModelReader {
+
+    /**
+     * Every SDK annotation simple name whose metadata {@link #read} does NOT yet
+     * incorporate into {@link DomainMetadata}. It is the complement of the
+     * <em>modeled</em> set ({@code @ExerisDomain}, {@code @Field},
+     * {@code @Relationship}, {@code @Action}, {@code @ActionParam}, {@code @UI}):
+     * presence of any name here means {@code read()} returns an incomplete view
+     * (see {@link #unmodeledFacets}). As reader slices land, a name graduates out
+     * of this set into the modeled set.
+     *
+     * <p>Note: matched by simple name (the reader does no import resolution), so a
+     * same-named third-party annotation would also be flagged — conservative, the
+     * safe direction for a reattach guard.
+     */
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
+            // entity-level facets (own metadata objects on DomainMetadata)
+            "DomainEvent", "EventHandler", "EventSourced",
+            "Graph", "GraphEdge", "GraphProperty", "GraphQuery",
+            "Saga", "SagaStep", "Projection", "NavMenu", "InternalApi",
+            // field- and parameter-level metadata the reader doesn't read yet
+            "Validation", "Tab", "UIGroup", "QueryParam",
+            // system fields (eu.exeris.sdk.annotation.system.* -> SystemFieldsMetadata)
+            "PrimaryKey", "Version", "TenantId",
+            "AuditCreatedAt", "AuditCreatedBy", "AuditUpdatedAt", "AuditUpdatedBy",
+            "SoftDelete", "SoftDeleteTimestamp", "SoftDeletedBy",
+            // security (eu.exeris.sdk.annotation.security.*)
+            "Encrypted", "RowLevelSecurity");
 
     private final JavaParser javaParser;
 
@@ -102,6 +138,60 @@ public final class SourceModelReader {
             enums.add(new EnumMetadata(name, qualifiedName, packageName, null, values));
         }
         return enums;
+    }
+
+    /**
+     * Reports the metadata facets present in {@code javaSource} that {@link #read}
+     * does <b>not</b> yet incorporate into {@link DomainMetadata}. A <b>non-empty</b>
+     * result means the {@code DomainMetadata} from {@code read()} is an
+     * <b>incomplete</b> view of the source: round-trip / reattach callers must treat
+     * it as unsafe for conflict detection (the dropped facets would be misattributed
+     * as user edits).
+     *
+     * <p>Detected: any SDK annotation the reader does not model
+     * ({@link #UNMODELED_FACET_ANNOTATIONS} — entity-level facets like
+     * {@code @DomainEvent}/{@code @Graph}/{@code @Saga}/{@code @Projection}/
+     * {@code @NavMenu}, field/param-level {@code @Validation}/{@code @Tab}/
+     * {@code @UIGroup}/{@code @QueryParam}, and the {@code system}/{@code security}
+     * annotations), plus {@code @ExerisDomain} carrying attributes beyond
+     * {@code name}. Returns human-readable labels.
+     *
+     * <p><b>Scope of the empty guarantee.</b> An empty result means none of those
+     * whole-annotation drops are present — i.e. {@code read()} captures every SDK
+     * annotation it sees. The one fidelity gap it does <em>not</em> report is
+     * attribute-level loss <em>within</em> a modeled annotation (e.g. an unread
+     * {@code @Field(searchable=false)} or {@code @UI(icon=...)} that the reader
+     * leaves at a default); those are a separate, narrower concern. Matching is by
+     * simple name (no import resolution). Note this re-parses {@code javaSource}
+     * independently of {@link #read} — call it once per source if latency matters.
+     */
+    public Set<String> unmodeledFacets(String javaSource) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        Optional<ClassOrInterfaceDeclaration> domain = cu.findFirst(ClassOrInterfaceDeclaration.class,
+                type -> type.isAnnotationPresent("ExerisDomain"));
+        if (domain.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> facets = new TreeSet<>();
+        for (AnnotationExpr annotation : cu.findAll(AnnotationExpr.class)) {
+            String simpleName = simpleName(annotation.getNameAsString());
+            if (UNMODELED_FACET_ANNOTATIONS.contains(simpleName)) {
+                facets.add("@" + simpleName);
+            }
+        }
+        domain.get().getAnnotationByName("ExerisDomain")
+                .filter(AnnotationExpr::isNormalAnnotationExpr)
+                .map(AnnotationExpr::asNormalAnnotationExpr)
+                .filter(ann -> ann.getPairs().stream()
+                        .anyMatch(pair -> !pair.getNameAsString().equals("name")))
+                .ifPresent(ann -> facets.add("@ExerisDomain attributes beyond name"));
+        return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
+    }
+
+    private String simpleName(String annotationName) {
+        int dot = annotationName.lastIndexOf('.');
+        return dot < 0 ? annotationName : annotationName.substring(dot + 1);
     }
 
     private CompilationUnit parseOrThrow(String javaSource) {
