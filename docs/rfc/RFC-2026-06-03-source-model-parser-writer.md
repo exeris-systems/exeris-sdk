@@ -2,7 +2,7 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **DRAFT**                                                             |
+| **Status**        | **IN-REVIEW**                                                        |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-03                                                            |
 | **Date Closed**   | —                                                                    |
@@ -33,9 +33,9 @@ What is **not** decided is the module topology *inside* `exeris-sdk`. The naive 
 
 ### Constraints
 
-- **Zero runtime coupling (repo invariant, CLAUDE.md).** `annotations` = 0 deps; `source-model` = `jackson-annotations` only at compile scope. This is the hard constraint the whole RFC turns on.
-- **Maven Central / licensing.** JavaParser is dual-licensed **Apache-2.0 OR LGPL-3.0** (consumer's choice); the Apache-2.0 option is compatible with the SDK's Apache-2.0 + Maven Central distribution. *To confirm before ADR: pin the Apache-2.0 election explicitly.*
-- **Publishable-module checklist.** Any new publishable module must mirror the `attach-sources` + `attach-javadoc` executions (CLAUDE.md) or Central rejects it.
+- **Zero runtime coupling (repo invariant).** `annotations` = 0 deps; `source-model` = `jackson-annotations` only at compile scope — observable in `exeris-sdk-source-model/pom.xml` (`jackson-databind` is `test`-scope) and the root `pom.xml` description. (The prose statement of this invariant lands in `CLAUDE.md` via the in-flight repo-tooling PR #13; it is not yet on `main`, so this RFC cites the POMs as the authoritative evidence.) This is the hard constraint the whole RFC turns on.
+- **Maven Central / licensing.** JavaParser is dual-licensed **Apache-2.0 OR LGPL-3.0** — the consumer elects. *Verified against upstream:* `javaparser/LICENSE.LGPL` is "GNU LESSER GENERAL PUBLIC LICENSE Version 3, 29 June 2007" and Maven Central lists the artifact as LGPL-3.0 + Apache-2.0 (not 2.1). The **Apache-2.0** election is compatible with the SDK's Apache-2.0 + Maven Central distribution; we must record that election explicitly (see §ADR prerequisites for the mechanism).
+- **Publishable-module checklist.** Any new publishable module must mirror the `attach-sources` + `attach-javadoc` executions — pattern in `exeris-sdk-annotations/pom.xml` / `exeris-sdk-source-model/pom.xml` — or Central rejects it.
 - **JDK 26 floor.** New module inherits `maven.compiler.release=26`; confirm the chosen JavaParser version supports parsing 26-level sources (records, sealed types, pattern matching) the SDK's own entities use.
 
 ### Data gathered
@@ -65,9 +65,11 @@ Add JavaParser as a compile-scope dependency of the existing module; parser/writ
 
 **Cost:** Low upfront engineering, high architectural debt.
 
-### Option B: New sibling module `exeris-sdk-source-model-parser`
+### Option B: New sibling module `exeris-sdk-source-model-io`
 
 A new publishable module that depends on `exeris-sdk-source-model` (for the AST records) + JavaParser. Houses both the parser (`.java` → `DomainMetadata`) and the idempotent writer. `source-model` stays dependency-light.
+
+**Name: `exeris-sdk-source-model-io`** (packages `eu.exeris.sdk.sourcemodel.io`). The module does source-text ↔ model round-tripping, so it names the *abstraction* (read + write), not just the parse half — `-parser` would mislead, since the writer is the harder, more contract-relevant side. It also deliberately avoids naming the engine (`-javaparser`): a published Maven coordinate is expensive to rename, and the engine could be swapped behind a stable `io` package boundary without a breaking coordinate change.
 
 **Pros:**
 - **Preserves zero runtime coupling** — pure-AST consumers depend on `source-model` and never see JavaParser; only the LSP / writer-needing consumers add the parser module.
@@ -100,7 +102,7 @@ Leave 0.3.0 unstarted; `exeris-platform-lsp` stays a stub, 0.4.0 `@Capability` (
 
 ## Recommendation
 
-**Option B — introduce a new `exeris-sdk-source-model-parser` module that depends on `source-model` + JavaParser; keep `source-model` dependency-light.**
+**Option B — introduce a new `exeris-sdk-source-model-io` module that depends on `source-model` + JavaParser; keep `source-model` dependency-light.**
 
 This is the only option that delivers the parser/writer *and* honours the repo's one non-negotiable invariant. The cost is a single extra module — and the SDK already pays exactly this kind of split (the `annotations` / `source-model` boundary exists for the same reason: keep the most-depended-on artifact lean). The test-scope treatment of `jackson-databind` is the precedent in miniature: heavy machinery stays off the compile classpath of pure consumers. The LSP gets a clean, narrow coordinate to depend on; codegen and the processor's JSON layer never learn JavaParser exists. Because the AST records (the frozen-at-1.0 wire contract) stay in `source-model` and the parser/writer (implementation, free to evolve) stay in the new module, the contract surface and the tooling surface can version independently — which matters when 1.0 freezes the records but the writer's idempotency rules are still maturing against the budgetHQ corpus.
 
@@ -116,6 +118,15 @@ This is the only option that delivers the parser/writer *and* honours the repo's
 - **Writer idempotency is hard** — preserving user formatting/comments/non-Exeris annotations on rewrite is the genuinely difficult part and is independent of topology. Mitigation: spike against real budgetHQ entities early (see §Spike outcomes); property-test round-trip stability.
 - **JavaParser JDK-26 source-level support** — must verify the pinned version parses 26-level constructs. Mitigation: gate the spike on a 26-syntax fixture.
 
+## ADR prerequisites
+
+The ADR that accepts this RFC should land the module half-scaffolded-proof — these are the concrete wiring tasks, flagged here so the scaffold doesn't ship in a half-done state:
+
+1. **BOM** (`exeris-sdk-bom/pom.xml`) — add a `<javaparser.version>` property and a `<dependencyManagement>` entry for `com.github.javaparser:javaparser-core` with explicit `<scope>compile</scope>`. Record the **Apache-2.0 license election** in a comment on that entry.
+2. **Root reactor** (`pom.xml`) — add `<module>exeris-sdk-source-model-io</module>` (currently only `bom`, `parent`, `annotations`, `source-model`).
+3. **Publishable wiring** — mirror `attach-sources` + `attach-javadoc` from the existing jar modules.
+4. **License-election enforcement** — at minimum the BOM comment above plus a note in `CONTRIBUTING.md`; *optionally* a `maven-enforcer` banned-dependency rule that fails the build if the LGPL-classified variant is ever resolved, so the Apache-2.0 election can't silently regress.
+
 ## Decision Record
 
 <Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN.>
@@ -129,7 +140,7 @@ This is the only option that delivers the parser/writer *and* honours the repo's
 
 ## Open questions / follow-ups
 
-- Confirm the JavaParser **Apache-2.0** license election and pin it in the BOM — owner: author, before ADR.
+- ~~Which LGPL version?~~ **Resolved: LGPL-3.0** (verified against upstream `LICENSE.LGPL` "Version 3, 29 June 2007" + Maven Central). Remaining action: pin the **Apache-2.0** election + enforcement mechanism (see §ADR prerequisites).
 - Verify pinned JavaParser version parses **JDK 26** source constructs (records, sealed, pattern matching) — owner: author, gates the spike.
 - Writer conflict-resolution semantics (user edits since last codegen vs. tooling-driven mutations) — roadmap 0.3.0 line; may warrant its own RFC if non-trivial.
-- Does the new module also own the **0.5.0 `MutationOp`/`MutationResult`** apply-mutation surface, or does that stay in `source-model`? — defer to 0.5.0 scoping; flag now so the module boundary is drawn with it in mind.
+- **0.5.0 `MutationOp`/`MutationResult` home.** Recommended split: the **records stay in `source-model`** (pure data, no JavaParser) so the LSP and codegen can import the mutation vocabulary without dragging the parser; the **application of mutations** (rewriting source) lives in `exeris-sdk-source-model-io`. Confirm at 0.5.0 scoping — flagged now so the `-io` boundary is drawn with it in mind.

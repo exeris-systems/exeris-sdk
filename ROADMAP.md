@@ -33,8 +33,9 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 > Goal: round-trip Java↔AST via JavaParser. Required by LSP and codegen-maven-plugin.
 
-- [ ] `exeris-sdk-source-model/parser` module — JavaParser-based `.java` → `DomainMetadata`
-- [ ] `exeris-sdk-source-model/writer` module — idempotent `DomainMetadata` → `.java` (preserves user comments, formatting, non-Exeris annotations)
+- [ ] **`exeris-sdk-source-model-io`** — a single new sibling module (depends on `source-model` + JavaParser; keeps `source-model` dependency-light to preserve zero runtime coupling). Houses both directions — see [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-source-model-parser-writer.md):
+  - [ ] parser — JavaParser-based `.java` → `DomainMetadata`
+  - [ ] writer — idempotent `DomainMetadata` → `.java` (preserves user comments, formatting, non-Exeris annotations)
 - [ ] Round-trip property tests across the budgetHQ corpus (real entities, not synthetic fixtures)
 - [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations
 
