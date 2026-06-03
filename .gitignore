@@ -36,3 +36,6 @@ yarn-error.log*
 coverage/
 *.lcov
 *.exec
+
+# Claude Code — local-only settings (shared agents/skills/commands ARE tracked)
+.claude/settings.local.json
