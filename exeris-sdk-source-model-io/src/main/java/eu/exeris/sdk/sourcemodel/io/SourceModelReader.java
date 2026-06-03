@@ -141,16 +141,29 @@ public final class SourceModelReader {
     }
 
     /**
-     * Class-level {@code @UI} → {@link UIMetadata}, or {@code null} when {@code @UI}
-     * is absent (matching {@code ExerisDomainProcessor.extractUIMetadata}).
+     * Class-level standalone {@code @UI} → {@link UIMetadata}, or {@code null} when
+     * absent (matching {@code ExerisDomainProcessor.extractUIMetadata}, which reads
+     * a directly-present {@code @UI} via {@code findAnnotation}).
      *
      * <p>Parity note: like the processor, the view flags default to {@code true}
      * when their {@code @UI} attribute is absent (and {@code exportable} to
-     * {@code false}) — this is the "you added @UI, so the views are on" convention,
+     * {@code false}) — the "you added @UI, so the views are on" convention,
      * intentionally stronger than the {@code @UI} annotation's own
-     * {@code default false}. Also like the processor, {@code icon}/{@code color}/
-     * {@code label} are not yet mapped; reader and processor add them in lock-step
-     * so the emitted {@code DomainMetadata} stays identical.
+     * {@code default false}.
+     *
+     * <p>Deliberately <b>not</b> mapped, all matching the processor so reader- and
+     * processor-produced {@code DomainMetadata} stay identical:
+     * <ul>
+     *   <li>The nested {@code @ExerisDomain(ui = @UI(...))} form — the processor's
+     *       {@code findAnnotation} only sees directly-present annotations, so it
+     *       reads neither; the {@code @ExerisDomain.ui()} attribute is effectively
+     *       unconsumed SDK-wide. Changing this must move processor + reader together.</li>
+     *   <li>{@code icon}/{@code color}/{@code label} — present on {@code @UI} but
+     *       not read by the processor.</li>
+     *   <li>{@code bulkActions}/{@code columns}/{@code defaultLayout}/{@code groups}/
+     *       {@code fieldOverrides} — no {@code @UI} attribute exists for them; they
+     *       stay at {@link UIMetadata} builder defaults.</li>
+     * </ul>
      */
     private UIMetadata uiMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> ui = type.getAnnotationByName("UI");

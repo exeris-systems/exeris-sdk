@@ -392,5 +392,44 @@ class SourceModelIoTest {
                     """;
             assertThat(reader.read(noUi).orElseThrow().uiMetadata()).isNull();
         }
+
+        @Test
+        void bareMarkerUiUsesAllDefaults() {
+            // @UI with no attributes -> every view flag defaults true, exportable false
+            String marker = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.UI;
+                    @ExerisDomain(name = "Bare")
+                    @UI
+                    public class Bare {}
+                    """;
+            var ui = reader.read(marker).orElseThrow().uiMetadata();
+            assertThat(ui).isNotNull();
+            assertThat(ui.listView()).isTrue();
+            assertThat(ui.detailView()).isTrue();
+            assertThat(ui.createForm()).isTrue();
+            assertThat(ui.editForm()).isTrue();
+            assertThat(ui.searchable()).isTrue();
+            assertThat(ui.filterable()).isTrue();
+            assertThat(ui.exportable()).isFalse();
+        }
+
+        @Test
+        void nestedExerisDomainUiAttributeIsNotRead() {
+            // Parity: the processor (findAnnotation over directly-present annotations)
+            // reads ONLY a standalone class-level @UI — never @ExerisDomain(ui=@UI(...)).
+            // The reader matches: the nested form yields null UI. (@ExerisDomain.ui()
+            // is effectively unconsumed SDK-wide; changing that must move processor +
+            // reader together and is out of scope here.)
+            String nested = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.UI;
+                    @ExerisDomain(name = "Order", ui = @UI(listView = true, exportable = true))
+                    public class Order {}
+                    """;
+            assertThat(reader.read(nested).orElseThrow().uiMetadata()).isNull();
+        }
     }
 }
