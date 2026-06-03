@@ -3,6 +3,7 @@ package eu.exeris.sdk.sourcemodel.io;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -25,10 +26,11 @@ import java.util.Optional;
  * the printer entirely, so re-applying a mutation is byte-stable and cheap).
  *
  * <p>0.3.0 scope: field mutations — {@link #addField}, {@link #renameField},
- * {@link #changeFieldType}, {@link #removeField}. These are the application
- * half of what 0.5.0 will model as {@code MutationOp} records (ADR-037
- * pre-emptive ruling: the op records live in {@code source-model}; their
- * application lives here). Action/relationship/UI mutations follow.
+ * {@link #changeFieldType}, {@link #removeField} — and relationship mutations —
+ * {@link #addRelationship}, {@link #removeRelationship}. These are the
+ * application half of what 0.5.0 will model as {@code MutationOp} records
+ * (ADR-037 pre-emptive ruling: the op records live in {@code source-model};
+ * their application lives here). Action/UI mutations follow.
  *
  * <p><b>Limitations.</b> Edits act on the field <em>declaration</em> only —
  * references elsewhere (getters, usages) are not updated; that needs symbol
@@ -131,16 +133,72 @@ public final class SourceModelWriter {
             return javaSource;
         }
         LexicalPreservingPrinter.setup(cu);
-        VariableDeclarator variable = target.get();
-        // Invariant: findVariable only returns variables streamed from getFields(),
-        // so the enclosing FieldDeclaration is always present.
+        removeVariable(target.get());
+        return LexicalPreservingPrinter.print(cu);
+    }
+
+    /**
+     * Adds a {@code @Relationship}-annotated field
+     * {@code @Relationship(relationshipType = RelationshipType.<relationshipType>)
+     * private <targetType> <fieldName>;} to the first {@code @ExerisDomain} type.
+     * No-op if a field of that name already exists.
+     *
+     * <p>{@code relationshipType} is the {@code RelationshipType} constant name
+     * (e.g. {@code "ONE_TO_MANY"}); it is written verbatim, not validated.
+     *
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
+     */
+    public String addRelationship(String javaSource, String fieldName, String targetType, String relationshipType) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        ClassOrInterfaceDeclaration domain = domainOrThrow(cu);
+        if (findVariable(domain, fieldName).isPresent()) {
+            return javaSource;
+        }
+        LexicalPreservingPrinter.setup(cu);
+        FieldDeclaration field = domain.addField(targetType, fieldName, Modifier.Keyword.PRIVATE);
+        field.addAnnotation(StaticJavaParser.parseAnnotation(
+                "@Relationship(relationshipType = RelationshipType." + relationshipType + ")"));
+        return LexicalPreservingPrinter.print(cu);
+    }
+
+    /**
+     * Removes the field {@code fieldName} only if it carries {@code @Relationship}
+     * (so it won't silently delete a plain field that happens to share the name).
+     * No-op if the field is absent or is not a relationship. Removal semantics
+     * match {@link #removeField} (whole declaration vs. single variable).
+     *
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
+     */
+    public String removeRelationship(String javaSource, String fieldName) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        ClassOrInterfaceDeclaration domain = domainOrThrow(cu);
+        Optional<VariableDeclarator> target = findVariable(domain, fieldName);
+        if (target.isEmpty()
+                || target.get().findAncestor(FieldDeclaration.class).get()
+                        .getAnnotationByName("Relationship").isEmpty()) {
+            return javaSource;
+        }
+        LexicalPreservingPrinter.setup(cu);
+        removeVariable(target.get());
+        return LexicalPreservingPrinter.print(cu);
+    }
+
+    /**
+     * Drops a variable's whole {@code FieldDeclaration} (with its annotations and
+     * comments) when it is the sole variable, otherwise just that variable from a
+     * multi-variable declaration. Caller must have run {@code LexicalPreservingPrinter.setup}.
+     */
+    private void removeVariable(VariableDeclarator variable) {
+        // Invariant: callers pass variables streamed from getFields(), so the
+        // enclosing FieldDeclaration is always present.
         FieldDeclaration declaration = variable.findAncestor(FieldDeclaration.class).get();
         if (declaration.getVariables().size() == 1) {
             declaration.remove();
         } else {
             variable.remove();
         }
-        return LexicalPreservingPrinter.print(cu);
     }
 
     private CompilationUnit parseOrThrow(String javaSource) {
