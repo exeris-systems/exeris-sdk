@@ -128,6 +128,21 @@ class SourceModelIoTest {
         }
 
         @Test
+        void absentBooleanAttributeKeepsBuilderDefault() {
+            // restApi defaults TRUE in the builder (the surprising branch — all other
+            // booleans default false); an absent restApi must stay true, not be forced.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing")
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+            assertThat(d.restApi()).isTrue();
+            assertThat(d.tenantScoped()).isFalse();
+        }
+
+        @Test
         void returnsEmptyWhenNoExerisDomainType() {
             Optional<DomainMetadata> domain = reader.read(
                     "package x; public class Plain { private int n; }");
