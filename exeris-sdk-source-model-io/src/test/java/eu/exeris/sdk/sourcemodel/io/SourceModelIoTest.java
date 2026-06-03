@@ -161,6 +161,65 @@ class SourceModelIoTest {
             assertThatThrownBy(() -> writer.addField("%%% nope %%%", "String", "x"))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        void renameFieldPreservesCommentsAndAnnotationsAndIsIdempotent() {
+            String renamed = writer.renameField(ACCOUNT, "label", "title");
+
+            assertThat(renamed).contains("private String title;");
+            assertThat(renamed).doesNotContain("String label;");
+            assertThat(renamed).contains("// human-readable label shown in the UI");
+            assertThat(renamed).contains("@Field(required = true)");
+
+            // re-applying with the old name is a no-op (label no longer exists)
+            assertThat(writer.renameField(renamed, "label", "title")).isEqualTo(renamed);
+        }
+
+        @Test
+        void renameIsNoOpWhenSourceAbsentOrTargetExists() {
+            assertThat(writer.renameField(ACCOUNT, "missing", "x")).isEqualTo(ACCOUNT);
+            // 'iban' already exists -> renaming onto it would duplicate, so no-op
+            assertThat(writer.renameField(ACCOUNT, "label", "iban")).isEqualTo(ACCOUNT);
+            // from == to -> 'to' is by definition present, so also a no-op
+            assertThat(writer.renameField(ACCOUNT, "label", "label")).isEqualTo(ACCOUNT);
+        }
+
+        @Test
+        void changeFieldTypePreservesAndIsNoOpWhenUnchanged() {
+            String changed = writer.changeFieldType(ACCOUNT, "balance", "java.math.BigDecimal");
+
+            assertThat(changed).contains("java.math.BigDecimal balance;");
+            assertThat(changed).contains("@Deprecated"); // sibling annotation preserved
+
+            assertThat(writer.changeFieldType(ACCOUNT, "balance", "double")).isEqualTo(ACCOUNT);
+            assertThat(writer.changeFieldType(ACCOUNT, "missing", "int")).isEqualTo(ACCOUNT);
+        }
+
+        @Test
+        void removeFieldDropsDeclarationAndPreservesOthers() {
+            String removed = writer.removeField(ACCOUNT, "balance");
+
+            assertThat(removed).doesNotContain("balance");
+            assertThat(removed).doesNotContain("@Deprecated"); // whole declaration removed
+            assertThat(removed).contains("private String label;");
+            assertThat(removed).contains("// human-readable label shown in the UI");
+            assertThat(removed).contains("private String iban;");
+
+            assertThat(writer.removeField(removed, "balance")).isEqualTo(removed); // idempotent
+        }
+
+        @Test
+        void removeFieldFromMultiVariableDeclarationDropsOnlyThatVariable() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Point")
+                    public class Point { private int a, b; }
+                    """;
+            String removed = writer.removeField(src, "a");
+            assertThat(removed).doesNotContain("int a");   // 'a' dropped from the declaration
+            assertThat(removed).contains("int b");         // sibling kept, separator not mangled
+        }
     }
 
     @Nested
