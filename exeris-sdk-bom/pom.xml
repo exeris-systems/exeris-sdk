@@ -23,6 +23,14 @@
         <jackson.annotations.version>2.21</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
+
+        <!-- JavaParser powers the source-model-io parser/writer (ADR-037).
+             Dual-licensed Apache-2.0 OR LGPL-3.0; the SDK ELECTS Apache-2.0
+             (compatible with the SDK's Apache-2.0 + Maven Central distribution).
+             It is a compile dependency of exeris-sdk-source-model-io ONLY —
+             it must never appear on the dependency tree of exeris-sdk-annotations
+             or exeris-sdk-source-model (zero runtime coupling, ADR-037 #1/#2). -->
+        <javaparser.version>3.28.2</javaparser.version>
     </properties>
 
     <dependencyManagement>
@@ -37,11 +45,21 @@
                 <artifactId>exeris-sdk-source-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>eu.exeris</groupId>
+                <artifactId>exeris-sdk-source-model-io</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser.version}</version>
             </dependency>
             <dependency>
                 <groupId>tools.jackson.core</groupId>
