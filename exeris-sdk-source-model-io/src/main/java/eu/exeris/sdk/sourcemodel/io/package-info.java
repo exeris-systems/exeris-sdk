@@ -18,9 +18,11 @@
  *       non-Exeris annotations via JavaParser's {@code LexicalPreservingPrinter}.</li>
  * </ul>
  *
- * <p><b>Status: 0.3.0 spike.</b> The reader extracts entity name, package, and
- * fields; the writer demonstrates lexical-preserving field insertion. The full
- * surface (all AST node kinds, conflict resolution) is the rest of 0.3.0.
+ * <p><b>Status: 0.3.0, in progress.</b> The reader extracts entity name,
+ * package, fields, {@code @Relationship}s, and (via {@code readEnums}) enum
+ * declarations; the writer does lexical-preserving field insertion. Still to
+ * come in 0.3.0: actions and UI on the read side, mutations beyond add-field on
+ * the write side, and conflict resolution.
  *
  * @since 0.3.0
  */

@@ -14,13 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 0.3.0 spike for {@code exeris-sdk-source-model-io} (ADR-037): proves the
- * JavaParser-based reader/writer vertical slice works on a budgetHQ-shaped
- * entity, and — critically — that the writer preserves user comments and
- * non-Exeris annotations on rewrite.
+ * Test suite for {@code exeris-sdk-source-model-io} (ADR-037): the
+ * JavaParser-based reader (entity name, fields, {@code @Relationship}s, enums)
+ * and the idempotent, comment/annotation-preserving writer, exercised against
+ * budgetHQ-shaped entities.
  */
-@DisplayName("source-model-io spike: read + idempotent preserving write")
-class SourceModelIoSpikeTest {
+@DisplayName("source-model-io: read (fields/relationships/enums) + preserving write")
+class SourceModelIoTest {
 
     /**
      * Representative entity: header comment, a non-Exeris annotation
@@ -167,6 +167,10 @@ class SourceModelIoSpikeTest {
     @DisplayName("reader: @Relationship extraction")
     class Relationships {
 
+        // NB: @Relationship declares required attributes (targetEntity, displayField)
+        // with no defaults; they're omitted here on purpose — JavaParser parses
+        // source syntactically and does not validate annotation completeness, and
+        // the reader derives targetEntity from the field type, not the attribute.
         private static final String ORDER = """
                 package app.budgethq.order;
                 import eu.exeris.sdk.annotation.ExerisDomain;

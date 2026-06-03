@@ -136,9 +136,9 @@ public final class SourceModelReader {
             }
             for (VariableDeclarator var : field.getVariables()) {
                 String fieldName = var.getNameAsString();
+                // builder(name, target) already sets fieldName = name.
                 RelationshipMetadata.Builder builder =
-                        RelationshipMetadata.builder(fieldName, targetEntity(var.getType()))
-                                .fieldName(fieldName);
+                        RelationshipMetadata.builder(fieldName, targetEntity(var.getType()));
                 relationType(rel.get()).ifPresent(builder::type);
                 stringAttr(rel.get(), "mappedBy")
                         .filter(s -> !s.isBlank())
@@ -167,6 +167,10 @@ public final class SourceModelReader {
     }
 
     private Optional<RelationType> relationType(AnnotationExpr annotation) {
+        // The annotation's RelationshipType and the AST's RelationType are
+        // distinct types bridged purely by constant-name identity (ONE_TO_MANY,
+        // MANY_TO_ONE, ...). They must evolve together; a rename on one side
+        // without the other yields Optional.empty() here, not a compile error.
         return enumAttr(annotation, "relationshipType").flatMap(name -> {
             try {
                 return Optional.of(RelationType.valueOf(name));
@@ -185,6 +189,9 @@ public final class SourceModelReader {
             if (value.isNameExpr()) {
                 return value.asNameExpr().getNameAsString();
             }
+            // Unsupported value shape (e.g. a parenthesised expression): fall back
+            // to the raw text. Callers that map this to an enum will treat an
+            // unrecognised name as "absent" rather than failing.
             return value.toString();
         });
     }
