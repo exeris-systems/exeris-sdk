@@ -628,7 +628,7 @@ class SourceModelIoTest {
         }
 
         @Test
-        void detectsUnmodeledFacetsAndExtraDomainAttributes() {
+        void flagsOnlyProcessorReaderDivergences() {
             String src = """
                     package app.budgethq.order;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -642,24 +642,23 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
-                    // tenantScoped IS read now (Slice A); roles is NOT -> still flagged
+                    // tenantScoped read (Slice A); roles unread but processor drops it too
                     @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
-                    @EventSourced
-                    @Graph
-                    @Saga
-                    @Projection
-                    @DomainEvent
-                    @NavMenu
+                    @EventSourced @Graph @Saga @DomainEvent  // processor reads these -> divergences
+                    @Projection @NavMenu                     // processor drops these too -> NOT divergences
                     public class Order {
-                        @PrimaryKey private Long id;        // system-level, unread
-                        @Validation(email = true) private String contact; // field-level, unread
+                        @PrimaryKey private Long id;          // system -> processor drops -> NOT flagged
+                        @Validation(email = true) private String contact; // processor reads -> divergence
                         @Field private String code;
                     }
                     """;
+            // flagged: exactly the facets the processor emits but the reader drops
             assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
-                    "@EventSourced", "@Graph", "@Saga", "@Projection", "@DomainEvent",
-                    "@NavMenu", "@PrimaryKey", "@Validation",
-                    "@ExerisDomain attributes not yet read");
+                    "@EventSourced", "@Graph", "@Saga", "@DomainEvent", "@Validation");
+            // NOT flagged: facets neither side reads, nor @ExerisDomain attributes
+            assertThat(reader.unmodeledFacets(src))
+                    .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey",
+                            "@ExerisDomain attributes not yet read");
         }
 
         @Test

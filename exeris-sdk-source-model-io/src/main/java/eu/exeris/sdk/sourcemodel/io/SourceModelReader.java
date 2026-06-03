@@ -54,13 +54,14 @@ import java.util.TreeSet;
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only.
  *
- * <p><b>Round-trip safety.</b> {@code read()} models only the facets above —
- * it does <em>not</em> yet read events, projections, graph, saga, event-sourcing,
- * or the remaining {@code @ExerisDomain} attributes (the {@code tags}/{@code roles}/
- * {@code permissions} arrays, the {@code *Field} mappings, {@code validationMode},
- * {@code ui}). A round-trip / reattach caller MUST consult {@link #unmodeledFacets}
- * first and refuse (or warn) when it is non-empty, otherwise the dropped metadata
- * is silently misattributed as a user edit during conflict detection.
+ * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
+ * {@code read()} still diverges on the facets the processor emits but the reader
+ * does not yet: events, graph, saga, event-sourcing, internal-API, and field-level
+ * {@code @Validation}. A round-trip / reattach caller MUST consult
+ * {@link #unmodeledFacets} first and refuse (or warn) when it is non-empty,
+ * otherwise the dropped metadata is silently misattributed as a user edit during
+ * conflict detection. (Facets the processor doesn't read either — {@code @Projection},
+ * {@code @NavMenu}, {@code system}/{@code security} annotations — are not divergences.)
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -73,46 +74,26 @@ import java.util.TreeSet;
 public final class SourceModelReader {
 
     /**
-     * Every SDK annotation simple name whose metadata {@link #read} does NOT yet
-     * incorporate into {@link DomainMetadata}. It is the complement of the
-     * <em>modeled</em> set ({@code @ExerisDomain}, {@code @Field},
-     * {@code @Relationship}, {@code @Action}, {@code @ActionParam}, {@code @UI}):
-     * presence of any name here means {@code read()} returns an incomplete view
-     * (see {@link #unmodeledFacets}). As reader slices land, a name graduates out
-     * of this set into the modeled set.
+     * Annotation simple names where {@link #read} <em>diverges from the annotation
+     * processor</em>: the processor populates a distinct {@link DomainMetadata}
+     * facet from them, but the reader does not yet. These are the dangerous ones
+     * for reattach — the conflict-detection baseline is the processor's codegen
+     * output, so a facet the processor keeps and the reader drops would be
+     * misread as a user edit. (Facets neither side reads — e.g. {@code @Projection},
+     * {@code @NavMenu}, the {@code system}/{@code security} annotations — are
+     * <b>not</b> divergences and are not flagged: the reader's {@code DomainMetadata}
+     * matches the processor's for those sources.)
      *
-     * <p>Note: matched by simple name (the reader does no import resolution), so a
-     * same-named third-party annotation would also be flagged — conservative, the
-     * safe direction for a reattach guard.
+     * <p>Matched by simple name (no import resolution). As reader slices land, a
+     * name graduates out of this set.
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
-            // entity-level facets (own metadata objects on DomainMetadata)
-            "DomainEvent", "EventHandler", "EventSourced",
-            "Graph", "GraphEdge", "GraphProperty", "GraphQuery",
-            "Saga", "SagaStep", "Projection", "NavMenu", "InternalApi",
-            // field- and parameter-level metadata the reader doesn't read yet
-            "Validation", "Tab", "UIGroup", "QueryParam",
-            // system fields (eu.exeris.sdk.annotation.system.* -> SystemFieldsMetadata)
-            "PrimaryKey", "Version", "TenantId",
-            "AuditCreatedAt", "AuditCreatedBy", "AuditUpdatedAt", "AuditUpdatedBy",
-            "SoftDelete", "SoftDeleteTimestamp", "SoftDeletedBy",
-            // security (eu.exeris.sdk.annotation.security.*)
-            "Encrypted", "RowLevelSecurity");
-
-    /**
-     * {@code @ExerisDomain} attributes the reader incorporates into
-     * {@link DomainMetadata} (Slice A: string + boolean attrs the processor reads).
-     * Any attribute outside this set is still dropped — {@link #unmodeledFacets}
-     * flags its presence. {@code tags}/{@code roles}/{@code permissions}, the
-     * {@code *Field} mappings, {@code validationMode}, and {@code ui} are not here:
-     * the processor doesn't read them, so the AST stays in lock-step.
-     */
-    private static final Set<String> MODELED_EXERISDOMAIN_ATTRIBUTES = Set.of(
-            "name", "module", "path", "aggregate", "description", "apiVersion",
-            "cacheTtl", "cacheRegion", "searchConfig",
-            "restApi", "graphqlApi", "realTimeApi", "internalClient",
-            "tenantScoped", "softDelete", "audited", "versioned",
-            "sensitive", "cacheable", "fullTextSearch");
+            "DomainEvent", "EventHandler",                          // -> events
+            "Graph", "GraphEdge", "GraphProperty", "GraphQuery",    // -> graphMetadata
+            "EventSourced",                                         // -> eventSourced
+            "Saga", "SagaStep",                                     // -> sagaMetadata
+            "InternalApi",                                          // -> internalApi
+            "Validation");                                          // -> FieldMetadata validation
 
     private final JavaParser javaParser;
 
@@ -161,30 +142,28 @@ public final class SourceModelReader {
     }
 
     /**
-     * Reports the metadata facets present in {@code javaSource} that {@link #read}
-     * does <b>not</b> yet incorporate into {@link DomainMetadata}. A <b>non-empty</b>
-     * result means the {@code DomainMetadata} from {@code read()} is an
-     * <b>incomplete</b> view of the source: round-trip / reattach callers must treat
-     * it as unsafe for conflict detection (the dropped facets would be misattributed
-     * as user edits).
+     * Reports the metadata facets where {@link #read} <b>diverges from the
+     * annotation processor</b> for {@code javaSource}: facets the processor would
+     * emit into {@link DomainMetadata} but the reader does not yet. A <b>non-empty</b>
+     * result means {@code read()}'s {@code DomainMetadata} differs from the codegen
+     * baseline — round-trip / reattach callers must treat it as unsafe for conflict
+     * detection (the dropped facets would be misattributed as user edits). An
+     * <b>empty</b> result means {@code read()} produces the same {@code DomainMetadata}
+     * facets the processor would for this source.
      *
-     * <p>Detected: any SDK annotation the reader does not model
-     * ({@link #UNMODELED_FACET_ANNOTATIONS} — entity-level facets like
-     * {@code @DomainEvent}/{@code @Graph}/{@code @Saga}/{@code @Projection}/
-     * {@code @NavMenu}, field/param-level {@code @Validation}/{@code @Tab}/
-     * {@code @UIGroup}/{@code @QueryParam}, and the {@code system}/{@code security}
-     * annotations), plus {@code @ExerisDomain} carrying any attribute the reader
-     * does not yet read (outside {@link #MODELED_EXERISDOMAIN_ATTRIBUTES}). Returns
-     * human-readable labels.
+     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS}
+     * (events, graph, saga, event-sourcing, internal-API, and field-level
+     * {@code @Validation}). <b>Not</b> flagged: facets neither side reads
+     * ({@code @Projection}, {@code @NavMenu}, {@code @Tab}/{@code @UIGroup}, the
+     * {@code system}/{@code security} annotations) and {@code @ExerisDomain}
+     * attributes (the reader reads exactly the set the processor does) — those don't
+     * change the {@code DomainMetadata} relative to the baseline, so flagging them
+     * would needlessly refuse safe entities.
      *
-     * <p><b>Scope of the empty guarantee.</b> An empty result means none of those
-     * whole-annotation drops are present — i.e. {@code read()} captures every SDK
-     * annotation it sees. The one fidelity gap it does <em>not</em> report is
-     * attribute-level loss <em>within</em> a modeled annotation (e.g. an unread
-     * {@code @Field(searchable=false)} or {@code @UI(icon=...)} that the reader
-     * leaves at a default); those are a separate, narrower concern. Matching is by
-     * simple name (no import resolution). Note this re-parses {@code javaSource}
-     * independently of {@link #read} — call it once per source if latency matters.
+     * <p>The one gap <em>not</em> reported is attribute-level loss <em>within</em> a
+     * read annotation (e.g. an unread {@code @Field(searchable=false)} left at a
+     * default) — a separate, narrower concern. Matching is by simple name (no import
+     * resolution). Re-parses {@code javaSource} independently of {@link #read}.
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -201,12 +180,6 @@ public final class SourceModelReader {
                 facets.add("@" + simpleName);
             }
         }
-        domain.get().getAnnotationByName("ExerisDomain")
-                .filter(AnnotationExpr::isNormalAnnotationExpr)
-                .map(AnnotationExpr::asNormalAnnotationExpr)
-                .filter(ann -> ann.getPairs().stream()
-                        .anyMatch(pair -> !MODELED_EXERISDOMAIN_ATTRIBUTES.contains(pair.getNameAsString())))
-                .ifPresent(ann -> facets.add("@ExerisDomain attributes not yet read"));
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
@@ -286,7 +259,9 @@ public final class SourceModelReader {
 
     /** Present-only boolean attribute (no default — absent leaves the builder default). */
     private Optional<Boolean> boolAttr(AnnotationExpr ann, String attribute) {
-        return value(ann, attribute).map(Expression::toString).map(Boolean::valueOf);
+        // exact "true" match (JavaParser renders boolean literals lowercase),
+        // consistent with isRequired's style.
+        return value(ann, attribute).map(Expression::toString).map("true"::equals);
     }
 
     /**
