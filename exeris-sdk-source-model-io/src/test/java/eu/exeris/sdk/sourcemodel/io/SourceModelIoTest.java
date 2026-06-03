@@ -349,4 +349,48 @@ class SourceModelIoTest {
             assertThat(domain.fields()).extracting("name").containsExactly("number");
         }
     }
+
+    @Nested
+    @DisplayName("reader: class-level @UI extraction")
+    class Ui {
+
+        private static final String PRODUCT = """
+                package app.budgethq.product;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.UI;
+                import eu.exeris.sdk.annotation.Field;
+
+                @ExerisDomain(name = "Product")
+                @UI(listView = true, exportable = true, editForm = false)
+                public class Product {
+                    @Field private String sku;
+                }
+                """;
+
+        @Test
+        void readsViewFlagsWithProcessorDefaultTrueConvention() {
+            var ui = reader.read(PRODUCT).orElseThrow().uiMetadata();
+
+            assertThat(ui).isNotNull();
+            assertThat(ui.listView()).isTrue();      // explicit
+            assertThat(ui.exportable()).isTrue();     // explicit (overrides default false)
+            assertThat(ui.editForm()).isFalse();      // explicit (overrides default true)
+            // absent attributes default to true (matches the processor)
+            assertThat(ui.detailView()).isTrue();
+            assertThat(ui.createForm()).isTrue();
+            assertThat(ui.searchable()).isTrue();
+            assertThat(ui.filterable()).isTrue();
+        }
+
+        @Test
+        void uiMetadataIsNullWhenNoUiAnnotation() {
+            String noUi = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare")
+                    public class Bare {}
+                    """;
+            assertThat(reader.read(noUi).orElseThrow().uiMetadata()).isNull();
+        }
+    }
 }
