@@ -269,11 +269,13 @@ class SourceModelIoTest {
                 public class Invoice {
                     @Field private String number;
 
-                    @Action(name = "approve", label = "Approve", httpMethod = "POST", path = "/approve")
+                    @Action(name = "approve", label = "Approve", httpMethod = "POST", path = "/approve",
+                            description = "Approve the invoice")
                     public void approve(
-                            @ActionParam(label = "Reason", required = true) String reason,
+                            @ActionParam(label = "Reason", required = true, description = "Why it is approved") String reason,
                             @ActionParam(label = "Notify", required = false, defaultValue = "true") boolean notify,
-                            @ActionParam(label = "Memo") String memo) { }
+                            @ActionParam(label = "Memo") String memo,
+                            @ActionParam(name = "ccEmail", label = "CC") String cc) { }
 
                     @Action(name = "archive", label = "Archive", path = "/archive", async = true)
                     public void archive() { }
@@ -295,6 +297,7 @@ class SourceModelIoTest {
                 assertThat(a.name()).isEqualTo("approve");
                 assertThat(a.displayName()).isEqualTo("Approve");
                 assertThat(a.httpMethod()).isEqualTo("POST");
+                assertThat(a.description()).isEqualTo("Approve the invoice");
                 assertThat(a.async()).isFalse();
             });
             assertThat(domain.actions()).anySatisfy(a -> {
@@ -317,13 +320,16 @@ class SourceModelIoTest {
             var approve = domain.actions().stream()
                     .filter(a -> a.name().equals("approve")).findFirst().orElseThrow();
             assertThat(approve.params()).extracting("name")
-                    .containsExactly("reason", "notify", "memo");
+                    .containsExactly("reason", "notify", "memo", "ccEmail");
 
             assertThat(approve.params()).anySatisfy(p -> {
                 assertThat(p.name()).isEqualTo("reason");
                 assertThat(p.type()).isEqualTo("String");
                 assertThat(p.required()).isTrue();
+                assertThat(p.description()).isEqualTo("Why it is approved");
             });
+            // @ActionParam(name = "ccEmail") overrides the parameter name "cc"
+            assertThat(approve.params()).anySatisfy(p -> assertThat(p.name()).isEqualTo("ccEmail"));
             assertThat(approve.params()).anySatisfy(p -> {
                 assertThat(p.name()).isEqualTo("notify");
                 assertThat(p.type()).isEqualTo("boolean");

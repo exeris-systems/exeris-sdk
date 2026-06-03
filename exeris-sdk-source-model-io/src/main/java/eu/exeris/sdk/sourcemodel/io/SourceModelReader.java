@@ -44,7 +44,7 @@ import java.util.Optional;
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
- * does. UI is not yet read; that follows in 0.3.0.
+ * does. UI is not yet read; that lands in a subsequent 0.3.0 slice.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -169,6 +169,9 @@ public final class SourceModelReader {
         ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, parameter.getTypeAsString())
                 .required(boolAttr(annotation, "required", true));
         stringAttr(annotation, "label").ifPresent(builder::displayName);
+        stringAttr(annotation, "description")
+                .filter(s -> !s.isBlank())
+                .ifPresent(builder::description);
         stringAttr(annotation, "defaultValue")
                 .filter(s -> !s.isBlank())
                 .ifPresent(builder::defaultValue);
