@@ -29,6 +29,8 @@ import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
@@ -48,6 +50,13 @@ import java.util.Optional;
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention).
  *
+ * <p><b>Round-trip safety.</b> {@code read()} models only the facets above —
+ * it does <em>not</em> yet read events, projections, graph, saga, event-sourcing,
+ * or {@code @ExerisDomain} attributes beyond {@code name}. A round-trip /
+ * reattach caller MUST consult {@link #unmodeledFacets} first and refuse (or
+ * warn) when it is non-empty, otherwise the dropped metadata is silently
+ * misattributed as a user edit during conflict detection.
+ *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
  * resolution — activating JavaParser symbol-solving would pull heavy optional
@@ -57,6 +66,18 @@ import java.util.Optional;
  * @since 0.3.0
  */
 public final class SourceModelReader {
+
+    /**
+     * Annotation simple names whose metadata {@link #read} does NOT yet model
+     * (0.3.0 reader covers {@code @ExerisDomain[name]}, {@code @Field},
+     * {@code @Relationship}, {@code @Action}/{@code @ActionParam}, {@code @UI}).
+     * Their presence means {@code read()} returns an incomplete view — see
+     * {@link #unmodeledFacets}.
+     */
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
+            "DomainEvent", "EventHandler", "EventSourced",
+            "Graph", "GraphEdge", "GraphProperty", "GraphQuery",
+            "Saga", "SagaStep", "Projection");
 
     private final JavaParser javaParser;
 
@@ -102,6 +123,53 @@ public final class SourceModelReader {
             enums.add(new EnumMetadata(name, qualifiedName, packageName, null, values));
         }
         return enums;
+    }
+
+    /**
+     * Reports the metadata facets present in {@code javaSource} that {@link #read}
+     * does <b>not</b> yet incorporate into {@link DomainMetadata}. A <b>non-empty</b>
+     * result means the {@code DomainMetadata} from {@code read()} is an
+     * <b>incomplete</b> view of the source: round-trip / reattach callers must treat
+     * it as unsafe for conflict detection (the dropped facets would be misattributed
+     * as user edits). An empty result means {@code read()} is faithful for this
+     * source.
+     *
+     * <p>Detected gaps: any of {@code @DomainEvent}, {@code @EventHandler},
+     * {@code @EventSourced}, {@code @Graph}/{@code @GraphEdge}/{@code @GraphProperty}/
+     * {@code @GraphQuery}, {@code @Saga}/{@code @SagaStep}, {@code @Projection}
+     * appearing in the source, plus {@code @ExerisDomain} carrying attributes beyond
+     * {@code name} (the reader reads only {@code name} today). Returns simple,
+     * human-readable labels. (Attribute-level gaps within {@code @Field}/
+     * {@code @Action} — e.g. an unread {@code searchable} — are a separate, narrower
+     * fidelity concern and are not reported here.)
+     */
+    public Set<String> unmodeledFacets(String javaSource) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        Optional<ClassOrInterfaceDeclaration> domain = cu.findFirst(ClassOrInterfaceDeclaration.class,
+                type -> type.isAnnotationPresent("ExerisDomain"));
+        if (domain.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> facets = new TreeSet<>();
+        for (AnnotationExpr annotation : cu.findAll(AnnotationExpr.class)) {
+            String simpleName = simpleName(annotation.getNameAsString());
+            if (UNMODELED_FACET_ANNOTATIONS.contains(simpleName)) {
+                facets.add("@" + simpleName);
+            }
+        }
+        domain.get().getAnnotationByName("ExerisDomain")
+                .filter(AnnotationExpr::isNormalAnnotationExpr)
+                .map(AnnotationExpr::asNormalAnnotationExpr)
+                .filter(ann -> ann.getPairs().stream()
+                        .anyMatch(pair -> !pair.getNameAsString().equals("name")))
+                .ifPresent(ann -> facets.add("@ExerisDomain attributes beyond name"));
+        return facets;
+    }
+
+    private String simpleName(String annotationName) {
+        int dot = annotationName.lastIndexOf('.');
+        return dot < 0 ? annotationName : annotationName.substring(dot + 1);
     }
 
     private CompilationUnit parseOrThrow(String javaSource) {

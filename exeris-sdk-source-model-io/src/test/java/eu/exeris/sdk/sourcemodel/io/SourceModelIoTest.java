@@ -597,4 +597,58 @@ class SourceModelIoTest {
             assertThat(reader.read(nested).orElseThrow().uiMetadata()).isNull();
         }
     }
+
+    @Nested
+    @DisplayName("reader: round-trip completeness guard (unmodeledFacets)")
+    class Completeness {
+
+        @Test
+        void emptyForFullyModeledEntity() {
+            // ACCOUNT uses only @ExerisDomain(name), @Field (+ a non-facet @Deprecated)
+            assertThat(reader.unmodeledFacets(ACCOUNT)).isEmpty();
+        }
+
+        @Test
+        void detectsUnmodeledFacetsAndExtraDomainAttributes() {
+            String src = """
+                    package app.budgethq.order;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    import eu.exeris.sdk.annotation.Graph;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.Projection;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.Field;
+
+                    @ExerisDomain(name = "Order", tenantScoped = true)
+                    @EventSourced
+                    @Graph
+                    @Saga
+                    @Projection
+                    @DomainEvent
+                    public class Order {
+                        @Field private String code;
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
+                    "@EventSourced", "@Graph", "@Saga", "@Projection", "@DomainEvent",
+                    "@ExerisDomain attributes beyond name");
+        }
+
+        @Test
+        void onlyNameAttributeIsNotFlagged() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare")
+                    public class Bare {}
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
+        }
+
+        @Test
+        void emptyWhenNoExerisDomainType() {
+            assertThat(reader.unmodeledFacets("package x; public class Plain {}")).isEmpty();
+        }
+    }
 }
