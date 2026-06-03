@@ -1,23 +1,26 @@
 package eu.exeris.sdk.sourcemodel.io;
 
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
+import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
+import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 0.3.0 spike for {@code exeris-sdk-source-model-io} (ADR-037): proves the
- * JavaParser-based reader/writer vertical slice works on a budgetHQ-shaped
- * entity, and — critically — that the writer preserves user comments and
- * non-Exeris annotations on rewrite.
+ * Test suite for {@code exeris-sdk-source-model-io} (ADR-037): the
+ * JavaParser-based reader (entity name, fields, {@code @Relationship}s, enums)
+ * and the idempotent, comment/annotation-preserving writer, exercised against
+ * budgetHQ-shaped entities.
  */
-@DisplayName("source-model-io spike: read + idempotent preserving write")
-class SourceModelIoSpikeTest {
+@DisplayName("source-model-io: read (fields/relationships/enums) + preserving write")
+class SourceModelIoTest {
 
     /**
      * Representative entity: header comment, a non-Exeris annotation
@@ -157,6 +160,97 @@ class SourceModelIoSpikeTest {
         void throwsOnInvalidSource() {
             assertThatThrownBy(() -> writer.addField("%%% nope %%%", "String", "x"))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @Relationship extraction")
+    class Relationships {
+
+        // NB: @Relationship declares required attributes (targetEntity, displayField)
+        // with no defaults; they're omitted here on purpose — JavaParser parses
+        // source syntactically and does not validate annotation completeness, and
+        // the reader derives targetEntity from the field type, not the attribute.
+        private static final String ORDER = """
+                package app.budgethq.order;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.Relationship;
+                import eu.exeris.sdk.annotation.Relationship.RelationshipType;
+                import java.util.List;
+
+                @ExerisDomain(name = "Order")
+                public class Order {
+                    @Relationship(relationshipType = RelationshipType.MANY_TO_ONE)
+                    private Customer customer;
+
+                    @Relationship(relationshipType = RelationshipType.ONE_TO_MANY, mappedBy = "order")
+                    private List<OrderLine> lines;
+                }
+                """;
+
+        @Test
+        void readsTypeTargetAndMappedBy() {
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+
+            assertThat(domain.relationships()).hasSize(2);
+
+            assertThat(domain.relationships()).anySatisfy(r -> {
+                assertThat(r.fieldName()).isEqualTo("customer");
+                assertThat(r.targetEntity()).isEqualTo("Customer");
+                assertThat(r.type()).isEqualTo(RelationshipMetadata.RelationType.MANY_TO_ONE);
+            });
+        }
+
+        @Test
+        void unwrapsCollectionElementTypeForTargetEntity() {
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+
+            assertThat(domain.relationships()).anySatisfy(r -> {
+                assertThat(r.fieldName()).isEqualTo("lines");
+                assertThat(r.targetEntity()).isEqualTo("OrderLine"); // List<OrderLine> unwrapped
+                assertThat(r.type()).isEqualTo(RelationshipMetadata.RelationType.ONE_TO_MANY);
+                assertThat(r.mappedBy()).isEqualTo("order");
+            });
+        }
+
+        @Test
+        void relationshipFieldsAreNotAlsoPlainFields() {
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+            assertThat(domain.fields()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: enum extraction")
+    class Enums {
+
+        @Test
+        void readsEnumNamePackageAndValues() {
+            String src = """
+                    package app.budgethq.account;
+                    public enum AccountType { CHECKING, SAVINGS, CREDIT }
+                    """;
+            List<EnumMetadata> enums = reader.readEnums(src);
+
+            assertThat(enums).hasSize(1);
+            EnumMetadata type = enums.get(0);
+            assertThat(type.name()).isEqualTo("AccountType");
+            assertThat(type.packageName()).isEqualTo("app.budgethq.account");
+            assertThat(type.qualifiedName()).isEqualTo("app.budgethq.account.AccountType");
+            assertThat(type.values()).extracting("name")
+                    .containsExactly("CHECKING", "SAVINGS", "CREDIT");
+        }
+
+        @Test
+        void qualifiedNameIsBareNameWhenNoPackage() {
+            List<EnumMetadata> enums = reader.readEnums("public enum Color { RED, GREEN }");
+            assertThat(enums).singleElement()
+                    .satisfies(e -> assertThat(e.qualifiedName()).isEqualTo("Color"));
+        }
+
+        @Test
+        void returnsEmptyWhenNoEnums() {
+            assertThat(reader.readEnums("package x; public class NoEnumsHere {}")).isEmpty();
         }
     }
 }
