@@ -319,6 +319,13 @@ class SourceModelIoTest {
         void removeActionNoOpWhenAbsent() {
             assertThat(writer.removeAction(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
         }
+
+        @Test
+        void addActionThrowsIllegalArgumentOnMalformedName() {
+            // a name that yields an unparseable @Action annotation -> IllegalArgumentException
+            assertThatThrownBy(() -> writer.addAction(ACCOUNT, "bad\"syntax"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Nested
