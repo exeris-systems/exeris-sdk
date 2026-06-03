@@ -109,6 +109,25 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsDomainLevelAttributesPresentOnly() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing", tenantScoped = true,
+                                  softDelete = true, restApi = false)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.module()).isEqualTo("billing");
+            assertThat(d.tenantScoped()).isTrue();
+            assertThat(d.softDelete()).isTrue();
+            assertThat(d.restApi()).isFalse();          // explicit override
+            // absent attribute keeps the builder default (not read, not forced)
+            assertThat(d.audited()).isFalse();
+        }
+
+        @Test
         void returnsEmptyWhenNoExerisDomainType() {
             Optional<DomainMetadata> domain = reader.read(
                     "package x; public class Plain { private int n; }");
@@ -623,7 +642,8 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
-                    @ExerisDomain(name = "Order", tenantScoped = true)
+                    // tenantScoped IS read now (Slice A); roles is NOT -> still flagged
+                    @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
                     @EventSourced
                     @Graph
                     @Saga
@@ -639,7 +659,19 @@ class SourceModelIoTest {
             assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
                     "@EventSourced", "@Graph", "@Saga", "@Projection", "@DomainEvent",
                     "@NavMenu", "@PrimaryKey", "@Validation",
-                    "@ExerisDomain attributes beyond name");
+                    "@ExerisDomain attributes not yet read");
+        }
+
+        @Test
+        void modeledDomainAttributesAreNotFlagged() {
+            // tenantScoped/softDelete are read (Slice A) -> guard stays empty
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare", tenantScoped = true, softDelete = true)
+                    public class Bare {}
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
 
         @Test

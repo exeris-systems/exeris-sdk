@@ -48,14 +48,19 @@ import java.util.TreeSet;
  * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
- * matching the processor's default-true convention).
+ * matching the processor's default-true convention). The domain-level
+ * {@code @ExerisDomain} string + boolean attributes the processor reads
+ * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
+ * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
+ * cache/search config) are read present-only.
  *
  * <p><b>Round-trip safety.</b> {@code read()} models only the facets above —
  * it does <em>not</em> yet read events, projections, graph, saga, event-sourcing,
- * or {@code @ExerisDomain} attributes beyond {@code name}. A round-trip /
- * reattach caller MUST consult {@link #unmodeledFacets} first and refuse (or
- * warn) when it is non-empty, otherwise the dropped metadata is silently
- * misattributed as a user edit during conflict detection.
+ * or the remaining {@code @ExerisDomain} attributes (the {@code tags}/{@code roles}/
+ * {@code permissions} arrays, the {@code *Field} mappings, {@code validationMode},
+ * {@code ui}). A round-trip / reattach caller MUST consult {@link #unmodeledFacets}
+ * first and refuse (or warn) when it is non-empty, otherwise the dropped metadata
+ * is silently misattributed as a user edit during conflict detection.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -93,6 +98,21 @@ public final class SourceModelReader {
             "SoftDelete", "SoftDeleteTimestamp", "SoftDeletedBy",
             // security (eu.exeris.sdk.annotation.security.*)
             "Encrypted", "RowLevelSecurity");
+
+    /**
+     * {@code @ExerisDomain} attributes the reader incorporates into
+     * {@link DomainMetadata} (Slice A: string + boolean attrs the processor reads).
+     * Any attribute outside this set is still dropped — {@link #unmodeledFacets}
+     * flags its presence. {@code tags}/{@code roles}/{@code permissions}, the
+     * {@code *Field} mappings, {@code validationMode}, and {@code ui} are not here:
+     * the processor doesn't read them, so the AST stays in lock-step.
+     */
+    private static final Set<String> MODELED_EXERISDOMAIN_ATTRIBUTES = Set.of(
+            "name", "module", "path", "aggregate", "description", "apiVersion",
+            "cacheTtl", "cacheRegion", "searchConfig",
+            "restApi", "graphqlApi", "realTimeApi", "internalClient",
+            "tenantScoped", "softDelete", "audited", "versioned",
+            "sensitive", "cacheable", "fullTextSearch");
 
     private final JavaParser javaParser;
 
@@ -153,8 +173,9 @@ public final class SourceModelReader {
      * {@code @DomainEvent}/{@code @Graph}/{@code @Saga}/{@code @Projection}/
      * {@code @NavMenu}, field/param-level {@code @Validation}/{@code @Tab}/
      * {@code @UIGroup}/{@code @QueryParam}, and the {@code system}/{@code security}
-     * annotations), plus {@code @ExerisDomain} carrying attributes beyond
-     * {@code name}. Returns human-readable labels.
+     * annotations), plus {@code @ExerisDomain} carrying any attribute the reader
+     * does not yet read (outside {@link #MODELED_EXERISDOMAIN_ATTRIBUTES}). Returns
+     * human-readable labels.
      *
      * <p><b>Scope of the empty guarantee.</b> An empty result means none of those
      * whole-annotation drops are present — i.e. {@code read()} captures every SDK
@@ -184,8 +205,8 @@ public final class SourceModelReader {
                 .filter(AnnotationExpr::isNormalAnnotationExpr)
                 .map(AnnotationExpr::asNormalAnnotationExpr)
                 .filter(ann -> ann.getPairs().stream()
-                        .anyMatch(pair -> !pair.getNameAsString().equals("name")))
-                .ifPresent(ann -> facets.add("@ExerisDomain attributes beyond name"));
+                        .anyMatch(pair -> !MODELED_EXERISDOMAIN_ATTRIBUTES.contains(pair.getNameAsString())))
+                .ifPresent(ann -> facets.add("@ExerisDomain attributes not yet read"));
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
@@ -223,11 +244,49 @@ public final class SourceModelReader {
                 .fields(fields)
                 .relationships(relationships(type))
                 .actions(actions(type));
+        type.getAnnotationByName("ExerisDomain").ifPresent(ann -> applyDomainAttributes(ann, builder));
         UIMetadata ui = uiMetadata(type);
         if (ui != null) {
             builder.uiMetadata(ui);
         }
         return builder.build();
+    }
+
+    /**
+     * Reads the domain-level {@code @ExerisDomain} attributes the processor reads
+     * (string + boolean) into the builder, present-only — an absent attribute keeps
+     * the builder default, exactly matching {@code ExerisDomainProcessor}'s
+     * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
+     * ({@code tags}/{@code roles}/{@code permissions}) and the {@code *Field}/
+     * {@code validationMode}/{@code ui} attributes are not read here — the processor
+     * doesn't read them either, so the AST stays in lock-step (see {@link #unmodeledFacets},
+     * which still flags their presence for round-trip purposes).
+     */
+    private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
+        stringAttr(ann, "module").ifPresent(builder::module);
+        stringAttr(ann, "path").ifPresent(builder::path);
+        stringAttr(ann, "aggregate").ifPresent(builder::aggregate);
+        stringAttr(ann, "description").ifPresent(builder::description);
+        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
+        stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
+        stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
+        stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
+        boolAttr(ann, "restApi").ifPresent(builder::restApi);
+        boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
+        boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
+        boolAttr(ann, "internalClient").ifPresent(builder::internalClient);
+        boolAttr(ann, "tenantScoped").ifPresent(builder::tenantScoped);
+        boolAttr(ann, "softDelete").ifPresent(builder::softDelete);
+        boolAttr(ann, "audited").ifPresent(builder::audited);
+        boolAttr(ann, "versioned").ifPresent(builder::versioned);
+        boolAttr(ann, "sensitive").ifPresent(builder::sensitive);
+        boolAttr(ann, "cacheable").ifPresent(builder::cacheable);
+        boolAttr(ann, "fullTextSearch").ifPresent(builder::fullTextSearch);
+    }
+
+    /** Present-only boolean attribute (no default — absent leaves the builder default). */
+    private Optional<Boolean> boolAttr(AnnotationExpr ann, String attribute) {
+        return value(ann, attribute).map(Expression::toString).map(Boolean::valueOf);
     }
 
     /**
