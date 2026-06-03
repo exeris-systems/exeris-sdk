@@ -5,6 +5,13 @@ This directory is loaded automatically when a Claude Code session opens inside
 and works as the operating context for AI assistants on the developer-facing
 annotations + source-model + UI-kit surface.
 
+> **Workspace convention.** Agents and skills here use absolute
+> `~/exeris-systems/<repo>/…` paths for reference-first lookups (e.g. the
+> downstream consumers below). This assumes the Exeris repos are cloned as
+> siblings under `~/exeris-systems/`. If your layout differs, adjust those
+> paths or symlink the workspace — the convention is intentional, not a
+> hardcode bug.
+
 ## Layout
 
 - `agents/` — sub-agents Claude can launch via the `Agent` tool (or invoke directly):
