@@ -264,6 +264,61 @@ class SourceModelIoTest {
             assertThat(writer.removeRelationship(ACCOUNT, "balance")).isEqualTo(ACCOUNT);
             assertThat(writer.removeRelationship(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
         }
+
+        @Test
+        void addActionAddsAnnotatedMethodAndIsIdempotent() {
+            String added = writer.addAction(ACCOUNT, "approve");
+
+            assertThat(added).contains("@Action");
+            assertThat(added).contains("void approve()");
+            assertThat(added).contains("name = \"approve\"");
+            assertThat(added).contains("path = \"/approve\"");
+            assertThat(added).contains("// human-readable label shown in the UI"); // preserved
+
+            assertThat(writer.addAction(added, "approve")).isEqualTo(added); // idempotent
+        }
+
+        @Test
+        void addActionNoOpWhenActionExists() {
+            String once = writer.addAction(ACCOUNT, "approve");
+            assertThat(writer.addAction(once, "approve")).isEqualTo(once);
+        }
+
+        @Test
+        void removeActionRemovesMethodAndPreservesFields() {
+            String withAction = writer.addAction(ACCOUNT, "approve");
+
+            String removed = writer.removeAction(withAction, "approve");
+            assertThat(removed).doesNotContain("@Action");
+            assertThat(removed).doesNotContain("approve");
+            assertThat(removed).contains("private String label;"); // fields preserved
+        }
+
+        @Test
+        void removeActionMatchesByAnnotationNameAndSparesPlainMethods() {
+            // action name "approve" lives on @Action.name, not the method name 'doApprove';
+            // 'helper' has no @Action and must survive
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Action;
+                    @ExerisDomain(name = "Invoice")
+                    public class Invoice {
+                        @Action(name = "approve", path = "/a")
+                        public void doApprove() {}
+                        public void helper() {}
+                    }
+                    """;
+            String removed = writer.removeAction(src, "approve");
+            assertThat(removed).doesNotContain("doApprove");
+            assertThat(removed).doesNotContain("@Action");
+            assertThat(removed).contains("helper()"); // non-action method preserved
+        }
+
+        @Test
+        void removeActionNoOpWhenAbsent() {
+            assertThat(writer.removeAction(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
+        }
     }
 
     @Nested

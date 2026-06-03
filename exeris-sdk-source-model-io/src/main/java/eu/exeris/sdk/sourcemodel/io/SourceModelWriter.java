@@ -7,8 +7,10 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import java.util.Optional;
@@ -26,11 +28,12 @@ import java.util.Optional;
  * the printer entirely, so re-applying a mutation is byte-stable and cheap).
  *
  * <p>0.3.0 scope: field mutations — {@link #addField}, {@link #renameField},
- * {@link #changeFieldType}, {@link #removeField} — and relationship mutations —
- * {@link #addRelationship}, {@link #removeRelationship}. These are the
+ * {@link #changeFieldType}, {@link #removeField} — relationship mutations —
+ * {@link #addRelationship}, {@link #removeRelationship} — and action mutations —
+ * {@link #addAction}, {@link #removeAction}. These are the
  * application half of what 0.5.0 will model as {@code MutationOp} records
  * (ADR-037 pre-emptive ruling: the op records live in {@code source-model};
- * their application lives here). Action/UI mutations follow.
+ * their application lives here). UI mutations follow.
  *
  * <p><b>Limitations.</b> Edits act on the field <em>declaration</em> only —
  * references elsewhere (getters, usages) are not updated; that needs symbol
@@ -213,6 +216,78 @@ public final class SourceModelWriter {
         } else {
             variable.remove();
         }
+    }
+
+    /**
+     * Adds a minimal {@code @Action(name = "<actionName>", path = "/<actionName>")
+     * public void <actionName>() {}} method to the first {@code @ExerisDomain}
+     * type. No-op if an action of that name already exists (matched by effective
+     * action name — {@code @Action.name} or, absent, the method name).
+     *
+     * @throws IllegalArgumentException if the source is not valid Java, has no
+     *                                  {@code @ExerisDomain} type, or
+     *                                  {@code actionName} produces a malformed
+     *                                  annotation
+     */
+    public String addAction(String javaSource, String actionName) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        ClassOrInterfaceDeclaration domain = domainOrThrow(cu);
+        if (findAction(domain, actionName).isPresent()) {
+            return javaSource;
+        }
+        ParseResult<AnnotationExpr> annotation = javaParser.parseAnnotation(
+                "@Action(name = \"" + actionName + "\", path = \"/" + actionName + "\")");
+        if (!annotation.isSuccessful() || annotation.getResult().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Invalid actionName '" + actionName + "': " + annotation.getProblems());
+        }
+        LexicalPreservingPrinter.setup(cu);
+        domain.addMethod(actionName, Modifier.Keyword.PUBLIC)
+                .addAnnotation(annotation.getResult().get());
+        return LexicalPreservingPrinter.print(cu);
+    }
+
+    /**
+     * Removes the {@code @Action} method whose effective action name
+     * ({@code @Action.name}, or the method name when absent) equals
+     * {@code actionName}. Methods without {@code @Action} are never touched.
+     * No-op if no such action exists.
+     *
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
+     */
+    public String removeAction(String javaSource, String actionName) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        ClassOrInterfaceDeclaration domain = domainOrThrow(cu);
+        Optional<MethodDeclaration> target = findAction(domain, actionName);
+        if (target.isEmpty()) {
+            return javaSource;
+        }
+        LexicalPreservingPrinter.setup(cu);
+        target.get().remove();
+        return LexicalPreservingPrinter.print(cu);
+    }
+
+    private Optional<MethodDeclaration> findAction(ClassOrInterfaceDeclaration domain, String actionName) {
+        return domain.getMethods().stream()
+                .filter(method -> method.getAnnotationByName("Action").isPresent())
+                .filter(method -> effectiveActionName(method).equals(actionName))
+                .findFirst();
+    }
+
+    /** {@code @Action.name} when present and non-blank, else the method name (matches the reader). */
+    private String effectiveActionName(MethodDeclaration method) {
+        return method.getAnnotationByName("Action")
+                .filter(AnnotationExpr::isNormalAnnotationExpr)
+                .map(AnnotationExpr::asNormalAnnotationExpr)
+                .flatMap(ann -> ann.getPairs().stream()
+                        .filter(pair -> pair.getNameAsString().equals("name"))
+                        .map(pair -> pair.getValue())
+                        .filter(Expression::isStringLiteralExpr)
+                        .map(value -> value.asStringLiteralExpr().asString())
+                        .findFirst())
+                .filter(name -> !name.isBlank())
+                .orElse(method.getNameAsString());
     }
 
     private CompilationUnit parseOrThrow(String javaSource) {
