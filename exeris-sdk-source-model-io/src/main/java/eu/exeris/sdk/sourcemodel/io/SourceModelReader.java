@@ -9,12 +9,16 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
@@ -37,8 +41,10 @@ import java.util.Optional;
  * {@code filterable} default to {@code true} — see {@link FieldMetadata#simple}).
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
- * builder defaults. {@link #readEnums} extracts enum declarations separately, as
- * the processor does. Actions and UI are not yet read; those follow in 0.3.0.
+ * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
+ * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
+ * {@link #readEnums} extracts enum declarations separately, as the processor
+ * does. UI is not yet read; that lands in a subsequent 0.3.0 slice.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -124,7 +130,59 @@ public final class SourceModelReader {
         return DomainMetadata.builder(entityName, packageName(cu))
                 .fields(fields)
                 .relationships(relationships(type))
+                .actions(actions(type))
                 .build();
+    }
+
+    private List<ActionMetadata> actions(ClassOrInterfaceDeclaration type) {
+        List<ActionMetadata> actions = new ArrayList<>();
+        for (MethodDeclaration method : type.getMethods()) {
+            Optional<AnnotationExpr> action = method.getAnnotationByName("Action");
+            if (action.isEmpty()) {
+                continue;
+            }
+            // @Action.name() is required; fall back to the method name if absent.
+            String name = stringAttr(action.get(), "name")
+                    .filter(s -> !s.isBlank())
+                    .orElse(method.getNameAsString());
+            ActionMetadata.Builder builder = ActionMetadata.builder(name)
+                    .async(boolAttr(action.get(), "async", false));
+            stringAttr(action.get(), "label").ifPresent(builder::displayName);
+            stringAttr(action.get(), "description")
+                    .filter(s -> !s.isBlank())
+                    .ifPresent(builder::description);
+            stringAttr(action.get(), "httpMethod").ifPresent(builder::httpMethod);
+            for (Parameter parameter : method.getParameters()) {
+                parameter.getAnnotationByName("ActionParam")
+                        .ifPresent(ann -> builder.addParam(actionParam(parameter, ann)));
+            }
+            actions.add(builder.build());
+        }
+        return actions;
+    }
+
+    private ActionParamMetadata actionParam(Parameter parameter, AnnotationExpr annotation) {
+        String name = stringAttr(annotation, "name")
+                .filter(s -> !s.isBlank())
+                .orElse(parameter.getNameAsString());
+        // @ActionParam.required defaults to true (mirrors the annotation default).
+        ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, parameter.getTypeAsString())
+                .required(boolAttr(annotation, "required", true));
+        stringAttr(annotation, "label").ifPresent(builder::displayName);
+        stringAttr(annotation, "description")
+                .filter(s -> !s.isBlank())
+                .ifPresent(builder::description);
+        stringAttr(annotation, "defaultValue")
+                .filter(s -> !s.isBlank())
+                .ifPresent(builder::defaultValue);
+        return builder.build();
+    }
+
+    private boolean boolAttr(AnnotationExpr annotation, String attribute, boolean defaultValue) {
+        return value(annotation, attribute)
+                .map(Expression::toString)
+                .map("true"::equals)
+                .orElse(defaultValue);
     }
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {

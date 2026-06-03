@@ -253,4 +253,100 @@ class SourceModelIoTest {
             assertThat(reader.readEnums("package x; public class NoEnumsHere {}")).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("reader: @Action + @ActionParam extraction")
+    class Actions {
+
+        private static final String INVOICE = """
+                package app.budgethq.invoice;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.Action;
+                import eu.exeris.sdk.annotation.ActionParam;
+                import eu.exeris.sdk.annotation.Field;
+
+                @ExerisDomain(name = "Invoice")
+                public class Invoice {
+                    @Field private String number;
+
+                    @Action(name = "approve", label = "Approve", httpMethod = "POST", path = "/approve",
+                            description = "Approve the invoice")
+                    public void approve(
+                            @ActionParam(label = "Reason", required = true, description = "Why it is approved") String reason,
+                            @ActionParam(label = "Notify", required = false, defaultValue = "true") boolean notify,
+                            @ActionParam(label = "Memo") String memo,
+                            @ActionParam(name = "ccEmail", label = "CC") String cc) { }
+
+                    @Action(name = "archive", label = "Archive", path = "/archive", async = true)
+                    public void archive() { }
+
+                    // no name attribute -> falls back to the method name
+                    @Action(label = "Refresh", path = "/refresh")
+                    public void refresh() { }
+                }
+                """;
+
+        @Test
+        void readsActionNameLabelHttpMethodAndAsync() {
+            DomainMetadata domain = reader.read(INVOICE).orElseThrow();
+
+            assertThat(domain.actions()).extracting("name")
+                    .containsExactlyInAnyOrder("approve", "archive", "refresh");
+
+            assertThat(domain.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("approve");
+                assertThat(a.displayName()).isEqualTo("Approve");
+                assertThat(a.httpMethod()).isEqualTo("POST");
+                assertThat(a.description()).isEqualTo("Approve the invoice");
+                assertThat(a.async()).isFalse();
+            });
+            assertThat(domain.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("archive");
+                assertThat(a.async()).isTrue();
+                assertThat(a.params()).isEmpty();
+            });
+        }
+
+        @Test
+        void actionNameFallsBackToMethodNameWhenAttributeAbsent() {
+            DomainMetadata domain = reader.read(INVOICE).orElseThrow();
+            assertThat(domain.actions()).anySatisfy(a -> assertThat(a.name()).isEqualTo("refresh"));
+        }
+
+        @Test
+        void readsActionParamsWithRequiredDefaultAndType() {
+            DomainMetadata domain = reader.read(INVOICE).orElseThrow();
+
+            var approve = domain.actions().stream()
+                    .filter(a -> a.name().equals("approve")).findFirst().orElseThrow();
+            assertThat(approve.params()).extracting("name")
+                    .containsExactly("reason", "notify", "memo", "ccEmail");
+
+            assertThat(approve.params()).anySatisfy(p -> {
+                assertThat(p.name()).isEqualTo("reason");
+                assertThat(p.type()).isEqualTo("String");
+                assertThat(p.required()).isTrue();
+                assertThat(p.description()).isEqualTo("Why it is approved");
+            });
+            // @ActionParam(name = "ccEmail") overrides the parameter name "cc"
+            assertThat(approve.params()).anySatisfy(p -> assertThat(p.name()).isEqualTo("ccEmail"));
+            assertThat(approve.params()).anySatisfy(p -> {
+                assertThat(p.name()).isEqualTo("notify");
+                assertThat(p.type()).isEqualTo("boolean");
+                assertThat(p.required()).isFalse();
+                assertThat(p.defaultValue()).isEqualTo("true");
+            });
+            // 'memo' omits required -> defaults to true (mirrors @ActionParam.required)
+            assertThat(approve.params()).anySatisfy(p -> {
+                assertThat(p.name()).isEqualTo("memo");
+                assertThat(p.required()).isTrue();
+            });
+        }
+
+        @Test
+        void actionMethodsAreNotReadAsFields() {
+            DomainMetadata domain = reader.read(INVOICE).orElseThrow();
+            assertThat(domain.fields()).extracting("name").containsExactly("number");
+        }
+    }
 }
