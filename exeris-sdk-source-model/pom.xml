@@ -110,6 +110,33 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- ADR-037 zero-coupling guard: source-model is the module every
+                 AST-record consumer depends on, so JavaParser must never reach
+                 its dependency tree (it lives in exeris-sdk-source-model-io).
+                 Enforced in CI; the review skill catches it pre-merge. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>ban-javaparser-zero-coupling</id>
+                        <phase>verify</phase>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>com.github.javaparser</exclude>
+                                    </excludes>
+                                    <message>ADR-037: JavaParser must stay in exeris-sdk-source-model-io only — it must not appear on this module's dependency tree (zero runtime coupling).</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

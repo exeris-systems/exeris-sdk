@@ -63,6 +63,34 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- ADR-037 zero-coupling guard: fail the build if JavaParser ever
+                 reaches this module's dependency tree. It belongs in
+                 exeris-sdk-source-model-io only; the annotations jar must stay
+                 dependency-free. The review skill catches it pre-merge; this
+                 enforces it in CI. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>ban-javaparser-zero-coupling</id>
+                        <phase>verify</phase>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>com.github.javaparser</exclude>
+                                    </excludes>
+                                    <message>ADR-037: JavaParser must stay in exeris-sdk-source-model-io only — it must not appear on this module's dependency tree (zero runtime coupling).</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
