@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **IN-REVIEW**                                                        |
+| **Status**        | **ACCEPTED**                                                        |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-03                                                            |
-| **Date Closed**   | —                                                                    |
-| **Target ADR(s)** | TBD (one ADR to lock module topology; ADR-003 Entity-First is upstream) |
+| **Date Closed**   | 2026-06-03                                                           |
+| **Target ADR(s)** | [ADR-037](../adr/ADR-037-source-model-io-module.md) (locks the module topology) |
 | **Affected Repos**| `exeris-sdk`, `exeris-platform` (lsp), `exeris-tooling` (codegen consumes AST) |
 | **Reviewers**     | —                                                                    |
 
@@ -129,18 +129,16 @@ The ADR that accepts this RFC should land the module half-scaffolded-proof — t
 
 ## Decision Record
 
-<Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN.>
-
 | Field                | Value     |
 |:---------------------|:----------|
-| **Outcome**          | —         |
-| **Date**             | —         |
-| **Resulting ADR(s)** | —         |
-| **Notes**            | —         |
+| **Outcome**          | ACCEPTED  |
+| **Date**             | 2026-06-03 |
+| **Resulting ADR(s)** | [ADR-037](../adr/ADR-037-source-model-io-module.md) — Isolate the source-model parser/writer in a dedicated `exeris-sdk-source-model-io` module |
+| **Notes**            | Option B adopted. Module named `-io` (holds parser + writer; engine-agnostic coordinate). LGPL version verified = 3.0; elect Apache-2.0. |
 
 ## Open questions / follow-ups
 
 - ~~Which LGPL version?~~ **Resolved: LGPL-3.0** (verified against upstream `LICENSE.LGPL` "Version 3, 29 June 2007" + Maven Central). Remaining action: pin the **Apache-2.0** election + enforcement mechanism (see §ADR prerequisites).
 - Verify pinned JavaParser version parses **JDK 26** source constructs (records, sealed, pattern matching) — owner: author, gates the spike.
 - Writer conflict-resolution semantics (user edits since last codegen vs. tooling-driven mutations) — roadmap 0.3.0 line; may warrant its own RFC if non-trivial.
-- **0.5.0 `MutationOp`/`MutationResult` home.** Recommended split: the **records stay in `source-model`** (pure data, no JavaParser) so the LSP and codegen can import the mutation vocabulary without dragging the parser; the **application of mutations** (rewriting source) lives in `exeris-sdk-source-model-io`. Confirm at 0.5.0 scoping — flagged now so the `-io` boundary is drawn with it in mind.
+- **0.5.0 `MutationOp`/`MutationResult` home.** Recommended split: the **records stay in `source-model`** (pure data, no JavaParser) so the LSP and codegen can import the mutation vocabulary without dragging the parser; the **application of mutations** (rewriting source) lives in `exeris-sdk-source-model-io`. **ADR-037 rules on this pre-emptively** (same isolation rationale as the core decision); revisit at 0.5.0 scoping only if a contradicting force surfaces.
