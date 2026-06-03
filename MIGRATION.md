@@ -57,6 +57,19 @@ wrong annotation.
  private String password;
 ```
 
+### `@SoftDeletedBy` retention corrected `RUNTIME` → `SOURCE`
+
+**Why:** every SDK annotation is compile-time only (`@Retention(SOURCE)`) so
+nothing leaks into end-user runtime images. `@SoftDeletedBy` was mistakenly
+`RUNTIME`-retained in the published `0.1.x` artifacts; it is now `SOURCE`
+like the rest, and `AnnotationContractTest` guards the whole surface against
+regressions.
+
+**Impact:** none for normal use (the processor reads it at compile time). The
+only affected case is code that reflected over `@SoftDeletedBy` **at runtime**
+— it will no longer find the annotation. This is intentional; the SDK never
+promised runtime presence. No source change required.
+
 ### `jackson-annotations` bumped from `3.0-rc5` → `2.21`
 
 No user code change. Jackson 3.x deliberately keeps annotations on the

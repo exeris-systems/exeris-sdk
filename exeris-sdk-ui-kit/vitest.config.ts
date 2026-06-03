@@ -27,6 +27,10 @@ export default defineConfig({
       include: ['src/**/*.ts', 'tailwind.preset.js'],
       exclude: ['src/**/*.test.ts', 'dist/**', 'node_modules/**'],
       thresholds: {
+        // perFile so the 85% gate holds for each source file individually
+        // (matches the Java per-module intent) rather than aggregating — a
+        // future utility file can't be carried by the others' coverage.
+        perFile: true,
         lines: 85,
         statements: 85,
         functions: 85,

@@ -7,6 +7,7 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.io.File;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +39,10 @@ import static org.assertj.core.api.Assertions.fail;
  * </ol>
  * <p>
  * If you add a new annotation, no edit to this test is needed — the package
- * walk picks it up automatically.
+ * walk recurses through every sub-package under
+ * {@code eu.exeris.sdk.annotation} (today {@code system} and {@code security};
+ * a future package such as {@code graph} is picked up automatically) and
+ * asserts both invariants on every annotation it finds.
  */
 @DisplayName("SDK annotation contract: SOURCE retention + @Target")
 class AnnotationContractTest {
@@ -92,8 +96,10 @@ class AnnotationContractTest {
     }
 
     @Test
-    @DisplayName("nested system & security annotations are SOURCE-retained")
-    void subpackagesAlsoHonourSourceRetention() throws Exception {
+    @DisplayName("system & security sub-packages are discovered and honour SOURCE + @Target")
+    void subpackagesAlsoHonourContract() throws Exception {
+        // Guard that the recursive walk actually reaches the sub-packages
+        // (a regression here would silently shrink coverage of the main test).
         List<Class<? extends Annotation>> system = discoverAnnotations("eu.exeris.sdk.annotation.system");
         List<Class<? extends Annotation>> security = discoverAnnotations("eu.exeris.sdk.annotation.security");
 
@@ -105,17 +111,24 @@ class AnnotationContractTest {
             assertThat(r).as("missing @Retention on %s", a.getName()).isNotNull();
             assertThat(r.value()).as("non-SOURCE retention on %s", a.getName())
                     .isEqualTo(RetentionPolicy.SOURCE);
+            assertThat(a.getAnnotation(Target.class))
+                    .as("missing @Target on %s — the processor cannot reject misuse without one", a.getName())
+                    .isNotNull();
         });
     }
 
     /**
      * Discovers every annotation type ({@link Class#isAnnotation()}) under
-     * the given package by enumerating every classpath root that contains
-     * it. Multi-root enumeration matters under Maven: the test classloader
-     * exposes both {@code target/classes} (where the annotations live) and
-     * {@code target/test-classes} (where this test lives) as separate
-     * locations for the same package; only the first would be visible
-     * to {@code getResource} alone.
+     * the given package <em>and all of its sub-packages</em> by enumerating
+     * every classpath root that contains it and walking each root recursively.
+     * <p>
+     * Multi-root enumeration matters under Maven: the test classloader exposes
+     * both {@code target/classes} (where the annotations live) and
+     * {@code target/test-classes} (where this test lives) as separate locations
+     * for the same package; only the first would be visible to
+     * {@code getResource} alone. Recursion means a new sub-package needs no
+     * test edit — it is picked up and held to the same SOURCE + {@code @Target}
+     * contract automatically.
      */
     @SuppressWarnings("unchecked")
     private List<Class<? extends Annotation>> discoverAnnotations(String pkg) throws Exception {
@@ -130,16 +143,21 @@ class AnnotationContractTest {
             URL root = urls.nextElement();
             Path dir = Paths.get(URLDecoder.decode(root.getPath(), StandardCharsets.UTF_8));
             if (!Files.isDirectory(dir)) continue;
-            try (Stream<Path> files = Files.list(dir)) {
+            try (Stream<Path> files = Files.walk(dir)) {
                 for (Path p : (Iterable<Path>) files::iterator) {
+                    if (!Files.isRegularFile(p)) continue;
                     String fname = p.getFileName().toString();
                     if (!fname.endsWith(".class") || fname.equals("package-info.class")) continue;
                     // Skip nested types ($ in the JVM-compiled name) — they
                     // are only reachable as attribute types of their parent
                     // annotation and inherit its SOURCE retention at use site.
                     if (fname.contains("$")) continue;
-                    String simple = fname.substring(0, fname.length() - ".class".length());
-                    Class<?> c = Class.forName(pkg + "." + simple, false, cl);
+                    // Rebuild the FQN from the path relative to the package root,
+                    // so files in sub-packages (system/, security/, …) resolve.
+                    String rel = dir.relativize(p).toString()
+                            .replace(File.separatorChar, '.');
+                    String fqn = pkg + "." + rel.substring(0, rel.length() - ".class".length());
+                    Class<?> c = Class.forName(fqn, false, cl);
                     if (c.isAnnotation()) {
                         out.add((Class<? extends Annotation>) c);
                     }

@@ -207,8 +207,8 @@ class DomainMetadataTest {
         }
 
         @Test
-        void findFieldReturnsEmptyOnNullFieldsList() {
-            // Construct directly with null fields to exercise the guard.
+        void findFieldReturnsEmptyOnEmptyFieldsList() {
+            // Construct directly with an empty fields list to exercise the guard.
             DomainMetadata d = new DomainMetadata("Order", "p", "", "", "", "", "v1",
                     List.of(), true, false, false, false, false, false, false, false,
                     List.of(), List.of(), false, false, "PT5M", "", false, "english", null,
