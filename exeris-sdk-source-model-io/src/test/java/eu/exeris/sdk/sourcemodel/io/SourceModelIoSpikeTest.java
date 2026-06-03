@@ -83,6 +83,29 @@ class SourceModelIoSpikeTest {
         }
 
         @Test
+        void entityNameComesFromAnnotationNotClassName() {
+            // canonical pattern: @ExerisDomain(name=...) differs from class name
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "BillingAccount")
+                    public class Account {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().entityName()).isEqualTo("BillingAccount");
+        }
+
+        @Test
+        void entityNameFallsBackToClassNameWhenAnnotationOmitsName() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain
+                    public class Ledger {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().entityName()).isEqualTo("Ledger");
+        }
+
+        @Test
         void returnsEmptyWhenNoExerisDomainType() {
             Optional<DomainMetadata> domain = reader.read(
                     "package x; public class Plain { private int n; }");
