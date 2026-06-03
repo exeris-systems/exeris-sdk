@@ -220,6 +220,50 @@ class SourceModelIoTest {
             assertThat(removed).doesNotContain("int a");   // 'a' dropped from the declaration
             assertThat(removed).contains("int b");         // sibling kept, separator not mangled
         }
+
+        @Test
+        void addRelationshipAddsAnnotatedFieldAndIsIdempotent() {
+            String added = writer.addRelationship(ACCOUNT, "customer", "Customer", "MANY_TO_ONE");
+
+            assertThat(added).contains("Customer customer");
+            assertThat(added).contains("@Relationship");
+            assertThat(added).contains("RelationshipType.MANY_TO_ONE");
+            assertThat(added).contains("// human-readable label shown in the UI"); // preserved
+
+            // re-applying with the same field name is a no-op
+            assertThat(writer.addRelationship(added, "customer", "Customer", "MANY_TO_ONE"))
+                    .isEqualTo(added);
+        }
+
+        @Test
+        void addRelationshipNoOpWhenFieldExists() {
+            assertThat(writer.addRelationship(ACCOUNT, "label", "Customer", "MANY_TO_ONE"))
+                    .isEqualTo(ACCOUNT);
+        }
+
+        @Test
+        void addRelationshipThrowsIllegalArgumentOnMalformedType() {
+            // a type string that yields an unparseable annotation -> IllegalArgumentException
+            assertThatThrownBy(() -> writer.addRelationship(ACCOUNT, "x", "Customer", "BAD)SYNTAX"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void removeRelationshipRemovesOnlyRelationshipFields() {
+            String withRel = writer.addRelationship(ACCOUNT, "customer", "Customer", "ONE_TO_ONE");
+
+            String removed = writer.removeRelationship(withRel, "customer");
+            assertThat(removed).doesNotContain("customer");
+            assertThat(removed).doesNotContain("@Relationship");
+            assertThat(removed).contains("private String label;"); // other fields preserved
+        }
+
+        @Test
+        void removeRelationshipIsNoOpForPlainFieldOrAbsent() {
+            // 'balance' is a plain @Deprecated field, NOT a @Relationship -> must not be deleted
+            assertThat(writer.removeRelationship(ACCOUNT, "balance")).isEqualTo(ACCOUNT);
+            assertThat(writer.removeRelationship(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
+        }
     }
 
     @Nested
