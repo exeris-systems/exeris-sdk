@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **IN-REVIEW**                                                        |
+| **Status**        | **ACCEPTED**                                                        |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-03                                                            |
-| **Date Closed**   | —                                                                    |
-| **Target ADR(s)** | TBD (one ADR to lock module topology; ADR-003 Entity-First is upstream) |
+| **Date Closed**   | 2026-06-03                                                           |
+| **Target ADR(s)** | [ADR-037](../adr/ADR-037-source-model-io-module.md) (locks the module topology) |
 | **Affected Repos**| `exeris-sdk`, `exeris-platform` (lsp), `exeris-tooling` (codegen consumes AST) |
 | **Reviewers**     | —                                                                    |
 
@@ -133,10 +133,10 @@ The ADR that accepts this RFC should land the module half-scaffolded-proof — t
 
 | Field                | Value     |
 |:---------------------|:----------|
-| **Outcome**          | —         |
-| **Date**             | —         |
-| **Resulting ADR(s)** | —         |
-| **Notes**            | —         |
+| **Outcome**          | ACCEPTED  |
+| **Date**             | 2026-06-03 |
+| **Resulting ADR(s)** | [ADR-037](../adr/ADR-037-source-model-io-module.md) — Isolate the source-model parser/writer in a dedicated `exeris-sdk-source-model-io` module |
+| **Notes**            | Option B adopted. Module named `-io` (holds parser + writer; engine-agnostic coordinate). LGPL version verified = 3.0; elect Apache-2.0. |
 
 ## Open questions / follow-ups
 
