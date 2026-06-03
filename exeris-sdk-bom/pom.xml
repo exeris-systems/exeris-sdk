@@ -22,7 +22,7 @@
              annotations track was abandoned. -->
         <jackson.annotations.version>2.21</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
     </properties>
 
     <dependencyManagement>
