@@ -26,6 +26,8 @@ Two things make this a decision rather than a transcription:
 
 This unblocks the original driver: budgetHQ's `PLAN.md` parks an `ExerisObservabilityReporter` swap whose precondition is "the Exeris observability cap ships an SDK contract," and `exeris-platform-lsp` reserves an `exeris/listCapabilities` method — both need this annotation surface to exist.
 
+**Sequencing precondition now met.** This RFC was parked behind the 0.3.0 `-io` reader/writer round-trip work, so that a new annotation surface would not be added on top of a reader that silently dropped existing facets. That work is complete (Slices A–D): `SourceModelReader` is now faithful to the processor across every facet and `unmodeledFacets()` is empty, so the capability annotations can be added with the same read-and-guard discipline the entity surface already has.
+
 ## Investigation
 
 ### Prior art
@@ -116,6 +118,6 @@ Three scope lines that keep the SDK pure:
 
 - **New ADR vs. implements-ADR-024?** Recommend a thin SDK-side ADR (like ADR-037 for `-io`) recording the annotation-defining module + the `Class<?>` service-reference decision, explicitly "implements ADR-024." Reserve the number before content.
 - **`Service` type ambiguity in ADR-024.** This RFC reads "Service service" as a `Class<?>` interface reference and "well-known identifiers" as kernel SPI interface classes. Confirm with the ADR-024 owner that no literal `Service` enum/type was intended.
-- **AST service identity = FQN.** Standardize the AST on fully-qualified service names; define how the `-io` JavaParser reader resolves a written `Class` literal to an FQN (import resolution is out of the reader's current no-symbol-solving scope — may need a documented limitation or a minimal import lookup).
+- **AST service identity = FQN.** Standardize the AST on fully-qualified service names. The `-io` reader (now complete) matches annotations by **simple name without symbol solving** — so a written `Class` literal resolves to whatever the source wrote (simple or qualified). The processor (JSR-269) yields the FQN. To keep the two in lock-step, either: (a) the AST stores the **written form** and a normalization step is the tooling's job, or (b) the `-io` reader does a minimal import-table lookup to expand the simple name. Recommend (a) for the first cut (consistent with the reader's documented no-symbol-solving limitation), revisited if the FQN mismatch turns out to matter for capability conflict-detection.
 - **Versioning scheme** (`version`, `versionRange`) — string attributes in the SDK; range *syntax* + intersection live in the tooling validator (ADR-024 predicate 3), not the SDK.
 - **`@CapabilityLifecycle` ↔ kernel lifecycle interface** — coordinate where the interface lives (kernel SPI) so the marker and the behaviour stay in lock-step without SDK coupling.
