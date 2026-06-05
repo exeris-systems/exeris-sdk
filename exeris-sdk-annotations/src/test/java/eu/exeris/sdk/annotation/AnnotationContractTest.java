@@ -40,9 +40,9 @@ import static org.assertj.core.api.Assertions.fail;
  * <p>
  * If you add a new annotation, no edit to this test is needed — the package
  * walk recurses through every sub-package under
- * {@code eu.exeris.sdk.annotation} (today {@code system} and {@code security};
- * a future package such as {@code graph} is picked up automatically) and
- * asserts both invariants on every annotation it finds.
+ * {@code eu.exeris.sdk.annotation} (today {@code system}, {@code security} and
+ * {@code capability}; a future package such as {@code graph} is picked up
+ * automatically) and asserts both invariants on every annotation it finds.
  */
 @DisplayName("SDK annotation contract: SOURCE retention + @Target")
 class AnnotationContractTest {
@@ -96,17 +96,23 @@ class AnnotationContractTest {
     }
 
     @Test
-    @DisplayName("system & security sub-packages are discovered and honour SOURCE + @Target")
+    @DisplayName("system, security & capability sub-packages are discovered and honour SOURCE + @Target")
     void subpackagesAlsoHonourContract() throws Exception {
         // Guard that the recursive walk actually reaches the sub-packages
         // (a regression here would silently shrink coverage of the main test).
         List<Class<? extends Annotation>> system = discoverAnnotations("eu.exeris.sdk.annotation.system");
         List<Class<? extends Annotation>> security = discoverAnnotations("eu.exeris.sdk.annotation.security");
+        List<Class<? extends Annotation>> capability = discoverAnnotations("eu.exeris.sdk.annotation.capability");
 
         assertThat(system).as("system subpackage should expose marker annotations").isNotEmpty();
         assertThat(security).as("security subpackage should expose marker annotations").isNotEmpty();
+        assertThat(capability)
+                .as("capability subpackage should expose the @CapabilityModule/@Provides/@Requires/@CapabilityLifecycle surface")
+                .isNotEmpty()
+                .extracting(Class::getSimpleName)
+                .contains("CapabilityModule", "Provides", "Requires", "CapabilityLifecycle");
 
-        Stream.concat(system.stream(), security.stream()).forEach(a -> {
+        Stream.of(system, security, capability).flatMap(List::stream).forEach(a -> {
             Retention r = a.getAnnotation(Retention.class);
             assertThat(r).as("missing @Retention on %s", a.getName()).isNotNull();
             assertThat(r.value()).as("non-SOURCE retention on %s", a.getName())
