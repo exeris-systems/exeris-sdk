@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Lightweight records / value-objects where the test surface is just
@@ -207,6 +208,75 @@ class SimpleAstRecordsTest {
             assertThat(v.displayName()).isEqualTo("Free");
             assertThat(v.description()).isEqualTo("No charge");
             assertThat(v.ordinal()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("Capability records (Provides / Requires / CapabilityModule)")
+    class Capability {
+        @Test
+        void providesFactoriesAndHasVersion() {
+            ProvidesMetadata unversioned = ProvidesMetadata.of("com.acme.RouteRegistry");
+            assertThat(unversioned.service()).isEqualTo("com.acme.RouteRegistry");
+            assertThat(unversioned.version()).isNull();
+            assertThat(unversioned.hasVersion()).isFalse();
+
+            ProvidesMetadata versioned = ProvidesMetadata.of("com.acme.RouteRegistry", "1.0.0");
+            assertThat(versioned.version()).isEqualTo("1.0.0");
+            assertThat(versioned.hasVersion()).isTrue();
+            // blank version is treated as absent
+            assertThat(ProvidesMetadata.of("X", "  ").hasVersion()).isFalse();
+        }
+
+        @Test
+        void requiresFactoriesAndPredicates() {
+            RequiresMetadata mandatory = RequiresMetadata.of("KERNEL_TRANSPORT");
+            assertThat(mandatory.service()).isEqualTo("KERNEL_TRANSPORT");
+            assertThat(mandatory.versionRange()).isNull();
+            assertThat(mandatory.optional()).isFalse();
+            assertThat(mandatory.hasVersionRange()).isFalse();
+
+            RequiresMetadata opt = RequiresMetadata.optional("com.acme.MetricsSink");
+            assertThat(opt.optional()).isTrue();
+
+            RequiresMetadata ranged = RequiresMetadata.of("com.acme.UpstreamPool", "[1.0.0,2.0.0)");
+            assertThat(ranged.hasVersionRange()).isTrue();
+            assertThat(ranged.optional()).isFalse();
+
+            RequiresMetadata optRanged = RequiresMetadata.optional("com.acme.MetricsSink", "[2.0.0,3.0.0)");
+            assertThat(optRanged.optional()).isTrue();
+            assertThat(optRanged.versionRange()).isEqualTo("[2.0.0,3.0.0)");
+        }
+
+        @Test
+        void mandatoryServiceFieldIsNullGuarded() {
+            assertThatThrownBy(() -> ProvidesMetadata.of(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("service is required");
+            assertThatThrownBy(() -> RequiresMetadata.of(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("service is required");
+        }
+
+        @Test
+        void capabilityModuleEmptyAndPredicates() {
+            CapabilityModuleMetadata empty = CapabilityModuleMetadata.empty();
+            assertThat(empty.provides()).isEmpty();
+            assertThat(empty.requires()).isEmpty();
+            assertThat(empty.lifecycleOwner()).isNull();
+            assertThat(empty.hasProvides()).isFalse();
+            assertThat(empty.hasRequires()).isFalse();
+            assertThat(empty.hasLifecycleOwner()).isFalse();
+
+            CapabilityModuleMetadata full = CapabilityModuleMetadata.builder()
+                    .provides(List.of(ProvidesMetadata.of("com.acme.RouteRegistry")))
+                    .requires(List.of(RequiresMetadata.of("KERNEL_TRANSPORT")))
+                    .lifecycleOwner("com.acme.GatewayLifecycle")
+                    .build();
+            assertThat(full.hasProvides()).isTrue();
+            assertThat(full.hasRequires()).isTrue();
+            assertThat(full.hasLifecycleOwner()).isTrue();
+            assertThat(full.lifecycleOwner()).isEqualTo("com.acme.GatewayLifecycle");
         }
     }
 }
