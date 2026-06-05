@@ -652,6 +652,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Saga;
                     import eu.exeris.sdk.annotation.Projection;
                     import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                     import eu.exeris.sdk.annotation.NavMenu;
                     import eu.exeris.sdk.annotation.Validation;
                     import eu.exeris.sdk.annotation.Field;
@@ -803,6 +804,24 @@ class SourceModelIoTest {
             DomainMetadata domain = reader.read(src).orElseThrow();
             assertThat(domain.events()).extracting("name")
                     .containsExactlyInAnyOrder("Created", "Deleted");
+        }
+
+        @Test
+        void unwrapsSingleElementContainerWithoutArrayBraces() {
+            // legal Java: a single-element annotation array may omit the { } braces
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvents(@DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"))
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("Created"));
         }
 
         @Test

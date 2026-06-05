@@ -444,6 +444,8 @@ public final class SourceModelReader {
      * silently matching a prefix.
      */
     private String triggerToEventSuffix(String trigger) {
+        // Unreachable from singleEvent (which passes enumAttr(...).orElse("CREATE")),
+        // but kept to mirror the processor verbatim and defend any future direct caller.
         if (trigger == null) {
             return "Event";
         }
