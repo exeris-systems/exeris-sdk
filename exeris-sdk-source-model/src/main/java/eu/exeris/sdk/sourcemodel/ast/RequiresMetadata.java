@@ -3,6 +3,8 @@ package eu.exeris.sdk.sourcemodel.ast;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.Objects;
+
 /**
  * Metadata for a service a capability depends on, read from a {@code @Requires}
  * declaration on a {@code @CapabilityModule} class.
@@ -28,14 +30,28 @@ public record RequiresMetadata(
         String versionRange,
         boolean optional
 ) {
+    public RequiresMetadata {
+        Objects.requireNonNull(service, "service is required");
+    }
+
     /** A mandatory dependency with no version constraint. */
     public static RequiresMetadata of(String service) {
         return new RequiresMetadata(service, null, false);
     }
 
+    /** A mandatory dependency pinned to a version range. */
+    public static RequiresMetadata of(String service, String versionRange) {
+        return new RequiresMetadata(service, versionRange, false);
+    }
+
     /** An optional dependency with no version constraint. */
     public static RequiresMetadata optional(String service) {
         return new RequiresMetadata(service, null, true);
+    }
+
+    /** An optional dependency pinned to a version range. */
+    public static RequiresMetadata optional(String service, String versionRange) {
+        return new RequiresMetadata(service, versionRange, true);
     }
 
     public boolean hasVersionRange() {

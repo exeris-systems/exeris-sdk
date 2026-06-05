@@ -3,6 +3,8 @@ package eu.exeris.sdk.sourcemodel.ast;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.Objects;
+
 /**
  * Metadata for a service a capability exposes, read from a {@code @Provides}
  * declaration on a {@code @CapabilityModule} class.
@@ -23,6 +25,10 @@ public record ProvidesMetadata(
         String service,
         String version
 ) {
+    public ProvidesMetadata {
+        Objects.requireNonNull(service, "service is required");
+    }
+
     /** A provided service with no declared version. */
     public static ProvidesMetadata of(String service) {
         return new ProvidesMetadata(service, null);

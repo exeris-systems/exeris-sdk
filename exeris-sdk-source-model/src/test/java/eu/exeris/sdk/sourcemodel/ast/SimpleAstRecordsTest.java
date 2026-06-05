@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Lightweight records / value-objects where the test surface is just
@@ -238,8 +239,23 @@ class SimpleAstRecordsTest {
             RequiresMetadata opt = RequiresMetadata.optional("com.acme.MetricsSink");
             assertThat(opt.optional()).isTrue();
 
-            RequiresMetadata ranged = new RequiresMetadata("com.acme.UpstreamPool", "[1.0.0,2.0.0)", false);
+            RequiresMetadata ranged = RequiresMetadata.of("com.acme.UpstreamPool", "[1.0.0,2.0.0)");
             assertThat(ranged.hasVersionRange()).isTrue();
+            assertThat(ranged.optional()).isFalse();
+
+            RequiresMetadata optRanged = RequiresMetadata.optional("com.acme.MetricsSink", "[2.0.0,3.0.0)");
+            assertThat(optRanged.optional()).isTrue();
+            assertThat(optRanged.versionRange()).isEqualTo("[2.0.0,3.0.0)");
+        }
+
+        @Test
+        void mandatoryServiceFieldIsNullGuarded() {
+            assertThatThrownBy(() -> ProvidesMetadata.of(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("service is required");
+            assertThatThrownBy(() -> RequiresMetadata.of(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("service is required");
         }
 
         @Test

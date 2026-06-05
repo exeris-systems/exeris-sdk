@@ -312,12 +312,15 @@ class AstJsonRoundTripTest {
         assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry", "1.0.0"), ProvidesMetadata.class);
         // unversioned: version is null and dropped by NON_NULL, read back as null
         assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry"), ProvidesMetadata.class);
+        // NON_NULL does not drop blank strings — the AST preserves what it is given
+        // (the caller maps blank -> null before constructing; see Slice 3 reader)
+        assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry", "  "), ProvidesMetadata.class);
     }
 
     @Test
     @DisplayName("RequiresMetadata round-trips (NON_DEFAULT drops optional=false)")
     void requiresMetadataRoundTrips() {
-        assertRoundTrip(new RequiresMetadata("com.acme.gw.UpstreamPool", "[1.0.0,2.0.0)", true), RequiresMetadata.class);
+        assertRoundTrip(RequiresMetadata.optional("com.acme.gw.UpstreamPool", "[1.0.0,2.0.0)"), RequiresMetadata.class);
         // minimal: versionRange null and optional false both drop, read back as (service, null, false)
         assertRoundTrip(RequiresMetadata.of("KERNEL_TRANSPORT"), RequiresMetadata.class);
     }
