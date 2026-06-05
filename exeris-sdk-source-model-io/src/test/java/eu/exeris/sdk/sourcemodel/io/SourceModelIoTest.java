@@ -1024,6 +1024,9 @@ class SourceModelIoTest {
     @DisplayName("reader: @Field attribute surface + @Validation (field fidelity)")
     class Fields {
 
+        // @Field.label() has no default, so bare @Field / @Field(...) without label is a
+        // compile error in real Java — used here intentionally: the reader tolerates
+        // editor-incomplete source (no symbol/attribute-completeness enforcement).
         private static final String PRODUCT = """
                 package app.budgethq.product;
                 import eu.exeris.sdk.annotation.ExerisDomain;

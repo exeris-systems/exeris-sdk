@@ -740,6 +740,16 @@ public final class SourceModelReader {
      * computedFrom) is applied present-only; {@code @Validation} (only consulted
      * when {@code @Field} is present, as in the processor) contributes
      * {@code min}/{@code max}/{@code pattern} plus the two deprecated fallbacks.
+     *
+     * <p>"Attribute-complete" means complete <em>against what the processor reads</em>,
+     * not against every {@code @Field} attribute with a {@link FieldMetadata}
+     * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
+     * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
+     * populates it, so reading it here would be a divergence, not a fix. (The other
+     * unread {@code @Field} attributes — {@code inList}, {@code inDetail},
+     * {@code order}, {@code ui}, {@code dataType}, {@code cssClass}, {@code group},
+     * {@code sensitive}, {@code encrypted}, {@code maskPattern}, {@code writeOnly},
+     * {@code compositeUnique} — have no {@code FieldMetadata} counterpart at all.)
      */
     private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
         FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
