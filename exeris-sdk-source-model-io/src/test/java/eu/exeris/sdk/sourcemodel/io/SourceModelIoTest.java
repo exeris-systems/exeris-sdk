@@ -654,13 +654,15 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                     import eu.exeris.sdk.annotation.NavMenu;
+                    import eu.exeris.sdk.annotation.InternalApi;
                     import eu.exeris.sdk.annotation.Validation;
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
                     // tenantScoped read (Slice A); roles unread but processor drops it too
                     @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
-                    @EventSourced @Graph @Saga                // processor reads these -> divergences
+                    @EventSourced @Graph @Saga                // now read (Slice C) -> NOT divergences
+                    @InternalApi(rateLimit = 100)             // now read (Slice C) -> NOT a divergence
                     @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created") // now read (Slice B) -> NOT a divergence
                     @Projection @NavMenu                      // processor drops these too -> NOT divergences
                     public class Order {
@@ -670,11 +672,12 @@ class SourceModelIoTest {
                     }
                     """;
             // flagged: exactly the facets the processor emits but the reader drops
-            assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
-                    "@EventSourced", "@Graph", "@Saga", "@Validation");
-            // NOT flagged: facets neither side reads, events (now read), nor @ExerisDomain attributes
+            // (after Slice C only field-level @Validation remains)
+            assertThat(reader.unmodeledFacets(src)).containsExactly("@Validation");
+            // NOT flagged: facets neither side reads, plus everything read in Slices A-C
             assertThat(reader.unmodeledFacets(src))
                     .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey", "@DomainEvent",
+                            "@EventSourced", "@Graph", "@Saga", "@InternalApi",
                             "@ExerisDomain attributes not yet read");
         }
 
@@ -851,6 +854,174 @@ class SourceModelIoTest {
         void emptyEventsWhenNoDomainEvent() {
             DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
             assertThat(domain.events()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @Graph / @EventSourced / @Saga / @InternalApi extraction")
+    class Facets {
+
+        @Test
+        void readsGraphLabelFromNodeClassElseClassName() {
+            String withNodeClass = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    @ExerisDomain(name = "Person")
+                    @Graph(nodeClass = "PersonNode")
+                    public class Person {}
+                    """;
+            assertThat(reader.read(withNodeClass).orElseThrow().graphMetadata()).satisfies(g -> {
+                assertThat(g.label()).isEqualTo("PersonNode");
+                // mirrors the processor: properties null, edges/queries empty
+                assertThat(g.properties()).isNull();
+                assertThat(g.edges()).isEmpty();
+                assertThat(g.queries()).isEmpty();
+            });
+
+            String bareGraph = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    @ExerisDomain(name = "Person")
+                    @Graph
+                    public class Person {}
+                    """;
+            // no nodeClass -> label falls back to the class simple name
+            assertThat(reader.read(bareGraph).orElseThrow().graphMetadata().label()).isEqualTo("Person");
+        }
+
+        @Test
+        void absentGraphLeavesMetadataNull() {
+            assertThat(reader.read(ACCOUNT).orElseThrow().graphMetadata()).isNull();
+        }
+
+        @Test
+        void translatesEventSourcedStreamPrefixAndSnapshotThreshold() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    @ExerisDomain(name = "Order")
+                    @EventSourced(streamPrefix = "orders", snapshotThreshold = 25)
+                    public class Order {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().eventSourced()).satisfies(es -> {
+                // streamPrefix -> aggregateType, snapshotThreshold -> snapshotEvery
+                assertThat(es.aggregateType()).isEqualTo("orders");
+                assertThat(es.snapshotEvery()).isEqualTo(25);
+                assertThat(es.enabled()).isTrue(); // builder default preserved
+            });
+        }
+
+        @Test
+        void eventSourcedDefaultsAggregateToClassNameAndSnapshotTo50() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    @ExerisDomain(name = "OrderEntity")
+                    @EventSourced
+                    public class Order {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().eventSourced()).satisfies(es -> {
+                // empty streamPrefix -> class simple name (not @ExerisDomain name)
+                assertThat(es.aggregateType()).isEqualTo("Order");
+                assertThat(es.snapshotEvery()).isEqualTo(50);
+            });
+        }
+
+        @Test
+        void readsSagaWithStepsSortedByOrder() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain(name = "Fulfillment")
+                    @Saga(name = "OrderFulfillment", description = "End-to-end fulfillment",
+                            timeout = "PT10M", maxRetries = 7)
+                    public class Fulfillment {
+                        @SagaStep(order = 2, name = "ship", service = "shipping",
+                                command = "ship", compensation = "unship", timeout = "PT1M", parallel = true)
+                        public void ship() {}
+
+                        @SagaStep(order = 1, service = "payment", command = "charge")
+                        public void pay() {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
+                assertThat(s.name()).isEqualTo("OrderFulfillment");
+                assertThat(s.description()).isEqualTo("End-to-end fulfillment");
+                assertThat(s.timeout()).isEqualTo("PT10M");
+                assertThat(s.maxRetries()).isEqualTo(7);
+                // sorted by order: pay(1) before ship(2)
+                assertThat(s.steps()).extracting("name").containsExactly("pay", "ship");
+                assertThat(s.steps()).anySatisfy(step -> {
+                    assertThat(step.name()).isEqualTo("ship");
+                    assertThat(step.order()).isEqualTo(2);
+                    assertThat(step.service()).isEqualTo("shipping");
+                    assertThat(step.command()).isEqualTo("ship");
+                    assertThat(step.compensation()).isEqualTo("unship");
+                    assertThat(step.timeout()).isEqualTo("PT1M");
+                    assertThat(step.parallel()).isTrue();
+                });
+            });
+        }
+
+        @Test
+        void sagaNameAndStepNameFallBackWhenAbsent() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain(name = "Thing")
+                    @Saga
+                    public class Settlement {
+                        @SagaStep(service = "s", command = "c")
+                        public void settle() {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
+                assertThat(s.name()).isEqualTo("Settlement"); // class simple name, not @ExerisDomain name
+                // present-only: absent timeout/maxRetries keep the SagaMetadata.Builder
+                // defaults — and the processor (also present-only on the same builder)
+                // produces exactly these, so it is parity, not a silent divergence.
+                assertThat(s.timeout()).isEqualTo("PT30M");
+                assertThat(s.maxRetries()).isEqualTo(3);
+                assertThat(s.steps()).singleElement().satisfies(step -> {
+                    assertThat(step.name()).isEqualTo("settle"); // method name fallback
+                    assertThat(step.order()).isEqualTo(1);       // default order
+                });
+            });
+        }
+
+        @Test
+        void readsInternalApiAsPresenceOnly() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.InternalApi;
+                    @ExerisDomain(name = "Ledger")
+                    @InternalApi(rateLimit = 100)
+                    public class Ledger {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().internalApi()).satisfies(api -> {
+                // known SDK<->AST drift: only presence is extracted -> internal = true
+                assertThat(api.internal()).isTrue();
+                assertThat(api.hidden()).isFalse();
+                assertThat(api.readOnly()).isFalse();
+            });
+        }
+
+        @Test
+        void absentFacetsLeaveMetadataNull() {
+            DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
+            assertThat(domain.graphMetadata()).isNull();
+            assertThat(domain.eventSourced()).isNull();
+            assertThat(domain.sagaMetadata()).isNull();
+            assertThat(domain.internalApi()).isNull();
         }
     }
 }
