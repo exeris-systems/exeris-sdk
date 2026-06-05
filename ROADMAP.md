@@ -39,14 +39,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] Round-trip property tests across the budgetHQ corpus (real entities, not synthetic fixtures)
 - [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations
 
-## 0.4.0 — `@Capability` surface
+## 0.4.0 — capability annotation surface (ADR-024)
 
-> Goal: capabilities (IDP, payments, audit, …) are first-class annotations the processor recognizes.
+> Goal: caps (IDP, payments, audit, observability, …) declare what they **provide** and **require** as first-class annotations the processor recognizes. Surface + service-reference model decided in [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-capability-annotation-surface.md); implements [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md). The earlier `@Capability` / `@CapabilityRef` / `CapabilityMetadata` wording here predated ADR-024 and is superseded by its `@CapabilityModule` / `@Provides` / `@Requires` vocabulary.
 
-- [ ] `@Capability` annotation + supporting AST records (`CapabilityMetadata`, `CapabilityRefMetadata`)
-- [ ] Reference resolution semantics (`@CapabilityRef("idp")` → linked `CapabilityMetadata`)
-- [ ] Versioning scheme for capability contracts (independent of SDK version)
-- [ ] Capability discovery format (manifest under `META-INF/exeris/capabilities/`)
+- [ ] `@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle` annotations (`@Retention(SOURCE)`, new `eu.exeris.sdk.annotation.capability` package) — services referenced by `Class<?>` (RFC Option B); `@CapabilityLifecycle` is a marker only (the lifecycle interface stays kernel-side)
+- [ ] Supporting AST records `CapabilityModuleMetadata` / `ProvidesMetadata` / `RequiresMetadata` in `source-model` (service stored as FQN string; `version` / `versionRange` as strings)
+- [ ] `-io` reader reads the capability annotations into the AST (same read-and-guard discipline the entity surface already has)
+- [ ] **Out of scope (tooling, not SDK):** `@Requires`→`@Provides` resolution, DAG / version / Wall validation, and the `cap-manifest.json` discovery format are `exeris-tooling` concerns (ADR-024 + ADR-015). The SDK supplies only the annotations + AST records they serialize from.
 
 ## 0.5.0 — bidirectional sync surface
 
