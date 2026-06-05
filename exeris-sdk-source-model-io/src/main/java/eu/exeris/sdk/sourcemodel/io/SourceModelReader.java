@@ -16,6 +16,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
@@ -46,10 +47,15 @@ import java.util.TreeSet;
  *
  * <p>0.3.0 scope: locates the first {@code @ExerisDomain}-annotated type and
  * extracts its entity name ({@code @ExerisDomain(name=...)}, falling back to the
- * class name), package, fields, and {@code @Relationship}s. Of the {@code @Field}
- * attributes only {@code required} is read; all others are left at the
- * {@link FieldMetadata} factory defaults (e.g. {@code searchable}/{@code sortable}/
- * {@code filterable} default to {@code true} — see {@link FieldMetadata#simple}).
+ * class name), package, fields, and {@code @Relationship}s. Fields mirror the
+ * processor's two-path contract: a field <b>with</b> {@code @Field} reads the full
+ * attribute surface the processor reads (label, description, required, unique,
+ * indexed, searchable, sortable, filterable, readOnly, inCreate, inUpdate,
+ * computed, computedFrom) present-only on a {@link FieldMetadata.Builder}, plus
+ * field-level {@code @Validation} (min/max/pattern and the deprecated
+ * {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
+ * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
+ * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
@@ -71,15 +77,17 @@ import java.util.TreeSet;
  * {@code @InternalApi}).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
- * the only remaining facet {@code read()} diverges on is field-level
- * {@code @Validation} (the processor folds its deprecated {@code required}/
- * {@code validateOn} fallbacks into {@link FieldMetadata}; the reader does not yet).
- * A round-trip / reattach caller MUST consult {@link #unmodeledFacets} first and
- * refuse (or warn) when it is non-empty, otherwise the dropped metadata is silently
- * misattributed as a user edit during conflict detection. (Facets the processor
+ * {@code read()} no longer drops any annotation-level facet the processor emits:
+ * {@link #unmodeledFacets} is now empty for every source, and the field facet is
+ * attribute-complete against {@code extractFieldMetadata}. A round-trip / reattach
+ * caller should still consult {@link #unmodeledFacets} and refuse (or warn) when it
+ * is non-empty — that is how a <em>future</em> processor facet (e.g. a new
+ * annotation) re-arms the guard before the reader catches up. (Facets the processor
  * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
  * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, {@code system}/
- * {@code security} annotations — are not divergences.)
+ * {@code security} annotations — were never divergences.) The guard is
+ * annotation-level: attribute completeness of the <em>other</em> read annotations
+ * (e.g. {@code @Relationship}, {@code @Action}) is verified per-slice, not by it.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -97,19 +105,16 @@ public final class SourceModelReader {
      * facet from them, but the reader does not yet. These are the dangerous ones
      * for reattach — the conflict-detection baseline is the processor's codegen
      * output, so a facet the processor keeps and the reader drops would be
-     * misread as a user edit. (Facets neither side reads — e.g. {@code @Projection},
-     * {@code @NavMenu}, {@code @EventHandler},
-     * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, the
-     * {@code system}/{@code security} annotations — are <b>not</b> divergences and
-     * are not flagged: the reader's {@code DomainMetadata} matches the processor's
-     * for those sources.)
+     * misread as a user edit.
      *
-     * <p>Matched by simple name (no import resolution). As reader slices land, a
-     * name graduates out of this set; after the graph/saga/event-sourcing/
-     * internal-API slice only field-level {@code @Validation} remains.
+     * <p><b>Now empty</b>: every facet the processor emits is read (Slices A–D —
+     * domain attributes, events, graph/saga/event-sourcing/internal-API, and the
+     * field {@code @Field}/{@code @Validation} surface). The set is retained as the
+     * guard's contract: a future processor facet (a new annotation the reader does
+     * not yet read) is added here, which re-arms {@link #unmodeledFacets} until the
+     * reader catches up. Matched by simple name (no import resolution).
      */
-    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
-            "Validation");                                          // -> FieldMetadata validation
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
 
     private final JavaParser javaParser;
 
@@ -167,21 +172,22 @@ public final class SourceModelReader {
      * <b>empty</b> result means {@code read()} produces the same {@code DomainMetadata}
      * facets the processor would for this source.
      *
-     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS}
-     * (currently only field-level {@code @Validation}). <b>Not</b> flagged: facets
-     * neither side reads ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
+     * which is <b>now empty</b> — every processor facet is read (Slices A–D), so this
+     * returns an empty set for every {@code @ExerisDomain} source today. It re-arms
+     * only when a future processor facet is registered in that set ahead of the
+     * reader. <b>Not</b> flagged (and never were): facets neither side reads
+     * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
      * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery},
-     * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations),
-     * {@code @DomainEvent}s and {@code @Graph}/{@code @EventSourced}/{@code @Saga}/
-     * {@code @InternalApi} (now read into their facets), and {@code @ExerisDomain}
-     * attributes (the reader reads exactly the set the processor does) — those don't
-     * change the {@code DomainMetadata} relative to the baseline, so flagging them
-     * would needlessly refuse safe entities.
+     * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations).
      *
-     * <p>The one gap <em>not</em> reported is attribute-level loss <em>within</em> a
-     * read annotation (e.g. an unread {@code @Field(searchable=false)} left at a
-     * default) — a separate, narrower concern. Matching is by simple name (no import
-     * resolution). Re-parses {@code javaSource} independently of {@link #read}.
+     * <p>This guard is <em>annotation-level</em>: it does not report attribute-level
+     * loss <em>within</em> a read annotation. That gap is now closed for
+     * {@code @Field}/{@code @Validation} (read attribute-complete in Slice D);
+     * completeness of the other read annotations ({@code @Relationship},
+     * {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is verified per-slice
+     * rather than by this method. Matching is by simple name (no import resolution).
+     * Re-parses {@code javaSource} independently of {@link #read}.
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -215,24 +221,9 @@ public final class SourceModelReader {
     }
 
     private DomainMetadata toDomain(CompilationUnit cu, ClassOrInterfaceDeclaration type) {
-        List<FieldMetadata> fields = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
-            if (field.getAnnotationByName("Relationship").isPresent()) {
-                continue; // relationships are modelled separately, not as plain fields
-            }
-            boolean required = isRequired(field);
-            for (VariableDeclarator var : field.getVariables()) {
-                String name = var.getNameAsString();
-                String fieldType = var.getTypeAsString();
-                fields.add(required
-                        ? FieldMetadata.required(name, fieldType)
-                        : FieldMetadata.simple(name, fieldType));
-            }
-        }
-
         String entityName = exerisDomainName(type).orElse(type.getNameAsString());
         DomainMetadata.Builder builder = DomainMetadata.builder(entityName, packageName(cu))
-                .fields(fields)
+                .fields(fields(type))
                 .relationships(relationships(type))
                 .actions(actions(type))
                 .events(events(type));
@@ -708,14 +699,165 @@ public final class SourceModelReader {
     }
 
     /**
-     * {@code @Field}-shape ownership of {@code required} (canonical per the
-     * annotations package-info): true only when {@code @Field(required = true)}
-     * is present. A bare {@code @Field} marker or no annotation means not-required.
+     * Entity fields, mirroring {@code ExerisDomainProcessor.extractFieldsMetadata}'s
+     * two-path contract:
+     * <ul>
+     *   <li>a field <b>with</b> {@code @Field} → {@link #fieldMetadata} (full
+     *       attribute surface, present-only on a {@link FieldMetadata.Builder});</li>
+     *   <li>a field <b>without</b> {@code @Field} → {@link FieldMetadata#simple}
+     *       (which, unlike the builder default, sets
+     *       {@code searchable}/{@code sortable}/{@code filterable} to {@code true}).</li>
+     * </ul>
+     * The two paths intentionally differ on the search/sort/filter defaults — that
+     * asymmetry <em>is</em> the processor's behaviour, so the reader reproduces it
+     * exactly to stay in lock-step. {@code @Relationship} fields are skipped (they
+     * are modelled separately).
      */
-    private boolean isRequired(FieldDeclaration field) {
-        Optional<AnnotationExpr> ann = field.getAnnotationByName("Field");
-        return ann.isPresent()
-                && "true".equals(value(ann.get(), "required").map(Expression::toString).orElse(null));
+    private List<FieldMetadata> fields(ClassOrInterfaceDeclaration type) {
+        List<FieldMetadata> fields = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            if (field.getAnnotationByName("Relationship").isPresent()) {
+                continue;
+            }
+            Optional<AnnotationExpr> fieldAnn = field.getAnnotationByName("Field");
+            Optional<AnnotationExpr> validationAnn = field.getAnnotationByName("Validation");
+            for (VariableDeclarator var : field.getVariables()) {
+                String name = var.getNameAsString();
+                String fieldType = var.getTypeAsString();
+                fields.add(fieldAnn.isPresent()
+                        ? fieldMetadata(name, fieldType, fieldAnn.get(), validationAnn.orElse(null))
+                        : FieldMetadata.simple(name, fieldType));
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * A single {@code @Field}-annotated field → {@link FieldMetadata}, mirroring
+     * {@code extractFieldMetadata}: the {@code @Field} attribute surface the
+     * processor reads (label→displayName, description, required, unique, indexed,
+     * searchable, sortable, filterable, readOnly, inCreate, inUpdate, computed,
+     * computedFrom) is applied present-only; {@code @Validation} (only consulted
+     * when {@code @Field} is present, as in the processor) contributes
+     * {@code min}/{@code max}/{@code pattern} plus the two deprecated fallbacks.
+     *
+     * <p>"Attribute-complete" means complete <em>against what the processor reads</em>,
+     * not against every {@code @Field} attribute with a {@link FieldMetadata}
+     * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
+     * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
+     * populates it, so reading it here would be a divergence, not a fix. (The other
+     * unread {@code @Field} attributes — {@code inList}, {@code inDetail},
+     * {@code order}, {@code ui}, {@code dataType}, {@code cssClass}, {@code group},
+     * {@code sensitive}, {@code encrypted}, {@code maskPattern}, {@code writeOnly},
+     * {@code compositeUnique} — have no {@code FieldMetadata} counterpart at all.)
+     */
+    private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
+        FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
+        stringAttr(field, "label").ifPresent(builder::displayName);
+        stringAttr(field, "description").ifPresent(builder::description);
+        boolAttr(field, "required").ifPresent(builder::required);
+        boolAttr(field, "unique").ifPresent(builder::unique);
+        boolAttr(field, "indexed").ifPresent(builder::indexed);
+        boolAttr(field, "searchable").ifPresent(builder::searchable);
+        boolAttr(field, "sortable").ifPresent(builder::sortable);
+        boolAttr(field, "filterable").ifPresent(builder::filterable);
+        boolAttr(field, "readOnly").ifPresent(builder::readOnly);
+        boolAttr(field, "inCreate").ifPresent(builder::inCreate);
+        boolAttr(field, "inUpdate").ifPresent(builder::inUpdate);
+        boolAttr(field, "computed").ifPresent(builder::computed);
+        stringArrayAttr(field, "computedFrom").ifPresent(builder::computedFrom);
+        if (validation != null) {
+            applyValidation(field, validation, builder);
+        }
+        return builder.build();
+    }
+
+    /**
+     * {@code @Validation} contributions to {@link FieldMetadata}, mirroring the
+     * validation block of {@code extractFieldMetadata} plus
+     * {@code applyDeprecatedValidationFallbacks}:
+     * <ul>
+     *   <li>{@code min}/{@code max} (long) and {@code pattern} present-only;</li>
+     *   <li>deprecated {@code required = true} → {@code @Field.required} only when
+     *       {@code @Field} did not set it (canonical wins);</li>
+     *   <li>deprecated {@code validateOn} = {@code "CREATE"}/{@code "UPDATE"} →
+     *       {@code inUpdate}/{@code inCreate} = false, again only when {@code @Field}
+     *       did not set the corresponding attribute.</li>
+     * </ul>
+     * The processor also emits build warnings for the deprecated attributes; the
+     * reader has no diagnostics channel and produces the same {@code DomainMetadata}
+     * value without them, which is what reattach compares.
+     */
+    private void applyValidation(AnnotationExpr field, AnnotationExpr validation, FieldMetadata.Builder builder) {
+        // Only min/max/pattern are read — the processor's @Validation block reads
+        // exactly these three; @Validation.minLength/maxLength exist on the annotation
+        // but the processor does NOT read them into FieldMetadata, so reading them here
+        // would itself create a divergence. Note: min == 0 is not wire-safe under
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that is the
+        // documented Field/Validation overlap follow-up, not introduced here.
+        longAttr(validation, "min").ifPresent(builder::min);
+        longAttr(validation, "max").ifPresent(builder::max);
+        stringAttr(validation, "pattern").ifPresent(builder::pattern);
+
+        if (boolAttr(validation, "required").orElse(false) && boolAttr(field, "required").isEmpty()) {
+            builder.required(true);
+        }
+        stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {
+            if ("CREATE".equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
+                builder.inUpdate(false);
+            } else if ("UPDATE".equals(validateOn) && boolAttr(field, "inCreate").isEmpty()) {
+                builder.inCreate(false);
+            }
+        });
+    }
+
+    /**
+     * Present-only {@code String[]} attribute as a {@code List<String>} of literal
+     * values — both the {@code {"a","b"}} array form and the single-element
+     * {@code "a"} (brace-elided) form, mirroring how the processor unwraps the
+     * javac array. Empty when the attribute is absent.
+     */
+    private Optional<List<String>> stringArrayAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).map(expression -> {
+            List<String> values = new ArrayList<>();
+            if (expression.isArrayInitializerExpr()) {
+                for (Expression element : expression.asArrayInitializerExpr().getValues()) {
+                    if (element.isStringLiteralExpr()) {
+                        values.add(element.asStringLiteralExpr().asString());
+                    }
+                }
+            } else if (expression.isStringLiteralExpr()) {
+                values.add(expression.asStringLiteralExpr().asString());
+            }
+            return values;
+        });
+    }
+
+    /**
+     * Present-only signed-long attribute from an integer/long literal, unwrapping a
+     * leading unary minus (a {@code UnaryExpr}). Unlike the count-style
+     * {@link #intAttr}, negatives are meaningful here ({@code @Validation.min}/
+     * {@code max} are signed bounds), so they are read rather than dropped.
+     */
+    private Optional<Long> longAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).flatMap(this::asLong);
+    }
+
+    private Optional<Long> asLong(Expression expression) {
+        if (expression.isUnaryExpr()) {
+            UnaryExpr unary = expression.asUnaryExpr();
+            if (unary.getOperator() == UnaryExpr.Operator.MINUS) {
+                return asLong(unary.getExpression()).map(value -> -value);
+            }
+            return Optional.empty();
+        }
+        if (expression.isIntegerLiteralExpr()) {
+            return Optional.of(expression.asIntegerLiteralExpr().asNumber().longValue());
+        }
+        if (expression.isLongLiteralExpr()) {
+            return Optional.of(expression.asLongLiteralExpr().asNumber().longValue());
+        }
+        return Optional.empty();
     }
 
     private String packageName(CompilationUnit cu) {
