@@ -652,6 +652,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Saga;
                     import eu.exeris.sdk.annotation.Projection;
                     import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                     import eu.exeris.sdk.annotation.NavMenu;
                     import eu.exeris.sdk.annotation.Validation;
                     import eu.exeris.sdk.annotation.Field;
@@ -659,8 +660,9 @@ class SourceModelIoTest {
 
                     // tenantScoped read (Slice A); roles unread but processor drops it too
                     @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
-                    @EventSourced @Graph @Saga @DomainEvent  // processor reads these -> divergences
-                    @Projection @NavMenu                     // processor drops these too -> NOT divergences
+                    @EventSourced @Graph @Saga                // processor reads these -> divergences
+                    @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created") // now read (Slice B) -> NOT a divergence
+                    @Projection @NavMenu                      // processor drops these too -> NOT divergences
                     public class Order {
                         @PrimaryKey private Long id;          // system -> processor drops -> NOT flagged
                         @Validation(email = true) private String contact; // processor reads -> divergence
@@ -669,10 +671,10 @@ class SourceModelIoTest {
                     """;
             // flagged: exactly the facets the processor emits but the reader drops
             assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
-                    "@EventSourced", "@Graph", "@Saga", "@DomainEvent", "@Validation");
-            // NOT flagged: facets neither side reads, nor @ExerisDomain attributes
+                    "@EventSourced", "@Graph", "@Saga", "@Validation");
+            // NOT flagged: facets neither side reads, events (now read), nor @ExerisDomain attributes
             assertThat(reader.unmodeledFacets(src))
-                    .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey",
+                    .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey", "@DomainEvent",
                             "@ExerisDomain attributes not yet read");
         }
 
@@ -702,6 +704,153 @@ class SourceModelIoTest {
         @Test
         void emptyWhenNoExerisDomainType() {
             assertThat(reader.unmodeledFacets("package x; public class Plain {}")).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @DomainEvent extraction (events)")
+    class Events {
+
+        private static final String ORDER = """
+                package app.budgethq.order;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.DomainEvent;
+                import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                import eu.exeris.sdk.annotation.Field;
+
+                @ExerisDomain(name = "OrderEntity")
+                @DomainEvent(name = "OrderPlaced", trigger = Trigger.CREATE,
+                        topic = "orders.created", description = "Customer placed an order")
+                @DomainEvent(trigger = Trigger.UPDATE, topic = "orders.updated")
+                public class Order {
+                    @Field private String code;
+                }
+                """;
+
+        @Test
+        void readsRepeatedDomainEventsWithExplicitName() {
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+
+            assertThat(domain.events()).extracting("name")
+                    .containsExactlyInAnyOrder("OrderPlaced", "OrderUpdatedEvent");
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderPlaced");
+                assertThat(e.topic()).isEqualTo("orders.created");
+                assertThat(e.description()).isEqualTo("Customer placed an order");
+                // aggregateType mirrors the processor: the *class* simple name, not @ExerisDomain(name)
+                assertThat(e.aggregateType()).isEqualTo("Order");
+            });
+        }
+
+        @Test
+        void derivesEventNameFromTriggerWhenNameAbsent() {
+            // @DomainEvent(trigger = UPDATE) with no name -> "Order" + "UpdatedEvent"
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderUpdatedEvent");
+                assertThat(e.topic()).isEqualTo("orders.updated");
+                assertThat(e.description()).isNull();
+            });
+        }
+
+        @Test
+        void defaultsTriggerToCreateWhenAbsent() {
+            // no trigger attribute at all -> processor defaults to CREATE -> "CreatedEvent"
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    @ExerisDomain(name = "Thing")
+                    @DomainEvent(topic = "things.created")
+                    public class Thing {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("ThingCreatedEvent"));
+        }
+
+        @Test
+        void unmappedTriggerFallsBackToGenericSuffix() {
+            // SNAPSHOT has no explicit suffix mapping -> generic "Event"
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Thing")
+                    @DomainEvent(trigger = Trigger.SNAPSHOT, topic = "things.snap")
+                    public class Thing {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("ThingEvent"));
+        }
+
+        @Test
+        void unwrapsHandWrittenDomainEventsContainer() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvents({
+                        @DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"),
+                        @DomainEvent(name = "Deleted", trigger = Trigger.DELETE, topic = "o.deleted")
+                    })
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).extracting("name")
+                    .containsExactlyInAnyOrder("Created", "Deleted");
+        }
+
+        @Test
+        void unwrapsSingleElementContainerWithoutArrayBraces() {
+            // legal Java: a single-element annotation array may omit the { } braces
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvents(@DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"))
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("Created"));
+        }
+
+        @Test
+        void readsNestedClassEventLegacyForm() {
+            // processor's legacy path: a nested @DomainEvent class -> name = class name, topic only
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    public class Order {
+                        @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
+                        public static class OrderCreated {}
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement().satisfies(e -> {
+                assertThat(e.name()).isEqualTo("OrderCreated");
+                assertThat(e.topic()).isEqualTo("orders.created");
+                assertThat(e.description()).isNull();
+                assertThat(e.aggregateType()).isNull(); // withTopic leaves it null, mirroring the processor
+            });
+        }
+
+        @Test
+        void emptyEventsWhenNoDomainEvent() {
+            DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
+            assertThat(domain.events()).isEmpty();
         }
     }
 }
