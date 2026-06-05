@@ -306,6 +306,40 @@ class AstJsonRoundTripTest {
         assertRoundTrip(original, EnumMetadata.class);
     }
 
+    @Test
+    @DisplayName("ProvidesMetadata round-trips versioned and unversioned")
+    void providesMetadataRoundTrips() {
+        assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry", "1.0.0"), ProvidesMetadata.class);
+        // unversioned: version is null and dropped by NON_NULL, read back as null
+        assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry"), ProvidesMetadata.class);
+    }
+
+    @Test
+    @DisplayName("RequiresMetadata round-trips (NON_DEFAULT drops optional=false)")
+    void requiresMetadataRoundTrips() {
+        assertRoundTrip(new RequiresMetadata("com.acme.gw.UpstreamPool", "[1.0.0,2.0.0)", true), RequiresMetadata.class);
+        // minimal: versionRange null and optional false both drop, read back as (service, null, false)
+        assertRoundTrip(RequiresMetadata.of("KERNEL_TRANSPORT"), RequiresMetadata.class);
+    }
+
+    @Test
+    @DisplayName("CapabilityModuleMetadata round-trips with provides, requires, lifecycleOwner")
+    void capabilityModuleMetadataRoundTrips() {
+        CapabilityModuleMetadata original = CapabilityModuleMetadata.builder()
+                .provides(List.of(
+                        ProvidesMetadata.of("com.acme.gw.RouteRegistry", "1.0.0"),
+                        ProvidesMetadata.of("com.acme.gw.BackendHealthMonitor")))
+                .requires(List.of(
+                        RequiresMetadata.of("com.acme.kernel.KernelTransport"),
+                        new RequiresMetadata("com.acme.obs.MetricsSink", null, true)))
+                .lifecycleOwner("com.acme.gw.GatewayLifecycle")
+                .build();
+
+        assertRoundTrip(original, CapabilityModuleMetadata.class);
+        // empty module: lists serialize as [], lifecycleOwner null/dropped
+        assertRoundTrip(CapabilityModuleMetadata.empty(), CapabilityModuleMetadata.class);
+    }
+
     private <T> void assertRoundTrip(T original, Class<T> type) {
         String json;
         T parsed;
