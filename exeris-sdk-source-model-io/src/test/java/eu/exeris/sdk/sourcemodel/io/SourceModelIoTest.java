@@ -109,6 +109,40 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsDomainLevelAttributesPresentOnly() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing", tenantScoped = true,
+                                  softDelete = true, restApi = false)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.module()).isEqualTo("billing");
+            assertThat(d.tenantScoped()).isTrue();
+            assertThat(d.softDelete()).isTrue();
+            assertThat(d.restApi()).isFalse();          // explicit override
+            // absent attribute keeps the builder default (not read, not forced)
+            assertThat(d.audited()).isFalse();
+        }
+
+        @Test
+        void absentBooleanAttributeKeepsBuilderDefault() {
+            // restApi defaults TRUE in the builder (the surprising branch — all other
+            // booleans default false); an absent restApi must stay true, not be forced.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing")
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+            assertThat(d.restApi()).isTrue();
+            assertThat(d.tenantScoped()).isFalse();
+        }
+
+        @Test
         void returnsEmptyWhenNoExerisDomainType() {
             Optional<DomainMetadata> domain = reader.read(
                     "package x; public class Plain { private int n; }");
@@ -609,7 +643,7 @@ class SourceModelIoTest {
         }
 
         @Test
-        void detectsUnmodeledFacetsAndExtraDomainAttributes() {
+        void flagsOnlyProcessorReaderDivergences() {
             String src = """
                     package app.budgethq.order;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -623,23 +657,35 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
-                    @ExerisDomain(name = "Order", tenantScoped = true)
-                    @EventSourced
-                    @Graph
-                    @Saga
-                    @Projection
-                    @DomainEvent
-                    @NavMenu
+                    // tenantScoped read (Slice A); roles unread but processor drops it too
+                    @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
+                    @EventSourced @Graph @Saga @DomainEvent  // processor reads these -> divergences
+                    @Projection @NavMenu                     // processor drops these too -> NOT divergences
                     public class Order {
-                        @PrimaryKey private Long id;        // system-level, unread
-                        @Validation(email = true) private String contact; // field-level, unread
+                        @PrimaryKey private Long id;          // system -> processor drops -> NOT flagged
+                        @Validation(email = true) private String contact; // processor reads -> divergence
                         @Field private String code;
                     }
                     """;
+            // flagged: exactly the facets the processor emits but the reader drops
             assertThat(reader.unmodeledFacets(src)).containsExactlyInAnyOrder(
-                    "@EventSourced", "@Graph", "@Saga", "@Projection", "@DomainEvent",
-                    "@NavMenu", "@PrimaryKey", "@Validation",
-                    "@ExerisDomain attributes beyond name");
+                    "@EventSourced", "@Graph", "@Saga", "@DomainEvent", "@Validation");
+            // NOT flagged: facets neither side reads, nor @ExerisDomain attributes
+            assertThat(reader.unmodeledFacets(src))
+                    .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey",
+                            "@ExerisDomain attributes not yet read");
+        }
+
+        @Test
+        void modeledDomainAttributesAreNotFlagged() {
+            // tenantScoped/softDelete are read (Slice A) -> guard stays empty
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare", tenantScoped = true, softDelete = true)
+                    public class Bare {}
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
 
         @Test
