@@ -23,12 +23,18 @@ import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
+import eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
+import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -57,17 +63,23 @@ import java.util.TreeSet;
  * cache/search config) are read present-only. Domain {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
- * processor's three sources and its trigger-based name derivation).
+ * processor's three sources and its trigger-based name derivation). Class-level
+ * {@code @Graph}, {@code @EventSourced}, {@code @Saga} (with {@code @SagaStep}
+ * methods), and {@code @InternalApi} are read into the matching
+ * {@link DomainMetadata} facets, each mirroring the processor's extraction
+ * (including its {@code streamPrefix→aggregateType} translation and presence-only
+ * {@code @InternalApi}).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
- * {@code read()} still diverges on the facets the processor emits but the reader
- * does not yet: graph, saga, event-sourcing, internal-API, and field-level
- * {@code @Validation}. A round-trip / reattach caller MUST consult
- * {@link #unmodeledFacets} first and refuse (or warn) when it is non-empty,
- * otherwise the dropped metadata is silently misattributed as a user edit during
- * conflict detection. (Facets the processor doesn't read either — {@code @Projection},
- * {@code @NavMenu}, {@code @EventHandler}, {@code system}/{@code security} annotations
- * — are not divergences.)
+ * the only remaining facet {@code read()} diverges on is field-level
+ * {@code @Validation} (the processor folds its deprecated {@code required}/
+ * {@code validateOn} fallbacks into {@link FieldMetadata}; the reader does not yet).
+ * A round-trip / reattach caller MUST consult {@link #unmodeledFacets} first and
+ * refuse (or warn) when it is non-empty, otherwise the dropped metadata is silently
+ * misattributed as a user edit during conflict detection. (Facets the processor
+ * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+ * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, {@code system}/
+ * {@code security} annotations — are not divergences.)
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -86,18 +98,17 @@ public final class SourceModelReader {
      * for reattach — the conflict-detection baseline is the processor's codegen
      * output, so a facet the processor keeps and the reader drops would be
      * misread as a user edit. (Facets neither side reads — e.g. {@code @Projection},
-     * {@code @NavMenu}, {@code @EventHandler}, the {@code system}/{@code security}
-     * annotations — are <b>not</b> divergences and are not flagged: the reader's
-     * {@code DomainMetadata} matches the processor's for those sources.)
+     * {@code @NavMenu}, {@code @EventHandler},
+     * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, the
+     * {@code system}/{@code security} annotations — are <b>not</b> divergences and
+     * are not flagged: the reader's {@code DomainMetadata} matches the processor's
+     * for those sources.)
      *
      * <p>Matched by simple name (no import resolution). As reader slices land, a
-     * name graduates out of this set.
+     * name graduates out of this set; after the graph/saga/event-sourcing/
+     * internal-API slice only field-level {@code @Validation} remains.
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
-            "Graph", "GraphEdge", "GraphProperty", "GraphQuery",    // -> graphMetadata
-            "EventSourced",                                         // -> eventSourced
-            "Saga", "SagaStep",                                     // -> sagaMetadata
-            "InternalApi",                                          // -> internalApi
             "Validation");                                          // -> FieldMetadata validation
 
     private final JavaParser javaParser;
@@ -157,11 +168,12 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS}
-     * (graph, saga, event-sourcing, internal-API, and field-level
-     * {@code @Validation}). <b>Not</b> flagged: facets neither side reads
-     * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+     * (currently only field-level {@code @Validation}). <b>Not</b> flagged: facets
+     * neither side reads ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+     * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery},
      * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations),
-     * {@code @DomainEvent}s (now read into {@code events}), and {@code @ExerisDomain}
+     * {@code @DomainEvent}s and {@code @Graph}/{@code @EventSourced}/{@code @Saga}/
+     * {@code @InternalApi} (now read into their facets), and {@code @ExerisDomain}
      * attributes (the reader reads exactly the set the processor does) — those don't
      * change the {@code DomainMetadata} relative to the baseline, so flagging them
      * would needlessly refuse safe entities.
@@ -228,6 +240,22 @@ public final class SourceModelReader {
         UIMetadata ui = uiMetadata(type);
         if (ui != null) {
             builder.uiMetadata(ui);
+        }
+        GraphMetadata graph = graphMetadata(type);
+        if (graph != null) {
+            builder.graphMetadata(graph);
+        }
+        EventSourcedMetadata eventSourced = eventSourced(type);
+        if (eventSourced != null) {
+            builder.eventSourced(eventSourced);
+        }
+        SagaMetadata saga = sagaMetadata(type);
+        if (saga != null) {
+            builder.sagaMetadata(saga);
+        }
+        InternalApiMetadata internalApi = internalApi(type);
+        if (internalApi != null) {
+            builder.internalApi(internalApi);
         }
         return builder.build();
     }
@@ -464,6 +492,113 @@ public final class SourceModelReader {
                 .map(Expression::toString)
                 .map("true"::equals)
                 .orElse(defaultValue);
+    }
+
+    /**
+     * Class-level {@code @Graph} → {@link GraphMetadata}, or {@code null} when
+     * absent. Mirrors {@code extractGraphMetadata}: the label is
+     * {@code @Graph(nodeClass)} falling back to the class simple name, and — as in
+     * the processor — properties stay {@code null} while edges/queries are empty.
+     * The {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery} member
+     * annotations are read by neither side (so they are not guard divergences).
+     */
+    private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
+        if (graph.isEmpty()) {
+            return null;
+        }
+        String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
+        return new GraphMetadata(label, null, List.of(), List.of());
+    }
+
+    /**
+     * Class-level {@code @EventSourced} → {@link EventSourcedMetadata}, or
+     * {@code null} when absent. Mirrors {@code extractEventSourcedMetadata}'s
+     * deliberate attribute translation: {@code streamPrefix} (empty → class simple
+     * name) becomes {@code aggregateType}, and {@code snapshotThreshold} (default
+     * 50) becomes {@code snapshotEvery}; all other event-sourcing fields keep
+     * {@link EventSourcedMetadata.Builder} defaults.
+     */
+    private EventSourcedMetadata eventSourced(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> es = type.getAnnotationByName("EventSourced");
+        if (es.isEmpty()) {
+            return null;
+        }
+        String streamPrefix = stringAttr(es.get(), "streamPrefix").orElse("");
+        String aggregateType = streamPrefix.isEmpty() ? type.getNameAsString() : streamPrefix;
+        return EventSourcedMetadata.builder(aggregateType)
+                .snapshotEvery(intAttr(es.get(), "snapshotThreshold").orElse(50))
+                .build();
+    }
+
+    /**
+     * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
+     * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
+     * simple name; {@code description}/{@code timeout}/{@code maxRetries} are
+     * present-only; steps come from {@code @SagaStep} methods.
+     */
+    private SagaMetadata sagaMetadata(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> saga = type.getAnnotationByName("Saga");
+        if (saga.isEmpty()) {
+            return null;
+        }
+        String name = stringAttr(saga.get(), "name").orElse(type.getNameAsString());
+        SagaMetadata.Builder builder = SagaMetadata.builder(name);
+        stringAttr(saga.get(), "description").ifPresent(builder::description);
+        stringAttr(saga.get(), "timeout").ifPresent(builder::timeout);
+        intAttr(saga.get(), "maxRetries").ifPresent(builder::maxRetries);
+        builder.steps(sagaSteps(type));
+        return builder.build();
+    }
+
+    /**
+     * {@code @SagaStep} methods → {@link SagaStepMetadata}, sorted by {@code order},
+     * mirroring {@code extractSagaSteps}: {@code name} falls back to the method
+     * name, {@code order} defaults to 1, and
+     * {@code description}/{@code service}/{@code command}/{@code compensation}/
+     * {@code timeout}/{@code parallel} are present-only.
+     */
+    private List<SagaStepMetadata> sagaSteps(ClassOrInterfaceDeclaration type) {
+        List<SagaStepMetadata> steps = new ArrayList<>();
+        for (MethodDeclaration method : type.getMethods()) {
+            Optional<AnnotationExpr> step = method.getAnnotationByName("SagaStep");
+            if (step.isEmpty()) {
+                continue;
+            }
+            String name = stringAttr(step.get(), "name").orElse(method.getNameAsString());
+            int order = intAttr(step.get(), "order").orElse(1);
+            SagaStepMetadata.Builder builder = SagaStepMetadata.builder(name, order);
+            stringAttr(step.get(), "description").ifPresent(builder::description);
+            stringAttr(step.get(), "service").ifPresent(builder::service);
+            stringAttr(step.get(), "command").ifPresent(builder::command);
+            stringAttr(step.get(), "compensation").ifPresent(builder::compensation);
+            stringAttr(step.get(), "timeout").ifPresent(builder::timeout);
+            boolAttr(step.get(), "parallel").ifPresent(builder::parallel);
+            steps.add(builder.build());
+        }
+        steps.sort(Comparator.comparingInt(SagaStepMetadata::order));
+        return steps;
+    }
+
+    /**
+     * Class-level {@code @InternalApi} → {@link InternalApiMetadata}, or
+     * {@code null} when absent. Mirrors {@code extractInternalApiMetadata}: the
+     * SDK annotation and the AST record describe different concepts (a known,
+     * documented drift), so the only signal extracted is presence → {@code
+     * internal = true}; every other field stays at its default.
+     */
+    private InternalApiMetadata internalApi(ClassOrInterfaceDeclaration type) {
+        if (type.getAnnotationByName("InternalApi").isEmpty()) {
+            return null;
+        }
+        return InternalApiMetadata.builder().internal(true).build();
+    }
+
+    /** Present-only int attribute from an integer literal (no default — absent leaves it to the caller). */
+    private Optional<Integer> intAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute)
+                .filter(Expression::isIntegerLiteralExpr)
+                .map(value -> value.asIntegerLiteralExpr().asNumber().intValue());
     }
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {
