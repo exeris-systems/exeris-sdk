@@ -643,7 +643,10 @@ class SourceModelIoTest {
         }
 
         @Test
-        void flagsOnlyProcessorReaderDivergences() {
+        void fullyAnnotatedEntityHasNoDivergences() {
+            // every processor facet is now read (Slices A-D): the guard is empty even
+            // for an entity touching all of them. @Projection/@NavMenu/@PrimaryKey are
+            // processor-gaps (never divergences); @Validation is read into FieldMetadata.
             String src = """
                     package app.budgethq.order;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -659,26 +662,18 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
-                    // tenantScoped read (Slice A); roles unread but processor drops it too
                     @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
-                    @EventSourced @Graph @Saga                // now read (Slice C) -> NOT divergences
-                    @InternalApi(rateLimit = 100)             // now read (Slice C) -> NOT a divergence
-                    @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created") // now read (Slice B) -> NOT a divergence
-                    @Projection @NavMenu                      // processor drops these too -> NOT divergences
+                    @EventSourced @Graph @Saga
+                    @InternalApi(rateLimit = 100)
+                    @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
+                    @Projection @NavMenu
                     public class Order {
-                        @PrimaryKey private Long id;          // system -> processor drops -> NOT flagged
-                        @Validation(email = true) private String contact; // processor reads -> divergence
+                        @PrimaryKey private Long id;
+                        @Field @Validation(min = 1, max = 9999) private String contact;
                         @Field private String code;
                     }
                     """;
-            // flagged: exactly the facets the processor emits but the reader drops
-            // (after Slice C only field-level @Validation remains)
-            assertThat(reader.unmodeledFacets(src)).containsExactly("@Validation");
-            // NOT flagged: facets neither side reads, plus everything read in Slices A-C
-            assertThat(reader.unmodeledFacets(src))
-                    .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey", "@DomainEvent",
-                            "@EventSourced", "@Graph", "@Saga", "@InternalApi",
-                            "@ExerisDomain attributes not yet read");
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
 
         @Test
@@ -1022,6 +1017,176 @@ class SourceModelIoTest {
             assertThat(domain.eventSourced()).isNull();
             assertThat(domain.sagaMetadata()).isNull();
             assertThat(domain.internalApi()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @Field attribute surface + @Validation (field fidelity)")
+    class Fields {
+
+        private static final String PRODUCT = """
+                package app.budgethq.product;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.Field;
+                import eu.exeris.sdk.annotation.Validation;
+
+                @ExerisDomain(name = "Product")
+                public class Product {
+                    @Field(label = "SKU", description = "Stock code", unique = true, indexed = true,
+                            searchable = true, sortable = true, filterable = true, readOnly = true,
+                            inCreate = false, inUpdate = false, computed = true,
+                            computedFrom = {"a", "b"})
+                    private String sku;
+
+                    @Field
+                    @Validation(min = 0, max = 100, pattern = "[A-Z]+")
+                    private String code;
+
+                    private long internalCounter; // no @Field
+                }
+                """;
+
+        @Test
+        void readsFullFieldAttributeSurfacePresentOnly() {
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("sku")).get().satisfies(field -> {
+                assertThat(field.displayName()).isEqualTo("SKU");
+                assertThat(field.description()).isEqualTo("Stock code");
+                assertThat(field.unique()).isTrue();
+                assertThat(field.indexed()).isTrue();
+                assertThat(field.searchable()).isTrue();
+                assertThat(field.sortable()).isTrue();
+                assertThat(field.filterable()).isTrue();
+                assertThat(field.readOnly()).isTrue();
+                assertThat(field.inCreate()).isFalse();
+                assertThat(field.inUpdate()).isFalse();
+                assertThat(field.computed()).isTrue();
+                assertThat(field.computedFrom()).containsExactly("a", "b");
+            });
+        }
+
+        @Test
+        void plainFieldLeavesSearchSortFilterAtBuilderFalse() {
+            // THE parity fix: a field WITH @Field uses the builder (search/sort/filter
+            // default false), unlike the processor's no-@Field path which uses simple().
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("code")).get().satisfies(field -> {
+                assertThat(field.searchable()).isFalse();
+                assertThat(field.sortable()).isFalse();
+                assertThat(field.filterable()).isFalse();
+                assertThat(field.inCreate()).isTrue();  // builder default
+                assertThat(field.inUpdate()).isTrue();
+            });
+        }
+
+        @Test
+        void fieldWithoutAnnotationUsesSimpleDefaults() {
+            // no @Field -> FieldMetadata.simple() -> search/sort/filter TRUE (the asymmetry)
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("internalCounter")).get().satisfies(field -> {
+                assertThat(field.searchable()).isTrue();
+                assertThat(field.sortable()).isTrue();
+                assertThat(field.filterable()).isTrue();
+            });
+        }
+
+        @Test
+        void readsValidationMinMaxPattern() {
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("code")).get().satisfies(field -> {
+                assertThat(field.min()).isEqualTo(0L);
+                assertThat(field.max()).isEqualTo(100L);
+                assertThat(field.pattern()).isEqualTo("[A-Z]+");
+            });
+        }
+
+        @Test
+        void readsNegativeValidationMin() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(min = -10, max = -1) private int delta;
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().findField("delta")).get().satisfies(field -> {
+                assertThat(field.min()).isEqualTo(-10L); // unary minus unwrapped
+                assertThat(field.max()).isEqualTo(-1L);
+            });
+        }
+
+        @Test
+        void deprecatedValidationRequiredFallsBackWhenFieldDoesNot() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(required = true) private String a;
+                        @Field(required = false) @Validation(required = true) private String b;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            // a: @Field has no required -> deprecated @Validation.required carries over
+            assertThat(domain.findField("a")).get().extracting("required").isEqualTo(true);
+            // b: canonical @Field.required=false wins; the deprecated fallback does not override
+            assertThat(domain.findField("b")).get().extracting("required").isEqualTo(false);
+        }
+
+        @Test
+        void deprecatedValidateOnMapsToFormLifecycle() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(validateOn = "CREATE") private String onCreate;
+                        @Field @Validation(validateOn = "UPDATE") private String onUpdate;
+                        @Field @Validation(validateOn = "WHENEVER") private String unknown;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            // CREATE -> not in update form
+            assertThat(domain.findField("onCreate")).get().satisfies(field -> {
+                assertThat(field.inUpdate()).isFalse();
+                assertThat(field.inCreate()).isTrue();
+            });
+            // UPDATE -> not in create form
+            assertThat(domain.findField("onUpdate")).get().satisfies(field -> {
+                assertThat(field.inCreate()).isFalse();
+                assertThat(field.inUpdate()).isTrue();
+            });
+            // unrecognised value -> no fallback applied (both stay at builder default true)
+            assertThat(domain.findField("unknown")).get().satisfies(field -> {
+                assertThat(field.inCreate()).isTrue();
+                assertThat(field.inUpdate()).isTrue();
+            });
+        }
+
+        @Test
+        void validationIgnoredWithoutField() {
+            // @Validation alone (no @Field) -> processor uses simple(), validation dropped
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Validation(min = 5, required = true) private String loose;
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().findField("loose")).get().satisfies(field -> {
+                assertThat(field.min()).isNull();        // validation not consulted
+                assertThat(field.required()).isFalse();
+                assertThat(field.searchable()).isTrue(); // simple() path
+            });
         }
     }
 }
