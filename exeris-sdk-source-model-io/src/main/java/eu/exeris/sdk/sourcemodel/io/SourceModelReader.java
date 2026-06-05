@@ -5,6 +5,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
@@ -19,6 +20,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
@@ -52,16 +54,20 @@ import java.util.TreeSet;
  * {@code @ExerisDomain} string + boolean attributes the processor reads
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
- * cache/search config) are read present-only.
+ * cache/search config) are read present-only. Domain {@code @DomainEvent}s are read
+ * into {@link DomainMetadata#events} (direct/repeated, hand-written
+ * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
+ * processor's three sources and its trigger-based name derivation).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
  * {@code read()} still diverges on the facets the processor emits but the reader
- * does not yet: events, graph, saga, event-sourcing, internal-API, and field-level
+ * does not yet: graph, saga, event-sourcing, internal-API, and field-level
  * {@code @Validation}. A round-trip / reattach caller MUST consult
  * {@link #unmodeledFacets} first and refuse (or warn) when it is non-empty,
  * otherwise the dropped metadata is silently misattributed as a user edit during
  * conflict detection. (Facets the processor doesn't read either — {@code @Projection},
- * {@code @NavMenu}, {@code system}/{@code security} annotations — are not divergences.)
+ * {@code @NavMenu}, {@code @EventHandler}, {@code system}/{@code security} annotations
+ * — are not divergences.)
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -80,15 +86,14 @@ public final class SourceModelReader {
      * for reattach — the conflict-detection baseline is the processor's codegen
      * output, so a facet the processor keeps and the reader drops would be
      * misread as a user edit. (Facets neither side reads — e.g. {@code @Projection},
-     * {@code @NavMenu}, the {@code system}/{@code security} annotations — are
-     * <b>not</b> divergences and are not flagged: the reader's {@code DomainMetadata}
-     * matches the processor's for those sources.)
+     * {@code @NavMenu}, {@code @EventHandler}, the {@code system}/{@code security}
+     * annotations — are <b>not</b> divergences and are not flagged: the reader's
+     * {@code DomainMetadata} matches the processor's for those sources.)
      *
      * <p>Matched by simple name (no import resolution). As reader slices land, a
      * name graduates out of this set.
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of(
-            "DomainEvent", "EventHandler",                          // -> events
             "Graph", "GraphEdge", "GraphProperty", "GraphQuery",    // -> graphMetadata
             "EventSourced",                                         // -> eventSourced
             "Saga", "SagaStep",                                     // -> sagaMetadata
@@ -152,10 +157,11 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS}
-     * (events, graph, saga, event-sourcing, internal-API, and field-level
+     * (graph, saga, event-sourcing, internal-API, and field-level
      * {@code @Validation}). <b>Not</b> flagged: facets neither side reads
-     * ({@code @Projection}, {@code @NavMenu}, {@code @Tab}/{@code @UIGroup}, the
-     * {@code system}/{@code security} annotations) and {@code @ExerisDomain}
+     * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+     * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations),
+     * {@code @DomainEvent}s (now read into {@code events}), and {@code @ExerisDomain}
      * attributes (the reader reads exactly the set the processor does) — those don't
      * change the {@code DomainMetadata} relative to the baseline, so flagging them
      * would needlessly refuse safe entities.
@@ -216,7 +222,8 @@ public final class SourceModelReader {
         DomainMetadata.Builder builder = DomainMetadata.builder(entityName, packageName(cu))
                 .fields(fields)
                 .relationships(relationships(type))
-                .actions(actions(type));
+                .actions(actions(type))
+                .events(events(type));
         type.getAnnotationByName("ExerisDomain").ifPresent(ann -> applyDomainAttributes(ann, builder));
         UIMetadata ui = uiMetadata(type);
         if (ui != null) {
@@ -347,6 +354,107 @@ public final class SourceModelReader {
                 .filter(s -> !s.isBlank())
                 .ifPresent(builder::defaultValue);
         return builder.build();
+    }
+
+    /**
+     * Domain events declared on the entity, mirroring
+     * {@code ExerisDomainProcessor.extractEventsMetadata}. Reads three source
+     * shapes, all keyed off the entity's <em>class</em> simple name (not the
+     * {@code @ExerisDomain(name)}), exactly as the processor uses
+     * {@code element.getSimpleName()}:
+     * <ul>
+     *   <li>repeated/single {@code @DomainEvent} directly on the type — the natural
+     *       source form of the {@code @Repeatable} annotation (javac folds these into
+     *       a {@code @DomainEvents} container only at the processor's JSR-269 level);</li>
+     *   <li>a hand-written {@code @DomainEvents} container (its {@code value} array
+     *       unwrapped);</li>
+     *   <li>nested classes annotated {@code @DomainEvent} (the processor's "legacy
+     *       support" path) — name = nested class name, topic only.</li>
+     * </ul>
+     */
+    private List<DomainEventMetadata> events(ClassOrInterfaceDeclaration type) {
+        List<DomainEventMetadata> events = new ArrayList<>();
+        String entitySimpleName = type.getNameAsString();
+        for (AnnotationExpr annotation : type.getAnnotations()) {
+            String simpleName = simpleName(annotation.getNameAsString());
+            if ("DomainEvent".equals(simpleName)) {
+                events.add(singleEvent(annotation, entitySimpleName));
+            } else if ("DomainEvents".equals(simpleName)) {
+                for (AnnotationExpr inner : containerEvents(annotation)) {
+                    events.add(singleEvent(inner, entitySimpleName));
+                }
+            }
+        }
+        for (BodyDeclaration<?> member : type.getMembers()) {
+            if (member instanceof ClassOrInterfaceDeclaration nested && !nested.isInterface()) {
+                nested.getAnnotationByName("DomainEvent").ifPresent(annotation ->
+                        events.add(DomainEventMetadata.withTopic(
+                                nested.getNameAsString(), stringAttr(annotation, "topic").orElse(null))));
+            }
+        }
+        return events;
+    }
+
+    /**
+     * One {@code @DomainEvent} → {@link DomainEventMetadata}, mirroring
+     * {@code extractSingleEventMetadata}: an absent/blank {@code name} is derived as
+     * {@code entityName + suffix(trigger)} with {@code trigger} defaulting to
+     * {@code CREATE}; {@code aggregateType} is always the entity class name.
+     */
+    private DomainEventMetadata singleEvent(AnnotationExpr annotation, String entitySimpleName) {
+        String name = stringAttr(annotation, "name")
+                .filter(s -> !s.isBlank())
+                .orElseGet(() -> entitySimpleName
+                        + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
+        String topic = stringAttr(annotation, "topic").orElse(null);
+        String description = stringAttr(annotation, "description").orElse(null);
+        return new DomainEventMetadata(name, topic, description, entitySimpleName);
+    }
+
+    /**
+     * The inner {@code @DomainEvent} annotations of a hand-written
+     * {@code @DomainEvents} container — either {@code @DomainEvents({...})}
+     * (single-member) or {@code @DomainEvents(value = {...})} (normal); a lone
+     * non-array element is also tolerated.
+     */
+    private List<AnnotationExpr> containerEvents(AnnotationExpr container) {
+        Optional<Expression> value = container.isSingleMemberAnnotationExpr()
+                ? Optional.of(container.asSingleMemberAnnotationExpr().getMemberValue())
+                : value(container, "value");
+        List<AnnotationExpr> inner = new ArrayList<>();
+        value.ifPresent(expression -> {
+            if (expression.isArrayInitializerExpr()) {
+                for (Expression element : expression.asArrayInitializerExpr().getValues()) {
+                    if (element.isAnnotationExpr()) {
+                        inner.add(element.asAnnotationExpr());
+                    }
+                }
+            } else if (expression.isAnnotationExpr()) {
+                inner.add(expression.asAnnotationExpr());
+            }
+        });
+        return inner;
+    }
+
+    /**
+     * Entity-name suffix for an unnamed event, by {@code @DomainEvent.Trigger}
+     * constant name — a verbatim mirror of {@code ExerisDomainProcessor}'s
+     * {@code triggerToEventSuffix}. Exact-string matching: an unmapped or future
+     * trigger falls through to the generic {@code "Event"} suffix rather than
+     * silently matching a prefix.
+     */
+    private String triggerToEventSuffix(String trigger) {
+        if (trigger == null) {
+            return "Event";
+        }
+        return switch (trigger) {
+            case "CREATE" -> "CreatedEvent";
+            case "UPDATE" -> "UpdatedEvent";
+            case "DELETE" -> "DeletedEvent";
+            case "FIELD_CHANGED" -> "ChangedEvent";
+            case "ACTION" -> "ActionEvent";
+            default -> "Event";
+        };
     }
 
     private boolean boolAttr(AnnotationExpr annotation, String attribute, boolean defaultValue) {
