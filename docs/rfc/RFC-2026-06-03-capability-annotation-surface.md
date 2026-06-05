@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **DRAFT**                                                            |
+| **Status**        | **ACCEPTED**                                                         |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-03                                                            |
-| **Date Closed**   | —                                                                    |
-| **Target ADR(s)** | TBD (an SDK-side ADR recording annotation placement + the service-reference decision; implements [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md)) |
+| **Date Closed**   | 2026-06-05                                                            |
+| **Target ADR(s)** | [ADR-038](../adr/ADR-038-capability-annotation-surface.md) (SDK realization; implements [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md)) |
 | **Affected Repos**| `exeris-sdk`, `exeris-tooling` (processor/codegen consume the annotations + AST), `exeris-platform` (lsp `exeris/listCapabilities`) |
 | **Reviewers**     | —                                                                    |
 
@@ -97,11 +97,11 @@ So the implementation ADR does not re-negotiate these mid-flight:
 
 - **`@CapabilityModule`** — `@Target(TYPE)`, one per cap API class (the `@Provides`/`@Requires` carrier). Mirrors `@ExerisDomain`'s `TYPE` target.
 - **`@CapabilityLifecycle`** — `@Target(TYPE)`, marker only, **zero-or-one per cap**. Absence is valid (a cap with no bootstrap-bound lifecycle owner); more than one is a build error the tooling validator rejects. May annotate a class distinct from the `@CapabilityModule` class.
-- **`@Provides` / `@Requires`** — `@Target(TYPE)` and **directly `@Repeatable`** (a cap declares several services from one module class), each with its standard-Java container (`@ProvidesAll` / `@RequiresAll`), mirroring the `@DomainEvent` → `@DomainEvents` container precedent in this repo. The AST flattens the container, so consumers never see it.
+- **`@Provides` / `@Requires`** — `@Target(TYPE)` and **directly `@Repeatable` via a nested `.List` container** (`@Provides.List` / `@Requires.List`), following the Jakarta Bean Validation idiom (`@Pattern.List`, `@Size.List`). The nested form is chosen over the repo's plural-name container styles (`@DomainEvent` → nested `DomainEvents`; `@SagaStep` → top-level `SagaSteps`) because both annotation names already end in `-s`, so a clean plural name is not available here. The AST flattens the container, so consumers never see it.
 - **AST field types** — primitive/string, `@JsonInclude(NON_DEFAULT)` per the wire-format contract:
   - `ProvidesMetadata(String service, String version)` — `service` = FQN string; `version` nullable (omitted when absent).
   - `RequiresMetadata(String service, String versionRange, boolean optional)` — `service` = FQN string; `versionRange` nullable; `optional` a **primitive boolean** (default `false`, dropped by `NON_DEFAULT` when false — the same `FAIL_ON_NULL_FOR_PRIMITIVES=false` consumer contract the existing AST relies on).
-  - `CapabilityModuleMetadata(... provides, ... requires, String lifecycleOwner)` — `lifecycleOwner` = FQN of the `@CapabilityLifecycle` class, nullable when the cap has none.
+  - `CapabilityModuleMetadata(List<ProvidesMetadata> provides, List<RequiresMetadata> requires, String lifecycleOwner)` — `lifecycleOwner` = FQN of the `@CapabilityLifecycle` class, nullable when the cap has none.
 
   `version` / `versionRange` are likely-to-stabilize string fields; the 0.x stability policy covers them, and the implementation ADR flags them as such.
 
@@ -119,18 +119,16 @@ So the implementation ADR does not re-negotiate these mid-flight:
 
 ## Decision Record
 
-<Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN.>
-
 | Field                | Value     |
 |:---------------------|:----------|
-| **Outcome**          | —         |
-| **Date**             | —         |
-| **Resulting ADR(s)** | —         |
-| **Notes**            | —         |
+| **Outcome**          | **ACCEPTED** — Option B (`Class<?>` service references, AST stores FQN strings) |
+| **Date**             | 2026-06-05 |
+| **Resulting ADR(s)** | [ADR-038](../adr/ADR-038-capability-annotation-surface.md) — SDK realization of the capability annotation surface (implements ADR-024) |
+| **Notes**            | Annotations in `eu.exeris.sdk.annotation.capability`; `@Provides`/`@Requires` repeatable via nested `.List` containers (Bean Validation idiom — chosen because both names end in `-s`, so the repo's plural-name container convention does not apply); AST records `ProvidesMetadata`/`RequiresMetadata`/`CapabilityModuleMetadata` in `source-model` with collection types `List<…>` and service identity as FQN strings. Lifecycle interface, ADR-023 licensing, and `cap-manifest.json` stay out of the SDK. Delivery: annotations → AST records → `-io` reader slices (per ADR-038 Engineering Protocol). |
 
 ## Open questions / follow-ups
 
-- **New ADR vs. implements-ADR-024?** Recommend a thin SDK-side ADR (like ADR-037 for `-io`) recording the annotation-defining module + the `Class<?>` service-reference decision, explicitly "implements ADR-024." Reserve the number before content.
+- **New ADR vs. implements-ADR-024?** ✅ Resolved — [ADR-038](../adr/ADR-038-capability-annotation-surface.md), a thin SDK-side "implements ADR-024" record (the same shape as ADR-037 for `-io`), reserved number-first in `exeris-docs/adr-index.md`.
 - **`Service` type ambiguity in ADR-024.** This RFC reads "Service service" as a `Class<?>` interface reference and "well-known identifiers" as kernel SPI interface classes. Confirm with the ADR-024 owner that no literal `Service` enum/type was intended.
 - **AST service identity = FQN.** Standardize the AST on fully-qualified service names. The `-io` reader (now complete) matches annotations by **simple name without symbol solving** — so a written `Class` literal resolves to whatever the source wrote (simple or qualified). The processor (JSR-269) yields the FQN. To keep the two in lock-step, either: (a) the AST stores the **written form** and a normalization step is the tooling's job, or (b) the `-io` reader does a minimal import-table lookup to expand the simple name. Recommend (a) for the first cut (consistent with the reader's documented no-symbol-solving limitation), revisited if the FQN mismatch turns out to matter for capability conflict-detection.
 - **Versioning scheme** (`version`, `versionRange`) — string attributes in the SDK; range *syntax* + intersection live in the tooling validator (ADR-024 predicate 3), not the SDK.
