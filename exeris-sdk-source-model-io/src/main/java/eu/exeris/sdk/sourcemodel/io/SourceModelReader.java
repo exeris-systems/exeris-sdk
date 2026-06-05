@@ -5,6 +5,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
@@ -15,20 +16,30 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
+import eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
+import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
@@ -36,17 +47,47 @@ import java.util.Optional;
  *
  * <p>0.3.0 scope: locates the first {@code @ExerisDomain}-annotated type and
  * extracts its entity name ({@code @ExerisDomain(name=...)}, falling back to the
- * class name), package, fields, and {@code @Relationship}s. Of the {@code @Field}
- * attributes only {@code required} is read; all others are left at the
- * {@link FieldMetadata} factory defaults (e.g. {@code searchable}/{@code sortable}/
- * {@code filterable} default to {@code true} — see {@link FieldMetadata#simple}).
+ * class name), package, fields, and {@code @Relationship}s. Fields mirror the
+ * processor's two-path contract: a field <b>with</b> {@code @Field} reads the full
+ * attribute surface the processor reads (label, description, required, unique,
+ * indexed, searchable, sortable, filterable, readOnly, inCreate, inUpdate,
+ * computed, computedFrom) present-only on a {@link FieldMetadata.Builder}, plus
+ * field-level {@code @Validation} (min/max/pattern and the deprecated
+ * {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
+ * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
+ * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
- * matching the processor's default-true convention).
+ * matching the processor's default-true convention). The domain-level
+ * {@code @ExerisDomain} string + boolean attributes the processor reads
+ * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
+ * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
+ * cache/search config) are read present-only. Domain {@code @DomainEvent}s are read
+ * into {@link DomainMetadata#events} (direct/repeated, hand-written
+ * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
+ * processor's three sources and its trigger-based name derivation). Class-level
+ * {@code @Graph}, {@code @EventSourced}, {@code @Saga} (with {@code @SagaStep}
+ * methods), and {@code @InternalApi} are read into the matching
+ * {@link DomainMetadata} facets, each mirroring the processor's extraction
+ * (including its {@code streamPrefix→aggregateType} translation and presence-only
+ * {@code @InternalApi}).
+ *
+ * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
+ * {@code read()} no longer drops any annotation-level facet the processor emits:
+ * {@link #unmodeledFacets} is now empty for every source, and the field facet is
+ * attribute-complete against {@code extractFieldMetadata}. A round-trip / reattach
+ * caller should still consult {@link #unmodeledFacets} and refuse (or warn) when it
+ * is non-empty — that is how a <em>future</em> processor facet (e.g. a new
+ * annotation) re-arms the guard before the reader catches up. (Facets the processor
+ * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+ * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, {@code system}/
+ * {@code security} annotations — were never divergences.) The guard is
+ * annotation-level: attribute completeness of the <em>other</em> read annotations
+ * (e.g. {@code @Relationship}, {@code @Action}) is verified per-slice, not by it.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -57,6 +98,23 @@ import java.util.Optional;
  * @since 0.3.0
  */
 public final class SourceModelReader {
+
+    /**
+     * Annotation simple names where {@link #read} <em>diverges from the annotation
+     * processor</em>: the processor populates a distinct {@link DomainMetadata}
+     * facet from them, but the reader does not yet. These are the dangerous ones
+     * for reattach — the conflict-detection baseline is the processor's codegen
+     * output, so a facet the processor keeps and the reader drops would be
+     * misread as a user edit.
+     *
+     * <p><b>Now empty</b>: every facet the processor emits is read (Slices A–D —
+     * domain attributes, events, graph/saga/event-sourcing/internal-API, and the
+     * field {@code @Field}/{@code @Validation} surface). The set is retained as the
+     * guard's contract: a future processor facet (a new annotation the reader does
+     * not yet read) is added here, which re-arms {@link #unmodeledFacets} until the
+     * reader catches up. Matched by simple name (no import resolution).
+     */
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
 
     private final JavaParser javaParser;
 
@@ -104,6 +162,56 @@ public final class SourceModelReader {
         return enums;
     }
 
+    /**
+     * Reports the metadata facets where {@link #read} <b>diverges from the
+     * annotation processor</b> for {@code javaSource}: facets the processor would
+     * emit into {@link DomainMetadata} but the reader does not yet. A <b>non-empty</b>
+     * result means {@code read()}'s {@code DomainMetadata} differs from the codegen
+     * baseline — round-trip / reattach callers must treat it as unsafe for conflict
+     * detection (the dropped facets would be misattributed as user edits). An
+     * <b>empty</b> result means {@code read()} produces the same {@code DomainMetadata}
+     * facets the processor would for this source.
+     *
+     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
+     * which is <b>now empty</b> — every processor facet is read (Slices A–D), so this
+     * returns an empty set for every {@code @ExerisDomain} source today. It re-arms
+     * only when a future processor facet is registered in that set ahead of the
+     * reader. <b>Not</b> flagged (and never were): facets neither side reads
+     * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
+     * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery},
+     * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations).
+     *
+     * <p>This guard is <em>annotation-level</em>: it does not report attribute-level
+     * loss <em>within</em> a read annotation. That gap is now closed for
+     * {@code @Field}/{@code @Validation} (read attribute-complete in Slice D);
+     * completeness of the other read annotations ({@code @Relationship},
+     * {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is verified per-slice
+     * rather than by this method. Matching is by simple name (no import resolution).
+     * Re-parses {@code javaSource} independently of {@link #read}.
+     */
+    public Set<String> unmodeledFacets(String javaSource) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        Optional<ClassOrInterfaceDeclaration> domain = cu.findFirst(ClassOrInterfaceDeclaration.class,
+                type -> type.isAnnotationPresent("ExerisDomain"));
+        if (domain.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> facets = new TreeSet<>();
+        for (AnnotationExpr annotation : cu.findAll(AnnotationExpr.class)) {
+            String simpleName = simpleName(annotation.getNameAsString());
+            if (UNMODELED_FACET_ANNOTATIONS.contains(simpleName)) {
+                facets.add("@" + simpleName);
+            }
+        }
+        return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
+    }
+
+    private String simpleName(String annotationName) {
+        int dot = annotationName.lastIndexOf('.');
+        return dot < 0 ? annotationName : annotationName.substring(dot + 1);
+    }
+
     private CompilationUnit parseOrThrow(String javaSource) {
         ParseResult<CompilationUnit> result = javaParser.parse(javaSource);
         if (!result.isSuccessful() || result.getResult().isEmpty()) {
@@ -113,31 +221,73 @@ public final class SourceModelReader {
     }
 
     private DomainMetadata toDomain(CompilationUnit cu, ClassOrInterfaceDeclaration type) {
-        List<FieldMetadata> fields = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
-            if (field.getAnnotationByName("Relationship").isPresent()) {
-                continue; // relationships are modelled separately, not as plain fields
-            }
-            boolean required = isRequired(field);
-            for (VariableDeclarator var : field.getVariables()) {
-                String name = var.getNameAsString();
-                String fieldType = var.getTypeAsString();
-                fields.add(required
-                        ? FieldMetadata.required(name, fieldType)
-                        : FieldMetadata.simple(name, fieldType));
-            }
-        }
-
         String entityName = exerisDomainName(type).orElse(type.getNameAsString());
         DomainMetadata.Builder builder = DomainMetadata.builder(entityName, packageName(cu))
-                .fields(fields)
+                .fields(fields(type))
                 .relationships(relationships(type))
-                .actions(actions(type));
+                .actions(actions(type))
+                .events(events(type));
+        type.getAnnotationByName("ExerisDomain").ifPresent(ann -> applyDomainAttributes(ann, builder));
         UIMetadata ui = uiMetadata(type);
         if (ui != null) {
             builder.uiMetadata(ui);
         }
+        GraphMetadata graph = graphMetadata(type);
+        if (graph != null) {
+            builder.graphMetadata(graph);
+        }
+        EventSourcedMetadata eventSourced = eventSourced(type);
+        if (eventSourced != null) {
+            builder.eventSourced(eventSourced);
+        }
+        SagaMetadata saga = sagaMetadata(type);
+        if (saga != null) {
+            builder.sagaMetadata(saga);
+        }
+        InternalApiMetadata internalApi = internalApi(type);
+        if (internalApi != null) {
+            builder.internalApi(internalApi);
+        }
         return builder.build();
+    }
+
+    /**
+     * Reads the domain-level {@code @ExerisDomain} attributes the processor reads
+     * (string + boolean) into the builder, present-only — an absent attribute keeps
+     * the builder default, exactly matching {@code ExerisDomainProcessor}'s
+     * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
+     * ({@code tags}/{@code roles}/{@code permissions}) and the {@code *Field}/
+     * {@code validationMode}/{@code ui} attributes are not read here — the processor
+     * doesn't read them either, so they constitute no reader-vs-processor divergence
+     * and {@link #unmodeledFacets} does not flag them.
+     */
+    private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
+        stringAttr(ann, "module").ifPresent(builder::module);
+        stringAttr(ann, "path").ifPresent(builder::path);
+        stringAttr(ann, "aggregate").ifPresent(builder::aggregate);
+        stringAttr(ann, "description").ifPresent(builder::description);
+        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
+        stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
+        stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
+        stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
+        boolAttr(ann, "restApi").ifPresent(builder::restApi);
+        boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
+        boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
+        boolAttr(ann, "internalClient").ifPresent(builder::internalClient);
+        boolAttr(ann, "tenantScoped").ifPresent(builder::tenantScoped);
+        boolAttr(ann, "softDelete").ifPresent(builder::softDelete);
+        boolAttr(ann, "audited").ifPresent(builder::audited);
+        boolAttr(ann, "versioned").ifPresent(builder::versioned);
+        boolAttr(ann, "sensitive").ifPresent(builder::sensitive);
+        boolAttr(ann, "cacheable").ifPresent(builder::cacheable);
+        boolAttr(ann, "fullTextSearch").ifPresent(builder::fullTextSearch);
+    }
+
+    /** Present-only boolean attribute (no default — absent leaves the builder default). */
+    private Optional<Boolean> boolAttr(AnnotationExpr ann, String attribute) {
+        // exact "true" match (JavaParser renders boolean literals lowercase),
+        // consistent with isRequired's style.
+        return value(ann, attribute).map(Expression::toString).map("true"::equals);
     }
 
     /**
@@ -225,11 +375,230 @@ public final class SourceModelReader {
         return builder.build();
     }
 
+    /**
+     * Domain events declared on the entity, mirroring
+     * {@code ExerisDomainProcessor.extractEventsMetadata}. Reads three source
+     * shapes, all keyed off the entity's <em>class</em> simple name (not the
+     * {@code @ExerisDomain(name)}), exactly as the processor uses
+     * {@code element.getSimpleName()}:
+     * <ul>
+     *   <li>repeated/single {@code @DomainEvent} directly on the type — the natural
+     *       source form of the {@code @Repeatable} annotation (javac folds these into
+     *       a {@code @DomainEvents} container only at the processor's JSR-269 level);</li>
+     *   <li>a hand-written {@code @DomainEvents} container (its {@code value} array
+     *       unwrapped);</li>
+     *   <li>nested classes annotated {@code @DomainEvent} (the processor's "legacy
+     *       support" path) — name = nested class name, topic only.</li>
+     * </ul>
+     */
+    private List<DomainEventMetadata> events(ClassOrInterfaceDeclaration type) {
+        List<DomainEventMetadata> events = new ArrayList<>();
+        String entitySimpleName = type.getNameAsString();
+        for (AnnotationExpr annotation : type.getAnnotations()) {
+            String simpleName = simpleName(annotation.getNameAsString());
+            if ("DomainEvent".equals(simpleName)) {
+                events.add(singleEvent(annotation, entitySimpleName));
+            } else if ("DomainEvents".equals(simpleName)) {
+                for (AnnotationExpr inner : containerEvents(annotation)) {
+                    events.add(singleEvent(inner, entitySimpleName));
+                }
+            }
+        }
+        for (BodyDeclaration<?> member : type.getMembers()) {
+            if (member instanceof ClassOrInterfaceDeclaration nested && !nested.isInterface()) {
+                nested.getAnnotationByName("DomainEvent").ifPresent(annotation ->
+                        events.add(DomainEventMetadata.withTopic(
+                                nested.getNameAsString(), stringAttr(annotation, "topic").orElse(null))));
+            }
+        }
+        return events;
+    }
+
+    /**
+     * One {@code @DomainEvent} → {@link DomainEventMetadata}, mirroring
+     * {@code extractSingleEventMetadata}: an absent/blank {@code name} is derived as
+     * {@code entityName + suffix(trigger)} with {@code trigger} defaulting to
+     * {@code CREATE}; {@code aggregateType} is always the entity class name.
+     */
+    private DomainEventMetadata singleEvent(AnnotationExpr annotation, String entitySimpleName) {
+        String name = stringAttr(annotation, "name")
+                .filter(s -> !s.isBlank())
+                .orElseGet(() -> entitySimpleName
+                        + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
+        String topic = stringAttr(annotation, "topic").orElse(null);
+        String description = stringAttr(annotation, "description").orElse(null);
+        return new DomainEventMetadata(name, topic, description, entitySimpleName);
+    }
+
+    /**
+     * The inner {@code @DomainEvent} annotations of a hand-written
+     * {@code @DomainEvents} container — either {@code @DomainEvents({...})}
+     * (single-member) or {@code @DomainEvents(value = {...})} (normal); a lone
+     * non-array element is also tolerated.
+     */
+    private List<AnnotationExpr> containerEvents(AnnotationExpr container) {
+        Optional<Expression> value = container.isSingleMemberAnnotationExpr()
+                ? Optional.of(container.asSingleMemberAnnotationExpr().getMemberValue())
+                : value(container, "value");
+        List<AnnotationExpr> inner = new ArrayList<>();
+        value.ifPresent(expression -> {
+            if (expression.isArrayInitializerExpr()) {
+                for (Expression element : expression.asArrayInitializerExpr().getValues()) {
+                    if (element.isAnnotationExpr()) {
+                        inner.add(element.asAnnotationExpr());
+                    }
+                }
+            } else if (expression.isAnnotationExpr()) {
+                inner.add(expression.asAnnotationExpr());
+            }
+        });
+        return inner;
+    }
+
+    /**
+     * Entity-name suffix for an unnamed event, by {@code @DomainEvent.Trigger}
+     * constant name — a verbatim mirror of {@code ExerisDomainProcessor}'s
+     * {@code triggerToEventSuffix}. Exact-string matching: an unmapped or future
+     * trigger falls through to the generic {@code "Event"} suffix rather than
+     * silently matching a prefix.
+     */
+    private String triggerToEventSuffix(String trigger) {
+        // Unreachable from singleEvent (which passes enumAttr(...).orElse("CREATE")),
+        // but kept to mirror the processor verbatim and defend any future direct caller.
+        if (trigger == null) {
+            return "Event";
+        }
+        return switch (trigger) {
+            case "CREATE" -> "CreatedEvent";
+            case "UPDATE" -> "UpdatedEvent";
+            case "DELETE" -> "DeletedEvent";
+            case "FIELD_CHANGED" -> "ChangedEvent";
+            case "ACTION" -> "ActionEvent";
+            default -> "Event";
+        };
+    }
+
     private boolean boolAttr(AnnotationExpr annotation, String attribute, boolean defaultValue) {
         return value(annotation, attribute)
                 .map(Expression::toString)
                 .map("true"::equals)
                 .orElse(defaultValue);
+    }
+
+    /**
+     * Class-level {@code @Graph} → {@link GraphMetadata}, or {@code null} when
+     * absent. Mirrors {@code extractGraphMetadata}: the label is
+     * {@code @Graph(nodeClass)} falling back to the class simple name, and — as in
+     * the processor — properties stay {@code null} while edges/queries are empty.
+     * The {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery} member
+     * annotations are read by neither side (so they are not guard divergences).
+     */
+    private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
+        if (graph.isEmpty()) {
+            return null;
+        }
+        String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
+        return new GraphMetadata(label, null, List.of(), List.of());
+    }
+
+    /**
+     * Class-level {@code @EventSourced} → {@link EventSourcedMetadata}, or
+     * {@code null} when absent. Mirrors {@code extractEventSourcedMetadata}'s
+     * deliberate attribute translation: {@code streamPrefix} (empty → class simple
+     * name) becomes {@code aggregateType}, and {@code snapshotThreshold} (default
+     * 50) becomes {@code snapshotEvery}; all other event-sourcing fields keep
+     * {@link EventSourcedMetadata.Builder} defaults.
+     */
+    private EventSourcedMetadata eventSourced(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> es = type.getAnnotationByName("EventSourced");
+        if (es.isEmpty()) {
+            return null;
+        }
+        String streamPrefix = stringAttr(es.get(), "streamPrefix").orElse("");
+        String aggregateType = streamPrefix.isEmpty() ? type.getNameAsString() : streamPrefix;
+        // Fallback is the @EventSourced.snapshotThreshold annotation default (50),
+        // which the processor preserves — deliberately NOT the builder's own
+        // snapshotEvery default (100), so absent == the annotation's documented value.
+        return EventSourcedMetadata.builder(aggregateType)
+                .snapshotEvery(intAttr(es.get(), "snapshotThreshold").orElse(50))
+                .build();
+    }
+
+    /**
+     * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
+     * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
+     * simple name; {@code description}/{@code timeout}/{@code maxRetries} are
+     * present-only; steps come from {@code @SagaStep} methods.
+     */
+    private SagaMetadata sagaMetadata(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> saga = type.getAnnotationByName("Saga");
+        if (saga.isEmpty()) {
+            return null;
+        }
+        String name = stringAttr(saga.get(), "name").orElse(type.getNameAsString());
+        SagaMetadata.Builder builder = SagaMetadata.builder(name);
+        stringAttr(saga.get(), "description").ifPresent(builder::description);
+        stringAttr(saga.get(), "timeout").ifPresent(builder::timeout);
+        intAttr(saga.get(), "maxRetries").ifPresent(builder::maxRetries);
+        builder.steps(sagaSteps(type));
+        return builder.build();
+    }
+
+    /**
+     * {@code @SagaStep} methods → {@link SagaStepMetadata}, sorted by {@code order},
+     * mirroring {@code extractSagaSteps}: {@code name} falls back to the method
+     * name, {@code order} defaults to 1, and
+     * {@code description}/{@code service}/{@code command}/{@code compensation}/
+     * {@code timeout}/{@code parallel} are present-only.
+     */
+    private List<SagaStepMetadata> sagaSteps(ClassOrInterfaceDeclaration type) {
+        List<SagaStepMetadata> steps = new ArrayList<>();
+        for (MethodDeclaration method : type.getMethods()) {
+            Optional<AnnotationExpr> step = method.getAnnotationByName("SagaStep");
+            if (step.isEmpty()) {
+                continue;
+            }
+            String name = stringAttr(step.get(), "name").orElse(method.getNameAsString());
+            int order = intAttr(step.get(), "order").orElse(1);
+            SagaStepMetadata.Builder builder = SagaStepMetadata.builder(name, order);
+            stringAttr(step.get(), "description").ifPresent(builder::description);
+            stringAttr(step.get(), "service").ifPresent(builder::service);
+            stringAttr(step.get(), "command").ifPresent(builder::command);
+            stringAttr(step.get(), "compensation").ifPresent(builder::compensation);
+            stringAttr(step.get(), "timeout").ifPresent(builder::timeout);
+            boolAttr(step.get(), "parallel").ifPresent(builder::parallel);
+            steps.add(builder.build());
+        }
+        steps.sort(Comparator.comparingInt(SagaStepMetadata::order));
+        return steps;
+    }
+
+    /**
+     * Class-level {@code @InternalApi} → {@link InternalApiMetadata}, or
+     * {@code null} when absent. Mirrors {@code extractInternalApiMetadata}: the
+     * SDK annotation and the AST record describe different concepts (a known,
+     * documented drift), so the only signal extracted is presence → {@code
+     * internal = true}; every other field stays at its default.
+     */
+    private InternalApiMetadata internalApi(ClassOrInterfaceDeclaration type) {
+        if (type.getAnnotationByName("InternalApi").isEmpty()) {
+            return null;
+        }
+        return InternalApiMetadata.builder().internal(true).build();
+    }
+
+    /**
+     * Present-only int attribute from an integer literal (no default — absent
+     * leaves it to the caller). A negative literal is a {@code UnaryExpr} (not an
+     * {@code IntegerLiteralExpr}) and so falls through to the caller default;
+     * harmless for the count-style attributes read here ({@code snapshotThreshold},
+     * {@code maxRetries}, {@code order}), where a negative value is meaningless.
+     */
+    private Optional<Integer> intAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute)
+                .filter(Expression::isIntegerLiteralExpr)
+                .map(value -> value.asIntegerLiteralExpr().asNumber().intValue());
     }
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {
@@ -330,14 +699,165 @@ public final class SourceModelReader {
     }
 
     /**
-     * {@code @Field}-shape ownership of {@code required} (canonical per the
-     * annotations package-info): true only when {@code @Field(required = true)}
-     * is present. A bare {@code @Field} marker or no annotation means not-required.
+     * Entity fields, mirroring {@code ExerisDomainProcessor.extractFieldsMetadata}'s
+     * two-path contract:
+     * <ul>
+     *   <li>a field <b>with</b> {@code @Field} → {@link #fieldMetadata} (full
+     *       attribute surface, present-only on a {@link FieldMetadata.Builder});</li>
+     *   <li>a field <b>without</b> {@code @Field} → {@link FieldMetadata#simple}
+     *       (which, unlike the builder default, sets
+     *       {@code searchable}/{@code sortable}/{@code filterable} to {@code true}).</li>
+     * </ul>
+     * The two paths intentionally differ on the search/sort/filter defaults — that
+     * asymmetry <em>is</em> the processor's behaviour, so the reader reproduces it
+     * exactly to stay in lock-step. {@code @Relationship} fields are skipped (they
+     * are modelled separately).
      */
-    private boolean isRequired(FieldDeclaration field) {
-        Optional<AnnotationExpr> ann = field.getAnnotationByName("Field");
-        return ann.isPresent()
-                && "true".equals(value(ann.get(), "required").map(Expression::toString).orElse(null));
+    private List<FieldMetadata> fields(ClassOrInterfaceDeclaration type) {
+        List<FieldMetadata> fields = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            if (field.getAnnotationByName("Relationship").isPresent()) {
+                continue;
+            }
+            Optional<AnnotationExpr> fieldAnn = field.getAnnotationByName("Field");
+            Optional<AnnotationExpr> validationAnn = field.getAnnotationByName("Validation");
+            for (VariableDeclarator var : field.getVariables()) {
+                String name = var.getNameAsString();
+                String fieldType = var.getTypeAsString();
+                fields.add(fieldAnn.isPresent()
+                        ? fieldMetadata(name, fieldType, fieldAnn.get(), validationAnn.orElse(null))
+                        : FieldMetadata.simple(name, fieldType));
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * A single {@code @Field}-annotated field → {@link FieldMetadata}, mirroring
+     * {@code extractFieldMetadata}: the {@code @Field} attribute surface the
+     * processor reads (label→displayName, description, required, unique, indexed,
+     * searchable, sortable, filterable, readOnly, inCreate, inUpdate, computed,
+     * computedFrom) is applied present-only; {@code @Validation} (only consulted
+     * when {@code @Field} is present, as in the processor) contributes
+     * {@code min}/{@code max}/{@code pattern} plus the two deprecated fallbacks.
+     *
+     * <p>"Attribute-complete" means complete <em>against what the processor reads</em>,
+     * not against every {@code @Field} attribute with a {@link FieldMetadata}
+     * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
+     * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
+     * populates it, so reading it here would be a divergence, not a fix. (The other
+     * unread {@code @Field} attributes — {@code inList}, {@code inDetail},
+     * {@code order}, {@code ui}, {@code dataType}, {@code cssClass}, {@code group},
+     * {@code sensitive}, {@code encrypted}, {@code maskPattern}, {@code writeOnly},
+     * {@code compositeUnique} — have no {@code FieldMetadata} counterpart at all.)
+     */
+    private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
+        FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
+        stringAttr(field, "label").ifPresent(builder::displayName);
+        stringAttr(field, "description").ifPresent(builder::description);
+        boolAttr(field, "required").ifPresent(builder::required);
+        boolAttr(field, "unique").ifPresent(builder::unique);
+        boolAttr(field, "indexed").ifPresent(builder::indexed);
+        boolAttr(field, "searchable").ifPresent(builder::searchable);
+        boolAttr(field, "sortable").ifPresent(builder::sortable);
+        boolAttr(field, "filterable").ifPresent(builder::filterable);
+        boolAttr(field, "readOnly").ifPresent(builder::readOnly);
+        boolAttr(field, "inCreate").ifPresent(builder::inCreate);
+        boolAttr(field, "inUpdate").ifPresent(builder::inUpdate);
+        boolAttr(field, "computed").ifPresent(builder::computed);
+        stringArrayAttr(field, "computedFrom").ifPresent(builder::computedFrom);
+        if (validation != null) {
+            applyValidation(field, validation, builder);
+        }
+        return builder.build();
+    }
+
+    /**
+     * {@code @Validation} contributions to {@link FieldMetadata}, mirroring the
+     * validation block of {@code extractFieldMetadata} plus
+     * {@code applyDeprecatedValidationFallbacks}:
+     * <ul>
+     *   <li>{@code min}/{@code max} (long) and {@code pattern} present-only;</li>
+     *   <li>deprecated {@code required = true} → {@code @Field.required} only when
+     *       {@code @Field} did not set it (canonical wins);</li>
+     *   <li>deprecated {@code validateOn} = {@code "CREATE"}/{@code "UPDATE"} →
+     *       {@code inUpdate}/{@code inCreate} = false, again only when {@code @Field}
+     *       did not set the corresponding attribute.</li>
+     * </ul>
+     * The processor also emits build warnings for the deprecated attributes; the
+     * reader has no diagnostics channel and produces the same {@code DomainMetadata}
+     * value without them, which is what reattach compares.
+     */
+    private void applyValidation(AnnotationExpr field, AnnotationExpr validation, FieldMetadata.Builder builder) {
+        // Only min/max/pattern are read — the processor's @Validation block reads
+        // exactly these three; @Validation.minLength/maxLength exist on the annotation
+        // but the processor does NOT read them into FieldMetadata, so reading them here
+        // would itself create a divergence. Note: min == 0 is not wire-safe under
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that is the
+        // documented Field/Validation overlap follow-up, not introduced here.
+        longAttr(validation, "min").ifPresent(builder::min);
+        longAttr(validation, "max").ifPresent(builder::max);
+        stringAttr(validation, "pattern").ifPresent(builder::pattern);
+
+        if (boolAttr(validation, "required").orElse(false) && boolAttr(field, "required").isEmpty()) {
+            builder.required(true);
+        }
+        stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {
+            if ("CREATE".equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
+                builder.inUpdate(false);
+            } else if ("UPDATE".equals(validateOn) && boolAttr(field, "inCreate").isEmpty()) {
+                builder.inCreate(false);
+            }
+        });
+    }
+
+    /**
+     * Present-only {@code String[]} attribute as a {@code List<String>} of literal
+     * values — both the {@code {"a","b"}} array form and the single-element
+     * {@code "a"} (brace-elided) form, mirroring how the processor unwraps the
+     * javac array. Empty when the attribute is absent.
+     */
+    private Optional<List<String>> stringArrayAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).map(expression -> {
+            List<String> values = new ArrayList<>();
+            if (expression.isArrayInitializerExpr()) {
+                for (Expression element : expression.asArrayInitializerExpr().getValues()) {
+                    if (element.isStringLiteralExpr()) {
+                        values.add(element.asStringLiteralExpr().asString());
+                    }
+                }
+            } else if (expression.isStringLiteralExpr()) {
+                values.add(expression.asStringLiteralExpr().asString());
+            }
+            return values;
+        });
+    }
+
+    /**
+     * Present-only signed-long attribute from an integer/long literal, unwrapping a
+     * leading unary minus (a {@code UnaryExpr}). Unlike the count-style
+     * {@link #intAttr}, negatives are meaningful here ({@code @Validation.min}/
+     * {@code max} are signed bounds), so they are read rather than dropped.
+     */
+    private Optional<Long> longAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).flatMap(this::asLong);
+    }
+
+    private Optional<Long> asLong(Expression expression) {
+        if (expression.isUnaryExpr()) {
+            UnaryExpr unary = expression.asUnaryExpr();
+            if (unary.getOperator() == UnaryExpr.Operator.MINUS) {
+                return asLong(unary.getExpression()).map(value -> -value);
+            }
+            return Optional.empty();
+        }
+        if (expression.isIntegerLiteralExpr()) {
+            return Optional.of(expression.asIntegerLiteralExpr().asNumber().longValue());
+        }
+        if (expression.isLongLiteralExpr()) {
+            return Optional.of(expression.asLongLiteralExpr().asNumber().longValue());
+        }
+        return Optional.empty();
     }
 
     private String packageName(CompilationUnit cu) {

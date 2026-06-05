@@ -109,6 +109,40 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsDomainLevelAttributesPresentOnly() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing", tenantScoped = true,
+                                  softDelete = true, restApi = false)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.module()).isEqualTo("billing");
+            assertThat(d.tenantScoped()).isTrue();
+            assertThat(d.softDelete()).isTrue();
+            assertThat(d.restApi()).isFalse();          // explicit override
+            // absent attribute keeps the builder default (not read, not forced)
+            assertThat(d.audited()).isFalse();
+        }
+
+        @Test
+        void absentBooleanAttributeKeepsBuilderDefault() {
+            // restApi defaults TRUE in the builder (the surprising branch — all other
+            // booleans default false); an absent restApi must stay true, not be forced.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing")
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+            assertThat(d.restApi()).isTrue();
+            assertThat(d.tenantScoped()).isFalse();
+        }
+
+        @Test
         void returnsEmptyWhenNoExerisDomainType() {
             Optional<DomainMetadata> domain = reader.read(
                     "package x; public class Plain { private int n; }");
@@ -263,6 +297,68 @@ class SourceModelIoTest {
             // 'balance' is a plain @Deprecated field, NOT a @Relationship -> must not be deleted
             assertThat(writer.removeRelationship(ACCOUNT, "balance")).isEqualTo(ACCOUNT);
             assertThat(writer.removeRelationship(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
+        }
+
+        @Test
+        void addActionAddsAnnotatedMethodAndIsIdempotent() {
+            String added = writer.addAction(ACCOUNT, "approve");
+
+            assertThat(added).contains("@Action");
+            assertThat(added).contains("void approve()");
+            assertThat(added).contains("name = \"approve\"");
+            assertThat(added).contains("path = \"/approve\"");
+            assertThat(added).contains("// human-readable label shown in the UI"); // preserved
+
+            assertThat(writer.addAction(added, "approve")).isEqualTo(added); // idempotent
+        }
+
+        @Test
+        void addActionNoOpWhenActionExists() {
+            String once = writer.addAction(ACCOUNT, "approve");
+            assertThat(writer.addAction(once, "approve")).isEqualTo(once);
+        }
+
+        @Test
+        void removeActionRemovesMethodAndPreservesFields() {
+            String withAction = writer.addAction(ACCOUNT, "approve");
+
+            String removed = writer.removeAction(withAction, "approve");
+            assertThat(removed).doesNotContain("@Action");
+            assertThat(removed).doesNotContain("approve");
+            assertThat(removed).contains("private String label;"); // fields preserved
+        }
+
+        @Test
+        void removeActionMatchesByAnnotationNameAndSparesPlainMethods() {
+            // action name "approve" lives on @Action.name, not the method name 'doApprove';
+            // 'helper' has no @Action and must survive
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Action;
+                    @ExerisDomain(name = "Invoice")
+                    public class Invoice {
+                        @Action(name = "approve", path = "/a")
+                        public void doApprove() {}
+                        public void helper() {}
+                    }
+                    """;
+            String removed = writer.removeAction(src, "approve");
+            assertThat(removed).doesNotContain("doApprove");
+            assertThat(removed).doesNotContain("@Action");
+            assertThat(removed).contains("helper()"); // non-action method preserved
+        }
+
+        @Test
+        void removeActionNoOpWhenAbsent() {
+            assertThat(writer.removeAction(ACCOUNT, "missing")).isEqualTo(ACCOUNT);
+        }
+
+        @Test
+        void addActionThrowsIllegalArgumentOnMalformedName() {
+            // a name that yields an unparseable @Action annotation -> IllegalArgumentException
+            assertThatThrownBy(() -> writer.addAction(ACCOUNT, "bad\"syntax"))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -533,6 +629,570 @@ class SourceModelIoTest {
                     public class Order {}
                     """;
             assertThat(reader.read(nested).orElseThrow().uiMetadata()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: round-trip completeness guard (unmodeledFacets)")
+    class Completeness {
+
+        @Test
+        void emptyForFullyModeledEntity() {
+            // ACCOUNT uses only @ExerisDomain(name), @Field (+ a non-facet @Deprecated)
+            assertThat(reader.unmodeledFacets(ACCOUNT)).isEmpty();
+        }
+
+        @Test
+        void fullyAnnotatedEntityHasNoDivergences() {
+            // every processor facet is now read (Slices A-D): the guard is empty even
+            // for an entity touching all of them. @Projection/@NavMenu/@PrimaryKey are
+            // processor-gaps (never divergences); @Validation is read into FieldMetadata.
+            String src = """
+                    package app.budgethq.order;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    import eu.exeris.sdk.annotation.Graph;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.Projection;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    import eu.exeris.sdk.annotation.NavMenu;
+                    import eu.exeris.sdk.annotation.InternalApi;
+                    import eu.exeris.sdk.annotation.Validation;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey;
+
+                    @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
+                    @EventSourced @Graph @Saga
+                    @InternalApi(rateLimit = 100)
+                    @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
+                    @Projection @NavMenu
+                    public class Order {
+                        @PrimaryKey private Long id;
+                        @Field @Validation(min = 1, max = 9999) private String contact;
+                        @Field private String code;
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
+        }
+
+        @Test
+        void modeledDomainAttributesAreNotFlagged() {
+            // tenantScoped/softDelete are read (Slice A) -> guard stays empty
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare", tenantScoped = true, softDelete = true)
+                    public class Bare {}
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
+        }
+
+        @Test
+        void onlyNameAttributeIsNotFlagged() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Bare")
+                    public class Bare {}
+                    """;
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
+        }
+
+        @Test
+        void emptyWhenNoExerisDomainType() {
+            assertThat(reader.unmodeledFacets("package x; public class Plain {}")).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @DomainEvent extraction (events)")
+    class Events {
+
+        private static final String ORDER = """
+                package app.budgethq.order;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.DomainEvent;
+                import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                import eu.exeris.sdk.annotation.Field;
+
+                @ExerisDomain(name = "OrderEntity")
+                @DomainEvent(name = "OrderPlaced", trigger = Trigger.CREATE,
+                        topic = "orders.created", description = "Customer placed an order")
+                @DomainEvent(trigger = Trigger.UPDATE, topic = "orders.updated")
+                public class Order {
+                    @Field private String code;
+                }
+                """;
+
+        @Test
+        void readsRepeatedDomainEventsWithExplicitName() {
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+
+            assertThat(domain.events()).extracting("name")
+                    .containsExactlyInAnyOrder("OrderPlaced", "OrderUpdatedEvent");
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderPlaced");
+                assertThat(e.topic()).isEqualTo("orders.created");
+                assertThat(e.description()).isEqualTo("Customer placed an order");
+                // aggregateType mirrors the processor: the *class* simple name, not @ExerisDomain(name)
+                assertThat(e.aggregateType()).isEqualTo("Order");
+            });
+        }
+
+        @Test
+        void derivesEventNameFromTriggerWhenNameAbsent() {
+            // @DomainEvent(trigger = UPDATE) with no name -> "Order" + "UpdatedEvent"
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderUpdatedEvent");
+                assertThat(e.topic()).isEqualTo("orders.updated");
+                assertThat(e.description()).isNull();
+            });
+        }
+
+        @Test
+        void defaultsTriggerToCreateWhenAbsent() {
+            // no trigger attribute at all -> processor defaults to CREATE -> "CreatedEvent"
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    @ExerisDomain(name = "Thing")
+                    @DomainEvent(topic = "things.created")
+                    public class Thing {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("ThingCreatedEvent"));
+        }
+
+        @Test
+        void unmappedTriggerFallsBackToGenericSuffix() {
+            // SNAPSHOT has no explicit suffix mapping -> generic "Event"
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Thing")
+                    @DomainEvent(trigger = Trigger.SNAPSHOT, topic = "things.snap")
+                    public class Thing {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("ThingEvent"));
+        }
+
+        @Test
+        void unwrapsHandWrittenDomainEventsContainer() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvents({
+                        @DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"),
+                        @DomainEvent(name = "Deleted", trigger = Trigger.DELETE, topic = "o.deleted")
+                    })
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).extracting("name")
+                    .containsExactlyInAnyOrder("Created", "Deleted");
+        }
+
+        @Test
+        void unwrapsSingleElementContainerWithoutArrayBraces() {
+            // legal Java: a single-element annotation array may omit the { } braces
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvents(@DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"))
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement()
+                    .satisfies(e -> assertThat(e.name()).isEqualTo("Created"));
+        }
+
+        @Test
+        void readsNestedClassEventLegacyForm() {
+            // processor's legacy path: a nested @DomainEvent class -> name = class name, topic only
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    public class Order {
+                        @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
+                        public static class OrderCreated {}
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement().satisfies(e -> {
+                assertThat(e.name()).isEqualTo("OrderCreated");
+                assertThat(e.topic()).isEqualTo("orders.created");
+                assertThat(e.description()).isNull();
+                assertThat(e.aggregateType()).isNull(); // withTopic leaves it null, mirroring the processor
+            });
+        }
+
+        @Test
+        void emptyEventsWhenNoDomainEvent() {
+            DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
+            assertThat(domain.events()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @Graph / @EventSourced / @Saga / @InternalApi extraction")
+    class Facets {
+
+        @Test
+        void readsGraphLabelFromNodeClassElseClassName() {
+            String withNodeClass = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    @ExerisDomain(name = "Person")
+                    @Graph(nodeClass = "PersonNode")
+                    public class Person {}
+                    """;
+            assertThat(reader.read(withNodeClass).orElseThrow().graphMetadata()).satisfies(g -> {
+                assertThat(g.label()).isEqualTo("PersonNode");
+                // mirrors the processor: properties null, edges/queries empty
+                assertThat(g.properties()).isNull();
+                assertThat(g.edges()).isEmpty();
+                assertThat(g.queries()).isEmpty();
+            });
+
+            String bareGraph = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    @ExerisDomain(name = "Person")
+                    @Graph
+                    public class Person {}
+                    """;
+            // no nodeClass -> label falls back to the class simple name
+            assertThat(reader.read(bareGraph).orElseThrow().graphMetadata().label()).isEqualTo("Person");
+        }
+
+        @Test
+        void absentGraphLeavesMetadataNull() {
+            assertThat(reader.read(ACCOUNT).orElseThrow().graphMetadata()).isNull();
+        }
+
+        @Test
+        void translatesEventSourcedStreamPrefixAndSnapshotThreshold() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    @ExerisDomain(name = "Order")
+                    @EventSourced(streamPrefix = "orders", snapshotThreshold = 25)
+                    public class Order {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().eventSourced()).satisfies(es -> {
+                // streamPrefix -> aggregateType, snapshotThreshold -> snapshotEvery
+                assertThat(es.aggregateType()).isEqualTo("orders");
+                assertThat(es.snapshotEvery()).isEqualTo(25);
+                assertThat(es.enabled()).isTrue(); // builder default preserved
+            });
+        }
+
+        @Test
+        void eventSourcedDefaultsAggregateToClassNameAndSnapshotTo50() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.EventSourced;
+                    @ExerisDomain(name = "OrderEntity")
+                    @EventSourced
+                    public class Order {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().eventSourced()).satisfies(es -> {
+                // empty streamPrefix -> class simple name (not @ExerisDomain name)
+                assertThat(es.aggregateType()).isEqualTo("Order");
+                assertThat(es.snapshotEvery()).isEqualTo(50);
+            });
+        }
+
+        @Test
+        void readsSagaWithStepsSortedByOrder() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain(name = "Fulfillment")
+                    @Saga(name = "OrderFulfillment", description = "End-to-end fulfillment",
+                            timeout = "PT10M", maxRetries = 7)
+                    public class Fulfillment {
+                        @SagaStep(order = 2, name = "ship", service = "shipping",
+                                command = "ship", compensation = "unship", timeout = "PT1M", parallel = true)
+                        public void ship() {}
+
+                        @SagaStep(order = 1, service = "payment", command = "charge")
+                        public void pay() {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
+                assertThat(s.name()).isEqualTo("OrderFulfillment");
+                assertThat(s.description()).isEqualTo("End-to-end fulfillment");
+                assertThat(s.timeout()).isEqualTo("PT10M");
+                assertThat(s.maxRetries()).isEqualTo(7);
+                // sorted by order: pay(1) before ship(2)
+                assertThat(s.steps()).extracting("name").containsExactly("pay", "ship");
+                assertThat(s.steps()).anySatisfy(step -> {
+                    assertThat(step.name()).isEqualTo("ship");
+                    assertThat(step.order()).isEqualTo(2);
+                    assertThat(step.service()).isEqualTo("shipping");
+                    assertThat(step.command()).isEqualTo("ship");
+                    assertThat(step.compensation()).isEqualTo("unship");
+                    assertThat(step.timeout()).isEqualTo("PT1M");
+                    assertThat(step.parallel()).isTrue();
+                });
+            });
+        }
+
+        @Test
+        void sagaNameAndStepNameFallBackWhenAbsent() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain(name = "Thing")
+                    @Saga
+                    public class Settlement {
+                        @SagaStep(service = "s", command = "c")
+                        public void settle() {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
+                assertThat(s.name()).isEqualTo("Settlement"); // class simple name, not @ExerisDomain name
+                // present-only: absent timeout/maxRetries keep the SagaMetadata.Builder
+                // defaults — and the processor (also present-only on the same builder)
+                // produces exactly these, so it is parity, not a silent divergence.
+                assertThat(s.timeout()).isEqualTo("PT30M");
+                assertThat(s.maxRetries()).isEqualTo(3);
+                assertThat(s.steps()).singleElement().satisfies(step -> {
+                    assertThat(step.name()).isEqualTo("settle"); // method name fallback
+                    assertThat(step.order()).isEqualTo(1);       // default order
+                });
+            });
+        }
+
+        @Test
+        void readsInternalApiAsPresenceOnly() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.InternalApi;
+                    @ExerisDomain(name = "Ledger")
+                    @InternalApi(rateLimit = 100)
+                    public class Ledger {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().internalApi()).satisfies(api -> {
+                // known SDK<->AST drift: only presence is extracted -> internal = true
+                assertThat(api.internal()).isTrue();
+                assertThat(api.hidden()).isFalse();
+                assertThat(api.readOnly()).isFalse();
+            });
+        }
+
+        @Test
+        void absentFacetsLeaveMetadataNull() {
+            DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
+            assertThat(domain.graphMetadata()).isNull();
+            assertThat(domain.eventSourced()).isNull();
+            assertThat(domain.sagaMetadata()).isNull();
+            assertThat(domain.internalApi()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @Field attribute surface + @Validation (field fidelity)")
+    class Fields {
+
+        // @Field.label() has no default, so bare @Field / @Field(...) without label is a
+        // compile error in real Java — used here intentionally: the reader tolerates
+        // editor-incomplete source (no symbol/attribute-completeness enforcement).
+        private static final String PRODUCT = """
+                package app.budgethq.product;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.Field;
+                import eu.exeris.sdk.annotation.Validation;
+
+                @ExerisDomain(name = "Product")
+                public class Product {
+                    @Field(label = "SKU", description = "Stock code", unique = true, indexed = true,
+                            searchable = true, sortable = true, filterable = true, readOnly = true,
+                            inCreate = false, inUpdate = false, computed = true,
+                            computedFrom = {"a", "b"})
+                    private String sku;
+
+                    @Field
+                    @Validation(min = 5, max = 100, pattern = "[A-Z]+")
+                    private String code;
+
+                    private long internalCounter; // no @Field
+                }
+                """;
+
+        @Test
+        void readsFullFieldAttributeSurfacePresentOnly() {
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("sku")).get().satisfies(field -> {
+                assertThat(field.displayName()).isEqualTo("SKU");
+                assertThat(field.description()).isEqualTo("Stock code");
+                assertThat(field.unique()).isTrue();
+                assertThat(field.indexed()).isTrue();
+                assertThat(field.searchable()).isTrue();
+                assertThat(field.sortable()).isTrue();
+                assertThat(field.filterable()).isTrue();
+                assertThat(field.readOnly()).isTrue();
+                assertThat(field.inCreate()).isFalse();
+                assertThat(field.inUpdate()).isFalse();
+                assertThat(field.computed()).isTrue();
+                assertThat(field.computedFrom()).containsExactly("a", "b");
+            });
+        }
+
+        @Test
+        void annotatedFieldLeavesSearchSortFilterAtBuilderDefault() {
+            // THE parity fix: a field WITH @Field uses the builder (search/sort/filter
+            // default false), unlike the processor's no-@Field path which uses simple().
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("code")).get().satisfies(field -> {
+                assertThat(field.searchable()).isFalse();
+                assertThat(field.sortable()).isFalse();
+                assertThat(field.filterable()).isFalse();
+                assertThat(field.inCreate()).isTrue();  // builder default
+                assertThat(field.inUpdate()).isTrue();
+            });
+        }
+
+        @Test
+        void fieldWithoutAnnotationUsesSimpleDefaults() {
+            // no @Field -> FieldMetadata.simple() -> search/sort/filter TRUE (the asymmetry)
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("internalCounter")).get().satisfies(field -> {
+                assertThat(field.searchable()).isTrue();
+                assertThat(field.sortable()).isTrue();
+                assertThat(field.filterable()).isTrue();
+            });
+        }
+
+        @Test
+        void readsValidationMinMaxPattern() {
+            // min is deliberately non-zero: FieldMetadata is @JsonInclude(NON_DEFAULT)
+            // and Jackson 3 drops boxed Long(0) on serialization (see AstJsonRoundTripTest),
+            // so 0 is not a wire-safe min until the Field/Validation overlap fix.
+            DomainMetadata domain = reader.read(PRODUCT).orElseThrow();
+            assertThat(domain.findField("code")).get().satisfies(field -> {
+                assertThat(field.min()).isEqualTo(5L);
+                assertThat(field.max()).isEqualTo(100L);
+                assertThat(field.pattern()).isEqualTo("[A-Z]+");
+            });
+        }
+
+        @Test
+        void readsNegativeValidationMin() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(min = -10, max = -1) private int delta;
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().findField("delta")).get().satisfies(field -> {
+                assertThat(field.min()).isEqualTo(-10L); // unary minus unwrapped
+                assertThat(field.max()).isEqualTo(-1L);
+            });
+        }
+
+        @Test
+        void deprecatedValidationRequiredFallsBackWhenFieldDoesNot() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(required = true) private String a;
+                        @Field(required = false) @Validation(required = true) private String b;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            // a: @Field has no required -> deprecated @Validation.required carries over
+            assertThat(domain.findField("a")).get().extracting("required").isEqualTo(true);
+            // b: canonical @Field.required=false wins; the deprecated fallback does not override
+            assertThat(domain.findField("b")).get().extracting("required").isEqualTo(false);
+        }
+
+        @Test
+        void deprecatedValidateOnMapsToFormLifecycle() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Field @Validation(validateOn = "CREATE") private String onCreate;
+                        @Field @Validation(validateOn = "UPDATE") private String onUpdate;
+                        @Field @Validation(validateOn = "WHENEVER") private String unknown;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            // CREATE -> not in update form
+            assertThat(domain.findField("onCreate")).get().satisfies(field -> {
+                assertThat(field.inUpdate()).isFalse();
+                assertThat(field.inCreate()).isTrue();
+            });
+            // UPDATE -> not in create form
+            assertThat(domain.findField("onUpdate")).get().satisfies(field -> {
+                assertThat(field.inCreate()).isFalse();
+                assertThat(field.inUpdate()).isTrue();
+            });
+            // unrecognised value -> no fallback applied (both stay at builder default true)
+            assertThat(domain.findField("unknown")).get().satisfies(field -> {
+                assertThat(field.inCreate()).isTrue();
+                assertThat(field.inUpdate()).isTrue();
+            });
+        }
+
+        @Test
+        void validationIgnoredWithoutField() {
+            // @Validation alone (no @Field) -> processor uses simple(), validation dropped
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Validation;
+                    @ExerisDomain(name = "T")
+                    public class T {
+                        @Validation(min = 5, required = true) private String loose;
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().findField("loose")).get().satisfies(field -> {
+                assertThat(field.min()).isNull();        // validation not consulted
+                assertThat(field.required()).isFalse();
+                assertThat(field.searchable()).isTrue(); // simple() path
+            });
         }
     }
 }
