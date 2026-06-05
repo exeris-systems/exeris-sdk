@@ -232,8 +232,8 @@ public final class SourceModelReader {
      * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
      * ({@code tags}/{@code roles}/{@code permissions}) and the {@code *Field}/
      * {@code validationMode}/{@code ui} attributes are not read here — the processor
-     * doesn't read them either, so the AST stays in lock-step (see {@link #unmodeledFacets},
-     * which still flags their presence for round-trip purposes).
+     * doesn't read them either, so they constitute no reader-vs-processor divergence
+     * and {@link #unmodeledFacets} does not flag them.
      */
     private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
         stringAttr(ann, "module").ifPresent(builder::module);
