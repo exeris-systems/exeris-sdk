@@ -6,13 +6,13 @@
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-03                                                            |
 | **Date Closed**   | —                                                                    |
-| **Target ADR(s)** | TBD (an SDK-side ADR recording annotation placement + the service-reference decision; implements [ADR-024](../../../exeris-docs/adr/ADR-024-capability-composition-model.md)) |
+| **Target ADR(s)** | TBD (an SDK-side ADR recording annotation placement + the service-reference decision; implements [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md)) |
 | **Affected Repos**| `exeris-sdk`, `exeris-tooling` (processor/codegen consume the annotations + AST), `exeris-platform` (lsp `exeris/listCapabilities`) |
 | **Reviewers**     | —                                                                    |
 
 ## Question
 
-The 0.4.0 milestone adds the **`@Capability` surface** to the SDK. But the capability *composition* model is already decided ecosystem-wide: [ADR-024](../../../exeris-docs/adr/ADR-024-capability-composition-model.md) (ACCEPTED 2026-05-13) fixes the annotation vocabulary as **`@CapabilityModule` + `@Provides` + `@Requires` + `@CapabilityLifecycle`**, consumed by the `exeris-tooling` annotation processor (ADR-015) and validated at build time. None of these annotations exist anywhere yet. **How does `exeris-sdk` define this surface — annotation names, where the annotations live, how a "service" is referenced, and what stays out — while preserving the SDK's zero-runtime-coupling invariant?** And how does the stale 0.4.0 ROADMAP wording (`@Capability` / `@CapabilityRef`) reconcile with ADR-024?
+The 0.4.0 milestone adds the **`@Capability` surface** to the SDK. But the capability *composition* model is already decided ecosystem-wide: [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md) (ACCEPTED 2026-05-13) fixes the annotation vocabulary as **`@CapabilityModule` + `@Provides` + `@Requires` + `@CapabilityLifecycle`**, consumed by the `exeris-tooling` annotation processor (ADR-015) and validated at build time. None of these annotations exist anywhere yet. **How does `exeris-sdk` define this surface — annotation names, where the annotations live, how a "service" is referenced, and what stays out — while preserving the SDK's zero-runtime-coupling invariant?** And how does the stale 0.4.0 ROADMAP wording (`@Capability` / `@CapabilityRef`) reconcile with ADR-024?
 
 ## Context
 
@@ -91,6 +91,20 @@ Three scope lines that keep the SDK pure:
 - **Licensing is not an annotation.** ADR-023's `community`/`commercial`/`enterprise-private` is a per-cap-repo property; no SDK annotation field encodes it.
 - **The manifest is tooling's.** `cap-manifest.json` / discovery format (ADR-024 + ADR-015) is emitted by `exeris-tooling`; the SDK supplies only the AST records it serializes. The ROADMAP's `META-INF/exeris/capabilities/` path is a tooling decision, not an SDK one.
 
+### Annotation & AST shapes (decided)
+
+So the implementation ADR does not re-negotiate these mid-flight:
+
+- **`@CapabilityModule`** — `@Target(TYPE)`, one per cap API class (the `@Provides`/`@Requires` carrier). Mirrors `@ExerisDomain`'s `TYPE` target.
+- **`@CapabilityLifecycle`** — `@Target(TYPE)`, marker only, **zero-or-one per cap**. Absence is valid (a cap with no bootstrap-bound lifecycle owner); more than one is a build error the tooling validator rejects. May annotate a class distinct from the `@CapabilityModule` class.
+- **`@Provides` / `@Requires`** — `@Target(TYPE)` and **directly `@Repeatable`** (a cap declares several services from one module class), each with its standard-Java container (`@ProvidesAll` / `@RequiresAll`), mirroring the `@DomainEvent` → `@DomainEvents` container precedent in this repo. The AST flattens the container, so consumers never see it.
+- **AST field types** — primitive/string, `@JsonInclude(NON_DEFAULT)` per the wire-format contract:
+  - `ProvidesMetadata(String service, String version)` — `service` = FQN string; `version` nullable (omitted when absent).
+  - `RequiresMetadata(String service, String versionRange, boolean optional)` — `service` = FQN string; `versionRange` nullable; `optional` a **primitive boolean** (default `false`, dropped by `NON_DEFAULT` when false — the same `FAIL_ON_NULL_FOR_PRIMITIVES=false` consumer contract the existing AST relies on).
+  - `CapabilityModuleMetadata(... provides, ... requires, String lifecycleOwner)` — `lifecycleOwner` = FQN of the `@CapabilityLifecycle` class, nullable when the cap has none.
+
+  `version` / `versionRange` are likely-to-stabilize string fields; the 0.x stability policy covers them, and the implementation ADR flags them as such.
+
 ### Why not the alternatives?
 
 - **Option A (strings)** — sacrifices compile-time safety and turns the well-known-identifier set into unenforced convention; the SDK can afford type-safety here for free.
@@ -99,7 +113,7 @@ Three scope lines that keep the SDK pure:
 
 ### Risks of the recommendation
 
-- **ADR-024 says "Service service" — singular type, not "services".** If a future cap needs to provide/require multiple services from one declaration, `@Provides`/`@Requires` are `@Repeatable` (standard Java) — note it in the ADR; no blocker.
+- **ADR-024 says "Service service" — singular type, not "services".** Resolved under *Annotation & AST shapes*: `@Provides`/`@Requires` are directly `@Repeatable` so a cap declares several services from one module class; the AST flattens the container. No blocker.
 - **`Class<?>` literal of a not-yet-published service.** A cap referencing a kernel SPI not on its classpath won't compile — which is the *correct* failure (you can't depend on what you can't see), and is exactly ADR-024's intent.
 - **AST FQN vs. simple-name resolution.** Reading a `Class` literal from source (JavaParser path, per the `-io` reader) yields whatever the source wrote (simple or qualified). The processor (JSR-269) yields the FQN. The AST contract must standardize on FQN; the `-io` reader resolves via imports or records the written form — flag for the AST design.
 
