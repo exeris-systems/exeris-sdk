@@ -654,6 +654,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                     import eu.exeris.sdk.annotation.NavMenu;
+                    import eu.exeris.sdk.annotation.InternalApi;
                     import eu.exeris.sdk.annotation.Validation;
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
@@ -661,6 +662,7 @@ class SourceModelIoTest {
                     // tenantScoped read (Slice A); roles unread but processor drops it too
                     @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
                     @EventSourced @Graph @Saga                // now read (Slice C) -> NOT divergences
+                    @InternalApi(rateLimit = 100)             // now read (Slice C) -> NOT a divergence
                     @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created") // now read (Slice B) -> NOT a divergence
                     @Projection @NavMenu                      // processor drops these too -> NOT divergences
                     public class Order {
@@ -675,7 +677,7 @@ class SourceModelIoTest {
             // NOT flagged: facets neither side reads, plus everything read in Slices A-C
             assertThat(reader.unmodeledFacets(src))
                     .doesNotContain("@Projection", "@NavMenu", "@PrimaryKey", "@DomainEvent",
-                            "@EventSourced", "@Graph", "@Saga",
+                            "@EventSourced", "@Graph", "@Saga", "@InternalApi",
                             "@ExerisDomain attributes not yet read");
         }
 
@@ -983,6 +985,11 @@ class SourceModelIoTest {
                     """;
             assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
                 assertThat(s.name()).isEqualTo("Settlement"); // class simple name, not @ExerisDomain name
+                // present-only: absent timeout/maxRetries keep the SagaMetadata.Builder
+                // defaults — and the processor (also present-only on the same builder)
+                // produces exactly these, so it is parity, not a silent divergence.
+                assertThat(s.timeout()).isEqualTo("PT30M");
+                assertThat(s.maxRetries()).isEqualTo(3);
                 assertThat(s.steps()).singleElement().satisfies(step -> {
                     assertThat(step.name()).isEqualTo("settle"); // method name fallback
                     assertThat(step.order()).isEqualTo(1);       // default order

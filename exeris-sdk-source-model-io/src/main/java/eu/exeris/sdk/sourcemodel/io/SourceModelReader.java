@@ -526,6 +526,9 @@ public final class SourceModelReader {
         }
         String streamPrefix = stringAttr(es.get(), "streamPrefix").orElse("");
         String aggregateType = streamPrefix.isEmpty() ? type.getNameAsString() : streamPrefix;
+        // Fallback is the @EventSourced.snapshotThreshold annotation default (50),
+        // which the processor preserves — deliberately NOT the builder's own
+        // snapshotEvery default (100), so absent == the annotation's documented value.
         return EventSourcedMetadata.builder(aggregateType)
                 .snapshotEvery(intAttr(es.get(), "snapshotThreshold").orElse(50))
                 .build();
@@ -594,7 +597,13 @@ public final class SourceModelReader {
         return InternalApiMetadata.builder().internal(true).build();
     }
 
-    /** Present-only int attribute from an integer literal (no default — absent leaves it to the caller). */
+    /**
+     * Present-only int attribute from an integer literal (no default — absent
+     * leaves it to the caller). A negative literal is a {@code UnaryExpr} (not an
+     * {@code IntegerLiteralExpr}) and so falls through to the caller default;
+     * harmless for the count-style attributes read here ({@code snapshotThreshold},
+     * {@code maxRetries}, {@code order}), where a negative value is meaningless.
+     */
     private Optional<Integer> intAttr(AnnotationExpr annotation, String attribute) {
         return value(annotation, attribute)
                 .filter(Expression::isIntegerLiteralExpr)
