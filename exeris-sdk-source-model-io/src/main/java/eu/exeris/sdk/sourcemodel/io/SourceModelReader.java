@@ -779,6 +779,12 @@ public final class SourceModelReader {
      * value without them, which is what reattach compares.
      */
     private void applyValidation(AnnotationExpr field, AnnotationExpr validation, FieldMetadata.Builder builder) {
+        // Only min/max/pattern are read — the processor's @Validation block reads
+        // exactly these three; @Validation.minLength/maxLength exist on the annotation
+        // but the processor does NOT read them into FieldMetadata, so reading them here
+        // would itself create a divergence. Note: min == 0 is not wire-safe under
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that is the
+        // documented Field/Validation overlap follow-up, not introduced here.
         longAttr(validation, "min").ifPresent(builder::min);
         longAttr(validation, "max").ifPresent(builder::max);
         stringAttr(validation, "pattern").ifPresent(builder::pattern);
