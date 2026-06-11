@@ -35,7 +35,12 @@ import java.util.Optional;
  * (ADR-037 pre-emptive ruling: the op records live in {@code source-model};
  * their application lives here). UI mutations follow.
  *
- * <p><b>Limitations.</b> Edits act on the field <em>declaration</em> only —
+ * <p><b>Limitations.</b> Removal mutations are not byte-exact inverses of their
+ * additions: {@code LexicalPreservingPrinter} leaves an indentation-only line
+ * where the removed member stood (characterized by
+ * {@code BudgetHqCorpusRoundTripTest} — content and AST equality hold, byte
+ * equality does not). Consumers diffing for conflict detection must compare
+ * ASTs, not text. Edits act on the field <em>declaration</em> only —
  * references elsewhere (getters, usages) are not updated; that needs symbol
  * solving, which this module deliberately avoids. {@code @ExerisDomain} is
  * matched by simple name. Instances are <b>not thread-safe</b> (single

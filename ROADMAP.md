@@ -36,7 +36,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] **`exeris-sdk-source-model-io`** — a single new sibling module (depends on `source-model` + JavaParser; keeps `source-model` dependency-light to preserve zero runtime coupling). Houses both directions — see [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-source-model-parser-writer.md):
   - [ ] parser — JavaParser-based `.java` → `DomainMetadata`
   - [ ] writer — idempotent `DomainMetadata` → `.java` (preserves user comments, formatting, non-Exeris annotations)
-- [ ] Round-trip property tests across the budgetHQ corpus (real entities, not synthetic fixtures)
+- [x] Round-trip property tests across the budgetHQ corpus — `BudgetHqCorpusRoundTripTest` over `corpus/budgethq/` (BankConnection, BankAccount, BankTransaction, User + IdentityProvider enum, Investment), each ported from the cited real budgetHQ entity (budgetHQ does not author `@ExerisDomain` sources yet; reading raw BHQ sources directly lands with the 0.6.x dogfood). Properties per member: `unmodeledFacets()` empty, mutate→invert restores content+AST, idempotence, reader-sees-writer. Caught a real artifact on first run: removal mutations leave an indentation-only line (LexicalPreservingPrinter), so removal inverses are content/AST-equal but not byte-equal — documented as a writer limitation; conflict detection must compare ASTs, not text (input to the conflict-resolution RFC below)
 - [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations
 
 ## 0.4.0 — capability annotation surface (ADR-024)
