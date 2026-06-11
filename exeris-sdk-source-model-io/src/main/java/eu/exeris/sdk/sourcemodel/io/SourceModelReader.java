@@ -21,6 +21,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
@@ -28,8 +29,10 @@ import eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
 import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
+import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
@@ -75,6 +78,20 @@ import java.util.TreeSet;
  * {@link DomainMetadata} facets, each mirroring the processor's extraction
  * (including its {@code streamPrefix→aggregateType} translation and presence-only
  * {@code @InternalApi}).
+ *
+ * <p><b>0.4.0 capability scope.</b> {@link #readCapabilityModule} is the
+ * capability counterpart of {@link #read}: it locates the first
+ * {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
+ * (direct, repeated, or hand-written {@code @Provides.List} container) and
+ * {@code @Requires} declarations into {@link CapabilityModuleMetadata}. Per
+ * ADR-038, {@code service} is persisted <em>as written in source</em> (simple or
+ * qualified — no symbol solving); FQN normalization is build-time tooling's job.
+ * Blank {@code version} / {@code versionRange} map to {@code null}, mirroring the
+ * AST records' "unversioned" convention. {@code lifecycleOwner} is the
+ * fully-qualified name of the {@code @CapabilityLifecycle}-annotated class
+ * <em>when it is declared in the same compilation unit</em>; a lifecycle owner in
+ * a different file is invisible to a single-source reader and is left for
+ * build-time tooling to link (the processor sees the whole round).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
  * {@code read()} no longer drops any annotation-level facet the processor emits:
@@ -163,6 +180,28 @@ public final class SourceModelReader {
     }
 
     /**
+     * Parses {@code javaSource} and returns the capability-module model for its
+     * first {@code @CapabilityModule} class, or {@link Optional#empty()} if the
+     * source contains no such class — the capability counterpart of {@link #read}.
+     * See the class javadoc ("0.4.0 capability scope") for the written-form
+     * service contract and the same-compilation-unit {@code lifecycleOwner}
+     * limitation.
+     *
+     * @throws IllegalArgumentException if the source is not valid Java
+     * @since 0.4.0
+     */
+    public Optional<CapabilityModuleMetadata> readCapabilityModule(String javaSource) {
+        CompilationUnit cu = parseOrThrow(javaSource);
+        return cu.findFirst(ClassOrInterfaceDeclaration.class,
+                        type -> type.isAnnotationPresent("CapabilityModule"))
+                .map(type -> CapabilityModuleMetadata.builder()
+                        .provides(provides(type))
+                        .requires(requires(type))
+                        .lifecycleOwner(lifecycleOwner(cu))
+                        .build());
+    }
+
+    /**
      * Reports the metadata facets where {@link #read} <b>diverges from the
      * annotation processor</b> for {@code javaSource}: facets the processor would
      * emit into {@link DomainMetadata} but the reader does not yet. A <b>non-empty</b>
@@ -173,8 +212,9 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
-     * which is <b>now empty</b> — every processor facet is read (Slices A–D), so this
-     * returns an empty set for every {@code @ExerisDomain} source today. It re-arms
+     * which is <b>now empty</b> — every processor facet is read (Slices A–D, plus the
+     * 0.4.0 capability surface), so this returns an empty set for every
+     * {@code @ExerisDomain} / {@code @CapabilityModule} source today. It re-arms
      * only when a future processor facet is registered in that set ahead of the
      * reader. <b>Not</b> flagged (and never were): facets neither side reads
      * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
@@ -191,9 +231,12 @@ public final class SourceModelReader {
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
-        Optional<ClassOrInterfaceDeclaration> domain = cu.findFirst(ClassOrInterfaceDeclaration.class,
-                type -> type.isAnnotationPresent("ExerisDomain"));
-        if (domain.isEmpty()) {
+        // The guard arms for both modelled roots: @ExerisDomain entities (0.3.0)
+        // and @CapabilityModule caps (0.4.0 Slice 3).
+        Optional<ClassOrInterfaceDeclaration> root = cu.findFirst(ClassOrInterfaceDeclaration.class,
+                type -> type.isAnnotationPresent("ExerisDomain")
+                        || type.isAnnotationPresent("CapabilityModule"));
+        if (root.isEmpty()) {
             return Set.of();
         }
 
@@ -399,7 +442,7 @@ public final class SourceModelReader {
             if ("DomainEvent".equals(simpleName)) {
                 events.add(singleEvent(annotation, entitySimpleName));
             } else if ("DomainEvents".equals(simpleName)) {
-                for (AnnotationExpr inner : containerEvents(annotation)) {
+                for (AnnotationExpr inner : containedAnnotations(annotation)) {
                     events.add(singleEvent(inner, entitySimpleName));
                 }
             }
@@ -431,12 +474,13 @@ public final class SourceModelReader {
     }
 
     /**
-     * The inner {@code @DomainEvent} annotations of a hand-written
-     * {@code @DomainEvents} container — either {@code @DomainEvents({...})}
-     * (single-member) or {@code @DomainEvents(value = {...})} (normal); a lone
-     * non-array element is also tolerated.
+     * The inner annotations of a hand-written container annotation — either
+     * {@code @Container({...})} (single-member) or {@code @Container(value = {...})}
+     * (normal); a lone non-array element is also tolerated. Used for
+     * {@code @DomainEvents} and the capability {@code @Provides.List} /
+     * {@code @Requires.List} containers.
      */
-    private List<AnnotationExpr> containerEvents(AnnotationExpr container) {
+    private List<AnnotationExpr> containedAnnotations(AnnotationExpr container) {
         Optional<Expression> value = container.isSingleMemberAnnotationExpr()
                 ? Optional.of(container.asSingleMemberAnnotationExpr().getMemberValue())
                 : value(container, "value");
@@ -476,6 +520,90 @@ public final class SourceModelReader {
             case "ACTION" -> "ActionEvent";
             default -> "Event";
         };
+    }
+
+    /**
+     * The {@code @Provides} declarations of a {@code @CapabilityModule} class →
+     * {@link ProvidesMetadata}. {@code service} is the class literal's type as
+     * written (a declaration whose {@code service} is missing or not a class
+     * literal is skipped — invalid source the compiler rejects anyway); a blank
+     * {@code version} maps to {@code null} (unversioned).
+     */
+    private List<ProvidesMetadata> provides(ClassOrInterfaceDeclaration type) {
+        List<ProvidesMetadata> provides = new ArrayList<>();
+        for (AnnotationExpr annotation : repeatedDeclarations(type, "Provides")) {
+            classAttr(annotation, "service").ifPresent(service ->
+                    provides.add(new ProvidesMetadata(service,
+                            stringAttr(annotation, "version")
+                                    .filter(version -> !version.isBlank())
+                                    .orElse(null))));
+        }
+        return provides;
+    }
+
+    /**
+     * The {@code @Requires} declarations of a {@code @CapabilityModule} class →
+     * {@link RequiresMetadata}. Same written-form {@code service} contract as
+     * {@link #provides}; a blank {@code versionRange} maps to {@code null} (any
+     * version), {@code optional} defaults {@code false}.
+     */
+    private List<RequiresMetadata> requires(ClassOrInterfaceDeclaration type) {
+        List<RequiresMetadata> requires = new ArrayList<>();
+        for (AnnotationExpr annotation : repeatedDeclarations(type, "Requires")) {
+            classAttr(annotation, "service").ifPresent(service ->
+                    requires.add(new RequiresMetadata(service,
+                            stringAttr(annotation, "versionRange")
+                                    .filter(range -> !range.isBlank())
+                                    .orElse(null),
+                            boolAttr(annotation, "optional", false))));
+        }
+        return requires;
+    }
+
+    /**
+     * All declarations of a {@code @Repeatable} annotation on {@code type}, in
+     * declaration order: direct or compiler-implicit repeated occurrences matched
+     * by simple name, plus the hand-written {@code @<Simple>.List({...})} container
+     * (matched by its {@code <Simple>.List} written suffix — matching the bare
+     * {@code List} simple name would be ambiguous).
+     */
+    private List<AnnotationExpr> repeatedDeclarations(ClassOrInterfaceDeclaration type, String annotationSimpleName) {
+        String containerName = annotationSimpleName + ".List";
+        List<AnnotationExpr> declarations = new ArrayList<>();
+        for (AnnotationExpr annotation : type.getAnnotations()) {
+            String name = annotation.getNameAsString();
+            if (annotationSimpleName.equals(simpleName(name))) {
+                declarations.add(annotation);
+            } else if (name.equals(containerName) || name.endsWith("." + containerName)) {
+                declarations.addAll(containedAnnotations(annotation));
+            }
+        }
+        return declarations;
+    }
+
+    /**
+     * A {@code Class<?>} attribute's type <em>as written in source</em> (simple or
+     * qualified — no symbol solving, per the reader's documented limitation and
+     * ADR-038's written-form contract), or empty when absent or not a class literal.
+     */
+    private Optional<String> classAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute)
+                .filter(Expression::isClassExpr)
+                .map(value -> value.asClassExpr().getTypeAsString());
+    }
+
+    /**
+     * The fully-qualified name of the {@code @CapabilityLifecycle}-annotated class
+     * in this compilation unit, or {@code null} when none — the same-unit
+     * limitation documented on {@link #readCapabilityModule}. The declaring class
+     * is FQN-resolvable without symbol solving (package declaration + type-nesting
+     * path), unlike a referenced {@code service} type.
+     */
+    private String lifecycleOwner(CompilationUnit cu) {
+        return cu.findFirst(ClassOrInterfaceDeclaration.class,
+                        type -> !type.isInterface() && type.isAnnotationPresent("CapabilityLifecycle"))
+                .flatMap(ClassOrInterfaceDeclaration::getFullyQualifiedName)
+                .orElse(null);
     }
 
     private boolean boolAttr(AnnotationExpr annotation, String attribute, boolean defaultValue) {
