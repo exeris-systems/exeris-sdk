@@ -268,6 +268,47 @@ class SourceModelIoTest {
         }
 
         @Test
+        void mixesDirectDeclarationsAndListContainerInSourceOrder() {
+            // a cap may carry both forms at once; the reader expands the container
+            // in-place, so declaration order across the two forms is preserved
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    import eu.exeris.sdk.annotation.capability.Provides;
+                    @CapabilityModule
+                    @Provides(service = A.class)
+                    @Provides.List({
+                            @Provides(service = B.class),
+                            @Provides(service = C.class)
+                    })
+                    @Provides(service = D.class)
+                    public class Cap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.provides()).extracting(ProvidesMetadata::service)
+                    .containsExactly("A", "B", "C", "D");
+        }
+
+        @Test
+        void lifecycleOwnerIgnoresAnnotatedInterface() {
+            // @CapabilityLifecycle targets TYPE, so an interface can carry it, but a
+            // lifecycle owner is a class — an annotated interface is not the owner
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityLifecycle;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    @CapabilityModule
+                    public class Cap {}
+                    @CapabilityLifecycle
+                    interface NotAnOwner {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.hasLifecycleOwner()).isFalse();
+        }
+
+        @Test
         void serviceIsKeptAsWrittenIncludingQualifiedForm() {
             // ADR-038: written form persisted, FQN normalization is tooling's job
             String src = """

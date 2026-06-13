@@ -597,7 +597,9 @@ public final class SourceModelReader {
      * in this compilation unit, or {@code null} when none — the same-unit
      * limitation documented on {@link #readCapabilityModule}. The declaring class
      * is FQN-resolvable without symbol solving (package declaration + type-nesting
-     * path), unlike a referenced {@code service} type.
+     * path), unlike a referenced {@code service} type. {@code @CapabilityLifecycle}
+     * targets {@code TYPE} so an interface could carry it, but a lifecycle owner is
+     * a class — an annotated interface is skipped (not treated as the owner).
      */
     private String lifecycleOwner(CompilationUnit cu) {
         return cu.findFirst(ClassOrInterfaceDeclaration.class,

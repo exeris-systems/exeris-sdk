@@ -33,9 +33,9 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 > Goal: round-trip Java↔AST via JavaParser. Required by LSP and codegen-maven-plugin.
 
-- [ ] **`exeris-sdk-source-model-io`** — a single new sibling module (depends on `source-model` + JavaParser; keeps `source-model` dependency-light to preserve zero runtime coupling). Houses both directions — see [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-source-model-parser-writer.md):
-  - [ ] parser — JavaParser-based `.java` → `DomainMetadata`
-  - [ ] writer — idempotent `DomainMetadata` → `.java` (preserves user comments, formatting, non-Exeris annotations)
+- [x] **`exeris-sdk-source-model-io`** — a single new sibling module (depends on `source-model` + JavaParser; keeps `source-model` dependency-light to preserve zero runtime coupling). Houses both directions — see [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-source-model-parser-writer.md) and [ADR-037](docs/adr/ADR-037-source-model-io-module.md):
+  - [x] parser — JavaParser-based `.java` → `DomainMetadata`, full Slices A–D: `@ExerisDomain` domain attributes, `@DomainEvent`, graph/saga/event-sourcing/internal-API facets, `@Field` + `@Validation`, actions, `@UI`, enums (PRs #28–#31), plus `unmodeledFacets()` round-trip completeness guard (PR #27)
+  - [x] writer — idempotent `DomainMetadata` → `.java` on `LexicalPreservingPrinter` (preserves user comments, formatting, non-Exeris annotations); 8 mutations: add/rename/remove/changeType field, add/remove relationship, add/remove action (PRs #23–#25)
 - [ ] Round-trip property tests across the budgetHQ corpus (real entities, not synthetic fixtures)
 - [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations
 
@@ -44,7 +44,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > Goal: caps (IDP, payments, audit, observability, …) declare what they **provide** and **require** as first-class annotations the processor recognizes. Surface + service-reference model decided in [RFC-2026-06-03](docs/rfc/RFC-2026-06-03-capability-annotation-surface.md); implements [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md). The earlier `@Capability` / `@CapabilityRef` / `CapabilityMetadata` wording here predated ADR-024 and is superseded by its `@CapabilityModule` / `@Provides` / `@Requires` vocabulary.
 
 - [x] `@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle` annotations (`@Retention(SOURCE)`, new `eu.exeris.sdk.annotation.capability` package) — services referenced by `Class<?>` (RFC Option B); `@CapabilityLifecycle` is a marker only (the lifecycle interface stays kernel-side). Slice 1 (PR #33)
-- [ ] Supporting AST records `CapabilityModuleMetadata` / `ProvidesMetadata` / `RequiresMetadata` in `source-model` (service stored as a source-written name string, tooling-normalized to FQN; `version` / `versionRange` as strings)
+- [x] Supporting AST records `CapabilityModuleMetadata` / `ProvidesMetadata` / `RequiresMetadata` in `source-model` (service stored as a source-written name string, tooling-normalized to FQN; `version` / `versionRange` as strings). Slice 2 (PR #34)
 - [x] `-io` reader reads the capability annotations into the AST (same read-and-guard discipline the entity surface already has) — `readCapabilityModule()` reads `@Provides`/`@Requires` (direct, repeated, hand-written `.List` containers) with written-form services per ADR-038, same-unit `@CapabilityLifecycle` → `lifecycleOwner`, and the `unmodeledFacets()` guard armed for `@CapabilityModule` sources. Slice 3
 - [ ] **Out of scope (tooling, not SDK):** `@Requires`→`@Provides` resolution, DAG / version / Wall validation, and the `cap-manifest.json` discovery format are `exeris-tooling` concerns (ADR-024 + ADR-015). The SDK supplies only the annotations + AST records they serialize from.
 
