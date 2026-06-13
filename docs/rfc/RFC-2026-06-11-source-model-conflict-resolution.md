@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **DRAFT**                                                             |
+| **Status**        | **ACCEPTED**                                                          |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-11                                                            |
-| **Date Closed**   | —                                                                     |
-| **Target ADR(s)** | TBD (expected: one ADR locking detection model + conflict granularity, authored with the 0.5.0 mutation-surface design) |
+| **Date Closed**   | 2026-06-13                                                            |
+| **Target ADR(s)** | [ADR-042](../adr/ADR-042-bidirectional-mutation-surface.md) (locks the detection model + the 0.5.0 mutation surface) |
 | **Affected Repos**| `exeris-sdk` (`source-model`, `source-model-io`), `exeris-platform` (lsp, Studio), `exeris-tooling` (codegen baseline) |
 | **Reviewers**     | —                                                                    |
 
@@ -120,6 +120,16 @@ Apply every mutation unconditionally; the user's VCS is the conflict handler.
 5. **Out of SDK scope:** textual fidelity below the AST (comment/formatting drift) is documented as non-conflicting; optimistic concurrency tokens (0.5.0) handle racing edits at the transport layer and are complementary, not alternative.
 
 Sequencing: accept alongside the 0.5.0 mutation-surface design and fold both into one ADR — the conflict variant is a constructor of `MutationResult`, so the two designs are one wire-format decision.
+
+## Decision Record (ACCEPTED 2026-06-13)
+
+Option B accepted, folded into [ADR-042](../adr/ADR-042-bidirectional-mutation-surface.md) with the 0.5.0 mutation surface. The open questions were resolved as follows:
+
+- **Stale-baseline detection → content hash.** Codegen embeds a `sourceDigest` (hash of the normalized source) in `exeris-metadata/<entity>.json`; the reader recomputes and treats a mismatch as `NO_BASELINE`. The same digest doubles as the 0.5.0 optimistic-concurrency token. (Chosen over mtime-comparison, which is brittle across checkout/clone, and over missing-only, which leaves stale baselines undetected.)
+- **Baseline schema-version skew → embed + refuse.** Codegen embeds the `source-model` `schemaVersion`; a reader on a different version refuses with `NO_BASELINE`. This closes the baseline side of the reader/baseline skew; the current-source side stays guarded by `unmodeledFacets()`.
+- **Path-overlap semantics → ancestor-or-descendant.** An op conflicts when its path or any ancestor/descendant drifted to a value differing from both baseline and intent; siblings never conflict; convergent edits are `SUCCESS`.
+
+Both digest and version are **wire-format additions to the processor↔codegen hand-off**, so the first 0.5.0 cut carries a hard `exeris-tooling` dependency (ADR-042 cross-repo obligations) — this is the full, safe model, not an MVP. The remaining open questions (digest normalization detail, `MutationOp` record shape, exact `NO_BASELINE`/`CONFLICT` JSON, capability mutation root) are slice-level and tracked in ADR-042's engineering protocol.
 
 ## Open Questions
 

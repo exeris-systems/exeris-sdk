@@ -50,12 +50,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 ## 0.5.0 — bidirectional sync surface
 
-> Goal: SDK exposes the metadata mutations that LSP, Studio, and IDE plugins call.
+> Goal: SDK exposes the metadata mutations that LSP, Studio, and IDE plugins call. Design locked in [ADR-042](docs/adr/ADR-042-bidirectional-mutation-surface.md) (implements [RFC-2026-06-11](docs/rfc/RFC-2026-06-11-source-model-conflict-resolution.md)); records in `source-model`, detection + application in `-io`, baseline-trust fields emitted by `exeris-tooling` codegen.
 
-- [ ] `MutationOp` records (add field, rename action, change relationship cardinality, …)
-- [ ] `MutationResult` records (success / conflict / validation error)
-- [ ] Path-based addressing (`/entities/Order/fields/total`)
-- [ ] Optimistic concurrency tokens
+- [ ] `MutationOp` records (add field, rename action, change relationship cardinality, …) — `source-model`, path-addressed (ADR-042 slice 1)
+- [ ] `MutationResult` records — four outcomes: `SUCCESS` / `CONFLICT` / `VALIDATION_ERROR` / `NO_BASELINE` (ADR-042 slice 1)
+- [ ] Path-based addressing (`/entities/Order/fields/total`) — shared by ops and conflict reports
+- [ ] AST-level three-way conflict detection in `-io` (ancestor-or-descendant overlap; convergent edits are `SUCCESS`) — ADR-042 slice 2
+- [ ] Baseline-trust fields — `exeris-tooling` codegen emits `sourceDigest` + `schemaVersion` into `exeris-metadata/<entity>.json`; `-io` maps missing/stale/version-skew → `NO_BASELINE` (ADR-042 slice 3, cross-repo)
+- [ ] Optimistic concurrency tokens — the `sourceDigest` doubles as the token
 
 ## 0.6.0–0.9.0 — feedback-driven cleanups
 
