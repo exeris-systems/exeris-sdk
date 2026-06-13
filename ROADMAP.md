@@ -37,7 +37,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   - [x] parser — JavaParser-based `.java` → `DomainMetadata`, full Slices A–D: `@ExerisDomain` domain attributes, `@DomainEvent`, graph/saga/event-sourcing/internal-API facets, `@Field` + `@Validation`, actions, `@UI`, enums (PRs #28–#31), plus `unmodeledFacets()` round-trip completeness guard (PR #27)
   - [x] writer — idempotent `DomainMetadata` → `.java` on `LexicalPreservingPrinter` (preserves user comments, formatting, non-Exeris annotations); 8 mutations: add/rename/remove/changeType field, add/remove relationship, add/remove action (PRs #23–#25)
 - [ ] Round-trip property tests across the budgetHQ corpus (real entities, not synthetic fixtures)
-- [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations
+- [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations — direction drafted in [RFC-2026-06-11](docs/rfc/RFC-2026-06-11-source-model-conflict-resolution.md) (AST-level three-way comparison; to be locked in the 0.5.0 mutation-surface ADR)
 
 ## 0.4.0 — capability annotation surface (ADR-024)
 

@@ -69,7 +69,7 @@ Baseline = source text snapshot at last codegen; drift = `diff(baseline, current
 
 ### Option B: AST-level three-way comparison at metadata-path granularity
 
-Baseline = the `exeris-metadata/<entity>.json` from the last codegen run (deserialized `DomainMetadata`). Drift = facet-by-facet comparison of `read(currentSource)` against the baseline, addressed by the 0.5.0 metadata paths (`/entities/Order/fields/total`). A `MutationOp` conflicts iff its target path (or a parent/child of it) is in the drift set with a different value; `MutationResult.conflict` carries the path, the baseline value, the current value, and the op's intended value. Detection and application live in `-io`; the records live in `source-model`; *policy* (auto-apply non-overlapping ops, prompt on conflicts, three-way auto-merge of attribute sets) stays in the LSP/Studio layer.
+Baseline = the `exeris-metadata/<entity>.json` from the last codegen run (deserialized `DomainMetadata`). Drift = facet-by-facet comparison of `read(currentSource)` against the baseline, addressed by the 0.5.0 metadata paths (`/entities/Order/fields/total`). A `MutationOp` conflicts iff its target path (or a parent/child of it) drifted to a value that differs from *both* the baseline and the op's own intent (so a convergent edit — user and op landing on the same value — is a `success`, not a conflict); `MutationResult.conflict` carries the path, the baseline value, the current value, and the op's intended value. Detection and application live in `-io`; the records live in `source-model`; *policy* (auto-apply non-overlapping ops, prompt on conflicts, three-way auto-merge of attribute sets) stays in the LSP/Studio layer.
 
 **Pros:**
 - Immune to both measured failure modes: LPP artifacts and formatting churn are invisible at AST level (property 3 shows AST comparison already works with shipped code).
@@ -79,8 +79,8 @@ Baseline = the `exeris-metadata/<entity>.json` from the last codegen run (deseri
 
 **Cons:**
 - Blind to drift the AST does not model (comment edits, formatting, non-Exeris annotations) — by design these are *not conflicts*, but it must be documented that tooling mutations may interleave with them silently.
-- Facet-by-facet diff of `DomainMetadata` is real implementation work (deep comparison with path attribution across ~23 record types).
-- Baseline freshness depends on codegen having run; a stale or missing JSON degrades to "everything is drift" and needs a defined fallback (e.g. re-baseline from `read()` with user confirmation).
+- Facet-by-facet diff of `DomainMetadata` is real implementation work (deep comparison with path attribution across 22 record types — 19 base + 3 capability).
+- Baseline freshness depends on codegen having run; a stale or missing JSON has no trustworthy "before" state to diff against, so detection must **refuse** (return the no-baseline outcome named in the recommendation) rather than guess — re-baselining is then an explicit caller action.
 
 **Cost:** moderate engineering in `-io` (the diff walker), small in `source-model` (conflict-shaped records 0.5.0 defines anyway); near-zero operator cost.
 
@@ -114,8 +114,8 @@ Apply every mutation unconditionally; the user's VCS is the conflict handler.
 **Option B.** It is the only option consistent with the three governing precedents (ADR-003's single source of truth, ADR-037's refuse-rather-than-misattribute guard, the existing JSON hand-off as baseline) and the only one the corpus data does not falsify. Concretely, the eventual ADR should lock:
 
 1. **Unit of comparison:** `DomainMetadata` facets addressed by metadata path — the same paths 0.5.0 uses for `MutationOp` targeting.
-2. **Baseline:** the last-codegen `exeris-metadata/<entity>.json`; stale/missing baseline → detection refuses with a distinct `MutationResult` variant (not a conflict — a "no trustworthy baseline" outcome), re-baselining is an explicit caller action.
-3. **Safety precondition:** non-empty `unmodeledFacets()` on the current source → refuse, same posture as reattach.
+2. **Baseline:** the last-codegen `exeris-metadata/<entity>.json`; stale/missing baseline → detection refuses with a distinct `MutationResult` outcome — working name `NO_BASELINE` (a third state alongside `success` and `conflict`, **not** a conflict variant; the ADR must name it precisely since it freezes into the wire format), and re-baselining is an explicit caller action. A convergent edit — user drift and op intent landing on the *same* value at a path — is a `success`, not a conflict (the drift set is "paths whose value differs from both baseline *and* op intent"); this auto-merge is the single most user-friendly case to get right first.
+3. **Safety precondition:** non-empty `unmodeledFacets()` on the *current source* → refuse, same posture as reattach. This guards the current side only; the *baseline* JSON may have been written by an older SDK and carry facets the current reader does not model (see Open Questions) — that asymmetry needs its own check or an explicit out-of-scope statement before the ADR.
 4. **Layering:** drift detection + conflict-aware application in `-io`; conflict-shaped records in `source-model`; merge/prompt *policy* in LSP/Studio — the SDK reports, it does not decide.
 5. **Out of SDK scope:** textual fidelity below the AST (comment/formatting drift) is documented as non-conflicting; optimistic concurrency tokens (0.5.0) handle racing edits at the transport layer and are complementary, not alternative.
 
@@ -126,3 +126,6 @@ Sequencing: accept alongside the 0.5.0 mutation-surface design and fold both int
 - Does a *parent/child* path overlap conflict (op targets `/entities/Order/fields/total`, drift at `/entities/Order`) or only exact-path collision? Leaning: ancestor-or-descendant overlap conflicts; siblings never do.
 - Should the corpus property "removal inverses are content/AST-equal but not byte-equal" be hardened in the writer (strip the indentation-only residue) regardless of the detection model? It does not change the recommendation, but it reduces VCS noise for users. Candidate 0.5.x nice-to-have.
 - Baseline location for non-Maven consumers (Studio scratch projects with no `target/` dir) — does the LSP own a baseline cache?
+- **How is a *stale* baseline detected** (distinct from a *missing* one)? A JSON that exists but predates the current source still produces a false "everything is drift" if treated as current. Candidates: source-mtime vs. JSON-mtime, a content hash / source digest embedded in the JSON at codegen time, or deliberately scoping detection to "missing only" for the first cut. Each has a different implementer obligation; the ADR should pick one even if it defers the richer options.
+- **Baseline schema-version skew.** If the baseline JSON was emitted by an older SDK, it may contain facets the current reader does not model (or omit facets the current reader now reads) — comparing it against a newer reader is a false-safety. Options: embed the source-model schema version in the emitted JSON and refuse on mismatch, treat a lower baseline version as `NO_BASELINE`, or declare cross-version comparison explicitly out of scope. Pairs with recommendation point 3.
+- **Precise name + JSON shape of the `NO_BASELINE` outcome** — it is a wire-format addition to `MutationResult` and freezes at 1.0.0, so the ADR (not this RFC) must fix the constant name and serialized form.
