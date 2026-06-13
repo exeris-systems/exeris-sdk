@@ -1,8 +1,11 @@
 package eu.exeris.sdk.sourcemodel.io;
 
+import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -153,6 +156,194 @@ class SourceModelIoTest {
         void throwsOnInvalidSource() {
             assertThatThrownBy(() -> reader.read("%%% not valid java %%%"))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("reader: @CapabilityModule -> CapabilityModuleMetadata (0.4.0 Slice 3)")
+    class Capabilities {
+
+        /** IDP-shaped cap: repeated @Provides, ranged + optional @Requires, same-unit lifecycle. */
+        private static final String IDENTITY_CAP = """
+                package app.caps.identity;
+
+                import eu.exeris.sdk.annotation.capability.CapabilityLifecycle;
+                import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                import eu.exeris.sdk.annotation.capability.Provides;
+                import eu.exeris.sdk.annotation.capability.Requires;
+
+                @CapabilityModule
+                @Provides(service = IdentityService.class, version = "1.2.0")
+                @Provides(service = TokenService.class)
+                @Requires(service = AuditService.class, versionRange = "[1.0.0,2.0.0)")
+                @Requires(service = MetricsService.class, optional = true)
+                public class IdentityCap {
+                }
+
+                @CapabilityLifecycle
+                class IdentityCapLifecycle {
+                }
+                """;
+
+        @Test
+        void readsProvidesDeclarations() {
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(IDENTITY_CAP).orElseThrow();
+
+            assertThat(cap.provides()).containsExactly(
+                    ProvidesMetadata.of("IdentityService", "1.2.0"),
+                    // no version attribute -> unversioned (null), not ""
+                    ProvidesMetadata.of("TokenService"));
+        }
+
+        @Test
+        void readsRequiresDeclarations() {
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(IDENTITY_CAP).orElseThrow();
+
+            assertThat(cap.requires()).containsExactly(
+                    RequiresMetadata.of("AuditService", "[1.0.0,2.0.0)"),
+                    RequiresMetadata.optional("MetricsService"));
+        }
+
+        @Test
+        void lifecycleOwnerIsFqnOfSameUnitLifecycleClass() {
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(IDENTITY_CAP).orElseThrow();
+
+            assertThat(cap.lifecycleOwner()).isEqualTo("app.caps.identity.IdentityCapLifecycle");
+        }
+
+        @Test
+        void lifecycleOwnerIsNullWhenAbsent() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    @CapabilityModule
+                    public class BareCap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.hasLifecycleOwner()).isFalse();
+            assertThat(cap.provides()).isEmpty();
+            assertThat(cap.requires()).isEmpty();
+        }
+
+        @Test
+        void blankVersionAndVersionRangeMapToNull() {
+            // explicit "" is the annotations' "unversioned" default — must not survive as ""
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    import eu.exeris.sdk.annotation.capability.Provides;
+                    import eu.exeris.sdk.annotation.capability.Requires;
+                    @CapabilityModule
+                    @Provides(service = A.class, version = "")
+                    @Requires(service = B.class, versionRange = "")
+                    public class Cap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.provides().getFirst().hasVersion()).isFalse();
+            assertThat(cap.requires().getFirst().hasVersionRange()).isFalse();
+        }
+
+        @Test
+        void readsHandWrittenListContainers() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    import eu.exeris.sdk.annotation.capability.Provides;
+                    import eu.exeris.sdk.annotation.capability.Requires;
+                    @CapabilityModule
+                    @Provides.List({
+                            @Provides(service = A.class, version = "1.0.0"),
+                            @Provides(service = B.class)
+                    })
+                    @Requires.List(@Requires(service = C.class, optional = true))
+                    public class Cap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.provides()).containsExactly(
+                    ProvidesMetadata.of("A", "1.0.0"), ProvidesMetadata.of("B"));
+            assertThat(cap.requires()).containsExactly(RequiresMetadata.optional("C"));
+        }
+
+        @Test
+        void mixesDirectDeclarationsAndListContainerInSourceOrder() {
+            // a cap may carry both forms at once; the reader expands the container
+            // in-place, so declaration order across the two forms is preserved
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    import eu.exeris.sdk.annotation.capability.Provides;
+                    @CapabilityModule
+                    @Provides(service = A.class)
+                    @Provides.List({
+                            @Provides(service = B.class),
+                            @Provides(service = C.class)
+                    })
+                    @Provides(service = D.class)
+                    public class Cap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.provides()).extracting(ProvidesMetadata::service)
+                    .containsExactly("A", "B", "C", "D");
+        }
+
+        @Test
+        void lifecycleOwnerIgnoresAnnotatedInterface() {
+            // @CapabilityLifecycle targets TYPE, so an interface can carry it, but a
+            // lifecycle owner is a class — an annotated interface is not the owner
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityLifecycle;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    @CapabilityModule
+                    public class Cap {}
+                    @CapabilityLifecycle
+                    interface NotAnOwner {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.hasLifecycleOwner()).isFalse();
+        }
+
+        @Test
+        void serviceIsKeptAsWrittenIncludingQualifiedForm() {
+            // ADR-038: written form persisted, FQN normalization is tooling's job
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.capability.CapabilityModule;
+                    import eu.exeris.sdk.annotation.capability.Provides;
+                    @CapabilityModule
+                    @Provides(service = eu.exeris.idp.IdentityService.class)
+                    public class Cap {}
+                    """;
+            CapabilityModuleMetadata cap = reader.readCapabilityModule(src).orElseThrow();
+
+            assertThat(cap.provides().getFirst().service())
+                    .isEqualTo("eu.exeris.idp.IdentityService");
+        }
+
+        @Test
+        void returnsEmptyWhenNoCapabilityModuleType() {
+            assertThat(reader.readCapabilityModule(
+                    "package x; public class Plain {}")).isEmpty();
+            // an @ExerisDomain entity is not a cap
+            assertThat(reader.readCapabilityModule(ACCOUNT)).isEmpty();
+        }
+
+        @Test
+        void throwsOnInvalidSource() {
+            assertThatThrownBy(() -> reader.readCapabilityModule("%%% not valid java %%%"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void unmodeledFacetsGuardArmsForCapabilitySources() {
+            // capability sources are in the guard's scope now; the divergence set is
+            // empty, so a fully-read cap reports no unmodeled facets
+            assertThat(reader.unmodeledFacets(IDENTITY_CAP)).isEmpty();
         }
     }
 

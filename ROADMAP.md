@@ -45,7 +45,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 - [x] `@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle` annotations (`@Retention(SOURCE)`, new `eu.exeris.sdk.annotation.capability` package) — services referenced by `Class<?>` (RFC Option B); `@CapabilityLifecycle` is a marker only (the lifecycle interface stays kernel-side). Slice 1 (PR #33)
 - [x] Supporting AST records `CapabilityModuleMetadata` / `ProvidesMetadata` / `RequiresMetadata` in `source-model` (service stored as a source-written name string, tooling-normalized to FQN; `version` / `versionRange` as strings). Slice 2 (PR #34)
-- [ ] `-io` reader reads the capability annotations into the AST (same read-and-guard discipline the entity surface already has)
+- [x] `-io` reader reads the capability annotations into the AST (same read-and-guard discipline the entity surface already has) — `readCapabilityModule()` reads `@Provides`/`@Requires` (direct, repeated, hand-written `.List` containers) with written-form services per ADR-038, same-unit `@CapabilityLifecycle` → `lifecycleOwner`, and the `unmodeledFacets()` guard armed for `@CapabilityModule` sources. Slice 3
 - [ ] **Out of scope (tooling, not SDK):** `@Requires`→`@Provides` resolution, DAG / version / Wall validation, and the `cap-manifest.json` discovery format are `exeris-tooling` concerns (ADR-024 + ADR-015). The SDK supplies only the annotations + AST records they serialize from.
 
 ## 0.5.0 — bidirectional sync surface
