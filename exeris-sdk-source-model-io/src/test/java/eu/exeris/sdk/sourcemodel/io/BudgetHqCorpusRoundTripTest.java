@@ -3,6 +3,7 @@ package eu.exeris.sdk.sourcemodel.io;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
+import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 /**
  * Round-trip property tests across the budgetHQ corpus — the 0.3.0 roadmap
@@ -92,6 +94,14 @@ class BudgetHqCorpusRoundTripTest {
         assertThat(entityCorpus()).hasSizeGreaterThanOrEqualTo(5);
         // at least one non-entity supporting type (enum) keeps readEnums exercised
         assertThat(all.stream().filter(f -> f.source().contains("public enum"))).isNotEmpty();
+        // the mutation properties below inject PROBE as a fresh field — no corpus
+        // member may already declare it, or addField/renameField would no-op and the
+        // property's "mutation changed the source" precondition would fail obscurely
+        assertThat(entityCorpus()
+                .flatMap(f -> reader.read(f.source()).stream())
+                .flatMap(d -> d.fields().stream())
+                .map(FieldMetadata::name))
+                .doesNotContain(PROBE);
     }
 
     @ParameterizedTest
@@ -157,6 +167,36 @@ class BudgetHqCorpusRoundTripTest {
         assertThat(reader.read(mutated).orElseThrow().findField(PROBE)).isPresent();
     }
 
+    @ParameterizedTest
+    @MethodSource("entityCorpus")
+    void addThenRemoveRelationshipRestoresContentAndAst(CorpusFile file) {
+        String mutated = writer.addRelationship(file.source(), PROBE, "Probe", "MANY_TO_ONE");
+        assertThat(reader.read(mutated).orElseThrow().relationships())
+                .anySatisfy(r -> assertThat(r.fieldName()).isEqualTo(PROBE));
+
+        String restored = writer.removeRelationship(mutated, PROBE);
+        // same LPP blank-line artifact as field removal — content + AST equality
+        assertThat(contentLines(restored)).isEqualTo(contentLines(file.source()));
+        assertThat(reader.read(restored)).isEqualTo(reader.read(file.source()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("entityCorpus")
+    void changeFieldTypeThereAndBackRestoresSourceExactly(CorpusFile file) {
+        DomainMetadata domain = reader.read(file.source()).orElseThrow();
+        FieldMetadata first = domain.fields().getFirst();
+        String originalType = first.type();
+        // a sentinel type guaranteed different from any corpus field's declared type
+        String sentinel = "ProbeType";
+        assertThat(originalType).isNotEqualTo(sentinel);
+
+        String changed = writer.changeFieldType(file.source(), first.name(), sentinel);
+        assertThat(changed).isNotEqualTo(file.source());
+        // changeFieldType is an in-place edit (no member removal) -> byte-exact inverse
+        assertThat(writer.changeFieldType(changed, first.name(), originalType))
+                .isEqualTo(file.source());
+    }
+
     // --- per-entity fidelity spot-checks (ground the ports in the real shapes) ---
 
     private String corpusSource(String fileName) {
@@ -170,7 +210,7 @@ class BudgetHqCorpusRoundTripTest {
         assertThat(account.tenantScoped()).isTrue();
         assertThat(account.module()).isEqualTo("sync");
         assertThat(account.relationships()).extracting("fieldName", "targetEntity")
-                .containsExactly(org.assertj.core.groups.Tuple.tuple("connection", "BankConnection"));
+                .containsExactly(tuple("connection", "BankConnection"));
         // FK fields stay plain fields; the relationship is modelled separately
         assertThat(account.findField("connection")).isEmpty();
     }
@@ -181,8 +221,7 @@ class BudgetHqCorpusRoundTripTest {
 
         // unnamed @DomainEvent(trigger = CREATE) -> processor-derived name
         assertThat(tx.events()).extracting("name", "topic")
-                .containsExactly(org.assertj.core.groups.Tuple.tuple(
-                        "BankTransactionCreatedEvent", "sync.bank-transactions"));
+                .containsExactly(tuple("BankTransactionCreatedEvent", "sync.bank-transactions"));
         assertThat(tx.relationships()).extracting("targetEntity").containsExactly("BankAccount");
     }
 
