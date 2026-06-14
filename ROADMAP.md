@@ -37,7 +37,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   - [x] parser — JavaParser-based `.java` → `DomainMetadata`, full Slices A–D: `@ExerisDomain` domain attributes, `@DomainEvent`, graph/saga/event-sourcing/internal-API facets, `@Field` + `@Validation`, actions, `@UI`, enums (PRs #28–#31), plus `unmodeledFacets()` round-trip completeness guard (PR #27)
   - [x] writer — idempotent `DomainMetadata` → `.java` on `LexicalPreservingPrinter` (preserves user comments, formatting, non-Exeris annotations); 8 mutations: add/rename/remove/changeType field, add/remove relationship, add/remove action (PRs #23–#25)
 - [x] Round-trip property tests across the budgetHQ corpus — `BudgetHqCorpusRoundTripTest` over `corpus/budgethq/` (BankConnection, BankAccount, BankTransaction, User + IdentityProvider enum, Investment), each ported from the cited real budgetHQ entity (budgetHQ does not author `@ExerisDomain` sources yet; reading raw BHQ sources directly lands with the 0.6.x dogfood). Properties per member: `unmodeledFacets()` empty, mutate→invert restores content+AST, idempotence, reader-sees-writer, plus relationship and field-type round-trips. Caught a real artifact on first run: removal mutations leave an indentation-only line (LexicalPreservingPrinter), so removal inverses are content/AST-equal but not byte-equal — documented as a writer limitation; conflict detection must compare ASTs, not text (input to the conflict-resolution RFC below)
-- [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations — direction drafted in [RFC-2026-06-11](docs/rfc/RFC-2026-06-11-source-model-conflict-resolution.md) (AST-level three-way comparison; to be locked in the 0.5.0 mutation-surface ADR)
+- [ ] Conflict resolution: user edits since last codegen vs. tooling-driven mutations — direction set in [RFC-2026-06-11](docs/rfc/RFC-2026-06-11-source-model-conflict-resolution.md) (ACCEPTED, Option B) and **locked in [ADR-042](docs/adr/ADR-042-bidirectional-mutation-surface.md)** (AST-level three-way comparison). Implementation tracked under 0.5.0 below
 
 ## 0.4.0 — capability annotation surface (ADR-024)
 
@@ -50,12 +50,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 ## 0.5.0 — bidirectional sync surface
 
-> Goal: SDK exposes the metadata mutations that LSP, Studio, and IDE plugins call.
+> Goal: SDK exposes the metadata mutations that LSP, Studio, and IDE plugins call. Design locked in [ADR-042](docs/adr/ADR-042-bidirectional-mutation-surface.md) (implements [RFC-2026-06-11](docs/rfc/RFC-2026-06-11-source-model-conflict-resolution.md)); records in `source-model`, detection + application in `-io`, baseline-trust fields emitted by `exeris-tooling` codegen.
 
-- [ ] `MutationOp` records (add field, rename action, change relationship cardinality, …)
-- [ ] `MutationResult` records (success / conflict / validation error)
-- [ ] Path-based addressing (`/entities/Order/fields/total`)
-- [ ] Optimistic concurrency tokens
+- [ ] `MutationOp` records (add field, rename action, change relationship cardinality, …) — `source-model`, path-addressed (ADR-042 slice 1)
+- [ ] `MutationResult` records — four outcomes: `SUCCESS` / `CONFLICT` / `VALIDATION_ERROR` / `NO_BASELINE` (ADR-042 slice 1)
+- [ ] Path-based addressing (`/entities/Order/fields/total`) — shared by ops and conflict reports
+- [ ] AST-level three-way conflict detection in `-io` (ancestor-or-descendant overlap; convergent edits are `SUCCESS`) — ADR-042 slice 2
+- [ ] Baseline-trust fields — `exeris-tooling` codegen emits `sourceDigest` + `schemaVersion` into `exeris-metadata/<entity>.json`; `-io` maps missing/stale/version-skew → `NO_BASELINE` (ADR-042 slice 3, cross-repo)
+- [ ] Optimistic concurrency tokens — the `sourceDigest` doubles as the token
 
 ## 0.6.0–0.9.0 — feedback-driven cleanups
 

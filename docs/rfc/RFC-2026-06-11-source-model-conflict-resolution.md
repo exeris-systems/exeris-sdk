@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **DRAFT**                                                             |
+| **Status**        | **ACCEPTED**                                                          |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-11                                                            |
-| **Date Closed**   | —                                                                     |
-| **Target ADR(s)** | TBD (expected: one ADR locking detection model + conflict granularity, authored with the 0.5.0 mutation-surface design) |
+| **Date Closed**   | 2026-06-13                                                            |
+| **Target ADR(s)** | [ADR-042](../adr/ADR-042-bidirectional-mutation-surface.md) (locks the detection model + the 0.5.0 mutation surface) |
 | **Affected Repos**| `exeris-sdk` (`source-model`, `source-model-io`), `exeris-platform` (lsp, Studio), `exeris-tooling` (codegen baseline) |
 | **Reviewers**     | —                                                                    |
 
@@ -121,11 +121,23 @@ Apply every mutation unconditionally; the user's VCS is the conflict handler.
 
 Sequencing: accept alongside the 0.5.0 mutation-surface design and fold both into one ADR — the conflict variant is a constructor of `MutationResult`, so the two designs are one wire-format decision.
 
+## Decision Record (ACCEPTED 2026-06-13)
+
+Option B accepted, folded into [ADR-042](../adr/ADR-042-bidirectional-mutation-surface.md) with the 0.5.0 mutation surface. The open questions were resolved as follows:
+
+- **Stale-baseline detection → content hash.** Codegen embeds a `sourceDigest` (hash of the normalized source) in `exeris-metadata/<entity>.json`; the reader recomputes and treats a mismatch as `NO_BASELINE`. The same digest doubles as the 0.5.0 optimistic-concurrency token. (Chosen over mtime-comparison, which is brittle across checkout/clone, and over missing-only, which leaves stale baselines undetected.)
+- **Baseline schema-version skew → embed + refuse.** Codegen embeds the `source-model` `schemaVersion`; a reader on a different version refuses with `NO_BASELINE`. This closes the baseline side of the reader/baseline skew; the current-source side stays guarded by `unmodeledFacets()`.
+- **Path-overlap semantics → ancestor-or-descendant.** An op conflicts when its path or any ancestor/descendant drifted to a value differing from both baseline and intent; siblings never conflict; convergent edits are `SUCCESS`.
+
+Both digest and version are **wire-format additions to the processor↔codegen hand-off**, so the first 0.5.0 cut carries a hard `exeris-tooling` dependency (ADR-042 cross-repo obligations) — this is the full, safe model, not an MVP. The remaining open questions (digest normalization detail, `MutationOp` record shape, exact `NO_BASELINE`/`CONFLICT` JSON, capability mutation root) are slice-level and tracked in ADR-042's engineering protocol.
+
 ## Open Questions
 
-- Does a *parent/child* path overlap conflict (op targets `/entities/Order/fields/total`, drift at `/entities/Order`) or only exact-path collision? Leaning: ancestor-or-descendant overlap conflicts; siblings never do.
+> The three questions struck below were settled in the **Decision Record (ACCEPTED 2026-06-13)** above and folded into ADR-042. They are kept here, struck, for the record.
+
+- ~~Does a *parent/child* path overlap conflict (op targets `/entities/Order/fields/total`, drift at `/entities/Order`) or only exact-path collision? Leaning: ancestor-or-descendant overlap conflicts; siblings never do.~~ → **Resolved:** ancestor-or-descendant overlap conflicts; siblings never do; convergent edits are `SUCCESS` (Decision Record above; ADR-042 obligation 4).
 - Should the corpus property "removal inverses are content/AST-equal but not byte-equal" be hardened in the writer (strip the indentation-only residue) regardless of the detection model? It does not change the recommendation, but it reduces VCS noise for users. Candidate 0.5.x nice-to-have.
 - Baseline location for non-Maven consumers (Studio scratch projects with no `target/` dir) — does the LSP own a baseline cache?
-- **How is a *stale* baseline detected** (distinct from a *missing* one)? A JSON that exists but predates the current source still produces a false "everything is drift" if treated as current. Candidates: source-mtime vs. JSON-mtime, a content hash / source digest embedded in the JSON at codegen time, or deliberately scoping detection to "missing only" for the first cut. Each has a different implementer obligation; the ADR should pick one even if it defers the richer options.
-- **Baseline schema-version skew.** If the baseline JSON was emitted by an older SDK, it may contain facets the current reader does not model (or omit facets the current reader now reads) — comparing it against a newer reader is a false-safety. Options: embed the source-model schema version in the emitted JSON and refuse on mismatch, treat a lower baseline version as `NO_BASELINE`, or declare cross-version comparison explicitly out of scope. Pairs with recommendation point 3.
-- **Precise name + JSON shape of the `NO_BASELINE` outcome** — it is a wire-format addition to `MutationResult` and freezes at 1.0.0, so the ADR (not this RFC) must fix the constant name and serialized form.
+- ~~**How is a *stale* baseline detected** (distinct from a *missing* one)? A JSON that exists but predates the current source still produces a false "everything is drift" if treated as current. Candidates: source-mtime vs. JSON-mtime, a content hash / source digest embedded in the JSON at codegen time, or deliberately scoping detection to "missing only" for the first cut. Each has a different implementer obligation; the ADR should pick one even if it defers the richer options.~~ → **Resolved:** content-hash `sourceDigest` embedded by codegen; reader recomputes, mismatch ⇒ `NO_BASELINE` (Decision Record above; ADR-042 obligation 5).
+- ~~**Baseline schema-version skew.** If the baseline JSON was emitted by an older SDK, it may contain facets the current reader does not model (or omit facets the current reader now reads) — comparing it against a newer reader is a false-safety. Options: embed the source-model schema version in the emitted JSON and refuse on mismatch, treat a lower baseline version as `NO_BASELINE`, or declare cross-version comparison explicitly out of scope. Pairs with recommendation point 3.~~ → **Resolved:** embed `schemaVersion` and refuse on mismatch with `NO_BASELINE` (Decision Record above; ADR-042 obligation 5).
+- **Precise name + JSON shape of the `NO_BASELINE` outcome** — it is a wire-format addition to `MutationResult` and freezes at 1.0.0, so the ADR (not this RFC) must fix the constant name and serialized form. (Still open — deferred to ADR-042 slice 1/3.)
