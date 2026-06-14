@@ -66,6 +66,18 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] AST records — split / merge based on access patterns observed in tooling
 - [ ] Deprecation pipeline (mark `@Deprecated`, document migration in `MIGRATION.md`)
 
+### Annotation-surface honesty — inert attributes (issues to address)
+
+> An internal surface review found attributes the SDK **advertises** but no consumer honours — they read as live configuration while silently doing nothing. Logged here as roadmap issues (not yet opened on GitHub). The SDK-owned obligation is the same in every case — **make the annotation tell the truth**: wire it end-to-end, or run the deprecation pipeline so it stops reading as configuration. Some pair with a downstream gap (a tooling consumer or a kernel SPI) tracked in `exeris-tooling` / `exeris-kernel`.
+
+- [ ] **`@ExerisDomain` system-field overrides are inert** — `tenantIdField`, `createdAtField`, `updatedAtField`, `versionField`, `softDeleteField` are advertised, but the repository generator hard-codes the canonical accessor names. Decide: honour them in tooling, or deprecate + document the canonical names (`tenantId`/`createdAt`/`updatedAt`/`version`) as mandatory in `MIGRATION.md`.
+- [ ] **`@Relationship.targetEntity` is inert** — the processor derives the target from the field's Java type, so the attribute does nothing on the explicit-UUID-FK style. Decide: document the entity-typed requirement, or push tooling to prefer `targetEntity` when set (fall back to the field type only when `void.class`).
+- [ ] **`@Action(name=…)` is inert** — action identity is the method name, so a `name` chosen to dodge a bean-setter collision has no effect, even though `name` is a *required* attribute. Decide: clarify in the javadoc that the method name is the identity today, or make tooling honour `name` as the stable action id.
+- [ ] **`@DomainEvent.topic` is inert against the Open-Core event bus** — topic routing is an enterprise/Kafka-tier concern. Javadoc note that `topic` is enterprise-tier routing metadata, ignored by the Open-Core event engine.
+- [ ] **Capability surface is inert end-to-end** — `@Provides` / `@Requires` / `@CapabilityModule` (+ their AST records) are read into the AST (0.4.0 Slice 3) but no processor extraction nor codegen consumer uses them. Decide: wire the graph end-to-end with a tooling registry consumer, or a javadoc + `MIGRATION.md` note that the capability annotations are reserved and not yet consumed in Open-Core.
+- [ ] **Streaming / real-time attributes are inert** — `@ExerisDomain(realTimeApi=true)` and `@Action(streaming=true, streamEventType=…, realTimeUpdates=true)` advertise server-push, but there is no Open-Core streaming HTTP SPI to back them (kernel-owned root cause). Javadoc note that they are not wired in Open-Core until the kernel streaming affordance lands; the annotations gain meaning once it does.
+- [ ] **No `universe` data-scope tier** — the surface offers only global-singleton and tenant-private (`tenantScoped`), so a dataset that many tenants co-inhabit and read across (rather than each tenant's private rows) is unmodellable and `tenantScoped` does double duty; needs a third kernel RLS mode. Add a first-class universe scope to `@ExerisDomain` (cross-tenant-readable, row-owned but not row-hidden) once kernel persistence supports it.
+
 ## 1.0.0 GA — frozen contract
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
