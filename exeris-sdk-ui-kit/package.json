@@ -11,7 +11,9 @@
       "types": "./dist/index.d.ts"
     },
     "./styles": "./src/styles/index.css",
-    "./styles/*": "./src/styles/*"
+    "./styles/*": "./src/styles/*",
+    "./theme": "./src/styles/theme.css",
+    "./tailwind.preset.js": "./tailwind.preset.js"
   },
   "scripts": {
     "build": "tsc",
