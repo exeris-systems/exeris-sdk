@@ -118,6 +118,8 @@ The `eu.exeris.sdk.sourcemodel.ast.*` records are the build-time hand-off format
 
 Every public AST record is exercised by `AstJsonRoundTripTest` (serialize → deserialize → deep equality). When adding a new AST record or component, add a test case there; this is the wire-format guard that already caught two real bugs.
 
+The mutation surface in `eu.exeris.sdk.sourcemodel.mutation` (`MutationOp` / `MutationResult`, 0.5.0, ADR-042) has its own analogous guard, `MutationWireFormatTest` — it round-trips every op and result *through the sealed-interface type* so the polymorphic `"op"` / `"outcome"` discriminator is exercised and the concrete subtype is recovered. When adding a new `MutationOp` / `MutationResult` variant, add its case there (and register the `@JsonSubTypes` entry — these are sealed, polymorphic types, not flat records).
+
 ### `jackson-annotations` pinned to 2.21 on purpose
 
 The BOM has `jackson.version = 3.1.2` (databind / datatype) but `jackson.annotations.version = 2.21`. Jackson 3.x deliberately keeps annotations on the legacy 2.x line (`jackson-bom` 3.x: `jackson.version.annotations=2.20+`) — the `3.0-rc*` annotations track was abandoned upstream. `2.21` specifically is required for Jackson 3 databind `3.1.2` to load (`JsonSerializeAs` is a 2.21 addition). Do not "unify" these two versions.
