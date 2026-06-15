@@ -130,6 +130,7 @@
   .exeris-input {
     @apply block w-full rounded-md border-gray-300 shadow-sm
            focus:border-indigo-500 focus:ring-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed
            dark:bg-gray-800 dark:border-gray-600 dark:text-white
            sm:text-sm;
   }
@@ -199,7 +200,7 @@
            transition-colors checked:bg-indigo-600
            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           dark:bg-gray-700;
+           dark:bg-gray-700 dark:checked:bg-indigo-500;
   }
 
   .exeris-toggle::before {
@@ -210,6 +211,9 @@
     height: 1.25rem;
     width: 1.25rem;
     border-radius: 9999px;
+    /* White thumb intentionally fixed (not a --exeris-* token): it must read on
+       both the gray unchecked track and the indigo checked track in light AND
+       dark mode — a theme-tracking thumb would go dark-on-dark when unchecked. */
     background-color: #fff;
     transition: transform 150ms ease;
   }
@@ -238,6 +242,7 @@
   /* COLOR_PICKER */
   .exeris-color {
     @apply h-9 w-14 cursor-pointer rounded-md border border-gray-300 bg-white p-0.5
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
            dark:border-gray-600 dark:bg-gray-800;
   }
