@@ -22,21 +22,27 @@
  *       baseline? Compares {@code read(currentSource)} against the baseline
  *       {@code DomainMetadata} and reports a
  *       {@link eu.exeris.sdk.sourcemodel.mutation.MutationResult}.</li>
+ *   <li>{@link eu.exeris.sdk.sourcemodel.io.SourceModelMutationApplier} —
+ *       conflict-aware application (ADR-042 slice 4): detect, then apply via the
+ *       writer only on a clean verdict, returning an
+ *       {@link eu.exeris.sdk.sourcemodel.io.ApplyResult}.</li>
  * </ul>
  *
  * <p><b>Status.</b> Reader (entity attributes, fields, {@code @Relationship}s,
  * actions, {@code @UI}, events, graph/saga/event-sourcing/internal-API, and via
  * {@code readEnums} enum declarations) and capability reader are complete (0.3.0
  * / 0.4.0). Writer does lexical-preserving field/relationship/action mutations.
- * Conflict detection (0.5.0, ADR-042) is in progress: slice 2 (the
- * {@code SourceModelConflictDetector} two-{@code DomainMetadata} {@code detect})
- * detects drift, and slice 3 adds its baseline-trust gate (the JSON/source
- * {@code detect} overloads + {@code checkBaselineTrust}) mapping a missing /
- * unparseable / schema-skewed baseline to {@code NO_BASELINE}. The codegen side
- * of slice 3 — {@code exeris-tooling} emitting {@code sourceDigest} +
- * {@code schemaVersion} into each {@code exeris-metadata/<entity>.json} — and the
- * {@code STALE_DIGEST} apply-time concurrency check + conflict-aware application
- * (slice 4) are still to come.
+ * The 0.5.0 mutation surface (ADR-042) is complete on the SDK side: slice 2
+ * (the {@code SourceModelConflictDetector} two-{@code DomainMetadata}
+ * {@code detect}) detects drift; slice 3 adds the baseline-trust gate (the
+ * JSON/source {@code detect} overloads + {@code checkBaselineTrust}) mapping a
+ * missing / unparseable / schema-skewed baseline to {@code NO_BASELINE}; slice 4
+ * ({@code SourceModelMutationApplier}) applies conflict-aware, with the
+ * {@code sourceDigest} as the apply-time {@code STALE_DIGEST} concurrency token.
+ * The remaining cross-repo piece is {@code exeris-tooling} codegen emitting
+ * {@code sourceDigest} + {@code schemaVersion} into each
+ * {@code exeris-metadata/<entity>.json}; conflict-aware <em>batch</em> apply is
+ * deferred.
  *
  * @since 0.3.0
  */
