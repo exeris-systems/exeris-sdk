@@ -21,7 +21,7 @@
  * <dependency>
  *     <groupId>eu.exeris</groupId>
  *     <artifactId>exeris-sdk-annotations</artifactId>
- *     <version>0.5.0-SNAPSHOT</version>
+ *     <version>0.6.0-SNAPSHOT</version>
  * </dependency>
  *
  * // 2. Annotate your domain entity
@@ -167,7 +167,7 @@
  * </ul>
  *
  * @author Exeris SDK Team
- * @version 0.5.0
+ * @version 0.6.0
  * @since 0.1.0
  */
 package eu.exeris.sdk.annotation;
