@@ -166,4 +166,14 @@ class FieldMetadataTest {
         FieldMetadata f = FieldMetadata.builder("a", "String").computedFrom(null).build();
         assertThat(f.computedFrom()).isEmpty();
     }
+
+    @Test
+    void builderNormalizesBlankDataTypeToNull() {
+        // @Field.dataType defaults to "": blank must become null so it is dropped
+        // by @JsonInclude(NON_DEFAULT) instead of serializing as "dataType":"".
+        assertThat(FieldMetadata.builder("a", "String").dataType("").build().dataType()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").dataType("  ").build().dataType()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").dataType("currency").build().dataType())
+                .isEqualTo("currency");
+    }
 }
