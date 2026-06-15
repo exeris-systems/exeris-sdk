@@ -31,13 +31,15 @@ describe('Tailwind v4 @theme entry (B1)', () => {
       .toEqual(presetColors);
 
     for (const key of presetColors) {
-      const themeChannels = cssVar(themeCss, `--color-exeris-${key}`).match(/rgb\(([^)]+)\)/)[1].trim();
+      const themeValue = cssVar(themeCss, `--color-exeris-${key}`);
+      const rgb = themeValue && themeValue.match(/rgb\(([^)]+)\)/);
+      expect(rgb, `--color-exeris-${key} must be an rgb(...) value, got '${themeValue}'`).toBeTruthy();
       const rawChannels = cssVar(indexCss, `--exeris-${key}`);
-      expect(themeChannels, `color ${key} must match index.css --exeris-${key}`).toEqual(rawChannels);
+      expect(rgb[1].trim(), `color ${key} must match index.css --exeris-${key}`).toEqual(rawChannels);
     }
   });
 
-  it('declares every preset spacing / radius / shadow / animation token', () => {
+  it('declares every preset spacing / radius / shadow / duration / animation token', () => {
     for (const key of Object.keys(preset.theme.extend.spacing)) {
       expect(themeCss, `missing --spacing-${key}`).toContain(`--spacing-${key}:`);
     }
@@ -46,6 +48,9 @@ describe('Tailwind v4 @theme entry (B1)', () => {
     }
     for (const key of Object.keys(preset.theme.extend.boxShadow)) {
       expect(themeCss, `missing --shadow-${key}`).toContain(`--shadow-${key}:`);
+    }
+    for (const key of Object.keys(preset.theme.extend.transitionDuration)) {
+      expect(themeCss, `missing --transition-duration-${key}`).toContain(`--transition-duration-${key}:`);
     }
     for (const key of Object.keys(preset.theme.extend.animation)) {
       expect(themeCss, `missing --animate-${key}`).toContain(`--animate-${key}:`);

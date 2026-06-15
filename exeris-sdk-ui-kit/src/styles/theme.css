@@ -49,6 +49,11 @@
   --shadow-exeris-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-exeris-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
+  /* Transition durations (v3 preset transitionDuration → duration-exeris-* utilities) */
+  --transition-duration-exeris-fast: 150ms;
+  --transition-duration-exeris-normal: 200ms;
+  --transition-duration-exeris-slow: 300ms;
+
   /* Animations */
   --animate-exeris-spin: spin 1s linear infinite;
   --animate-exeris-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
