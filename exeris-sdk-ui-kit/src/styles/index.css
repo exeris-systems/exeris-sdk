@@ -130,6 +130,7 @@
   .exeris-input {
     @apply block w-full rounded-md border-gray-300 shadow-sm
            focus:border-indigo-500 focus:ring-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed
            dark:bg-gray-800 dark:border-gray-600 dark:text-white
            sm:text-sm;
   }
@@ -148,6 +149,126 @@
 
   .exeris-help-text {
     @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  /* Form Controls — one styled class per ComponentType beyond the text inputs
+     .exeris-input already covers (TEXT_INPUT / NUMBER_INPUT / DATE_PICKER /
+     DATETIME_PICKER / TIME_PICKER / PASSWORD / EMAIL / PHONE / URL / CURRENCY /
+     AUTOCOMPLETE). AUTO is resolved by codegen; HIDDEN renders nothing. */
+
+  /* SELECT, MULTI_SELECT (add the `multiple` attribute) */
+  .exeris-select {
+    @apply block w-full rounded-md border-gray-300 shadow-sm
+           focus:border-indigo-500 focus:ring-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:bg-gray-800 dark:border-gray-600 dark:text-white
+           sm:text-sm;
+  }
+
+  /* TEXT_AREA */
+  .exeris-textarea {
+    @apply block w-full rounded-md border-gray-300 shadow-sm
+           focus:border-indigo-500 focus:ring-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:bg-gray-800 dark:border-gray-600 dark:text-white
+           sm:text-sm;
+  }
+
+  /* CHECKBOX */
+  .exeris-checkbox {
+    @apply h-4 w-4 rounded border-gray-300 accent-indigo-600 cursor-pointer
+           focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  /* RADIO_GROUP (per-option control; wrap options in .exeris-radio-group) */
+  .exeris-radio {
+    @apply h-4 w-4 border-gray-300 accent-indigo-600 cursor-pointer
+           focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  .exeris-radio-group {
+    @apply flex flex-col gap-2;
+  }
+
+  /* TOGGLE — a switch rendered from <input type="checkbox" class="exeris-toggle"> */
+  .exeris-toggle {
+    @apply relative h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200
+           transition-colors checked:bg-indigo-600
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:bg-gray-700 dark:checked:bg-indigo-500;
+  }
+
+  .exeris-toggle::before {
+    content: '';
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    height: 1.25rem;
+    width: 1.25rem;
+    border-radius: 9999px;
+    /* White thumb intentionally fixed (not a --exeris-* token): it must read on
+       both the gray unchecked track and the indigo checked track in light AND
+       dark mode — a theme-tracking thumb would go dark-on-dark when unchecked. */
+    background-color: #fff;
+    transition: transform 150ms ease;
+  }
+
+  .exeris-toggle:checked::before {
+    transform: translateX(1.25rem);
+  }
+
+  /* SLIDER */
+  .exeris-range {
+    @apply w-full cursor-pointer accent-indigo-600
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* FILE_UPLOAD, IMAGE_UPLOAD */
+  .exeris-file {
+    @apply block w-full text-sm text-gray-700 dark:text-gray-300
+           file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2
+           file:text-sm file:font-medium file:text-indigo-700
+           hover:file:bg-indigo-100 file:cursor-pointer
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:file:bg-indigo-900/30 dark:file:text-indigo-300;
+  }
+
+  /* COLOR_PICKER */
+  .exeris-color {
+    @apply h-9 w-14 cursor-pointer rounded-md border border-gray-300 bg-white p-0.5
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  /* RICH_TEXT_EDITOR, CODE_EDITOR — bordered editor surface (host mounts the editor inside) */
+  .exeris-editor {
+    @apply block w-full min-h-[8rem] rounded-md border border-gray-300 bg-white p-3 text-sm
+           focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500
+           dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+  }
+
+  /* RATING — star/score row */
+  .exeris-rating {
+    @apply inline-flex items-center gap-1 text-amber-400;
+  }
+
+  /* CHIPS — tag input container + individual chip */
+  .exeris-chips {
+    @apply flex flex-wrap items-center gap-1.5 rounded-md border border-gray-300 p-1.5
+           focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500
+           dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  .exeris-chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium
+           text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300;
   }
 
   /* Cards */
@@ -289,4 +410,3 @@
     display: none;
   }
 }
- c
