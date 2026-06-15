@@ -92,6 +92,29 @@ class SourceModelConflictDetectorBaselineTest {
     }
 
     @Test
+    @DisplayName("a stale sourceDigest does NOT block detection (it is an apply-time token, not a gate)")
+    void staleDigestDoesNotBlockDetection() {
+        // digest doesn't match the current source, but schemaVersion is current:
+        // detection must still run (this is what makes three-way detection useful).
+        String wrongDigest = baselineJsonWithDigest("amount", "String", SchemaVersion.CURRENT, "deadbeefstale");
+        assertThat(detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"), wrongDigest, SOURCE))
+                .isInstanceOf(MutationResult.Success.class);   // not NO_BASELINE
+    }
+
+    @Test
+    @DisplayName("valid JSON that is not a DomainMetadata → NO_BASELINE(MISSING_BASELINE)")
+    void corruptBaselineShape() {
+        // passes the BaselineTrust gate (current schemaVersion) but fails DomainMetadata
+        // deserialization ("fields" is a string, not an array)
+        String corrupt = "{\"schemaVersion\":\"" + SchemaVersion.CURRENT
+                + "\",\"sourceDigest\":\"x\",\"entityName\":\"Order\",\"fields\":\"notAnArray\"}";
+        MutationResult result = detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"), corrupt, SOURCE);
+        assertThat(result).isInstanceOf(MutationResult.NoBaseline.class);
+        assertThat(((MutationResult.NoBaseline) result).cause())
+                .isEqualTo(MutationResult.NoBaselineCause.MISSING_BASELINE);
+    }
+
+    @Test
     @DisplayName("current source with no @ExerisDomain type → VALIDATION_ERROR")
     void currentSourceWithoutEntity() {
         String inSync = baselineJson("amount", "String", SchemaVersion.CURRENT);
@@ -121,11 +144,15 @@ class SourceModelConflictDetectorBaselineTest {
 
     /** The codegen emit shape: a serialized DomainMetadata plus the two trust fields at top level. */
     private String baselineJson(String fieldName, String fieldType, String schemaVersion) {
+        return baselineJsonWithDigest(fieldName, fieldType, schemaVersion, SourceDigest.of(SOURCE));
+    }
+
+    private String baselineJsonWithDigest(String fieldName, String fieldType, String schemaVersion, String digest) {
         DomainMetadata domain = DomainMetadata.builder("Order", "com.acme")
                 .fields(List.of(FieldMetadata.builder(fieldName, fieldType).build()))
                 .build();
         ObjectNode node = (ObjectNode) mapper.valueToTree(domain);
-        node.put("sourceDigest", SourceDigest.of(SOURCE));
+        node.put("sourceDigest", digest);
         if (schemaVersion != null) {
             node.put("schemaVersion", schemaVersion);
         }

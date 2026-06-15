@@ -56,13 +56,9 @@ public final class SourceDigest {
             if (i > 0) {
                 sb.append('\n');
             }
-            sb.append(stripTrailing(lines[i]));
+            sb.append(lines[i].stripTrailing());
         }
         return sb.toString().stripTrailing();
-    }
-
-    private static String stripTrailing(String line) {
-        return line.stripTrailing();
     }
 
     private static byte[] sha256(byte[] input) {

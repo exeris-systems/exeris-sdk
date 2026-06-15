@@ -177,7 +177,12 @@ public final class SourceModelConflictDetector {
             return untrusted.get();
         }
 
-        DomainMetadata baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        DomainMetadata baseline;
+        try {
+            baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        } catch (JacksonException malformed) {
+            return corruptBaseline(malformed);
+        }
         Optional<DomainMetadata> current = new SourceModelReader().read(currentSource);
         if (current.isEmpty()) {
             return new MutationResult.ValidationError(op.path(),
@@ -202,16 +207,31 @@ public final class SourceModelConflictDetector {
 
         Optional<MutationResult.NoBaseline> untrusted = checkBaselineTrust(baselineJson);
         if (untrusted.isPresent()) {
-            return ops.stream().map(ignored -> (MutationResult) untrusted.get()).toList();
+            return sameForEach(ops, untrusted.get());
         }
 
-        DomainMetadata baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        DomainMetadata baseline;
+        try {
+            baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        } catch (JacksonException malformed) {
+            return sameForEach(ops, corruptBaseline(malformed));
+        }
         Optional<DomainMetadata> current = new SourceModelReader().read(currentSource);
         if (current.isEmpty()) {
             return ops.stream().map(op -> (MutationResult) new MutationResult.ValidationError(
                     op.path(), "current source declares no @ExerisDomain type")).toList();
         }
         return detect(ops, baseline, current.get());
+    }
+
+    /** A {@code NO_BASELINE} for a baseline that is valid JSON but not a {@link DomainMetadata}. */
+    private MutationResult.NoBaseline corruptBaseline(JacksonException malformed) {
+        return new MutationResult.NoBaseline(MutationResult.NoBaselineCause.MISSING_BASELINE,
+                "baseline JSON failed DomainMetadata deserialization: " + malformed.getMessage());
+    }
+
+    private List<MutationResult> sameForEach(List<MutationOp> ops, MutationResult result) {
+        return ops.stream().map(ignored -> result).toList();
     }
 
     /**
@@ -243,10 +263,12 @@ public final class SourceModelConflictDetector {
                     "baseline JSON is unparseable: " + malformed.getMessage()));
         }
         if (!SchemaVersion.isCurrent(trust.schemaVersion())) {
+            String detail = trust.schemaVersion() == null
+                    ? "baseline has no schemaVersion stamp (pre-" + SchemaVersion.CURRENT + " baseline?)"
+                    : "baseline schemaVersion '" + trust.schemaVersion() + "' != current '"
+                            + SchemaVersion.CURRENT + "'";
             return Optional.of(new MutationResult.NoBaseline(
-                    MutationResult.NoBaselineCause.SCHEMA_VERSION_SKEW,
-                    "baseline schemaVersion '" + trust.schemaVersion() + "' != current '"
-                            + SchemaVersion.CURRENT + "'"));
+                    MutationResult.NoBaselineCause.SCHEMA_VERSION_SKEW, detail));
         }
         return Optional.empty();
     }
