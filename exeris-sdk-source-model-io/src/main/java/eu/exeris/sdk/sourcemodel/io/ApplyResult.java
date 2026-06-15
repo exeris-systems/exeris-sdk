@@ -19,7 +19,12 @@ import eu.exeris.sdk.sourcemodel.mutation.MutationResult;
  */
 public record ApplyResult(MutationResult outcome, String source) {
 
-    /** Whether the op applied (the outcome is a {@link MutationResult.Success}). */
+    /**
+     * Whether the op applied (the outcome is a {@link MutationResult.Success}).
+     * Note this is {@code true} for a convergent no-op too — the verdict, not a
+     * byte-changed signal. A caller that needs "did the source change?" should
+     * compare {@link #source} against the input.
+     */
     public boolean applied() {
         return outcome.successful();
     }

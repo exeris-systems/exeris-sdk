@@ -101,9 +101,13 @@ public final class SourceModelMutationApplier {
                 return new ApplyResult(detected, currentSource);
             }
             mutated = write(op, currentSource);
-        } catch (IllegalArgumentException cannotProcess) {
-            // unparseable current source (reader) or a writer rejection — both
-            // signal an inapplicable op rather than a thrown ApplyResult.
+        } catch (RuntimeException cannotProcess) {
+            // Safety net for the "ApplyResult never throws" contract. The expected
+            // throw is IllegalArgumentException — an unparseable current source
+            // (reader) or a writer rejection — but any unchecked exception from the
+            // detect/read/write path is surfaced as VALIDATION_ERROR rather than
+            // escaping the result. (MutationPath parse errors are already handled
+            // inside the detector; the unreachable write() guard cannot fire here.)
             return new ApplyResult(new MutationResult.ValidationError(op.path(),
                     "could not apply op: " + cannotProcess.getMessage()), currentSource);
         }

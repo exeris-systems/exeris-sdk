@@ -131,6 +131,20 @@ class SourceModelMutationApplierTest {
     }
 
     @Test
+    @DisplayName("renaming a field absent from baseline and source is a vacuous no-op success (writer idempotent)")
+    void renameAbsentFieldIsNoOp() {
+        // Characterizes the documented slice-4 gap: the strict "rename of a
+        // non-existent field" VALIDATION_ERROR is deferred; today the writer
+        // no-ops and detection sees no drift, so the verdict is Success.
+        String baseline = baseline(field("amount", "String"));
+        MutationOp op = new MutationOp.RenameField(MutationPath.field("Order", "ghost").toString(), "phantom");
+
+        ApplyResult result = applier.apply(op, baseline, SOURCE);
+        assertThat(result.applied()).isTrue();
+        assertThat(result.source()).isEqualTo(SOURCE);   // nothing renamed
+    }
+
+    @Test
     @DisplayName("an unparseable current source maps to VALIDATION_ERROR, not a thrown exception")
     void invalidSourceIsValidationError() {
         String baseline = baseline(field("amount", "String"));
