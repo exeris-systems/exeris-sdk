@@ -15,6 +15,13 @@
  *       {@code VALIDATION_ERROR}, {@code NO_BASELINE}.</li>
  *   <li>{@link eu.exeris.sdk.sourcemodel.mutation.MutationPath} — the path
  *       grammar shared by op targeting and conflict reporting.</li>
+ *   <li>{@link eu.exeris.sdk.sourcemodel.mutation.SchemaVersion} /
+ *       {@link eu.exeris.sdk.sourcemodel.mutation.SourceDigest} /
+ *       {@link eu.exeris.sdk.sourcemodel.mutation.BaselineTrust} — the
+ *       baseline-trust contract (slice 3): the two fields codegen stamps into
+ *       each {@code exeris-metadata/<entity>.json} and the shared, pure
+ *       (JavaParser-free) digest algorithm both codegen and {@code -io} compute
+ *       identically.</li>
  * </ul>
  *
  * <h2>Layering (ADR-037, ADR-042)</h2>
