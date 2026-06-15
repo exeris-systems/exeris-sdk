@@ -19,7 +19,11 @@ npm install @exeris/ui-kit
 
 ### With Tailwind CSS
 
-Add the Exeris preset to your `tailwind.config.js`:
+The `exeris-*` design-token namespace (`bg-exeris-primary`, `font-exeris`,
+`p-exeris-md`, `rounded-exeris-md`, `shadow-exeris-lg`, `animate-exeris-spin`, …)
+ships two ways — pick the one matching your Tailwind major.
+
+**Tailwind v3** — JS preset in `tailwind.config.js`:
 
 ```javascript
 import exerisPreset from '@exeris/ui-kit/tailwind.preset.js';
@@ -30,6 +34,17 @@ export default {
   // ... your config
 };
 ```
+
+**Tailwind v4** — CSS-first (v4 removed JS presets, so the preset above does not
+apply). Import the `@theme` entry next to Tailwind:
+
+```css
+@import "tailwindcss";
+@import "@exeris/ui-kit/theme";
+```
+
+Both entries declare the same tokens, so generated components render identically
+on either major; a parity test keeps them in sync.
 
 ### Import Base Styles
 

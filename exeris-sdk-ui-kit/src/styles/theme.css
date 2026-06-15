@@ -1,0 +1,69 @@
+/**
+ * Exeris UI Kit — Tailwind CSS v4 theme entry.
+ *
+ * Tailwind v4 is CSS-first and removed JS presets, so the v3
+ * `tailwind.preset.js` (`presets: [exerisPreset]`) does not apply to a v4
+ * consumer. This file is the v4 equivalent: it declares the same `exeris-*`
+ * design-token namespace via `@theme`, so v4 generates the same utilities
+ * (`bg-exeris-primary`, `font-exeris`, `p-exeris-md`, `rounded-exeris-md`,
+ * `shadow-exeris-lg`, `animate-exeris-spin`, …).
+ *
+ * Usage (Tailwind v4, CSS-first):
+ *   @import "tailwindcss";
+ *   @import "@exeris/ui-kit/theme";
+ *
+ * v3 consumers keep using `tailwind.preset.js` instead (see README). The token
+ * values here mirror the v3 preset and the `--exeris-*` custom properties in
+ * `index.css`; the parity guard `tests/theme.test.js` keeps the two in sync.
+ */
+@theme {
+  /* Colors (channels mirror index.css --exeris-* tokens) */
+  --color-exeris-primary: rgb(79 70 229);
+  --color-exeris-primary-hover: rgb(67 56 202);
+  --color-exeris-secondary: rgb(100 116 139);
+  --color-exeris-success: rgb(34 197 94);
+  --color-exeris-warning: rgb(245 158 11);
+  --color-exeris-danger: rgb(239 68 68);
+  --color-exeris-info: rgb(59 130 246);
+
+  /* Font */
+  --font-exeris: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Spacing */
+  --spacing-exeris-xs: 0.25rem;
+  --spacing-exeris-sm: 0.5rem;
+  --spacing-exeris-md: 1rem;
+  --spacing-exeris-lg: 1.5rem;
+  --spacing-exeris-xl: 2rem;
+
+  /* Border radius */
+  --radius-exeris-sm: 0.25rem;
+  --radius-exeris-md: 0.375rem;
+  --radius-exeris-lg: 0.5rem;
+  --radius-exeris-xl: 0.75rem;
+
+  /* Shadows */
+  --shadow-exeris-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-exeris: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-exeris-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-exeris-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Animations */
+  --animate-exeris-spin: spin 1s linear infinite;
+  --animate-exeris-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-exeris-fade-in: fadeIn 0.2s ease-out;
+  --animate-exeris-slide-up: slideUp 0.3s ease-out;
+}
+
+/* Custom keyframes the exeris-fade-in / exeris-slide-up animations reference
+   (spin & pulse are Tailwind built-ins). */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
