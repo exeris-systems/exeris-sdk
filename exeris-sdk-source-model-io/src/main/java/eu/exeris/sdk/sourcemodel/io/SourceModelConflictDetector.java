@@ -4,9 +4,15 @@ import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.mutation.BaselineTrust;
 import eu.exeris.sdk.sourcemodel.mutation.MutationOp;
 import eu.exeris.sdk.sourcemodel.mutation.MutationPath;
 import eu.exeris.sdk.sourcemodel.mutation.MutationResult;
+import eu.exeris.sdk.sourcemodel.mutation.SchemaVersion;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,22 +48,44 @@ import java.util.Optional;
  * removing the whole entity — surfaces as member-level drift (baseline present,
  * current absent). The ancestor-or-descendant generalization
  * ({@link MutationPath#isSameOrAncestorOf}) becomes load-bearing only when
- * nesting ops arrive (an entity-root op, or capability sub-paths). Coarse
- * whole-file / domain-attribute drift is the {@code sourceDigest} baseline-trust
- * mechanism's job (slice 3): any edit the digest can't reconcile yields
- * {@code NO_BASELINE} before detection runs.
+ * nesting ops arrive (an entity-root op, or capability sub-paths).
  *
- * <p>This class is <strong>pure over two {@link DomainMetadata} values</strong>:
- * it does not read source, recompute digests, or decide {@code NO_BASELINE}
- * (slice 3 wires those in), and it does not mutate source (slice 4 applies).
- * It reports {@code SUCCESS} / {@code CONFLICT}, and {@code VALIDATION_ERROR}
- * for the structural rejections it can see without a baseline comparison
- * (unparseable path, path-kind/op mismatch, path targeting a different entity).
- * The full {@code VALIDATION_ERROR} trigger set is fixed in slice 4.
+ * <h2>Baseline trust (ADR-042 slice 3)</h2>
+ * <p>The two-{@link DomainMetadata} {@link #detect(MutationOp, DomainMetadata,
+ * DomainMetadata)} is pure: no source reading, no JSON, no {@code NO_BASELINE}.
+ * The source/JSON overloads ({@link #detect(MutationOp, String, String)}) add
+ * the baseline-trust gate: before any drift comparison they reject a baseline
+ * that cannot be trusted —
+ * {@link MutationResult.NoBaselineCause#MISSING_BASELINE} (absent or unparseable
+ * baseline JSON) and {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}
+ * (the baseline's {@link SchemaVersion} stamp is not {@link SchemaVersion#CURRENT}).
+ * The third cause, {@link MutationResult.NoBaselineCause#STALE_DIGEST}, is
+ * <em>not</em> decided here: per the accepted design the {@code sourceDigest} is
+ * an optimistic-concurrency token checked at <em>apply</em> time (slice 4), not
+ * a detection-time block — so three-way detection runs on an edited source
+ * (which is the whole point), and a digest mismatch is a concurrency reject, not
+ * a refusal to detect.
+ *
+ * <p>It reports {@code SUCCESS} / {@code CONFLICT} / {@code NO_BASELINE}, and
+ * {@code VALIDATION_ERROR} for the structural rejections visible without a
+ * baseline comparison (unparseable path, path-kind/op mismatch, path targeting a
+ * different entity). The full {@code VALIDATION_ERROR} trigger set, and
+ * conflict-aware application, are slice 4.
  *
  * @since 0.5.0
  */
 public final class SourceModelConflictDetector {
+
+    /**
+     * Reads the baseline JSON (the domain fields and the {@link BaselineTrust}
+     * siblings, each blind to the other via {@code ignoreUnknown}). Configured
+     * with the AST-wide {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} contract.
+     * {@link ObjectMapper} is thread-safe; the {@link SourceModelReader} used for
+     * the current source is created per call (it is not).
+     */
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
+            .build();
 
     /**
      * Detect whether {@code op} conflicts with a user edit, comparing
@@ -123,6 +151,104 @@ public final class SourceModelConflictDetector {
             results.add(detect(op, baseline, current));
         }
         return results;
+    }
+
+    // ---- baseline-trust gate (slice 3) -----------------------------------
+
+    /**
+     * Detect against the last-codegen baseline JSON and the current source text.
+     * Applies the baseline-trust gate first ({@link #checkBaselineTrust}); if the
+     * baseline is trustworthy, reads both models and delegates to
+     * {@link #detect(MutationOp, DomainMetadata, DomainMetadata)}.
+     *
+     * @param op            the mutation to test
+     * @param baselineJson  the {@code exeris-metadata/<entity>.json} the op was
+     *                      computed against, or {@code null} when none exists
+     * @param currentSource the live {@code @ExerisDomain} source
+     * @return the verdict — {@code NO_BASELINE} when the baseline is untrustworthy,
+     *         otherwise the three-way detection result
+     */
+    public MutationResult detect(MutationOp op, String baselineJson, String currentSource) {
+        Objects.requireNonNull(op, "op is required");
+        Objects.requireNonNull(currentSource, "currentSource is required");
+
+        Optional<MutationResult.NoBaseline> untrusted = checkBaselineTrust(baselineJson);
+        if (untrusted.isPresent()) {
+            return untrusted.get();
+        }
+
+        DomainMetadata baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        Optional<DomainMetadata> current = new SourceModelReader().read(currentSource);
+        if (current.isEmpty()) {
+            return new MutationResult.ValidationError(op.path(),
+                    "current source declares no @ExerisDomain type");
+        }
+        return detect(op, baseline, current.get());
+    }
+
+    /**
+     * Batch counterpart of {@link #detect(MutationOp, String, String)}, reading
+     * both models once. An untrusted baseline yields the same {@code NO_BASELINE}
+     * for every op.
+     *
+     * @param ops           the mutations to test, in order
+     * @param baselineJson  the baseline JSON, or {@code null} when none exists
+     * @param currentSource the live {@code @ExerisDomain} source
+     * @return one result per op, order-preserving
+     */
+    public List<MutationResult> detect(List<MutationOp> ops, String baselineJson, String currentSource) {
+        Objects.requireNonNull(ops, "ops is required");
+        Objects.requireNonNull(currentSource, "currentSource is required");
+
+        Optional<MutationResult.NoBaseline> untrusted = checkBaselineTrust(baselineJson);
+        if (untrusted.isPresent()) {
+            return ops.stream().map(ignored -> (MutationResult) untrusted.get()).toList();
+        }
+
+        DomainMetadata baseline = MAPPER.readValue(baselineJson, DomainMetadata.class);
+        Optional<DomainMetadata> current = new SourceModelReader().read(currentSource);
+        if (current.isEmpty()) {
+            return ops.stream().map(op -> (MutationResult) new MutationResult.ValidationError(
+                    op.path(), "current source declares no @ExerisDomain type")).toList();
+        }
+        return detect(ops, baseline, current.get());
+    }
+
+    /**
+     * The baseline-trust gate (ADR-042 obligation 5): is the baseline JSON safe
+     * to compare against? Returns the {@link MutationResult.NoBaseline} to emit
+     * when it is not, or empty when it is. Decides only the two detection-time
+     * causes — {@link MutationResult.NoBaselineCause#MISSING_BASELINE} (null,
+     * blank, or unparseable JSON) and
+     * {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW} (the stamped
+     * {@link SchemaVersion} is not {@link SchemaVersion#CURRENT}, including an
+     * absent stamp). {@code STALE_DIGEST} is a slice-4 apply-time concurrency
+     * concern and is deliberately not checked here.
+     *
+     * @param baselineJson the baseline JSON to vet, or {@code null}
+     * @return the {@code NO_BASELINE} to emit when the baseline is untrustworthy,
+     *         or empty when it is safe to compare against
+     */
+    public Optional<MutationResult.NoBaseline> checkBaselineTrust(String baselineJson) {
+        if (baselineJson == null || baselineJson.isBlank()) {
+            return Optional.of(new MutationResult.NoBaseline(
+                    MutationResult.NoBaselineCause.MISSING_BASELINE, "no baseline JSON for the entity"));
+        }
+        BaselineTrust trust;
+        try {
+            trust = MAPPER.readValue(baselineJson, BaselineTrust.class);
+        } catch (JacksonException malformed) {
+            return Optional.of(new MutationResult.NoBaseline(
+                    MutationResult.NoBaselineCause.MISSING_BASELINE,
+                    "baseline JSON is unparseable: " + malformed.getMessage()));
+        }
+        if (!SchemaVersion.isCurrent(trust.schemaVersion())) {
+            return Optional.of(new MutationResult.NoBaseline(
+                    MutationResult.NoBaselineCause.SCHEMA_VERSION_SKEW,
+                    "baseline schemaVersion '" + trust.schemaVersion() + "' != current '"
+                            + SchemaVersion.CURRENT + "'"));
+        }
+        return Optional.empty();
     }
 
     // ---- per-member-kind drift checks ------------------------------------

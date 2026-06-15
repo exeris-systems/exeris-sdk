@@ -28,10 +28,14 @@
  * actions, {@code @UI}, events, graph/saga/event-sourcing/internal-API, and via
  * {@code readEnums} enum declarations) and capability reader are complete (0.3.0
  * / 0.4.0). Writer does lexical-preserving field/relationship/action mutations.
- * Conflict detection (0.5.0, ADR-042) is in progress: slice 2 (this
- * {@code SourceModelConflictDetector}) detects drift; the {@code sourceDigest} /
- * {@code schemaVersion} baseline-trust mapping to {@code NO_BASELINE} (slice 3,
- * cross-repo with {@code exeris-tooling}) and conflict-aware application
+ * Conflict detection (0.5.0, ADR-042) is in progress: slice 2 (the
+ * {@code SourceModelConflictDetector} two-{@code DomainMetadata} {@code detect})
+ * detects drift, and slice 3 adds its baseline-trust gate (the JSON/source
+ * {@code detect} overloads + {@code checkBaselineTrust}) mapping a missing /
+ * unparseable / schema-skewed baseline to {@code NO_BASELINE}. The codegen side
+ * of slice 3 — {@code exeris-tooling} emitting {@code sourceDigest} +
+ * {@code schemaVersion} into each {@code exeris-metadata/<entity>.json} — and the
+ * {@code STALE_DIGEST} apply-time concurrency check + conflict-aware application
  * (slice 4) are still to come.
  *
  * @since 0.3.0

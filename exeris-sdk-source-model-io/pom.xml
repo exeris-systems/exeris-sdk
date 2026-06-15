@@ -38,6 +38,15 @@
             <artifactId>javaparser-core</artifactId>
         </dependency>
 
+        <!-- Jackson 3 databind: the conflict detector deserializes the baseline
+             exeris-metadata/<entity>.json (DomainMetadata + the BaselineTrust
+             sibling fields) for the slice-3 trust gate. source-model stays
+             databind-free (annotations only); this consumer module reads JSON. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
