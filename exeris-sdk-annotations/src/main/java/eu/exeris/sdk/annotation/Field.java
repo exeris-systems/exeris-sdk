@@ -413,6 +413,12 @@ public @interface Field {
      *   <li>"json" - Syntax highlight JSON</li>
      * </ul>
      *
+     * <p>Modelled in the AST as {@code FieldMetadata.dataType} (since 0.6.0).
+     * Until the build-time processor and the {@code -io} reader begin extracting
+     * it together, the value is carried by the annotation but not yet propagated
+     * to generators — see the {@code dataType} vs {@code format} note in the
+     * {@code eu.exeris.sdk.sourcemodel.ast} package-info.
+     *
      * @return data type hint
      */
     String dataType() default "";
