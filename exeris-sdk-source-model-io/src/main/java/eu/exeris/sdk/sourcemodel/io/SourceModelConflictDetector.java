@@ -94,23 +94,23 @@ public final class SourceModelConflictDetector {
         }
 
         return switch (op) {
-            case MutationOp.AddField a -> field(op, baseline, current,
+            case MutationOp.AddField a -> field(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().equals(a.field()), render(a.field()));
-            case MutationOp.RemoveField ignored -> field(op, baseline, current,
+            case MutationOp.RemoveField ignored -> field(path, baseline, current,
                     Optional::isEmpty, null);
-            case MutationOp.ChangeFieldType c -> field(op, baseline, current,
+            case MutationOp.ChangeFieldType c -> field(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().type().equals(c.newType()), "type=" + c.newType());
-            case MutationOp.RenameField r -> renameField(r, baseline, current);
-            case MutationOp.AddRelationship a -> relationship(op, baseline, current,
+            case MutationOp.RenameField r -> renameField(r, path, baseline, current);
+            case MutationOp.AddRelationship a -> relationship(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().equals(a.relationship()), render(a.relationship()));
-            case MutationOp.RemoveRelationship ignored -> relationship(op, baseline, current,
+            case MutationOp.RemoveRelationship ignored -> relationship(path, baseline, current,
                     Optional::isEmpty, null);
-            case MutationOp.ChangeRelationshipCardinality c -> relationship(op, baseline, current,
+            case MutationOp.ChangeRelationshipCardinality c -> relationship(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().type() == c.newCardinality(),
                     "type=" + c.newCardinality());
-            case MutationOp.AddAction a -> action(op, baseline, current,
+            case MutationOp.AddAction a -> action(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().equals(a.action()), render(a.action()));
-            case MutationOp.RemoveAction ignored -> action(op, baseline, current,
+            case MutationOp.RemoveAction ignored -> action(path, baseline, current,
                     Optional::isEmpty, null);
         };
     }
@@ -127,28 +127,25 @@ public final class SourceModelConflictDetector {
 
     // ---- per-member-kind drift checks ------------------------------------
 
-    private MutationResult field(MutationOp op, DomainMetadata baseline, DomainMetadata current,
+    private MutationResult field(MutationPath path, DomainMetadata baseline, DomainMetadata current,
                                  ConvergencePredicate<FieldMetadata> convergent, String intended) {
-        String name = MutationPath.parse(op.path()).member();
-        Optional<FieldMetadata> base = baseline.findField(name);
-        Optional<FieldMetadata> cur = current.findField(name);
-        return verdict(op.path(), base, cur, convergent.test(cur), intended);
+        Optional<FieldMetadata> base = baseline.findField(path.member());
+        Optional<FieldMetadata> cur = current.findField(path.member());
+        return verdict(path.toString(), base, cur, convergent.test(cur), intended);
     }
 
-    private MutationResult relationship(MutationOp op, DomainMetadata baseline, DomainMetadata current,
+    private MutationResult relationship(MutationPath path, DomainMetadata baseline, DomainMetadata current,
                                         ConvergencePredicate<RelationshipMetadata> convergent, String intended) {
-        String name = MutationPath.parse(op.path()).member();
-        Optional<RelationshipMetadata> base = findRelationship(baseline, name);
-        Optional<RelationshipMetadata> cur = findRelationship(current, name);
-        return verdict(op.path(), base, cur, convergent.test(cur), intended);
+        Optional<RelationshipMetadata> base = findRelationship(baseline, path.member());
+        Optional<RelationshipMetadata> cur = findRelationship(current, path.member());
+        return verdict(path.toString(), base, cur, convergent.test(cur), intended);
     }
 
-    private MutationResult action(MutationOp op, DomainMetadata baseline, DomainMetadata current,
+    private MutationResult action(MutationPath path, DomainMetadata baseline, DomainMetadata current,
                                   ConvergencePredicate<ActionMetadata> convergent, String intended) {
-        String name = MutationPath.parse(op.path()).member();
-        Optional<ActionMetadata> base = findAction(baseline, name);
-        Optional<ActionMetadata> cur = findAction(current, name);
-        return verdict(op.path(), base, cur, convergent.test(cur), intended);
+        Optional<ActionMetadata> base = findAction(baseline, path.member());
+        Optional<ActionMetadata> cur = findAction(current, path.member());
+        return verdict(path.toString(), base, cur, convergent.test(cur), intended);
     }
 
     /**
@@ -158,8 +155,9 @@ public final class SourceModelConflictDetector {
      * when the old field drifted in a way the rename can't absorb, or the target
      * name is already occupied by a different field.
      */
-    private MutationResult renameField(MutationOp.RenameField op, DomainMetadata baseline, DomainMetadata current) {
-        String oldName = MutationPath.parse(op.path()).member();
+    private MutationResult renameField(MutationOp.RenameField op, MutationPath path,
+                                       DomainMetadata baseline, DomainMetadata current) {
+        String oldName = path.member();
         String newName = op.newName();
         Optional<FieldMetadata> baseOld = baseline.findField(oldName);
         Optional<FieldMetadata> curOld = current.findField(oldName);
@@ -168,13 +166,17 @@ public final class SourceModelConflictDetector {
 
         boolean reflectsRename = curOld.isEmpty() && curNew.isPresent() && curNew.equals(renamed);
         if (reflectsRename) {
-            return new MutationResult.Success(op.path());
+            return new MutationResult.Success(path.toString());
         }
 
+        // NOTE (slice 4): renaming a field absent from both baseline and current
+        // is an inapplicable op and should be a VALIDATION_ERROR. Here it falls
+        // through to Success (no drift, target free); the applicability check
+        // belongs to the application slice's VALIDATION_ERROR trigger set.
         boolean oldDrift = !Objects.equals(baseOld, curOld);
         boolean targetOccupied = baseline.findField(newName).isEmpty() && curNew.isPresent();
         if (!oldDrift && !targetOccupied) {
-            return new MutationResult.Success(op.path());
+            return new MutationResult.Success(path.toString());
         }
 
         // Non-convergent: surface the more specific collision.
@@ -182,7 +184,7 @@ public final class SourceModelConflictDetector {
             return new MutationResult.Conflict(MutationPath.field(current.entityName(), newName).toString(),
                     null, render(curNew), "rename '" + oldName + "' to '" + newName + "'");
         }
-        return new MutationResult.Conflict(op.path(), render(baseOld), render(curOld), "name=" + newName);
+        return new MutationResult.Conflict(path.toString(), render(baseOld), render(curOld), "name=" + newName);
     }
 
     // ---- shared verdict + helpers ----------------------------------------

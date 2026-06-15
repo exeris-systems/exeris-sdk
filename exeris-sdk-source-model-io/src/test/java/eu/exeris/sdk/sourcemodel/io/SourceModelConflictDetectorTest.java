@@ -158,13 +158,37 @@ class SourceModelConflictDetectorTest {
     }
 
     @Test
-    @DisplayName("removeRelationship conflicts when the user retargeted it")
-    void removeRelationshipConflict() {
-        DomainMetadata baseline = domainWithRelationships(rel("customer", "Customer"));
-        DomainMetadata current = domainWithRelationships(rel("customer", "Account"));
-        MutationOp op = new MutationOp.RemoveRelationship(MutationPath.relationship(ENTITY, "customer").toString());
+    @DisplayName("addRelationship: no-drift / convergent / conflict")
+    void addRelationship() {
+        RelationshipMetadata customer = rel("customer", "Customer");
+        String path = MutationPath.relationship(ENTITY, "customer").toString();
 
-        assertThat(detector.detect(op, baseline, current)).isInstanceOf(MutationResult.Conflict.class);
+        // no drift — the relationship doesn't exist yet on either side
+        assertThat(detector.detect(new MutationOp.AddRelationship(path, customer),
+                domainWithRelationships(), domainWithRelationships()))
+                .isInstanceOf(MutationResult.Success.class);
+        // convergent — the user already added the identical relationship
+        assertThat(detector.detect(new MutationOp.AddRelationship(path, customer),
+                domainWithRelationships(), domainWithRelationships(customer)))
+                .isInstanceOf(MutationResult.Success.class);
+        // conflict — the user added a different relationship of the same name
+        assertThat(detector.detect(new MutationOp.AddRelationship(path, customer),
+                domainWithRelationships(), domainWithRelationships(rel("customer", "Account"))))
+                .isInstanceOf(MutationResult.Conflict.class);
+    }
+
+    @Test
+    @DisplayName("removeRelationship is convergent when already gone, conflicting when retargeted")
+    void removeRelationship() {
+        String path = MutationPath.relationship(ENTITY, "customer").toString();
+        // convergent — already removed
+        assertThat(detector.detect(new MutationOp.RemoveRelationship(path),
+                domainWithRelationships(rel("customer", "Customer")), domainWithRelationships()))
+                .isInstanceOf(MutationResult.Success.class);
+        // conflict — user retargeted it
+        assertThat(detector.detect(new MutationOp.RemoveRelationship(path),
+                domainWithRelationships(rel("customer", "Customer")), domainWithRelationships(rel("customer", "Account"))))
+                .isInstanceOf(MutationResult.Conflict.class);
     }
 
     // ---- action ops ------------------------------------------------------
@@ -181,6 +205,23 @@ class SourceModelConflictDetectorTest {
                 .isInstanceOf(MutationResult.Success.class);
         assertThat(detector.detect(new MutationOp.RemoveAction(path),
                 domainWithActions(shipPost), domainWithActions(shipPut)))
+                .isInstanceOf(MutationResult.Conflict.class);
+    }
+
+    @Test
+    @DisplayName("addAction: convergent when identical, conflicting when different")
+    void addAction() {
+        ActionMetadata shipPost = ActionMetadata.builder("ship").httpMethod("POST").build();
+        ActionMetadata shipPut = ActionMetadata.builder("ship").httpMethod("PUT").build();
+        String path = MutationPath.action(ENTITY, "ship").toString();
+
+        // convergent — user already added the identical action
+        assertThat(detector.detect(new MutationOp.AddAction(path, shipPost),
+                domainWithActions(), domainWithActions(shipPost)))
+                .isInstanceOf(MutationResult.Success.class);
+        // conflict — user added a different action of the same name
+        assertThat(detector.detect(new MutationOp.AddAction(path, shipPost),
+                domainWithActions(), domainWithActions(shipPut)))
                 .isInstanceOf(MutationResult.Conflict.class);
     }
 
