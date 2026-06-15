@@ -875,11 +875,17 @@ public final class SourceModelReader {
      * not against every {@code @Field} attribute with a {@link FieldMetadata}
      * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
      * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
-     * populates it, so reading it here would be a divergence, not a fix. (The other
-     * unread {@code @Field} attributes — {@code inList}, {@code inDetail},
-     * {@code order}, {@code ui}, {@code dataType}, {@code cssClass}, {@code group},
-     * {@code sensitive}, {@code encrypted}, {@code maskPattern}, {@code writeOnly},
-     * {@code compositeUnique} — have no {@code FieldMetadata} counterpart at all.)
+     * populates it, so reading it here would be a divergence, not a fix.
+     * {@code @Field.dataType} is the same case as of 0.6.0: {@link FieldMetadata}
+     * now carries a {@code dataType} component (so the AST can model it), but
+     * neither this reader nor the processor populates it yet — wiring it here
+     * alone would diverge from the codegen baseline and break conflict detection,
+     * so reader and processor must start reading it together (a coordinated
+     * cross-repo change). (The remaining unread {@code @Field} attributes —
+     * {@code inList}, {@code inDetail}, {@code order}, {@code ui}, {@code cssClass},
+     * {@code group}, {@code sensitive}, {@code encrypted}, {@code maskPattern},
+     * {@code writeOnly}, {@code compositeUnique} — have no {@code FieldMetadata}
+     * counterpart at all.)
      */
     private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
         FieldMetadata.Builder builder = FieldMetadata.builder(name, type);

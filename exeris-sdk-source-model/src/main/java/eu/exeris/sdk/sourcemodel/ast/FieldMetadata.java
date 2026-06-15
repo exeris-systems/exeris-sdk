@@ -37,6 +37,7 @@ public record FieldMetadata(
         Long max,
         String pattern,
         String format,
+        String dataType,
         String enumType,
         boolean computed,
         List<String> computedFrom,
@@ -118,6 +119,7 @@ public record FieldMetadata(
         private Long max;
         private String pattern;
         private String format;
+        private String dataType;
         private String enumType;
         private boolean computed = false;
         private List<String> computedFrom = List.of();
@@ -148,6 +150,10 @@ public record FieldMetadata(
         public Builder max(Long v) { this.max = v; return this; }
         public Builder pattern(String v) { this.pattern = v; return this; }
         public Builder format(String v) { this.format = v; return this; }
+        // Normalize blank -> null so @Field.dataType's "" default does not survive as
+        // "dataType":"" under @JsonInclude(NON_DEFAULT) (whose default is null, not "").
+        // dataType is the one string here with an empty-string-defaulted annotation source.
+        public Builder dataType(String v) { this.dataType = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder enumType(String v) { this.enumType = v; return this; }
         public Builder computed(boolean v) { this.computed = v; return this; }
         public Builder computedFrom(List<String> v) { this.computedFrom = v != null ? v : List.of(); return this; }
@@ -157,7 +163,8 @@ public record FieldMetadata(
         public FieldMetadata build() {
             return new FieldMetadata(name, type, columnName, displayName, description, required, unique,
                     indexed, searchable, sortable, filterable, audited, readOnly, hidden, defaultValue,
-                    minLength, maxLength, min, max, pattern, format, enumType, computed, computedFrom, inCreate, inUpdate);
+                    minLength, maxLength, min, max, pattern, format, dataType, enumType, computed, computedFrom,
+                    inCreate, inUpdate);
         }
     }
 }

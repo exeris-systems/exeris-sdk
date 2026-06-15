@@ -45,6 +45,29 @@
  * {@code @Validation} is consulted. A full deduplication is tracked in the
  * 0.6.0–0.9.0 cleanup phase once budgetHQ usage informs the right cut.
  *
+ * <h2>{@code dataType} vs {@code format} on FieldMetadata (0.6.0)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} carries two distinct
+ * display-related strings, split by responsibility:
+ * <ul>
+ *   <li><strong>{@code dataType}</strong> — the <em>semantic</em> kind of the
+ *       value, sourced from {@code @Field.dataType} ({@code "currency"},
+ *       {@code "percent"}, {@code "url"}, …). It tells a generator <em>what the
+ *       value means</em> so it can pick the right renderer/editor; it does not
+ *       prescribe the exact rendering.</li>
+ *   <li><strong>{@code format}</strong> — an explicit <em>presentation</em>
+ *       format string (e.g. a number/date pattern). It tells a generator
+ *       <em>exactly how to render</em>, overriding the {@code dataType} default.
+ *       There is no {@code @Field} attribute feeding it today; it is reserved for
+ *       a processor-derived or future explicit-format source.</li>
+ * </ul>
+ * <p>{@code dataType} was added to the record in 0.6.0 so the AST can carry the
+ * {@code @Field.dataType} the annotation already declared (it was previously
+ * dropped at the annotation→AST boundary). <strong>Populating it is a coordinated
+ * cross-repo change:</strong> the build-time processor and the {@code -io} reader
+ * must begin extracting {@code @Field.dataType} <em>together</em>, or a reader
+ * that reads it while the processor does not would diverge from the codegen
+ * baseline and break conflict detection (ADR-042).
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

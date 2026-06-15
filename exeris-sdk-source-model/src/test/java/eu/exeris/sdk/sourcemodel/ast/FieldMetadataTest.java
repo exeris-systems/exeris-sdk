@@ -15,7 +15,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new FieldMetadata(null, "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, false, null, true, true))
+                null, null, null, null, null, null, null, null, false, null, true, true))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
@@ -23,7 +23,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullType() {
         assertThatThrownBy(() -> new FieldMetadata("amount", null, null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, false, null, true, true))
+                null, null, null, null, null, null, null, null, false, null, true, true))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 
@@ -31,7 +31,7 @@ class FieldMetadataTest {
     void compactConstructorDefaultsNullComputedFromToEmptyList() {
         FieldMetadata f = new FieldMetadata("a", "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, false, null, true, true);
+                null, null, null, null, null, null, null, null, false, null, true, true);
         assertThat(f.computedFrom()).isNotNull().isEmpty();
     }
 
@@ -133,7 +133,7 @@ class FieldMetadataTest {
                 .searchable(true).sortable(true).filterable(true)
                 .audited(true).readOnly(true).hidden(true)
                 .defaultValue("''").minLength(0).maxLength(2000)
-                .min(1L).max(99L).pattern(".*").format("text").enumType("")
+                .min(1L).max(99L).pattern(".*").format("text").dataType("currency").enumType("")
                 .computed(true).computedFrom(List.of("a", "b"))
                 .inCreate(false).inUpdate(false)
                 .build();
@@ -154,6 +154,7 @@ class FieldMetadataTest {
         assertThat(f.max()).isEqualTo(99L);
         assertThat(f.pattern()).isEqualTo(".*");
         assertThat(f.format()).isEqualTo("text");
+        assertThat(f.dataType()).isEqualTo("currency");
         assertThat(f.computed()).isTrue();
         assertThat(f.computedFrom()).containsExactly("a", "b");
         assertThat(f.inCreate()).isFalse();
@@ -164,5 +165,15 @@ class FieldMetadataTest {
     void builderComputedFromNullCoercedToEmpty() {
         FieldMetadata f = FieldMetadata.builder("a", "String").computedFrom(null).build();
         assertThat(f.computedFrom()).isEmpty();
+    }
+
+    @Test
+    void builderNormalizesBlankDataTypeToNull() {
+        // @Field.dataType defaults to "": blank must become null so it is dropped
+        // by @JsonInclude(NON_DEFAULT) instead of serializing as "dataType":"".
+        assertThat(FieldMetadata.builder("a", "String").dataType("").build().dataType()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").dataType("  ").build().dataType()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").dataType("currency").build().dataType())
+                .isEqualTo("currency");
     }
 }

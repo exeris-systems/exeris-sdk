@@ -87,6 +87,8 @@ class AstJsonRoundTripTest {
                 .min(1L)
                 .max(1_000_000L)
                 .pattern("\\d+(\\.\\d{2})?")
+                .format("#,##0.00")
+                .dataType("currency")
                 .build();
 
         assertRoundTrip(original, FieldMetadata.class);
