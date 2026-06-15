@@ -41,9 +41,9 @@ import java.util.Objects;
         @JsonSubTypes.Type(value = MutationOp.ChangeFieldType.class, name = "changeFieldType"),
         @JsonSubTypes.Type(value = MutationOp.AddRelationship.class, name = "addRelationship"),
         @JsonSubTypes.Type(value = MutationOp.RemoveRelationship.class, name = "removeRelationship"),
+        @JsonSubTypes.Type(value = MutationOp.ChangeRelationshipCardinality.class, name = "changeRelationshipCardinality"),
         @JsonSubTypes.Type(value = MutationOp.AddAction.class, name = "addAction"),
-        @JsonSubTypes.Type(value = MutationOp.RemoveAction.class, name = "removeAction"),
-        @JsonSubTypes.Type(value = MutationOp.ChangeRelationshipCardinality.class, name = "changeRelationshipCardinality")
+        @JsonSubTypes.Type(value = MutationOp.RemoveAction.class, name = "removeAction")
 })
 public sealed interface MutationOp {
 
@@ -57,8 +57,8 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddField(String path, FieldMetadata field) implements MutationOp {
         public AddField {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(field, "field is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(field, MutationMessages.FIELD_REQUIRED);
         }
     }
 
@@ -67,7 +67,7 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveField(String path) implements MutationOp {
         public RemoveField {
-            Objects.requireNonNull(path, "path is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
     }
 
@@ -76,8 +76,8 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RenameField(String path, String newName) implements MutationOp {
         public RenameField {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(newName, "newName is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(newName, MutationMessages.NEW_NAME_REQUIRED);
         }
     }
 
@@ -86,8 +86,8 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChangeFieldType(String path, String newType) implements MutationOp {
         public ChangeFieldType {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(newType, "newType is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(newType, MutationMessages.NEW_TYPE_REQUIRED);
         }
     }
 
@@ -98,8 +98,8 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddRelationship(String path, RelationshipMetadata relationship) implements MutationOp {
         public AddRelationship {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(relationship, "relationship is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(relationship, MutationMessages.RELATIONSHIP_REQUIRED);
         }
     }
 
@@ -108,7 +108,7 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveRelationship(String path) implements MutationOp {
         public RemoveRelationship {
-            Objects.requireNonNull(path, "path is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
     }
 
@@ -118,8 +118,8 @@ public sealed interface MutationOp {
     record ChangeRelationshipCardinality(String path, RelationshipMetadata.RelationType newCardinality)
             implements MutationOp {
         public ChangeRelationshipCardinality {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(newCardinality, "newCardinality is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(newCardinality, MutationMessages.NEW_CARDINALITY_REQUIRED);
         }
     }
 
@@ -130,8 +130,8 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddAction(String path, ActionMetadata action) implements MutationOp {
         public AddAction {
-            Objects.requireNonNull(path, "path is required");
-            Objects.requireNonNull(action, "action is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
+            Objects.requireNonNull(action, MutationMessages.ACTION_REQUIRED);
         }
     }
 
@@ -140,7 +140,7 @@ public sealed interface MutationOp {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveAction(String path) implements MutationOp {
         public RemoveAction {
-            Objects.requireNonNull(path, "path is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
     }
 }

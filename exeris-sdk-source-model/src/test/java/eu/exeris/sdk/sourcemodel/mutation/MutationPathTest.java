@@ -72,6 +72,15 @@ class MutationPathTest {
     }
 
     @Test
+    @DisplayName("constructor rejects path-separator characters in names (round-trip safety)")
+    void constructorRejectsSeparatorInNames() {
+        assertThatThrownBy(() -> MutationPath.entity("Order/Sub"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("entity must not contain '/'");
+        assertThatThrownBy(() -> MutationPath.field("Order", "total/extra"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("member must not contain '/'");
+    }
+
+    @Test
     @DisplayName("entity root is ancestor-or-self of its members; members only of themselves")
     void ancestorRules() {
         MutationPath root = MutationPath.entity("Order");

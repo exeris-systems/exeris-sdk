@@ -37,7 +37,7 @@ class MutationWireFormatTest {
         MutationOp op = new MutationOp.AddField(
                 MutationPath.field("Order", "total").toString(),
                 FieldMetadata.builder("total", "BigDecimal").required(true).build());
-        assertOpRoundTrip(op, MutationOp.AddField.class, "addField");
+        assertOpRoundTrip(op, MutationOp.AddField.class, "addField", "\"field\":");
     }
 
     @Test
@@ -51,14 +51,14 @@ class MutationWireFormatTest {
     @DisplayName("renameField carries the new name")
     void renameFieldRoundTrips() {
         MutationOp op = new MutationOp.RenameField(MutationPath.field("Order", "amount").toString(), "totalAmount");
-        assertOpRoundTrip(op, MutationOp.RenameField.class, "renameField");
+        assertOpRoundTrip(op, MutationOp.RenameField.class, "renameField", "\"newName\":");
     }
 
     @Test
     @DisplayName("changeFieldType carries the new type")
     void changeFieldTypeRoundTrips() {
         MutationOp op = new MutationOp.ChangeFieldType(MutationPath.field("Order", "amount").toString(), "BigDecimal");
-        assertOpRoundTrip(op, MutationOp.ChangeFieldType.class, "changeFieldType");
+        assertOpRoundTrip(op, MutationOp.ChangeFieldType.class, "changeFieldType", "\"newType\":");
     }
 
     @Test
@@ -69,7 +69,7 @@ class MutationWireFormatTest {
                 RelationshipMetadata.builder("customer", "Customer")
                         .type(RelationshipMetadata.RelationType.MANY_TO_ONE)
                         .build());
-        assertOpRoundTrip(op, MutationOp.AddRelationship.class, "addRelationship");
+        assertOpRoundTrip(op, MutationOp.AddRelationship.class, "addRelationship", "\"relationship\":");
     }
 
     @Test
@@ -85,7 +85,7 @@ class MutationWireFormatTest {
         MutationOp op = new MutationOp.ChangeRelationshipCardinality(
                 MutationPath.relationship("Order", "customer").toString(),
                 RelationshipMetadata.RelationType.ONE_TO_MANY);
-        assertOpRoundTrip(op, MutationOp.ChangeRelationshipCardinality.class, "changeRelationshipCardinality");
+        assertOpRoundTrip(op, MutationOp.ChangeRelationshipCardinality.class, "changeRelationshipCardinality", "\"newCardinality\":");
     }
 
     @Test
@@ -94,7 +94,7 @@ class MutationWireFormatTest {
         MutationOp op = new MutationOp.AddAction(
                 MutationPath.action("Order", "ship").toString(),
                 ActionMetadata.builder("ship").httpMethod("POST").build());
-        assertOpRoundTrip(op, MutationOp.AddAction.class, "addAction");
+        assertOpRoundTrip(op, MutationOp.AddAction.class, "addAction", "\"action\":");
     }
 
     @Test
@@ -119,7 +119,8 @@ class MutationWireFormatTest {
     void conflictRoundTrips() {
         MutationResult result = new MutationResult.Conflict(
                 MutationPath.field("Order", "amount").toString(), "BigDecimal", "Double", "BigDecimal");
-        assertResultRoundTrip(result, MutationResult.Conflict.class, "CONFLICT");
+        assertResultRoundTrip(result, MutationResult.Conflict.class, "CONFLICT",
+                "\"baselineValue\":", "\"currentValue\":", "\"intendedValue\":");
         assertThat(result.successful()).isFalse();
     }
 
@@ -129,7 +130,7 @@ class MutationWireFormatTest {
         // currentValue null -> dropped by NON_NULL, read back as null
         MutationResult result = new MutationResult.Conflict(
                 MutationPath.field("Order", "total").toString(), null, null, "BigDecimal");
-        assertResultRoundTrip(result, MutationResult.Conflict.class, "CONFLICT");
+        assertResultRoundTrip(result, MutationResult.Conflict.class, "CONFLICT", "\"intendedValue\":");
     }
 
     @Test
@@ -137,7 +138,7 @@ class MutationWireFormatTest {
     void validationErrorRoundTrips() {
         MutationResult withPath = new MutationResult.ValidationError(
                 MutationPath.field("Order", "total").toString(), "duplicate field name");
-        assertResultRoundTrip(withPath, MutationResult.ValidationError.class, "VALIDATION_ERROR");
+        assertResultRoundTrip(withPath, MutationResult.ValidationError.class, "VALIDATION_ERROR", "\"message\":");
 
         // an unresolvable/syntactically-invalid path can leave path null
         MutationResult noPath = new MutationResult.ValidationError(null, "unparseable target path");
@@ -149,7 +150,7 @@ class MutationWireFormatTest {
     void noBaselineRoundTrips() {
         for (MutationResult.NoBaselineCause cause : MutationResult.NoBaselineCause.values()) {
             MutationResult result = new MutationResult.NoBaseline(cause, cause.name() + " detail");
-            assertResultRoundTrip(result, MutationResult.NoBaseline.class, "NO_BASELINE");
+            assertResultRoundTrip(result, MutationResult.NoBaseline.class, "NO_BASELINE", "\"cause\":");
         }
         // detail null -> dropped, read back as null
         assertResultRoundTrip(
@@ -159,9 +160,22 @@ class MutationWireFormatTest {
 
     // ---- helpers ---------------------------------------------------------
 
-    private void assertOpRoundTrip(MutationOp original, Class<? extends MutationOp> concrete, String discriminator) {
+    /**
+     * @param payloadKeys JSON property tokens (e.g. {@code "\"field\":"}) that
+     *                    MUST appear in the serialized body. Asserting the
+     *                    payload is actually on the wire — not just that the
+     *                    round trip happens to be equal for the values chosen —
+     *                    is what would catch the historical Jackson-3
+     *                    silent-field-drop bug (see CLAUDE.md).
+     */
+    private void assertOpRoundTrip(MutationOp original, Class<? extends MutationOp> concrete, String discriminator,
+                                   String... payloadKeys) {
         String json = mapper.writeValueAsString(original);
         assertThat(json).contains("\"op\":\"" + discriminator + "\"");
+        assertThat(json).contains("\"path\":");
+        for (String key : payloadKeys) {
+            assertThat(json).as("payload key %s present in %s", key, json).contains(key);
+        }
         MutationOp parsed = mapper.readValue(json, MutationOp.class);
         assertThat(parsed)
                 .as("round-tripped %s (json=%s)", concrete.getSimpleName(), json)
@@ -172,9 +186,12 @@ class MutationWireFormatTest {
     }
 
     private void assertResultRoundTrip(MutationResult original, Class<? extends MutationResult> concrete,
-                                       String discriminator) {
+                                       String discriminator, String... payloadKeys) {
         String json = mapper.writeValueAsString(original);
         assertThat(json).contains("\"outcome\":\"" + discriminator + "\"");
+        for (String key : payloadKeys) {
+            assertThat(json).as("payload key %s present in %s", key, json).contains(key);
+        }
         MutationResult parsed = mapper.readValue(json, MutationResult.class);
         assertThat(parsed)
                 .as("round-tripped %s (json=%s)", concrete.getSimpleName(), json)

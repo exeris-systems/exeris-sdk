@@ -48,7 +48,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
 
         static TargetKind fromSegment(String segment) {
             for (TargetKind k : values()) {
-                if (segment.equals(k.segment)) {
+                // ENTITY has no collection segment (null) — it is detected by
+                // segment count in parse(), never resolved here.
+                if (k.segment != null && k.segment.equals(segment)) {
                     return k;
                 }
             }
@@ -57,10 +59,18 @@ public record MutationPath(String entity, TargetKind kind, String member) {
     }
 
     public MutationPath {
-        Objects.requireNonNull(entity, "entity is required");
-        Objects.requireNonNull(kind, "kind is required");
+        Objects.requireNonNull(entity, MutationMessages.ENTITY_REQUIRED);
+        Objects.requireNonNull(kind, MutationMessages.KIND_REQUIRED);
         if (entity.isBlank()) {
             throw new IllegalArgumentException("entity must not be blank");
+        }
+        // '/' is the path separator; a name carrying it would not survive a
+        // toString → parse round-trip, so reject it at construction with a
+        // legible message rather than letting parse() fail later (matters once
+        // names come from user-authored Studio / LSP payloads, not just
+        // annotation-derived Java identifiers).
+        if (entity.indexOf('/') >= 0) {
+            throw new IllegalArgumentException("entity must not contain '/': '" + entity + "'");
         }
         if (kind == TargetKind.ENTITY) {
             if (member != null) {
@@ -69,6 +79,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
         } else {
             if (member == null || member.isBlank()) {
                 throw new IllegalArgumentException(kind + " path requires a non-blank member");
+            }
+            if (member.indexOf('/') >= 0) {
+                throw new IllegalArgumentException("member must not contain '/': '" + member + "'");
             }
         }
     }
@@ -95,7 +108,7 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * @throws IllegalArgumentException if the string is not a structurally valid path
      */
     public static MutationPath parse(String path) {
-        Objects.requireNonNull(path, "path is required");
+        Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         if (!path.startsWith("/")) {
             throw new IllegalArgumentException("path must start with '/': '" + path + "'");
         }
@@ -144,7 +157,7 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * assembled by the detection slice.
      */
     public boolean isSameOrAncestorOf(MutationPath other) {
-        Objects.requireNonNull(other, "other is required");
+        Objects.requireNonNull(other, MutationMessages.OTHER_REQUIRED);
         if (!entity.equals(other.entity)) {
             return false;
         }

@@ -57,7 +57,7 @@ public sealed interface MutationResult {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Success(String path) implements MutationResult {
         public Success {
-            Objects.requireNonNull(path, "path is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
 
         @Override
@@ -76,7 +76,7 @@ public sealed interface MutationResult {
     record Conflict(String path, String baselineValue, String currentValue, String intendedValue)
             implements MutationResult {
         public Conflict {
-            Objects.requireNonNull(path, "path is required");
+            Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
 
         @Override
@@ -90,7 +90,7 @@ public sealed interface MutationResult {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ValidationError(String path, String message) implements MutationResult {
         public ValidationError {
-            Objects.requireNonNull(message, "message is required");
+            Objects.requireNonNull(message, MutationMessages.MESSAGE_REQUIRED);
         }
 
         @Override
@@ -104,7 +104,7 @@ public sealed interface MutationResult {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record NoBaseline(NoBaselineCause cause, String detail) implements MutationResult {
         public NoBaseline {
-            Objects.requireNonNull(cause, "cause is required");
+            Objects.requireNonNull(cause, MutationMessages.CAUSE_REQUIRED);
         }
 
         @Override
