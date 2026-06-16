@@ -26,8 +26,22 @@ public final class SchemaVersion {
      * The wire-format schema version this build of {@code source-model} writes
      * and understands. Bump only on an AST/JSON shape change, with a note in
      * {@code MIGRATION.md} — not on routine artifact-version bumps.
+     *
+     * <p>History:
+     * <ul>
+     *   <li>{@code "0.5.0"} — initial baseline-trust schema (ADR-042).</li>
+     *   <li>{@code "0.6.0"} — bumped for the 0.6.0 AST shape growth that added
+     *       JSON-affecting record components: {@code FieldMetadata.dataType}
+     *       (B5), {@code FieldMetadata.displayNameKey} / {@code descriptionKey},
+     *       {@code UIFieldMetadata.customComponent} / {@code placeholderKey} /
+     *       {@code helpTextKey}, and {@code ComponentType.CUSTOM} (B4). The
+     *       additions are by-name and back-compatible to read, but the schema
+     *       names the shape, and the ADR posture is to refuse cross-shape
+     *       baselines rather than assume compatibility — so a {@code "0.5.0"}
+     *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
+     * </ul>
      */
-    public static final String CURRENT = "0.5.0";
+    public static final String CURRENT = "0.6.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.

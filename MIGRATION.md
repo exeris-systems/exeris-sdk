@@ -10,6 +10,60 @@ the upgrade steps required.
 
 ---
 
+## 0.5.x → 0.6.x
+
+The 0.6.0 line grew the AST record shapes (B4 / B5). Two consequences follow
+from that growth.
+
+### `SchemaVersion.CURRENT` bumped `"0.5.0"` → `"0.6.0"`
+
+**Why:** 0.6.0 added JSON-affecting components to the AST — `FieldMetadata.dataType`
+(B5), the i18n message keys `FieldMetadata.displayNameKey` / `descriptionKey`
+and `UIFieldMetadata.placeholderKey` / `helpTextKey`, the custom-component
+escape hatch `UIFieldMetadata.customComponent`, and `ComponentType.CUSTOM`
+(B4). The baseline-trust schema version names the AST shape, so it bumps on a
+shape change (see `eu.exeris.sdk.sourcemodel.mutation.SchemaVersion`).
+
+**Impact:** a baseline JSON stamped `"schemaVersion": "0.5.0"` now reads as
+`NO_BASELINE(SCHEMA_VERSION_SKEW)` — the ADR-042 posture is to refuse a
+cross-shape baseline rather than assume compatibility. The additions are
+by-name and back-compatible to *read*, but conflict detection will not trust
+a stale-schema baseline. **Re-run codegen** to emit a fresh `"0.6.0"` baseline.
+In practice there is nothing to migrate yet: codegen does not emit the trust
+fields until the tooling writer lands, so no `"0.5.0"` baselines exist in the
+wild.
+
+### Positional `FieldMetadata` / `UIFieldMetadata` constructors changed arity
+
+**Why:** the B4 / B5 additions are new record components, so the canonical
+(all-args) record constructors gained parameters.
+
+- `FieldMetadata` — two new trailing components (`displayNameKey`,
+  `descriptionKey`) after the B5 `dataType`.
+- `UIMetadata.UIFieldMetadata` — three new trailing components
+  (`customComponent`, `placeholderKey`, `helpTextKey`).
+
+**Impact:** code calling `new FieldMetadata(...)` / `new UIFieldMetadata(...)`
+**positionally** will no longer compile. Prefer the builder / factories, which
+are stable across these additions:
+
+```diff
+-FieldMetadata f = new FieldMetadata("amount", "Long", /* …all 27 args… */);
++FieldMetadata f = FieldMetadata.builder("amount", "Long")./* …setters… */.build();
+
+-UIMetadata.UIFieldMetadata u = new UIMetadata.UIFieldMetadata(/* …positional… */);
++UIMetadata.UIFieldMetadata u = UIMetadata.UIFieldMetadata.simple("amount", ComponentType.NUMBER_INPUT);
++// or .fullWidth(...) / .custom(fieldName, customComponent)
+```
+
+`UIFieldMetadata` also normalizes blank → `null` for the three new fields in
+its compact constructor, so an emitter passing `""` (the `@UI` attribute
+default) gets an omitted field under `@JsonInclude(NON_NULL)` rather than a
+`""`-valued one. `FieldMetadata.Builder` does the same for `displayNameKey` /
+`descriptionKey` / `dataType`.
+
+---
+
 ## 0.1.x → 0.2.x
 
 ### `@Validation.required` is deprecated — move to `@Field.required`
