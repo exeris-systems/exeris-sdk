@@ -193,6 +193,7 @@ class FieldMetadataTest {
         // they are dropped by @JsonInclude(NON_DEFAULT) rather than serialized as "".
         assertThat(FieldMetadata.builder("a", "String").displayNameKey("").build().displayNameKey()).isNull();
         assertThat(FieldMetadata.builder("a", "String").displayNameKey("  ").build().displayNameKey()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").displayNameKey(null).build().displayNameKey()).isNull();
         assertThat(FieldMetadata.builder("a", "String").descriptionKey("").build().descriptionKey()).isNull();
         assertThat(FieldMetadata.builder("a", "String").descriptionKey(null).build().descriptionKey()).isNull();
     }

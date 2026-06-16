@@ -92,6 +92,26 @@ class UIMetadataTest {
     }
 
     @Test
+    void uiFieldMetadataNormalizesBlankEscapeHatchAndKeysToNull() {
+        // UIFieldMetadata has no builder; the compact constructor owns the
+        // blank -> null guard so @UI's "" defaults are dropped under NON_NULL
+        // rather than serialized as ""-valued fields.
+        UIMetadata.UIFieldMetadata blank = new UIMetadata.UIFieldMetadata(
+                "name", UIMetadata.ComponentType.CUSTOM, 6, 0, true, true, true,
+                null, null, null, null, null, null, null, null, "  ", "", "   ");
+        assertThat(blank.customComponent()).isNull();
+        assertThat(blank.placeholderKey()).isNull();
+        assertThat(blank.helpTextKey()).isNull();
+
+        UIMetadata.UIFieldMetadata kept = new UIMetadata.UIFieldMetadata(
+                "name", UIMetadata.ComponentType.CUSTOM, 6, 0, true, true, true,
+                null, null, null, null, null, null, null, null, "app-widget", "k.placeholder", "k.help");
+        assertThat(kept.customComponent()).isEqualTo("app-widget");
+        assertThat(kept.placeholderKey()).isEqualTo("k.placeholder");
+        assertThat(kept.helpTextKey()).isEqualTo("k.help");
+    }
+
+    @Test
     void componentTypeEnumIsComplete() {
         // Touch values() so the synthetic enum methods get coverage too.
         // Adding a ComponentType is an additive change; the assertion below is

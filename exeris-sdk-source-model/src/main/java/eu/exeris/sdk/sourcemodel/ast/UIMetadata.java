@@ -89,6 +89,17 @@ public record UIMetadata(
             String placeholderKey,
             String helpTextKey
     ) {
+        // Normalize blank -> null for the additive escape-hatch / i18n key fields,
+        // so their @UI "" defaults are dropped by @JsonInclude(NON_NULL) instead of
+        // serializing as ""-valued fields. UIFieldMetadata has no builder, so the
+        // record itself owns the guard (mirrors FieldMetadata.Builder). Existing
+        // string fields keep their prior (un-normalized) behavior intentionally.
+        public UIFieldMetadata {
+            customComponent = (customComponent == null || customComponent.isBlank()) ? null : customComponent;
+            placeholderKey = (placeholderKey == null || placeholderKey.isBlank()) ? null : placeholderKey;
+            helpTextKey = (helpTextKey == null || helpTextKey.isBlank()) ? null : helpTextKey;
+        }
+
         public static UIFieldMetadata simple(String fieldName, ComponentType componentType) {
             return new UIFieldMetadata(fieldName, componentType, 6, 0, true, true, true, null, null, null, null, null, null, null, null, null, null, null);
         }
