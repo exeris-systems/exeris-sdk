@@ -49,6 +49,16 @@
  *       responsibilities of {@code exeris-tooling}.</li>
  * </ul>
  *
+ * <h2>Open-Core status — reserved, not yet consumed</h2>
+ * <p>This is a declared shape, not yet a live composition. The AST records and
+ * the {@code exeris-sdk-source-model-io} reader for the capability surface
+ * exist (0.4.0), but the build-time annotation processor does not yet extract
+ * these annotations and no code generator consumes them — so declaring
+ * {@code @CapabilityModule} / {@code @Provides} / {@code @Requires} today has
+ * no generated effect. The surface is reserved while the {@code exeris-tooling}
+ * registry consumer that wires the cap graph end-to-end is built; the
+ * annotations gain meaning once it lands.
+ *
  * @author Exeris SDK Team
  * @version 0.4.0
  * @since 0.4.0

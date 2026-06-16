@@ -199,6 +199,11 @@ public @interface DomainEvent {
      *   <li>RabbitMQ: "domain.aggregate.event" or use exchange + routing key</li>
      * </ul>
      *
+     * <p><strong>Open-Core status:</strong> broker topic/queue routing is a
+     * messaging-tier concern. The Open-Core event engine does not route on
+     * {@code topic} — it is preserved by the generator as a source reference
+     * only, and gains routing meaning under the enterprise/Kafka messaging tier.
+     *
      * @return topic name
      */
     String topic();
