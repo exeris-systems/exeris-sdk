@@ -378,7 +378,8 @@ public final class SourceModelConflictDetector {
                 field.sortable(), field.filterable(), field.audited(), field.readOnly(), field.hidden(),
                 field.defaultValue(), field.minLength(), field.maxLength(), field.min(), field.max(),
                 field.pattern(), field.format(), field.dataType(), field.enumType(), field.computed(),
-                field.computedFrom(), field.inCreate(), field.inUpdate());
+                field.computedFrom(), field.inCreate(), field.inUpdate(),
+                field.displayNameKey(), field.descriptionKey());
     }
 
     private String render(Optional<?> member) {

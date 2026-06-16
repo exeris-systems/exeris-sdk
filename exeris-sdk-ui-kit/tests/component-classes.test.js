@@ -16,10 +16,12 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const indexCss = readFileSync(join(root, 'src/styles/index.css'), 'utf8');
 
-// null = no dedicated class (AUTO is resolved by codegen; HIDDEN renders nothing).
+// null = no dedicated class (AUTO is resolved by codegen; HIDDEN renders nothing;
+// CUSTOM defers to an application-supplied component named by UIFieldMetadata.customComponent).
 const COMPONENT_TYPE_CLASS = {
   AUTO: null,
   HIDDEN: null,
+  CUSTOM: null,
   TEXT_INPUT: 'exeris-input',
   NUMBER_INPUT: 'exeris-input',
   DATE_PICKER: 'exeris-input',
@@ -53,8 +55,8 @@ function classIsDefined(name) {
 }
 
 describe('form-control component classes (B3)', () => {
-  it('covers the full ComponentType enum (27 kinds)', () => {
-    expect(Object.keys(COMPONENT_TYPE_CLASS)).toHaveLength(27);
+  it('covers the full ComponentType enum (28 kinds)', () => {
+    expect(Object.keys(COMPONENT_TYPE_CLASS)).toHaveLength(28);
   });
 
   it('defines a styled class in index.css for every renderable ComponentType', () => {

@@ -74,6 +74,41 @@ class UIMetadataTest {
         UIMetadata.UIFieldMetadata full = UIMetadata.UIFieldMetadata.fullWidth("notes", UIMetadata.ComponentType.TEXT_AREA);
         assertThat(full.gridSpan()).isEqualTo(12);
         assertThat(full.componentType()).isEqualTo(UIMetadata.ComponentType.TEXT_AREA);
+
+        // Built-in factories leave the escape-hatch + i18n key fields unset.
+        assertThat(simple.customComponent()).isNull();
+        assertThat(simple.placeholderKey()).isNull();
+        assertThat(simple.helpTextKey()).isNull();
+    }
+
+    @Test
+    void customFactoryUsesCustomComponentEscapeHatch() {
+        UIMetadata.UIFieldMetadata f =
+                UIMetadata.UIFieldMetadata.custom("location", "app-geo-point-picker");
+        assertThat(f.componentType()).isEqualTo(UIMetadata.ComponentType.CUSTOM);
+        assertThat(f.customComponent()).isEqualTo("app-geo-point-picker");
+        assertThat(f.gridSpan()).isEqualTo(6);
+        assertThat(f.displayInList()).isTrue();
+    }
+
+    @Test
+    void uiFieldMetadataNormalizesBlankEscapeHatchAndKeysToNull() {
+        // UIFieldMetadata has no builder; the compact constructor owns the
+        // blank -> null guard so @UI's "" defaults are dropped under NON_NULL
+        // rather than serialized as ""-valued fields.
+        UIMetadata.UIFieldMetadata blank = new UIMetadata.UIFieldMetadata(
+                "name", UIMetadata.ComponentType.CUSTOM, 6, 0, true, true, true,
+                null, null, null, null, null, null, null, null, "  ", "", "   ");
+        assertThat(blank.customComponent()).isNull();
+        assertThat(blank.placeholderKey()).isNull();
+        assertThat(blank.helpTextKey()).isNull();
+
+        UIMetadata.UIFieldMetadata kept = new UIMetadata.UIFieldMetadata(
+                "name", UIMetadata.ComponentType.CUSTOM, 6, 0, true, true, true,
+                null, null, null, null, null, null, null, null, "app-widget", "k.placeholder", "k.help");
+        assertThat(kept.customComponent()).isEqualTo("app-widget");
+        assertThat(kept.placeholderKey()).isEqualTo("k.placeholder");
+        assertThat(kept.helpTextKey()).isEqualTo("k.help");
     }
 
     @Test

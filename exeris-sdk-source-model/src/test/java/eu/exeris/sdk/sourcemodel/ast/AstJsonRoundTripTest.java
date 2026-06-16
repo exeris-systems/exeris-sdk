@@ -89,6 +89,8 @@ class AstJsonRoundTripTest {
                 .pattern("\\d+(\\.\\d{2})?")
                 .format("#,##0.00")
                 .dataType("currency")
+                .displayNameKey("order.field.amount.label")
+                .descriptionKey("order.field.amount.help")
                 .build();
 
         assertRoundTrip(original, FieldMetadata.class);
@@ -168,13 +170,21 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("UIMetadata round-trips with nested groups + field overrides")
     void uiMetadataRoundTrips() {
+        // A field override carrying both the custom-component escape hatch and
+        // the i18n placeholder/helpText keys, so all three survive the round-trip.
+        UIMetadata.UIFieldMetadata withKeys = new UIMetadata.UIFieldMetadata(
+                "location", UIMetadata.ComponentType.CUSTOM, 6, 0, true, true, true,
+                "Pick a point", "Drag the marker", null, null, null, null, null, null,
+                "app-geo-point-picker", "order.field.location.placeholder", "order.field.location.help");
+
         UIMetadata original = UIMetadata.builder()
                 .icon("shopping-cart")
                 .color("#ff8800")
                 .columns(12)
                 .groups(List.of(UIMetadata.UIGroupMetadata.simple("main", "Main", List.of("orderNumber", "amount"))))
                 .fieldOverrides(List.of(
-                        UIMetadata.UIFieldMetadata.simple("orderNumber", UIMetadata.ComponentType.TEXT_INPUT)))
+                        UIMetadata.UIFieldMetadata.simple("orderNumber", UIMetadata.ComponentType.TEXT_INPUT),
+                        withKeys))
                 .build();
 
         assertRoundTrip(original, UIMetadata.class);

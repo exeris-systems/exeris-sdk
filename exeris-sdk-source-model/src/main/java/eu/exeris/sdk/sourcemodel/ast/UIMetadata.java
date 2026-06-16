@@ -79,14 +79,41 @@ public record UIMetadata(
             String cssClass,
             String mask,
             AutocompleteConfig autocomplete,
-            SelectConfig select
+            SelectConfig select,
+            // Custom-component escape hatch: meaningful only when componentType
+            // is CUSTOM; names the application-supplied control. Null otherwise.
+            String customComponent,
+            // i18n message keys (optional). Pair with placeholder / helpText:
+            // when present, the key resolves against the app message bundle and
+            // the literal placeholder / helpText is the fallback. Null when unset.
+            String placeholderKey,
+            String helpTextKey
     ) {
+        // Normalize blank -> null for the additive escape-hatch / i18n key fields,
+        // so their @UI "" defaults are dropped by @JsonInclude(NON_NULL) instead of
+        // serializing as ""-valued fields. UIFieldMetadata has no builder, so the
+        // record itself owns the guard (mirrors FieldMetadata.Builder). Existing
+        // string fields keep their prior (un-normalized) behavior intentionally.
+        public UIFieldMetadata {
+            customComponent = (customComponent == null || customComponent.isBlank()) ? null : customComponent;
+            placeholderKey = (placeholderKey == null || placeholderKey.isBlank()) ? null : placeholderKey;
+            helpTextKey = (helpTextKey == null || helpTextKey.isBlank()) ? null : helpTextKey;
+        }
+
         public static UIFieldMetadata simple(String fieldName, ComponentType componentType) {
-            return new UIFieldMetadata(fieldName, componentType, 6, 0, true, true, true, null, null, null, null, null, null, null, null);
+            return new UIFieldMetadata(fieldName, componentType, 6, 0, true, true, true, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public static UIFieldMetadata fullWidth(String fieldName, ComponentType componentType) {
-            return new UIFieldMetadata(fieldName, componentType, 12, 0, true, true, true, null, null, null, null, null, null, null, null);
+            return new UIFieldMetadata(fieldName, componentType, 12, 0, true, true, true, null, null, null, null, null, null, null, null, null, null, null);
+        }
+
+        /**
+         * Field rendered by an application-supplied custom component
+         * ({@link ComponentType#CUSTOM}); {@code customComponent} names the control.
+         */
+        public static UIFieldMetadata custom(String fieldName, String customComponent) {
+            return new UIFieldMetadata(fieldName, ComponentType.CUSTOM, 6, 0, true, true, true, null, null, null, null, null, null, null, null, customComponent, null, null);
         }
     }
 
@@ -120,7 +147,13 @@ public record UIMetadata(
         PHONE,
         URL,
         CURRENCY,
-        HIDDEN
+        HIDDEN,
+        /**
+         * Application-supplied custom component — the escape hatch out of this
+         * closed enum. The concrete control is named by
+         * {@link UIFieldMetadata#customComponent()}.
+         */
+        CUSTOM
     }
 
     /**

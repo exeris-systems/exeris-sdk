@@ -68,6 +68,32 @@
  * that reads it while the processor does not would diverge from the codegen
  * baseline and break conflict detection (ADR-042).
  *
+ * <h2>i18n message keys + custom-component escape hatch (0.6.0)</h2>
+ * <p>Two additive extensibility fields were added to the field-rendering AST:
+ * <ul>
+ *   <li><strong>i18n message keys</strong> — {@code FieldMetadata.displayNameKey}
+ *       / {@code descriptionKey} and {@code UIMetadata.UIFieldMetadata.placeholderKey}
+ *       / {@code helpTextKey}. Each is the optional bundle key paired with the
+ *       literal text it sits next to ({@code displayName}, {@code description},
+ *       {@code placeholder}, {@code helpText}); the literal is the design-time /
+ *       missing-translation fallback. Sourced from {@code @Field.labelKey} /
+ *       {@code descriptionKey} and {@code @UI.placeholderKey} / {@code helpTextKey}.
+ *       Keys are added only where the AST already carries the corresponding
+ *       string — entity-level {@code @UI} titles are not AST-carried, so they
+ *       have no key here (carrying those titles is a separate prerequisite, and
+ *       group/domain-description keys are a deferred follow-up using this same
+ *       pattern).</li>
+ *   <li><strong>Custom-component escape hatch</strong> — {@code ComponentType.CUSTOM}
+ *       plus {@code UIFieldMetadata.customComponent}. {@code customComponent} is
+ *       meaningful only when {@code componentType == CUSTOM} and names the
+ *       application-supplied control the generator should render. {@code CUSTOM}
+ *       without a {@code customComponent} is a generator-side error; the AST
+ *       only carries the declared shape.</li>
+ * </ul>
+ * <p>Both are reader↔processor-parity-neutral: like {@code dataType}, the
+ * {@code -io} reader and the build-time processor must begin populating them
+ * <em>together</em> to keep ADR-042 conflict-detection baselines trustworthy.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

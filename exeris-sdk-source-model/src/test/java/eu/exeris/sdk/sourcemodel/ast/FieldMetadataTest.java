@@ -15,7 +15,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new FieldMetadata(null, "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
@@ -23,7 +23,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullType() {
         assertThatThrownBy(() -> new FieldMetadata("amount", null, null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 
@@ -31,7 +31,7 @@ class FieldMetadataTest {
     void compactConstructorDefaultsNullComputedFromToEmptyList() {
         FieldMetadata f = new FieldMetadata("a", "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true);
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null);
         assertThat(f.computedFrom()).isNotNull().isEmpty();
     }
 
@@ -175,5 +175,26 @@ class FieldMetadataTest {
         assertThat(FieldMetadata.builder("a", "String").dataType("  ").build().dataType()).isNull();
         assertThat(FieldMetadata.builder("a", "String").dataType("currency").build().dataType())
                 .isEqualTo("currency");
+    }
+
+    @Test
+    void builderCarriesI18nMessageKeys() {
+        FieldMetadata f = FieldMetadata.builder("orderNumber", "String")
+                .displayName("Order Number").displayNameKey("order.field.orderNumber.label")
+                .description("The order's number").descriptionKey("order.field.orderNumber.help")
+                .build();
+        assertThat(f.displayNameKey()).isEqualTo("order.field.orderNumber.label");
+        assertThat(f.descriptionKey()).isEqualTo("order.field.orderNumber.help");
+    }
+
+    @Test
+    void builderNormalizesBlankI18nKeysToNull() {
+        // @Field.labelKey/descriptionKey default to "": blank must become null so
+        // they are dropped by @JsonInclude(NON_DEFAULT) rather than serialized as "".
+        assertThat(FieldMetadata.builder("a", "String").displayNameKey("").build().displayNameKey()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").displayNameKey("  ").build().displayNameKey()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").displayNameKey(null).build().displayNameKey()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").descriptionKey("").build().descriptionKey()).isNull();
+        assertThat(FieldMetadata.builder("a", "String").descriptionKey(null).build().descriptionKey()).isNull();
     }
 }
