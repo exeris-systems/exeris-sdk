@@ -74,6 +74,21 @@ class UIMetadataTest {
         UIMetadata.UIFieldMetadata full = UIMetadata.UIFieldMetadata.fullWidth("notes", UIMetadata.ComponentType.TEXT_AREA);
         assertThat(full.gridSpan()).isEqualTo(12);
         assertThat(full.componentType()).isEqualTo(UIMetadata.ComponentType.TEXT_AREA);
+
+        // Built-in factories leave the escape-hatch + i18n key fields unset.
+        assertThat(simple.customComponent()).isNull();
+        assertThat(simple.placeholderKey()).isNull();
+        assertThat(simple.helpTextKey()).isNull();
+    }
+
+    @Test
+    void customFactoryUsesCustomComponentEscapeHatch() {
+        UIMetadata.UIFieldMetadata f =
+                UIMetadata.UIFieldMetadata.custom("location", "app-geo-point-picker");
+        assertThat(f.componentType()).isEqualTo(UIMetadata.ComponentType.CUSTOM);
+        assertThat(f.customComponent()).isEqualTo("app-geo-point-picker");
+        assertThat(f.gridSpan()).isEqualTo(6);
+        assertThat(f.displayInList()).isTrue();
     }
 
     @Test

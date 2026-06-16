@@ -173,6 +173,22 @@ public @interface Field {
     String label();
 
     /**
+     * Optional i18n message key for the field label.
+     * <p>When non-empty, downstream UI generation resolves this key against the
+     * application's message bundle and uses {@link #label()} as the default /
+     * fallback text (shown at design time and when a translation is missing).
+     * When empty, {@link #label()} is used verbatim.
+     *
+     * <p><strong>Example:</strong>
+     * <pre>{@code
+     * @Field(label = "Order Number", labelKey = "order.field.orderNumber.label")
+     * }</pre>
+     *
+     * @return the message key, or {@code ""} to use the literal label
+     */
+    String labelKey() default "";
+
+    /**
      * Detailed description of the field.
      * <p>Displayed as help text or tooltip in forms.
      * Use this to provide additional context or usage guidance.
@@ -187,6 +203,16 @@ public @interface Field {
      * @return the field description
      */
     String description() default "";
+
+    /**
+     * Optional i18n message key for the field description.
+     * <p>Same resolution contract as {@link #labelKey()}: when non-empty it is
+     * the bundle key and {@link #description()} is the fallback text; when empty
+     * {@link #description()} is used verbatim.
+     *
+     * @return the message key, or {@code ""} to use the literal description
+     */
+    String descriptionKey() default "";
 
     /**
      * Whether this field is required (cannot be null or empty).

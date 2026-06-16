@@ -271,6 +271,26 @@ public @interface UI {
     ComponentType componentType() default ComponentType.AUTO;
 
     /**
+     * Custom component identifier, used as the escape hatch out of the closed
+     * {@link ComponentType} enum.
+     * <p>Only meaningful when {@link #componentType()} (or {@link #component()})
+     * is {@link ComponentType#CUSTOM}: it names the application-supplied control
+     * the generator should render (e.g. an Angular component selector or a
+     * registry key). For any built-in {@code ComponentType} it is ignored.
+     *
+     * <p><strong>Example:</strong>
+     * <pre>{@code
+     * @UI(componentType = ComponentType.CUSTOM, customComponent = "app-geo-point-picker")
+     * }</pre>
+     *
+     * <p>Declaring {@code CUSTOM} without a {@code customComponent} is a
+     * generator-side error; the SDK only carries the declared shape.
+     *
+     * @return the custom component identifier, or {@code ""} when not custom
+     */
+    String customComponent() default "";
+
+    /**
      * CSS width for the field in forms (e.g., "100%", "200px", "50vw").
      *
      * @return the field width
@@ -303,12 +323,30 @@ public @interface UI {
     String placeholder() default "";
 
     /**
+     * Optional i18n message key for {@link #placeholder()}.
+     * <p>When non-empty it is resolved against the message bundle, with
+     * {@link #placeholder()} as the fallback text; when empty the literal
+     * placeholder is used. See {@link Field#labelKey()} for the convention.
+     *
+     * @return the message key, or {@code ""} to use the literal placeholder
+     */
+    String placeholderKey() default "";
+
+    /**
      * Help text displayed below the field.
      * <p>Used to provide additional guidance to users.
      *
      * @return the help text
      */
     String helpText() default "";
+
+    /**
+     * Optional i18n message key for {@link #helpText()}.
+     * <p>Same resolution contract as {@link #placeholderKey()}.
+     *
+     * @return the message key, or {@code ""} to use the literal help text
+     */
+    String helpTextKey() default "";
 
     /**
      * CSS class name(s) to apply to the field container.
@@ -474,7 +512,12 @@ public @interface UI {
         /** Toggle switch (alternative to checkbox) */
         TOGGLE,
         /** Autocomplete/typeahead input */
-        AUTOCOMPLETE
+        AUTOCOMPLETE,
+        /**
+         * Application-supplied custom component (escape hatch out of this closed
+         * enum). The concrete control is named by {@link UI#customComponent()}.
+         */
+        CUSTOM
     }
 }
 

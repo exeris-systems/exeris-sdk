@@ -105,6 +105,25 @@
  * while migrating. Both attributes are removed in 1.0.0; see
  * {@code MIGRATION.md} in the repo root for the upgrade snippet.
  *
+ * <h2>i18n message keys + custom-component escape hatch (0.6.0)</h2>
+ * <ul>
+ *   <li><strong>Message keys</strong> — {@link eu.exeris.sdk.annotation.Field#labelKey()} /
+ *       {@link eu.exeris.sdk.annotation.Field#descriptionKey()} and
+ *       {@link eu.exeris.sdk.annotation.UI#placeholderKey()} /
+ *       {@link eu.exeris.sdk.annotation.UI#helpTextKey()} are optional i18n bundle
+ *       keys. When non-empty the key wins and the paired literal ({@code label},
+ *       {@code description}, {@code placeholder}, {@code helpText}) is the
+ *       fallback shown at design time / when a translation is missing; when empty
+ *       the literal is used verbatim. No new behavior is forced on consumers that
+ *       ignore the keys.</li>
+ *   <li><strong>Custom components</strong> — {@link eu.exeris.sdk.annotation.UI.ComponentType#CUSTOM}
+ *       with {@link eu.exeris.sdk.annotation.UI#customComponent()} is the escape
+ *       hatch out of the otherwise-closed {@code ComponentType} enum: set
+ *       {@code componentType = CUSTOM} and name the application control in
+ *       {@code customComponent}. Declaring {@code CUSTOM} without a
+ *       {@code customComponent} is a generator-side error.</li>
+ * </ul>
+ *
  * <h2>Architecture Principles</h2>
  * <ul>
  *   <li><strong>Java 26 Only:</strong> Built for Virtual Threads (Project Loom)</li>

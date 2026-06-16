@@ -42,7 +42,12 @@ public record FieldMetadata(
         boolean computed,
         List<String> computedFrom,
         boolean inCreate,
-        boolean inUpdate
+        boolean inUpdate,
+        // i18n message keys (optional). Pair with displayName / description:
+        // when present, the key resolves against the app message bundle and the
+        // literal displayName / description is the fallback text. Null when unset.
+        String displayNameKey,
+        String descriptionKey
 ) {
 
     public FieldMetadata {
@@ -125,6 +130,8 @@ public record FieldMetadata(
         private List<String> computedFrom = List.of();
         private boolean inCreate = true;
         private boolean inUpdate = true;
+        private String displayNameKey;
+        private String descriptionKey;
 
         private Builder(String name, String type) {
             this.name = name;
@@ -159,12 +166,16 @@ public record FieldMetadata(
         public Builder computedFrom(List<String> v) { this.computedFrom = v != null ? v : List.of(); return this; }
         public Builder inCreate(boolean v) { this.inCreate = v; return this; }
         public Builder inUpdate(boolean v) { this.inUpdate = v; return this; }
+        // Normalize blank -> null so the @Field.labelKey/descriptionKey "" defaults
+        // do not survive as ""-valued keys under @JsonInclude(NON_DEFAULT).
+        public Builder displayNameKey(String v) { this.displayNameKey = (v == null || v.isBlank()) ? null : v; return this; }
+        public Builder descriptionKey(String v) { this.descriptionKey = (v == null || v.isBlank()) ? null : v; return this; }
 
         public FieldMetadata build() {
             return new FieldMetadata(name, type, columnName, displayName, description, required, unique,
                     indexed, searchable, sortable, filterable, audited, readOnly, hidden, defaultValue,
                     minLength, maxLength, min, max, pattern, format, dataType, enumType, computed, computedFrom,
-                    inCreate, inUpdate);
+                    inCreate, inUpdate, displayNameKey, descriptionKey);
         }
     }
 }
