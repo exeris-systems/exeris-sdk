@@ -145,6 +145,12 @@ public @interface ExerisDomain {
     /**
      * Whether to generate real-time streaming endpoints (SSE/WebTransport).
      *
+     * <p><strong>Open-Core status:</strong> server-push is not wired in
+     * Open-Core — there is no streaming HTTP affordance behind it yet (a
+     * kernel-owned SPI). Setting this is inert until that affordance lands;
+     * the attribute gains meaning once it does. See also
+     * {@link Action#streaming()} / {@link Action#realTimeUpdates()}.
+     *
      * @return true to generate real-time API
      */
     boolean realTimeApi() default false;

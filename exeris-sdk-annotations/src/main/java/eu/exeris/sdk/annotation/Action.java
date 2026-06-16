@@ -465,6 +465,12 @@ public @interface Action {
      * public Flux<ReportProgress> generateReport() { ...  }
      * }</pre>
      *
+     * <p><strong>Open-Core status:</strong> server-push is not wired in
+     * Open-Core — there is no streaming HTTP affordance behind it yet (a
+     * kernel-owned SPI). This and the related {@link #streamEventType()} /
+     * {@link #realTimeUpdates()} attributes are inert until that affordance
+     * lands; they gain meaning once it does.
+     *
      * @return true for streaming response
      */
     boolean streaming() default false;
@@ -472,6 +478,9 @@ public @interface Action {
     /**
      * Event type name for streaming responses.
      * <p>Used in SSE event type or WebTransport message type.
+     *
+     * <p><strong>Open-Core status:</strong> inert until the streaming
+     * affordance lands — see {@link #streaming()}.
      *
      * @return stream event type name
      */
@@ -485,6 +494,9 @@ public @interface Action {
      *   <li>Action publishes progress events during execution</li>
      *   <li>Useful for tracking async operation status</li>
      * </ul>
+     *
+     * <p><strong>Open-Core status:</strong> inert until the streaming
+     * affordance lands — see {@link #streaming()}.
      *
      * @return true for real-time subscription support
      */
