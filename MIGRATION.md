@@ -48,7 +48,7 @@ wild.
 are stable across these additions:
 
 ```diff
--FieldMetadata f = new FieldMetadata("amount", "Long", /* …all 27 args… */);
+-FieldMetadata f = new FieldMetadata("amount", "Long", /* …all 29 args… */);
 +FieldMetadata f = FieldMetadata.builder("amount", "Long")./* …setters… */.build();
 
 -UIMetadata.UIFieldMetadata u = new UIMetadata.UIFieldMetadata(/* …positional… */);
