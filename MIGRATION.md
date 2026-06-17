@@ -87,6 +87,8 @@ bidirectional mutation surface: a new package
 - **Consumers:** only code that drives LSP/Studio mutations needs the new
   package; plain annotation / AST / codegen consumers are unaffected.
 
+---
+
 ## 0.3.x → 0.4.x
 
 **Additive — no migration steps for existing consumers.** 0.4.0 added the
@@ -99,6 +101,8 @@ new `eu.exeris.sdk.annotation.capability` package, the AST records
 - **Consumers:** only code declaring or reading capabilities needs the new
   package. The downstream build-time consumer (`@Requires`→`@Provides`
   resolution, the cap manifest) is `exeris-tooling` work, not part of this SDK.
+
+---
 
 ## 0.2.x → 0.3.x
 

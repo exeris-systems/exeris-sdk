@@ -45,7 +45,7 @@
         <connection>scm:git:git://github.com/exeris-systems/exeris-sdk.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/exeris-systems/exeris-sdk.git</developerConnection>
         <url>https://github.com/exeris-systems/exeris-sdk</url>
-        <tag>HEAD</tag>
+        <tag>v0.6.0</tag>
     </scm>
 
     <issueManagement>

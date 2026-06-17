@@ -8,6 +8,12 @@ in any 0.x release and downstream consumers pin exact versions. See
 [`ROADMAP.md`](ROADMAP.md) for the milestone scope and [`MIGRATION.md`](MIGRATION.md)
 for per-version upgrade steps.
 
+> **Release history note.** `0.6.0` is the first **tagged** release. The earlier
+> entries are ROADMAP milestones that shipped on a single pre-release line — the
+> POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
+> `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
+> are when each milestone landed. Only `0.6.0` has a release tag / link.
+
 ## [0.6.0] — 2026-06-17
 
 Feedback-driven cleanups (the first slices of the 0.6.0–0.9.0 band): annotation
@@ -43,7 +49,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   stable. All additions are by-name JSON and back-compatible to read. See
   [`MIGRATION.md`](MIGRATION.md#05x--06x).
 
-## [0.5.0] — bidirectional mutation surface
+## 0.5.0 — 2026-06-15 — bidirectional mutation surface
 
 ### Added
 - New package `eu.exeris.sdk.sourcemodel.mutation` — `MutationOp` /
@@ -53,7 +59,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`SourceModelConflictDetector`) and conflict-aware application
   (`SourceModelMutationApplier`).
 
-## [0.4.0] — capability annotation surface
+## 0.4.0 — 2026-06-13 — capability annotation surface
 
 ### Added
 - New package `eu.exeris.sdk.annotation.capability` — `@CapabilityModule` /
@@ -61,7 +67,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 - AST records `CapabilityModuleMetadata` / `ProvidesMetadata` /
   `RequiresMetadata`, plus `-io` reader support.
 
-## [0.3.0] — source-model parser + writer
+## 0.3.0 — 2026-06-05 — source-model parser + writer
 
 ### Added
 - New sibling module `exeris-sdk-source-model-io` (ADR-037): JavaParser-based
@@ -69,7 +75,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`DomainMetadata` → `.java`). JavaParser is confined to this module so
   `source-model` stays dependency-light.
 
-## [0.2.0] — quality gates + pre-publish hygiene
+## 0.2.0 — 2026-06-03 — quality gates + pre-publish hygiene
 
 ### Added
 - CI (`mvn verify` on JDK 26 + ui-kit Vitest), JaCoCo 85% gate on `source-model`,
@@ -84,7 +90,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 - `jackson-annotations` pinned to `2.21` (Jackson 3 keeps annotations on the 2.x
   line).
 
-## [0.1.0] — scaffold
+## 0.1.0 — 2026-05-03 — scaffold
 
 ### Added
 - Maven multi-module reactor (`bom`, `parent`, `annotations`, `source-model`)
