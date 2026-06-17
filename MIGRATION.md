@@ -10,6 +10,40 @@ the upgrade steps required.
 
 ---
 
+## 0.6.x → 0.7.x
+
+### `ProjectionMetadata` grew the source + read-model framing
+
+**Why:** the record could say *what* a projection exposes (`fields`) but not
+*what it is a view of*. 0.7.0 adds the source-aggregate link and the
+event-subscription / read-model framing so "expose this subset of *this*
+aggregate as a read-only view" is expressible.
+
+- **New components** — `aggregateTypes`, `events`, `eventClassNames`,
+  `topicPattern`, `model`, `schema` (alongside the existing `name`,
+  `description`, `fields`, `cacheable`).
+- **Reordered** — the components are grouped logically (identity → source →
+  subscription → read model → exposed fields → caching), so the **canonical
+  (all-args) constructor signature changed** in both arity and order.
+
+**Impact:** code calling `new ProjectionMetadata(...)` **positionally** will no
+longer compile. The `simple(name, fields)` factory is unchanged (still
+non-cacheable, no source); a new `of(name, aggregateType, fields)` factory and a
+`ProjectionMetadata.builder(name)` cover the common cases:
+
+```diff
+-ProjectionMetadata p = new ProjectionMetadata("OrderSummary", "desc", List.of("id"), true);
++ProjectionMetadata p = ProjectionMetadata.builder("OrderSummary")
++        .description("desc").aggregateType("Order").fields(List.of("id")).cacheable(true).build();
++// or .simple("OrderSummary", List.of("id")) / .of("OrderSummary", "Order", List.of("id"))
+```
+
+All additions are by-name on the wire (an old baseline reads back with the new
+lists empty and the new strings `null`). The compact constructor normalizes
+blank → `null` and null list → empty.
+
+---
+
 ## 0.5.x → 0.6.x
 
 The 0.6.0 line grew the AST record shapes (B4 / B5). Two consequences follow

@@ -14,6 +14,19 @@ for per-version upgrade steps.
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
 > are when each milestone landed. Only `0.6.0` has a release tag / link.
 
+## [Unreleased]
+
+### Added
+- **`ProjectionMetadata` source + read-model framing** — the record grew
+  `aggregateTypes` (source aggregate link), `events` / `eventClassNames` /
+  `topicPattern` (event subscription), and `model` / `schema` (read-model
+  identity) alongside the existing `fields` subset, plus a `builder`, an
+  `of(name, aggregateType, fields)` factory, and `hasSourceAggregate` /
+  `hasFields`. The operational surface of `@Projection` (partitioning / rebuild /
+  consistency / monitoring / query API) is deferred. Canonical constructor
+  changed arity + order — prefer the builder / factories. See
+  [`MIGRATION.md`](MIGRATION.md#06x--07x).
+
 ## [0.6.0] — 2026-06-17
 
 Feedback-driven cleanups (the first slices of the 0.6.0–0.9.0 band): annotation
