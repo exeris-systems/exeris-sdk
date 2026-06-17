@@ -186,11 +186,24 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("ProjectionMetadata round-trips")
+    @DisplayName("ProjectionMetadata round-trips (source + subscription + read model)")
     void projectionMetadataRoundTrips() {
-        ProjectionMetadata original = new ProjectionMetadata(
-                "OrderSummary", "List view projection", List.of("id", "orderNumber", "amount"), true);
+        ProjectionMetadata original = ProjectionMetadata.builder("OrderSummary")
+                .description("List view projection")
+                .aggregateTypes(List.of("Order"))
+                .events(List.of("OrderCreated", "OrderShipped"))
+                .eventClassNames(List.of("com.acme.events.OrderCreatedEvent"))
+                .topicPattern("orders\\..*")
+                .model("OrderSummaryView")
+                .schema("read_models")
+                .fields(List.of("id", "orderNumber", "amount"))
+                .cacheable(true)
+                .build();
         assertRoundTrip(original, ProjectionMetadata.class);
+
+        // The pre-0.7.0 minimal shape still round-trips (defaults: empty lists,
+        // null strings dropped by NON_NULL).
+        assertRoundTrip(ProjectionMetadata.simple("Bare", List.of("id")), ProjectionMetadata.class);
     }
 
     @Test

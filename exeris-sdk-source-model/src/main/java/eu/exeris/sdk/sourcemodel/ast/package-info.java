@@ -113,6 +113,21 @@
  * consumer are coordinated {@code exeris-tooling} work — the SDK supplies only
  * the record the choreography serializes into.
  *
+ * <h2>Projection source + read-model framing (0.7.0)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.ProjectionMetadata} originally carried
+ * only {@code name} / {@code description} / {@code fields} / {@code cacheable} —
+ * it could say what a view shows but not what it is a view <em>of</em>. 0.7.0
+ * adds the source and read-model framing: {@code aggregateTypes} (the source
+ * aggregate(s) the projection reads — the "of <em>this</em> aggregate" link the
+ * exposed {@code fields} subset was missing), the event subscription that drives
+ * it ({@code events} / {@code eventClassNames} / {@code topicPattern}), and the
+ * read-model identity ({@code model} / {@code schema}). {@code @Projection}'s
+ * large operational surface (partitioning, error handling, rebuild, consistency,
+ * monitoring, lifecycle, query API) is deliberately deferred — additive, by-name
+ * JSON. Class-valued attributes ({@code model}, {@code eventClasses}) are stored
+ * as source-written {@code String} names, the same zero-coupling discipline as
+ * the capability and event-handler records.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a
