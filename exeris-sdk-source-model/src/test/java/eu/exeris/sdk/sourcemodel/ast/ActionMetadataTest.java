@@ -14,18 +14,33 @@ class ActionMetadataTest {
     @Test
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new ActionMetadata(null, null, null, "POST", null,
-                false, false, false, false, List.of(), List.of(), List.of()))
+                false, false, false, false, List.of(), List.of(), List.of(), null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
     void compactConstructorDefaultsNullHttpMethodToPost() {
         ActionMetadata a = new ActionMetadata("approve", null, null, null, null,
-                false, false, false, false, null, null, null);
+                false, false, false, false, null, null, null, null);
         assertThat(a.httpMethod()).isEqualTo("POST");
         assertThat(a.params()).isEmpty();
         assertThat(a.permissions()).isEmpty();
         assertThat(a.producesEvents()).isEmpty();
+    }
+
+    @Test
+    void methodNameCarriesAndFallsBackToActionName() {
+        // explicit method name kept distinct from the action identity
+        ActionMetadata renamed = ActionMetadata.builder("commandFormation")
+                .methodName("setFormation").build();
+        assertThat(renamed.methodName()).isEqualTo("setFormation");
+        assertThat(renamed.effectiveMethodName()).isEqualTo("setFormation");
+
+        // absent / blank method name → effectiveMethodName falls back to the action name
+        assertThat(ActionMetadata.simple("approve").methodName()).isNull();
+        assertThat(ActionMetadata.simple("approve").effectiveMethodName()).isEqualTo("approve");
+        assertThat(ActionMetadata.builder("approve").methodName("  ").build().effectiveMethodName())
+                .isEqualTo("approve");
     }
 
     @Test
@@ -75,6 +90,7 @@ class ActionMetadataTest {
                 .addParam(p2)
                 .permissions(List.of("ROLE_MGR", "ROLE_ADMIN"))
                 .producesEvents(List.of("OrderRejected"))
+                .methodName("doReject")
                 .build();
 
         assertThat(a.displayName()).isEqualTo("Reject Order");
@@ -88,6 +104,7 @@ class ActionMetadataTest {
         assertThat(a.params()).containsExactly(p1, p2);
         assertThat(a.permissions()).containsExactly("ROLE_MGR", "ROLE_ADMIN");
         assertThat(a.producesEvents()).containsExactly("OrderRejected");
+        assertThat(a.methodName()).isEqualTo("doReject");
     }
 
     // ----- ActionParamMetadata -----

@@ -704,6 +704,34 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsMethodNameDistinctFromActionIdentity() {
+            DomainMetadata domain = reader.read(INVOICE).orElseThrow();
+            // when name == method, methodName mirrors it
+            assertThat(domain.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("approve");
+                assertThat(a.methodName()).isEqualTo("approve");
+            });
+
+            // when @Action(name=…) differs from the annotated method, methodName tracks the method
+            String src = """
+                    package app.fleet;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Action;
+                    @ExerisDomain(name = "Fleet")
+                    public class Fleet {
+                        @Action(name = "commandFormation", path = "/command-formation")
+                        public void setFormation() { }
+                    }
+                    """;
+            DomainMetadata fleet = reader.read(src).orElseThrow();
+            assertThat(fleet.actions()).singleElement().satisfies(a -> {
+                assertThat(a.name()).isEqualTo("commandFormation");
+                assertThat(a.methodName()).isEqualTo("setFormation");
+                assertThat(a.effectiveMethodName()).isEqualTo("setFormation");
+            });
+        }
+
+        @Test
         void readsActionParamsWithRequiredDefaultAndType() {
             DomainMetadata domain = reader.read(INVOICE).orElseThrow();
 

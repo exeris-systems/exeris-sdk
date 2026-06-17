@@ -386,6 +386,7 @@ public final class SourceModelReader {
                     .filter(s -> !s.isBlank())
                     .orElse(method.getNameAsString());
             ActionMetadata.Builder builder = ActionMetadata.builder(name)
+                    .methodName(method.getNameAsString())
                     .async(boolAttr(action.get(), "async", false));
             stringAttr(action.get(), "label").ifPresent(builder::displayName);
             stringAttr(action.get(), "description")
