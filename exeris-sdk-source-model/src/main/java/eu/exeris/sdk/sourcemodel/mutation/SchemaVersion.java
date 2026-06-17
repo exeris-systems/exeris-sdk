@@ -39,9 +39,18 @@ public final class SchemaVersion {
      *       names the shape, and the ADR posture is to refuse cross-shape
      *       baselines rather than assume compatibility — so a {@code "0.5.0"}
      *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
+     *   <li>{@code "0.7.0"} — bumped for the next JSON-affecting AST shape
+     *       growth: {@code ProjectionMetadata} gained the source / subscription /
+     *       read-model components ({@code aggregateTypes}, {@code events},
+     *       {@code eventClassNames}, {@code topicPattern}, {@code model},
+     *       {@code schema}). Same posture as the 0.6.0 bump — the additions are
+     *       by-name and back-compatible to read, but the schema names the shape,
+     *       so a {@code "0.6.0"} baseline reads as {@code SCHEMA_VERSION_SKEW}.
+     *       (The 0.6.0 schema already covered {@code DomainMetadata.eventHandlers},
+     *       which landed within the 0.6.0 release.)</li>
      * </ul>
      */
-    public static final String CURRENT = "0.6.0";
+    public static final String CURRENT = "0.7.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.

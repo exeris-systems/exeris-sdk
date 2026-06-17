@@ -81,12 +81,20 @@ public record ProjectionMetadata(
 
     // ── convenience ───────────────────────────────────────────────────────────
 
-    /** True when the projection names the aggregate(s) it is a view of. */
+    /**
+     * True when the projection names the aggregate(s) it is a view of.
+     *
+     * @since 0.7.0
+     */
     public boolean hasSourceAggregate() {
         return !aggregateTypes.isEmpty();
     }
 
-    /** True when the projection exposes an explicit field subset. */
+    /**
+     * True when the projection exposes an explicit field subset.
+     *
+     * @since 0.7.0
+     */
     public boolean hasFields() {
         return !fields.isEmpty();
     }
@@ -102,11 +110,14 @@ public record ProjectionMetadata(
     /**
      * A projection of a single source aggregate exposing a field subset — the
      * common "subset of this aggregate as a read-only view" case.
+     *
+     * @since 0.7.0
      */
     public static ProjectionMetadata of(String name, String aggregateType, List<String> fields) {
         return builder(name).aggregateType(aggregateType).fields(fields).build();
     }
 
+    /** @since 0.7.0 */
     public static Builder builder(String name) {
         return new Builder(name);
     }

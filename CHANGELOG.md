@@ -16,6 +16,11 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Changed
+- **`SchemaVersion.CURRENT`** bumped `"0.6.0"` → `"0.7.0"` to name the
+  `ProjectionMetadata` shape growth (a `"0.6.0"` baseline now reads as
+  `SCHEMA_VERSION_SKEW`).
+
 ### Added
 - **`ProjectionMetadata` source + read-model framing** — the record grew
   `aggregateTypes` (source aggregate link), `events` / `eventClassNames` /

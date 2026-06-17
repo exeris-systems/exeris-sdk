@@ -12,6 +12,20 @@ the upgrade steps required.
 
 ## 0.6.x → 0.7.x
 
+### `SchemaVersion.CURRENT` bumped `"0.6.0"` → `"0.7.0"`
+
+**Why:** the `ProjectionMetadata` growth below is a JSON-affecting AST shape
+change, and the baseline-trust schema version names the AST shape (see
+`eu.exeris.sdk.sourcemodel.mutation.SchemaVersion`).
+
+**Impact:** a baseline JSON stamped `"schemaVersion": "0.6.0"` now reads as
+`NO_BASELINE(SCHEMA_VERSION_SKEW)` — same posture as the 0.6.0 bump. The
+additions are by-name and back-compatible to *read*, but conflict detection
+will not trust a stale-schema baseline. In practice there is nothing to migrate
+yet: codegen does not emit the trust fields until the tooling writer lands, so
+no `"0.6.0"` baselines exist in the wild. **Re-run codegen** to emit a fresh
+`"0.7.0"` baseline once that writer exists.
+
 ### `ProjectionMetadata` grew the source + read-model framing
 
 **Why:** the record could say *what* a projection exposes (`fields`) but not
