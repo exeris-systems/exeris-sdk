@@ -90,6 +90,7 @@ class ActionMetadataTest {
                 .addParam(p2)
                 .permissions(List.of("ROLE_MGR", "ROLE_ADMIN"))
                 .producesEvents(List.of("OrderRejected"))
+                .methodName("doReject")
                 .build();
 
         assertThat(a.displayName()).isEqualTo("Reject Order");
@@ -103,6 +104,7 @@ class ActionMetadataTest {
         assertThat(a.params()).containsExactly(p1, p2);
         assertThat(a.permissions()).containsExactly("ROLE_MGR", "ROLE_ADMIN");
         assertThat(a.producesEvents()).containsExactly("OrderRejected");
+        assertThat(a.methodName()).isEqualTo("doReject");
     }
 
     // ----- ActionParamMetadata -----

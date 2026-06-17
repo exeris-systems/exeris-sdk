@@ -111,6 +111,7 @@ class AstJsonRoundTripTest {
                 .idempotent(true)
                 .dangerous(true)
                 .requiresConfirmation(true)
+                .methodName("doShip")
                 .permissions(List.of("orders:ship"))
                 .producesEvents(List.of("OrderShipped"))
                 .params(List.of(
