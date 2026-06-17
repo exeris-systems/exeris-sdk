@@ -28,7 +28,18 @@ public record ActionMetadata(
         boolean requiresConfirmation,
         List<ActionParamMetadata> params,
         List<String> permissions,
-        List<String> producesEvents
+        List<String> producesEvents,
+        /**
+         * The simple name of the Java method the {@code @Action} annotates — distinct
+         * from {@link #name()}, which is the action identity ({@code @Action(name=…)})
+         * and may differ (e.g. renamed to avoid a bean-accessor collision). Carried so
+         * build-time codegen can emit a server-side dispatch that invokes the actual
+         * aggregate method. Optional: {@code null} when unknown (hand-built metadata or
+         * legacy JSON); use {@link #effectiveMethodName()} for a name-based fallback.
+         *
+         * @since 0.7.0
+         */
+        String methodName
 ) {
 
     public ActionMetadata {
@@ -40,7 +51,7 @@ public record ActionMetadata(
     }
 
     public static ActionMetadata simple(String name) {
-        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of());
+        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null);
     }
 
     public static Builder builder(String name) {
@@ -59,6 +70,16 @@ public record ActionMetadata(
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
     }
 
+    /**
+     * The Java method to dispatch to: {@link #methodName()} when known, else the
+     * action {@link #name()} as a best-effort fallback (covers hand-built metadata
+     * and legacy JSON written before {@code methodName} existed).
+     */
+    @JsonIgnore
+    public String effectiveMethodName() {
+        return (methodName != null && !methodName.isBlank()) ? methodName : name;
+    }
+
     public static final class Builder {
         private final String name;
         private String displayName;
@@ -72,6 +93,7 @@ public record ActionMetadata(
         private List<ActionParamMetadata> params = new ArrayList<>();
         private List<String> permissions = new ArrayList<>();
         private List<String> producesEvents = new ArrayList<>();
+        private String methodName;
 
         private Builder(String name) { this.name = name; }
 
@@ -87,10 +109,11 @@ public record ActionMetadata(
         public Builder addParam(ActionParamMetadata p) { this.params.add(p); return this; }
         public Builder permissions(List<String> v) { this.permissions = new ArrayList<>(v); return this; }
         public Builder producesEvents(List<String> v) { this.producesEvents = new ArrayList<>(v); return this; }
+        public Builder methodName(String v) { this.methodName = v; return this; }
 
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
-                    async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents);
+                    async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName);
         }
     }
 }
