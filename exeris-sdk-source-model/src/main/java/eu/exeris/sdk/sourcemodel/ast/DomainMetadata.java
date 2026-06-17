@@ -89,6 +89,7 @@ public record DomainMetadata(
         @JsonProperty("events") List<DomainEventMetadata> events,
         @JsonProperty("relationships") List<RelationshipMetadata> relationships,
         @JsonProperty("projections") List<ProjectionMetadata> projections,
+        @JsonProperty("eventHandlers") List<EventHandlerMetadata> eventHandlers,
 
         // ═══════════════════════════════════════════════════════════════════
         // ADVANCED FEATURES
@@ -169,6 +170,10 @@ public record DomainMetadata(
 
     public boolean hasEvents() {
         return events != null && !events.isEmpty();
+    }
+
+    public boolean hasEventHandlers() {
+        return eventHandlers != null && !eventHandlers.isEmpty();
     }
 
     public boolean hasRelationships() {
@@ -252,6 +257,7 @@ public record DomainMetadata(
         private List<DomainEventMetadata> events = List.of();
         private List<RelationshipMetadata> relationships = List.of();
         private List<ProjectionMetadata> projections = List.of();
+        private List<EventHandlerMetadata> eventHandlers = List.of();
         private UIMetadata uiMetadata = null;
         private GraphMetadata graphMetadata = null;
         private SagaMetadata sagaMetadata = null;
@@ -292,6 +298,7 @@ public record DomainMetadata(
         public Builder events(List<DomainEventMetadata> v) { this.events = v; return this; }
         public Builder relationships(List<RelationshipMetadata> v) { this.relationships = v; return this; }
         public Builder projections(List<ProjectionMetadata> v) { this.projections = v; return this; }
+        public Builder eventHandlers(List<EventHandlerMetadata> v) { this.eventHandlers = v; return this; }
         public Builder uiMetadata(UIMetadata v) { this.uiMetadata = v; return this; }
         public Builder graphMetadata(GraphMetadata v) { this.graphMetadata = v; return this; }
         public Builder sagaMetadata(SagaMetadata v) { this.sagaMetadata = v; return this; }
@@ -308,7 +315,7 @@ public record DomainMetadata(
                     cacheable, cacheTtl, cacheRegion,
                     fullTextSearch, searchConfig,
                     tableName,
-                    fields, actions, events, relationships, projections,
+                    fields, actions, events, relationships, projections, eventHandlers,
                     uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields
             );
         }

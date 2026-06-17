@@ -56,6 +56,12 @@ class AstJsonRoundTripTest {
                         FieldMetadata.builder("orderNumber", "String").required(true).unique(true).build(),
                         FieldMetadata.builder("amount", "BigDecimal").required(true).build()))
                 .events(List.of(new DomainEventMetadata("OrderCreated", "orders.created", "Order created", "Order")))
+                .eventHandlers(List.of(
+                        EventHandlerMetadata.builder("onOrderCreated")
+                                .event("OrderCreated")
+                                .condition("event.amount > 1000")
+                                .order(1)
+                                .build()))
                 .relationships(List.of(
                         RelationshipMetadata.builder("customer", "Customer")
                                 .type(RelationshipMetadata.RelationType.MANY_TO_ONE)
@@ -136,6 +142,35 @@ class AstJsonRoundTripTest {
         DomainEventMetadata original = new DomainEventMetadata(
                 "OrderShipped", "orders.shipped", "Order has shipped", "Order");
         assertRoundTrip(original, DomainEventMetadata.class);
+    }
+
+    @Test
+    @DisplayName("EventHandlerMetadata round-trips (projection + saga shapes)")
+    void eventHandlerMetadataRoundTrips() {
+        // Projection-style handler: event selection + condition + ordering.
+        EventHandlerMetadata projectionHandler = EventHandlerMetadata.builder("onOrderCompleted")
+                .description("Update the order-summary read model")
+                .event("OrderCompleted")
+                .events(List.of("OrderCompleted", "OrderAmended"))
+                .eventClassNames(List.of("com.acme.events.OrderCompletedEvent"))
+                .topic("orders.completed")
+                .condition("event.amount > 1000")
+                .order(1)
+                .priority("HIGH")
+                .idempotent(true)
+                .async(true)
+                .timeout("PT10S")
+                .transactionMode("REQUIRES_NEW")
+                .build();
+        assertRoundTrip(projectionHandler, EventHandlerMetadata.class);
+
+        // Saga-style handler: trigger step + expected / failure events.
+        EventHandlerMetadata sagaHandler = EventHandlerMetadata.builder("onPaymentCompleted")
+                .triggerStep("processPayment")
+                .expectedEvents(List.of("PaymentCompletedEvent"))
+                .failureEvents(List.of("PaymentDeclinedEvent"))
+                .build();
+        assertRoundTrip(sagaHandler, EventHandlerMetadata.class);
     }
 
     @Test
