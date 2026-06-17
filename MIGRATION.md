@@ -72,6 +72,49 @@ default) gets an omitted field under `@JsonInclude(NON_NULL)` rather than a
 
 ---
 
+## 0.4.x → 0.5.x
+
+**Additive — no migration steps for existing consumers.** 0.5.0 introduced the
+bidirectional mutation surface: a new package
+`eu.exeris.sdk.sourcemodel.mutation` (`MutationOp` / `MutationResult` /
+`MutationPath` / `SchemaVersion` / `SourceDigest` / `BaselineTrust`) in
+`source-model`, and conflict detection + conflict-aware application in
+`exeris-sdk-source-model-io` (`SourceModelConflictDetector` /
+`SourceModelMutationApplier`). No existing annotation or AST record changed.
+
+- **New:** `SchemaVersion.CURRENT` shipped as `"0.5.0"` — the wire-format schema
+  version stamped into baseline JSON, decoupled from the Maven artifact version.
+- **Consumers:** only code that drives LSP/Studio mutations needs the new
+  package; plain annotation / AST / codegen consumers are unaffected.
+
+## 0.3.x → 0.4.x
+
+**Additive — no migration steps for existing consumers.** 0.4.0 added the
+capability composition surface (ADR-024 / ADR-038): the annotations
+`@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle` in the
+new `eu.exeris.sdk.annotation.capability` package, the AST records
+`CapabilityModuleMetadata` / `ProvidesMetadata` / `RequiresMetadata`, and
+`-io` reader support. No existing surface changed.
+
+- **Consumers:** only code declaring or reading capabilities needs the new
+  package. The downstream build-time consumer (`@Requires`→`@Provides`
+  resolution, the cap manifest) is `exeris-tooling` work, not part of this SDK.
+
+## 0.2.x → 0.3.x
+
+**Additive — no migration steps for existing consumers.** 0.3.0 added a single
+new sibling module, `exeris-sdk-source-model-io` (ADR-037), housing the
+JavaParser-based parser (`.java` → `DomainMetadata`) and idempotent writer
+(`DomainMetadata` → `.java`). The `annotations` and `source-model` modules were
+unchanged, and `source-model` stayed dependency-light (JavaParser is confined to
+`-io`) to preserve zero runtime coupling.
+
+- **Consumers:** add the `exeris-sdk-source-model-io` dependency only if you need
+  round-trip Java↔AST (LSP, codegen-maven-plugin). Annotation / AST consumers
+  need no change.
+
+---
+
 ## 0.1.x → 0.2.x
 
 ### `@Validation.required` is deprecated — move to `@Field.required`
