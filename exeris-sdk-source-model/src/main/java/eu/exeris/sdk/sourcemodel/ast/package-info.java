@@ -94,6 +94,25 @@
  * {@code -io} reader and the build-time processor must begin populating them
  * <em>together</em> to keep ADR-042 conflict-detection baselines trustworthy.
  *
+ * <h2>Event handlers — the reaction side (0.6.0)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata} models event
+ * <em>emission</em>; {@link eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata}
+ * (a facet of {@code DomainMetadata}, like {@code events}) models the
+ * <em>reaction</em> — the choreography backbone "when event X fires, do Y". The
+ * {@code @EventHandler} annotation has shipped since 0.1.0, but had no AST
+ * record to be extracted into; this record closes that gap. It captures the
+ * behaviourally meaningful facets (identity, event selection, ordering,
+ * execution semantics, saga-trigger surface); the annotation's operational
+ * attributes ({@code emitMetrics}/{@code logLevel}/{@code alertOnFailure}), the
+ * nested {@code @RetryPolicy}, and {@code versions} are deliberately deferred
+ * (additive — by-name JSON). Enum-valued attributes ({@code priority},
+ * {@code transactionMode}) are stored as their source-written {@code String}
+ * form, the same discipline the capability records use, so {@code source-model}
+ * never depends on the annotation module's enum types. As with {@code dataType}
+ * and the i18n keys, the build-time processor extraction and the codegen/{@code -io}
+ * consumer are coordinated {@code exeris-tooling} work — the SDK supplies only
+ * the record the choreography serializes into.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

@@ -42,6 +42,14 @@ wild.
   `descriptionKey`) after the B5 `dataType`.
 - `UIMetadata.UIFieldMetadata` — three new trailing components
   (`customComponent`, `placeholderKey`, `helpTextKey`).
+- `DomainMetadata` — one new component `eventHandlers`
+  (`List<EventHandlerMetadata>`) inserted in the nested-metadata block after
+  `projections`. The annotation `@EventHandler` has shipped since 0.1.0 but had
+  no AST record; `EventHandlerMetadata` (new in 0.6.0) is the reaction-side
+  companion to `DomainEventMetadata`. Additive and by-name on the wire (an old
+  baseline without it reads back as an empty list); the change is to the
+  canonical constructor / `DomainMetadata.builder()` shape, both of which gained
+  the field.
 
 **Impact:** code calling `new FieldMetadata(...)` / `new UIFieldMetadata(...)`
 **positionally** will no longer compile. Prefer the builder / factories, which
