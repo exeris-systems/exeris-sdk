@@ -42,7 +42,13 @@ public record RuleMetadata(
 
     public RuleMetadata {
         Objects.requireNonNull(name, "name is required");
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
         Objects.requireNonNull(expression, "expression is required");
+        if (expression.isBlank()) {
+            throw new IllegalArgumentException("expression must not be blank");
+        }
         if (message != null && message.isBlank()) {
             message = null;
         }
@@ -71,9 +77,13 @@ public record RuleMetadata(
         return language != null ? language : DEFAULT_LANGUAGE;
     }
 
-    /** Whether a violation message was declared. */
+    /**
+     * Whether a violation message was declared. The compact constructor
+     * normalizes a blank {@code message} to {@code null}, so a present message
+     * is always non-blank.
+     */
     @JsonIgnore
     public boolean hasMessage() {
-        return message != null && !message.isBlank();
+        return message != null;
     }
 }

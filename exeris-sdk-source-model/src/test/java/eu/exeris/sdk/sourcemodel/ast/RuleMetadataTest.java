@@ -44,10 +44,14 @@ class RuleMetadataTest {
     }
 
     @Test
-    void nameAndExpressionAreRequired() {
+    void nameAndExpressionAreRequiredNonBlank() {
         assertThatThrownBy(() -> new RuleMetadata(null, "expr", null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+        assertThatThrownBy(() -> new RuleMetadata("   ", "expr", null, null, null))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
         assertThatThrownBy(() -> new RuleMetadata("r", null, null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("expression");
+        assertThatThrownBy(() -> new RuleMetadata("r", "  ", null, null, null))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("expression");
     }
 }

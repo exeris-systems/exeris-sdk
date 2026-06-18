@@ -42,9 +42,11 @@ class DerivedMetadataTest {
     }
 
     @Test
-    void expressionIsRequired() {
+    void expressionIsRequiredNonBlank() {
         assertThatThrownBy(() -> new DerivedMetadata(null, "spel", List.of()))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("expression");
+        assertThatThrownBy(() -> new DerivedMetadata("   ", "spel", List.of()))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("expression");
     }
 
     @Test

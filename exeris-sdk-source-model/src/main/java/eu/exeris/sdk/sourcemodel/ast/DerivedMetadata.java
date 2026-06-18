@@ -38,9 +38,14 @@ public record DerivedMetadata(
 
     public DerivedMetadata {
         Objects.requireNonNull(expression, "expression is required");
+        if (expression.isBlank()) {
+            throw new IllegalArgumentException("expression must not be blank");
+        }
         if (language != null && language.isBlank()) {
             language = null;
         }
+        // Empty dependsOn serializes as [] (the AST's NON_NULL list convention,
+        // as for every other list-valued record) — intentionally not dropped.
         dependsOn = dependsOn == null ? List.of() : List.copyOf(dependsOn);
     }
 
