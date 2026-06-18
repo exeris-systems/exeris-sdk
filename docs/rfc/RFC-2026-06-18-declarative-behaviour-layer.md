@@ -2,11 +2,11 @@
 
 | Field             | Value                                                                 |
 |:------------------|:----------------------------------------------------------------------|
-| **Status**        | **DRAFT**                                                            |
+| **Status**        | **ACCEPTED**                                                        |
 | **Author(s)**     | arkstack-dev                                                          |
 | **Date Opened**   | 2026-06-18                                                            |
-| **Date Closed**   | —                                                                    |
-| **Target ADR(s)** | TBD — a thin SDK-side "declarative-behaviour surface" ADR (the shape of [ADR-037](../adr/ADR-037-source-model-io-module.md) / [ADR-038](../adr/ADR-038-capability-annotation-surface.md)), authored only if/when this RFC is accepted **and** the usage trigger fires |
+| **Date Closed**   | 2026-06-18                                                           |
+| **Target ADR(s)** | TBD — a thin SDK-side "declarative-behaviour surface" ADR (the shape of [ADR-037](../adr/ADR-037-source-model-io-module.md) / [ADR-038](../adr/ADR-038-capability-annotation-surface.md)); number to be reserved in `exeris-docs/adr-index.md` before authoring (cross-repo), same as ADR-037/038 |
 | **Affected Repos**| `exeris-sdk` (annotations + AST), `exeris-tooling` (processor extraction + codegen generation), `exeris-platform` (LSP/Studio rendering of modeled behaviour) |
 | **Reviewers**     | —                                                                    |
 
@@ -41,7 +41,18 @@ Who's affected: capability authors and SKU workloads first (the named informing 
 ### Data gathered
 
 - No `@Derived` / `@Rule` annotations and no `DerivedMetadata` / `RuleMetadata` AST records exist in any repo today — greenfield.
-- **No corpus of hand-rolled derived-fields/rules has yet been captured** from the ready Capabilities or SKU workloads. The very usage signal the discipline says should size the cut is **not in hand**. This is the decisive data point: any surface shipped today is a guess at its own field set.
+- **The build trigger named below is now met.** When this RFC was opened (status DRAFT) no usage corpus existed. It now does: an internal adopter exercising the SDK against a non-trivial generated domain has a concrete, recurring need for exactly this surface (see *Adopter corpus*). The "no signal in hand" caveat that originally argued for deferral no longer holds.
+
+### Adopter corpus (the build trigger)
+
+An internal adopter, building a non-trivial generated domain on the SDK, hand-writes a class of mechanical behaviour the AST cannot yet describe. Sanitized to neutral shapes (no domain specifics), the recurring patterns are:
+
+1. **Roll-up / derived field** — a value aggregated from related entities or other fields, today "maintained by event handlers" that are in fact hand-written services. Some are **cross-aggregate** (the derived value reads across a relationship), not just sibling-field arithmetic. → `@Derived` + `dependsOn`.
+2. **Discriminant → value mapping** — a value selected piecewise from a state/enum discriminant. → a `@Derived` formula.
+3. **Ratio / threshold guard** — a boolean derived from a value's relation to a threshold. → `@Rule` (named invariant / guard).
+4. **Decay / erosion formula** — a value that decrements by a formula over time or quantity. → `@Derived` (time-dependent — touches the materialization-hint open question).
+
+That is ≥4 distinct, recurring shapes from one real adopter — past the threshold the RFC set. Two refinements the corpus surfaced are folded into the design below: `dependsOn` must be able to name **related-entity paths**, not only sibling fields; and the adopter also envisions a third sibling, a reaction/choreography annotation (`@Reaction`-shaped), which is **out of scope here** — it overlaps the already-shipped `EventHandlerMetadata` and the still-open `@DomainEvent(trigger = STATE_TRANSITION)` "declarative-only" gap, and belongs to that choreography track, not this derived/rule one.
 
 ## Options Considered
 
@@ -81,24 +92,24 @@ Do not ship annotations this milestone. The RFC's **deliverable is the agreed de
 
 ## Recommendation
 
-**Option C (commitment) + Option β (expression stance): do not ship `@Derived` / `@Rule` yet; accept the framed design below as the RFC output and gate implementation on a concrete Capabilities/SKU usage corpus. When built, the expression is an opaque `String` plus an optional `language` discriminator defaulting to the SDK's existing SpEL convention.**
+**Build the framed design now (Option β expression stance). The RFC opened recommending Option C — defer until a usage corpus exists — but that corpus now exists (an internal adopter, see *Adopter corpus*), so the gate the RFC itself set is open and we proceed. Ship the `@Derived` / `@Rule` annotations + `DerivedMetadata` / `RuleMetadata` AST records, with a "reserved — generation pending tooling" javadoc-honesty note (the capability-annotation precedent). The expression is an opaque `String` plus an optional `language` discriminator defaulting to the SDK's existing SpEL convention.**
 
-Two facts decide it. First, **the usage signal the discipline requires is not in hand** — there is no corpus of real derived-fields/rules to size the cut against, so any surface shipped now guesses at its own field set, and the roadmap is unambiguous that this particular cut waits on ready Capabilities + SKU usage. Second, **the SDK just finished excising inert attributes**, and an unconsumed `@Derived` / `@Rule` would be a brand-new one the moment it lands — directly contradicting the honesty rule the SDK now holds itself to. Designing on paper now captures the expensive part (the surface debate) and lifts it off the future ADR's plate, so when the first concrete examples arrive the build is mechanical. The expression-agnostic `String` + `language` stance keeps the SDK pure regardless of which evaluator Caps/SKU end up wanting, and avoids prematurely blessing SpEL for formula-style derivations that may want a different evaluator than security guards.
+The two facts that originally argued for deferral have flipped or fallen away. The **usage signal is now in hand** — a real adopter has ≥4 distinct, recurring hand-rolled shapes (roll-ups incl. cross-aggregate, discriminant→value maps, ratio/threshold guards, decay formulas), past the threshold the RFC set, so the surface is sized against real usage rather than guessed. And the **inert-attribute objection is resolved the same way capability resolved it**: the surface ships with an explicit "reserved, not yet consumed in Open-Core" javadoc note (`@Provides`/`@Requires` already live this way), with a real adopter authoring against it and the AST carrying it; the *generation* is the coordinated `exeris-tooling` follow-up the user routes (processor extraction + `-io` reader in parity, ADR-042), not an SDK gap. The expression-agnostic `String` + `language` stance keeps the SDK pure regardless of which evaluator the adopter's formulas vs. guards end up wanting, and avoids prematurely blessing SpEL for both.
 
 ### Designed surface (decided on paper — not built)
 
 So the future ADR does not re-litigate it:
 
-- **`@Derived`** — `@Target({FIELD, METHOD})`, `@Retention(SOURCE)`. A read-only field/value computed from others. Attributes: `expression` (`String`), `language` (`String`, default `""` ⇒ the SpEL convention, see *expression-tag* below), optional `dependsOn` (`String[]` of field names, for the design-time dependency graph). → a field facet `FieldMetadata.derived : DerivedMetadata(expression, language, dependsOn)`, mirroring how `dataType` was added.
+- **`@Derived`** — `@Target({FIELD, METHOD})`, `@Retention(SOURCE)`. A read-only field/value computed from others. Attributes: `expression` (`String`), `language` (`String`, default `""` ⇒ the SpEL convention, see *expression-tag* below), optional `dependsOn` (`String[]` — dependency hints for the design-time graph; an entry is a sibling field name **or a related-entity path** like `customer.tier`, since the adopter corpus shows cross-aggregate derivations). → a field facet `FieldMetadata.derived : DerivedMetadata(expression, language, dependsOn)`, mirroring how `dataType` was added. Stored as plain strings — path *resolution* against the relationship graph is build-time tooling's job, not the SDK's (the same source-written-string discipline the capability service refs use).
 - **`@Rule`** — `@Target({TYPE, FIELD})`, `@Retention(SOURCE)`, `@Repeatable(Rules.class)` — the container is a top-level **`@Rules`** annotation (the plural-name convention the repo uses for `@SagaStep`→`SagaSteps`; the nested-`.List` idiom was reserved for capability annotations only because `@Provides`/`@Requires` already end in `-s`, which does not apply here). The AST flattens the container, so consumers never see it. A named declarative invariant. Attributes: `name`, `expression` (`String`), `message` (`String`, i18n-key-friendly like the 0.6 keys), `severity` (`String`, default `""` ⇒ `ERROR`, see *severity* below), `language` (`String`, default `""` ⇒ SpEL). → `DomainMetadata.rules : List<RuleMetadata>(name, expression, message, severity, language)`.
 - **Escape hatch** — both annotations are strictly **opt-in**: any behaviour not annotated is hand-written *by definition*, and a design-time tool always renders un-annotated logic as "manual / not modeled." Nothing is ever forced into declarative form; genuinely-complex domain logic stays code. Absence **is** the escape hatch — no `manual=true` flag needed.
 - **Expression-tag (`language`)** — the canonical default tag is **`"spel"`** (the SDK's existing embedded expression language, used by `condition`/`visibleWhen`). The annotation default is `""` and the compact constructor normalizes blank → `null`; a consumer reading `null` applies the `"spel"` default. So the common case carries no `language` on the wire, and an alternative evaluator is named explicitly (`language = "jexl"`, …) only when it differs. The exact tag vocabulary is corpus-adjustable (see Open questions).
 - **Storage & defaults on the wire** — all strings; `@JsonInclude(NON_NULL)`. To keep defaulted attributes off the wire under `NON_NULL` (which, unlike `NON_DEFAULT`, would otherwise serialize a non-null `"ERROR"`/`"spel"` every time), the annotation defaults are the **empty string** and the compact constructor normalizes blank → `null` (the established `EventHandlerMetadata`/`ProjectionMetadata`/saga pattern); the *semantic* default (`severity` ⇒ `ERROR`, `language` ⇒ `spel`) is applied by the consumer, not stored. If `severity` is ever promoted to an enumerated type it is an **AST-owned** enum (no annotation-enum mirror to duplicate, like the saga enums).
 - **Parity** — when built, `-io` reads these only once the `exeris-tooling` processor extracts them, in lock-step (ADR-042), as with every prior surface.
 
-### Trigger to start the build
+### Trigger to start the build — MET
 
-Implement when **≈5 or more distinct hand-rolled derived-fields/rules** are observed across the ready Capabilities + SKU workloads (the informing usage the roadmap names — explicitly **not** budgetHQ), captured as a short corpus in this RFC's follow-up. That corpus sizes the real cut — which attributes earn their place — before a line of annotation ships.
+The trigger was: **≈5 or more distinct hand-rolled derived-fields/rules** observed in real usage (the informing usage the roadmap names — explicitly **not** budgetHQ). The *Adopter corpus* above records ≥4 distinct, recurring shapes from one internal adopter — sufficient to size the cut, so the build proceeds. The corpus stays the reference for which attributes earn their place; further adopter patterns refine the surface additively, not by reshaping it.
 
 ### Why not the alternatives?
 
@@ -115,7 +126,12 @@ Implement when **≈5 or more distinct hand-rolled derived-fields/rules** are ob
 
 ## Decision Record
 
-<!-- Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN. -->
+| Field                | Value     |
+|:---------------------|:----------|
+| **Outcome**          | **ACCEPTED** — build the framed `@Derived` / `@Rule` surface now (Option β expression stance). The Option-C deferral gate is open: the *Adopter corpus* meets the build trigger. |
+| **Date**             | 2026-06-18 |
+| **Resulting ADR(s)** | TBD — a thin SDK-side "declarative-behaviour surface" ADR (the ADR-037/038 shape); number reserved in `exeris-docs/adr-index.md` first (cross-repo). |
+| **Notes**            | Ship with the capability precedent's "reserved — generation pending tooling" javadoc-honesty note: a real adopter authors against the surface and the AST carries it; processor extraction + `-io` reader-in-parity + codegen generation are the coordinated `exeris-tooling` follow-up the user routes (ADR-042 parity). Pinned shapes: `@Derived` (field facet `FieldMetadata.derived`), `@Rule` (+ top-level `@Rules` container; `DomainMetadata.rules` list); expression as opaque `String` + `language` tag (default `""` ⇒ `"spel"`); `severity` default `""` ⇒ `ERROR`; blank → null normalization under `@JsonInclude(NON_NULL)`; `dependsOn` allows related-entity paths. `@Reaction` / choreography sibling is out of scope (overlaps `EventHandlerMetadata` + the `STATE_TRANSITION` gap). Delivery: annotations slice → AST-records slice (mirrors the ADR-038 protocol). |
 
 ## Open questions / follow-ups
 
