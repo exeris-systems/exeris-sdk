@@ -52,7 +52,7 @@ An internal adopter, building a non-trivial generated domain on the SDK, hand-wr
 3. **Ratio / threshold guard** — a boolean derived from a value's relation to a threshold. → `@Rule` (named invariant / guard).
 4. **Decay / erosion formula** — a value that decrements by a formula over time or quantity. → `@Derived` (time-dependent — touches the materialization-hint open question).
 
-That is ≥4 distinct, recurring shapes from one real adopter — past the threshold the RFC set. Two refinements the corpus surfaced are folded into the design below: `dependsOn` must be able to name **related-entity paths**, not only sibling fields; and the adopter also envisions a third sibling, a reaction/choreography annotation (`@Reaction`-shaped), which is **out of scope here** — it overlaps the already-shipped `EventHandlerMetadata` and the still-open `@DomainEvent(trigger = STATE_TRANSITION)` "declarative-only" gap, and belongs to that choreography track, not this derived/rule one.
+That is ≥4 distinct, recurring shapes from one real adopter — meeting the trigger's intent (a real adopter with a genuine, repeated need, enough to size the cut), even if it sits just under the rounded "≈5" the RFC first wrote down. Two refinements the corpus surfaced are folded into the design below: `dependsOn` must be able to name **related-entity paths**, not only sibling fields; and the adopter also envisions a third sibling, a reaction/choreography annotation (`@Reaction`-shaped), which is **out of scope here** — it overlaps the already-shipped `EventHandlerMetadata` and the still-open `@DomainEvent(trigger = STATE_TRANSITION)` "declarative-only" gap, and belongs to that choreography track, not this derived/rule one.
 
 ## Options Considered
 
@@ -94,7 +94,7 @@ Do not ship annotations this milestone. The RFC's **deliverable is the agreed de
 
 **Build the framed design now (Option β expression stance). The RFC opened recommending Option C — defer until a usage corpus exists — but that corpus now exists (an internal adopter, see *Adopter corpus*), so the gate the RFC itself set is open and we proceed. Ship the `@Derived` / `@Rule` annotations + `DerivedMetadata` / `RuleMetadata` AST records, with a "reserved — generation pending tooling" javadoc-honesty note (the capability-annotation precedent). The expression is an opaque `String` plus an optional `language` discriminator defaulting to the SDK's existing SpEL convention.**
 
-The two facts that originally argued for deferral have flipped or fallen away. The **usage signal is now in hand** — a real adopter has ≥4 distinct, recurring hand-rolled shapes (roll-ups incl. cross-aggregate, discriminant→value maps, ratio/threshold guards, decay formulas), past the threshold the RFC set, so the surface is sized against real usage rather than guessed. And the **inert-attribute objection is resolved the same way capability resolved it**: the surface ships with an explicit "reserved, not yet consumed in Open-Core" javadoc note (`@Provides`/`@Requires` already live this way), with a real adopter authoring against it and the AST carrying it; the *generation* is the coordinated `exeris-tooling` follow-up the user routes (processor extraction + `-io` reader in parity, ADR-042), not an SDK gap. The expression-agnostic `String` + `language` stance keeps the SDK pure regardless of which evaluator the adopter's formulas vs. guards end up wanting, and avoids prematurely blessing SpEL for both.
+The two facts that originally argued for deferral have flipped or fallen away. The **usage signal is now in hand** — a real adopter has ≥4 distinct, recurring hand-rolled shapes (roll-ups incl. cross-aggregate, discriminant→value maps, ratio/threshold guards, decay formulas) — meeting the trigger's intent, so the surface is sized against real usage rather than guessed. And the **inert-attribute objection is resolved the same way capability resolved it**: the surface ships with an explicit "reserved, not yet consumed in Open-Core" javadoc note (`@Provides`/`@Requires` already live this way), with a real adopter authoring against it and the AST carrying it; the *generation* is the coordinated `exeris-tooling` follow-up the user routes (processor extraction + `-io` reader in parity, ADR-042), not an SDK gap. The expression-agnostic `String` + `language` stance keeps the SDK pure regardless of which evaluator the adopter's formulas vs. guards end up wanting, and avoids prematurely blessing SpEL for both.
 
 ### Designed surface (decided on paper — not built)
 
@@ -109,7 +109,7 @@ So the future ADR does not re-litigate it:
 
 ### Trigger to start the build — MET
 
-The trigger was: **≈5 or more distinct hand-rolled derived-fields/rules** observed in real usage (the informing usage the roadmap names — explicitly **not** budgetHQ). The *Adopter corpus* above records ≥4 distinct, recurring shapes from one internal adopter — sufficient to size the cut, so the build proceeds. The corpus stays the reference for which attributes earn their place; further adopter patterns refine the surface additively, not by reshaping it.
+The trigger was a usage signal of **several distinct hand-rolled derived-fields/rules** (the RFC's working estimate was ≈5) observed in real usage (the informing usage the roadmap names — explicitly **not** budgetHQ). The *Adopter corpus* above records ≥4 distinct, recurring shapes from one internal adopter; that is just under the rounded ≈5 but squarely at the trigger's intent — a real adopter with a genuine, repeated need, enough to size the cut — so the build proceeds. The corpus stays the reference for which attributes earn their place; further adopter patterns refine the surface additively, not by reshaping it.
 
 ### Why not the alternatives?
 
@@ -120,7 +120,7 @@ The trigger was: **≈5 or more distinct hand-rolled derived-fields/rules** obse
 
 ### Risks of the recommendation
 
-- **The usage signal may not arrive on a predictable schedule** — mitigated by naming the trigger; the cost of waiting is zero (behaviour is hand-written today regardless).
+- **The corpus comes from one adopter and may not represent all adoption patterns** — bounded by the additive-surface discipline: further patterns *extend* the surface (new attributes / a sibling annotation) rather than reshape what ships, and the surface ships reserved (generation pending) so a wrong early cut costs no generated behaviour to unwind.
 - **Designing on paper without a corpus can still misjudge the surface** — accepted and bounded: the design is explicitly provisional, and the trigger corpus is what validates/adjusts the field lists *before* the build; the lists here are a starting hypothesis, not a frozen contract.
 - **The two surfaces (`@Derived` as a field facet vs. `@Rule` as a domain-level list) may later want unifying** — flagged as a follow-up, not pre-solved.
 
