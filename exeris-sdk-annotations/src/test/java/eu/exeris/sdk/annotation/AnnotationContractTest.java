@@ -56,7 +56,8 @@ class AnnotationContractTest {
                 .hasSizeGreaterThanOrEqualTo(20)
                 .extracting(Class::getSimpleName)
                 .contains("ExerisDomain", "Action", "Field", "Relationship",
-                        "Saga", "DomainEvent", "UI", "Validation");
+                        "Saga", "DomainEvent", "UI", "Validation",
+                        "Derived", "Rule", "Rules");
 
         List<String> missingRetention = new ArrayList<>();
         List<String> wrongRetention = new ArrayList<>();

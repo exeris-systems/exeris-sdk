@@ -124,6 +124,22 @@
  *       {@code customComponent} is a generator-side error.</li>
  * </ul>
  *
+ * <h2>Declarative-behaviour layer (0.7.0) — reserved, generation pending tooling</h2>
+ * <p>{@link eu.exeris.sdk.annotation.Derived} and {@link eu.exeris.sdk.annotation.Rule}
+ * (repeatable via {@link eu.exeris.sdk.annotation.Rules}) let a domain declare the
+ * <em>mechanical</em> slice of behaviour the AST otherwise can't describe — derived
+ * fields / roll-ups ({@code @Derived}) and named invariants / guards ({@code @Rule})
+ * — so a design-time tool can draw it and tooling can generate it, leaving complex
+ * logic as hand-written escape-hatch code (both annotations are strictly opt-in).
+ * The expression is stored verbatim and tagged by a {@code language} attribute
+ * (empty ⇒ {@code "spel"}, the existing {@code condition} / {@code visibleWhen}
+ * convention); the SDK interprets nothing, preserving zero runtime coupling. Like
+ * the capability surface, this is <strong>reserved</strong>: the annotations are
+ * defined here, their AST records ({@code DerivedMetadata} / {@code RuleMetadata})
+ * are the next slice, and no processor extraction or code generator consumes them
+ * yet — so declaring them today has no generated effect. Direction in the
+ * declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
+ *
  * <h2>Architecture Principles</h2>
  * <ul>
  *   <li><strong>Java 26 Only:</strong> Built for Virtual Threads (Project Loom)</li>
@@ -186,7 +202,7 @@
  * </ul>
  *
  * @author Exeris SDK Team
- * @version 0.6.0
+ * @version 0.7.0
  * @since 0.1.0
  */
 package eu.exeris.sdk.annotation;
