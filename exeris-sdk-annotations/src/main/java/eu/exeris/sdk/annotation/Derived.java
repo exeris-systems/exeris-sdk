@@ -29,15 +29,14 @@ import java.lang.annotation.Target;
  * stores it verbatim and interprets nothing (zero runtime coupling).
  *
  * <h2>Open-Core status — reserved, generation pending tooling</h2>
- * <p>This is a declared shape, not yet a live computation. The annotation and
- * its {@code DerivedMetadata} AST record exist so a domain can author the
- * declarative form and the AST can carry it, but the build-time annotation
- * processor does not yet extract {@code @Derived} and no code generator consumes
- * it — so declaring it today has no generated effect. The surface is reserved
- * while the {@code exeris-tooling} processor extraction, the
- * {@code exeris-sdk-source-model-io} reader (in lock-step parity), and the
- * codegen consumer are wired; see {@code ROADMAP.md} and
- * {@code docs/rfc/RFC-2026-06-18-declarative-behaviour-layer.md}.
+ * <p>This is a declared shape, not yet a live computation. The annotation is
+ * defined now; its {@code DerivedMetadata} AST record is the next slice, and no
+ * build-time processor extracts {@code @Derived} nor does any code generator
+ * consume it yet — so declaring it today has no generated effect. The surface is
+ * reserved while the {@code DerivedMetadata} record, the {@code exeris-tooling}
+ * processor extraction, the {@code exeris-sdk-source-model-io} reader (in
+ * lock-step parity), and the codegen consumer are wired; see {@code ROADMAP.md}
+ * and the declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
  *
  * @since 0.7.0
  * @see Rule

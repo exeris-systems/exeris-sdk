@@ -134,11 +134,11 @@
  * The expression is stored verbatim and tagged by a {@code language} attribute
  * (empty ⇒ {@code "spel"}, the existing {@code condition} / {@code visibleWhen}
  * convention); the SDK interprets nothing, preserving zero runtime coupling. Like
- * the capability surface, this is <strong>reserved</strong>: the annotations and
- * their AST records ({@code DerivedMetadata} / {@code RuleMetadata}) exist, but no
- * processor extraction or code generator consumes them yet, so declaring them today
- * has no generated effect. Direction in
- * {@code docs/rfc/RFC-2026-06-18-declarative-behaviour-layer.md} (ACCEPTED).
+ * the capability surface, this is <strong>reserved</strong>: the annotations are
+ * defined here, their AST records ({@code DerivedMetadata} / {@code RuleMetadata})
+ * are the next slice, and no processor extraction or code generator consumes them
+ * yet — so declaring them today has no generated effect. Direction in the
+ * declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
  *
  * <h2>Architecture Principles</h2>
  * <ul>
@@ -202,7 +202,7 @@
  * </ul>
  *
  * @author Exeris SDK Team
- * @version 0.6.0
+ * @version 0.7.0
  * @since 0.1.0
  */
 package eu.exeris.sdk.annotation;

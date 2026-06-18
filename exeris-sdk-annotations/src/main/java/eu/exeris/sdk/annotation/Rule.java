@@ -29,15 +29,14 @@ import java.lang.annotation.Target;
  * }</pre>
  *
  * <h2>Open-Core status — reserved, generation pending tooling</h2>
- * <p>This is a declared shape, not yet an enforced rule. The annotation and its
- * {@code RuleMetadata} AST record exist so a domain can author the declarative
- * form and the AST can carry it, but the build-time annotation processor does
- * not yet extract {@code @Rule} and no code generator consumes it — so declaring
- * it today has no generated effect. The surface is reserved while the
- * {@code exeris-tooling} processor extraction, the
- * {@code exeris-sdk-source-model-io} reader (in lock-step parity), and the
- * codegen consumer are wired; see {@code ROADMAP.md} and
- * {@code docs/rfc/RFC-2026-06-18-declarative-behaviour-layer.md}.
+ * <p>This is a declared shape, not yet an enforced rule. The annotation is
+ * defined now; its {@code RuleMetadata} AST record is the next slice, and no
+ * build-time processor extracts {@code @Rule} nor does any code generator
+ * consume it yet — so declaring it today has no generated effect. The surface is
+ * reserved while the {@code RuleMetadata} record, the {@code exeris-tooling}
+ * processor extraction, the {@code exeris-sdk-source-model-io} reader (in
+ * lock-step parity), and the codegen consumer are wired; see {@code ROADMAP.md}
+ * and the declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
  *
  * @since 0.7.0
  * @see Derived
@@ -75,8 +74,10 @@ public @interface Rule {
     String message() default "";
 
     /**
-     * Severity tag. Empty selects the default ({@code "ERROR"}); the consumer
-     * applies that default, so the common case carries no severity on the wire.
+     * Severity tag — recognised hints are {@code "ERROR"} / {@code "WARN"} /
+     * {@code "INFO"} (the exact vocabulary is finalized with the consuming
+     * tooling). Empty selects the default ({@code "ERROR"}); the consumer applies
+     * that default, so the common case carries no severity on the wire.
      *
      * @return the severity tag, or {@code ""} for the default
      */
