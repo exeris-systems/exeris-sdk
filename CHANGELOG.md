@@ -19,7 +19,8 @@ for per-version upgrade steps.
 ### Changed
 - **`SchemaVersion.CURRENT`** bumped `"0.6.0"` → `"0.7.0"` to name the
   `ProjectionMetadata` shape growth (a `"0.6.0"` baseline now reads as
-  `SCHEMA_VERSION_SKEW`).
+  `SCHEMA_VERSION_SKEW`). The saga state-machine growth below rides on the same
+  `"0.7.0"` schema (same release) — no second bump.
 
 ### Added
 - **`ProjectionMetadata` source + read-model framing** — the record grew
@@ -30,6 +31,17 @@ for per-version upgrade steps.
   `hasFields`. The operational surface of `@Projection` (partitioning / rebuild /
   consistency / monitoring / query API) is deferred. Canonical constructor
   changed arity + order — prefer the builder / factories. See
+  [`MIGRATION.md`](MIGRATION.md#06x--07x).
+- **Saga step `kind` + typed transitions** — `SagaStepMetadata` grew `kind`
+  (`StepKind` = INVOKE / COMPENSATE / AWAIT_EVENT / AWAIT_TIMER) with an
+  inferring `effectiveKind()`, and `SagaMetadata` grew `transitions`
+  (`SagaTransition` edges = `from` → `to` `on` a `TransitionOutcome` of
+  SUCCESS / FAILURE / TIMEOUT / COMPENSATED, optional SpEL `guard`, terminal on
+  null `to`), with `hasTransitions`, `success`/`failure`/`timeout`/`on`
+  factories, and normalization. Promotes the step list + `dependsOn` DAG into an
+  outcome-edged state-machine graph; AST-owned enums (zero-coupling). Both
+  components appended at the end (constructor arity grew). Shares the `"0.7.0"`
+  schema (same release as the projection growth). See
   [`MIGRATION.md`](MIGRATION.md#06x--07x).
 
 ## [0.6.0] — 2026-06-17

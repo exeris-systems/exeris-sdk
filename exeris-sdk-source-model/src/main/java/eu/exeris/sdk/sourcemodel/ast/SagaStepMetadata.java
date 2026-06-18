@@ -31,11 +31,12 @@ public record SagaStepMetadata(
         List<String> producesEvents,
         InputMapping inputMapping,
         OutputMapping outputMapping,
-        String errorHandler
+        String errorHandler,
+        StepKind kind
 ) {
     public static SagaStepMetadata simple(String name, int order, String command) {
         return new SagaStepMetadata(name, null, order, null, command, null, "PT5M", 3, "PT1S",
-                false, true, null, false, List.of(), List.of(), null, null, null);
+                false, true, null, false, List.of(), List.of(), null, null, null, null);
     }
 
     public static Builder builder(String name, int order) {
@@ -45,6 +46,54 @@ public record SagaStepMetadata(
     public boolean hasCompensation() { return compensation != null && !compensation.isBlank(); }
     public boolean hasDependencies() { return dependsOn != null && !dependsOn.isEmpty(); }
     public boolean hasCondition() { return condition != null && !condition.isBlank(); }
+
+    /**
+     * The step's effective {@link StepKind}: the explicit {@link #kind()} if one
+     * was declared, otherwise inferred from which command/compensation facet is
+     * set — {@code COMPENSATE} when only a compensation command is present,
+     * {@code INVOKE} when a forward command or target service is present.
+     *
+     * <p>{@code AWAIT_EVENT} / {@code AWAIT_TIMER} are <strong>not</strong>
+     * inferred: a pure await step looks identical to an empty step from the
+     * structural fields alone, which is precisely why {@link #kind()} exists.
+     * Returns {@code null} when no kind is set and none can be inferred.
+     *
+     * @since 0.7.0
+     */
+    public StepKind effectiveKind() {
+        if (kind != null) {
+            return kind;
+        }
+        boolean hasForwardCommand = (command != null && !command.isBlank())
+                || (service != null && !service.isBlank());
+        if (!hasForwardCommand && hasCompensation()) {
+            return StepKind.COMPENSATE;
+        }
+        if (hasForwardCommand) {
+            return StepKind.INVOKE;
+        }
+        return null;
+    }
+
+    /**
+     * The behavioural kind of a saga step. Today the kind is only <em>implied</em>
+     * by which of {@code service}/{@code command}/{@code compensation} is set;
+     * declaring it makes the await/dispatch/compensate body generable rather than
+     * hand-written. Stored as an AST-owned enum (consistent with the other
+     * {@code SagaMetadata} enums), independent of any annotation-side type.
+     *
+     * @since 0.7.0
+     */
+    public enum StepKind {
+        /** Dispatch a forward command to a service. */
+        INVOKE,
+        /** Run a compensation (rollback) command. */
+        COMPENSATE,
+        /** Block until an expected domain event arrives. */
+        AWAIT_EVENT,
+        /** Block until a timer / timeout elapses. */
+        AWAIT_TIMER
+    }
 
     /**
      * Input mapping from saga state to step command.
@@ -112,6 +161,7 @@ public record SagaStepMetadata(
         private InputMapping inputMapping;
         private OutputMapping outputMapping;
         private String errorHandler;
+        private StepKind kind;
 
         private Builder(String name, int order) {
             this.name = name;
@@ -134,11 +184,12 @@ public record SagaStepMetadata(
         public Builder inputMapping(InputMapping v) { this.inputMapping = v; return this; }
         public Builder outputMapping(OutputMapping v) { this.outputMapping = v; return this; }
         public Builder errorHandler(String v) { this.errorHandler = v; return this; }
+        public Builder kind(StepKind v) { this.kind = v; return this; }
 
         public SagaStepMetadata build() {
             return new SagaStepMetadata(name, description, order, service, command, compensation, timeout,
                     maxRetries, retryBackoff, parallel, required, condition, skipOnConditionFalse,
-                    dependsOn, producesEvents, inputMapping, outputMapping, errorHandler);
+                    dependsOn, producesEvents, inputMapping, outputMapping, errorHandler, kind);
         }
     }
 }

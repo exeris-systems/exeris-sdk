@@ -3,6 +3,7 @@ package eu.exeris.sdk.sourcemodel.ast;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Metadata for saga orchestrations.
@@ -28,11 +29,16 @@ public record SagaMetadata(
         boolean persistent,
         String stateClass,
         List<String> permissions,
-        MonitoringConfig monitoring
+        MonitoringConfig monitoring,
+        List<SagaTransition> transitions
 ) {
+    public SagaMetadata {
+        transitions = transitions == null ? List.of() : List.copyOf(transitions);
+    }
+
     public static SagaMetadata simple(String name) {
         return new SagaMetadata(name, null, 1, List.of(), CompensationStrategy.ALL_OR_NOTHING,
-                CompensationOrder.REVERSE, "PT30M", "PT10M", 3, "PT1S", null, true, null, List.of(), null);
+                CompensationOrder.REVERSE, "PT30M", "PT10M", 3, "PT1S", null, true, null, List.of(), null, List.of());
     }
 
     public static Builder builder(String name) {
@@ -41,6 +47,7 @@ public record SagaMetadata(
 
     public boolean hasSteps() { return steps != null && !steps.isEmpty(); }
     public boolean hasTrigger() { return trigger != null; }
+    public boolean hasTransitions() { return transitions != null && !transitions.isEmpty(); }
 
     public enum CompensationStrategy {
         /** All steps must be compensated or saga fails */
@@ -108,6 +115,85 @@ public record SagaMetadata(
         }
     }
 
+    /**
+     * A typed transition between two saga steps — a first-class, outcome-edged
+     * edge in the saga's state-machine graph. Where {@code SagaStepMetadata.order}
+     * and {@code dependsOn} order steps without saying <em>on which outcome</em> a
+     * branch fires, a {@code SagaTransition} carries exactly that: {@code from}
+     * the source step, {@code on} the outcome that fires the edge, {@code to} the
+     * next step. Loops are expressed by pointing {@code to} back at an earlier
+     * step; a {@code null}/blank {@code to} marks a terminal edge (saga end /
+     * abort). The optional {@code guard} (a SpEL expression) narrows an edge that
+     * fires only when a condition holds.
+     *
+     * <p>Like the other saga config types this stores AST-owned enums and plain
+     * step names — resolving the edge against the actual step set, and generating
+     * the dispatch/await/compensate body, is build-time tooling's job.
+     *
+     * @since 0.7.0
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SagaTransition(
+            String from,
+            String to,
+            TransitionOutcome on,
+            String guard
+    ) {
+        public SagaTransition {
+            Objects.requireNonNull(from, "from");
+            if (on == null) {
+                on = TransitionOutcome.SUCCESS;
+            }
+            if (guard != null && guard.isBlank()) {
+                guard = null;
+            }
+        }
+
+        /** An edge firing on {@code outcome} from {@code from} to {@code to}. */
+        public static SagaTransition on(String from, String to, TransitionOutcome outcome) {
+            return new SagaTransition(from, to, outcome, null);
+        }
+
+        /** A {@code SUCCESS} edge from {@code from} to {@code to}. */
+        public static SagaTransition success(String from, String to) {
+            return new SagaTransition(from, to, TransitionOutcome.SUCCESS, null);
+        }
+
+        /** A {@code FAILURE} edge from {@code from} to {@code to}. */
+        public static SagaTransition failure(String from, String to) {
+            return new SagaTransition(from, to, TransitionOutcome.FAILURE, null);
+        }
+
+        /** A {@code TIMEOUT} edge from {@code from} to {@code to}. */
+        public static SagaTransition timeout(String from, String to) {
+            return new SagaTransition(from, to, TransitionOutcome.TIMEOUT, null);
+        }
+
+        /** Whether this edge is terminal (no target step — saga end / abort). */
+        public boolean isTerminal() { return to == null || to.isBlank(); }
+
+        /** Whether this edge carries a guard condition. */
+        public boolean hasGuard() { return guard != null && !guard.isBlank(); }
+    }
+
+    /**
+     * The outcome of a step that fires a {@link SagaTransition} edge. AST-owned,
+     * independent of any annotation-side type.
+     *
+     * @since 0.7.0
+     */
+    public enum TransitionOutcome {
+        /** The step completed successfully. */
+        SUCCESS,
+        /** The step failed (typically routes to compensation). */
+        FAILURE,
+        /** The step timed out. */
+        TIMEOUT,
+        /** A compensation step finished (rollback edge). */
+        COMPENSATED
+    }
+
     public static final class Builder {
         private final String name;
         private String description;
@@ -124,6 +210,7 @@ public record SagaMetadata(
         private String stateClass;
         private List<String> permissions = List.of();
         private MonitoringConfig monitoring;
+        private List<SagaTransition> transitions = List.of();
 
         private Builder(String name) { this.name = name; }
 
@@ -141,11 +228,12 @@ public record SagaMetadata(
         public Builder stateClass(String v) { this.stateClass = v; return this; }
         public Builder permissions(List<String> v) { this.permissions = v; return this; }
         public Builder monitoring(MonitoringConfig v) { this.monitoring = v; return this; }
+        public Builder transitions(List<SagaTransition> v) { this.transitions = v; return this; }
 
         public SagaMetadata build() {
             return new SagaMetadata(name, description, version, steps, compensationStrategy, compensationOrder,
                     timeout, compensationTimeout, maxRetries, retryBackoff, trigger, persistent, stateClass,
-                    permissions, monitoring);
+                    permissions, monitoring, transitions);
         }
     }
 }

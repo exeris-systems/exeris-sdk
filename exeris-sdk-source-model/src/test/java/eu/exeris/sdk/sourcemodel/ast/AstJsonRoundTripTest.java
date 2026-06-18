@@ -297,6 +297,12 @@ class AstJsonRoundTripTest {
                                 .build()))
                 .trigger(SagaMetadata.SagaTrigger.onEvent("OrderPlaced", "orders.placed"))
                 .monitoring(SagaMetadata.MonitoringConfig.enabled())
+                .transitions(List.of(
+                        SagaMetadata.SagaTransition.success("reserve", "charge"),
+                        new SagaMetadata.SagaTransition("charge", "reserve",
+                                SagaMetadata.TransitionOutcome.FAILURE, "state.retryable"),
+                        SagaMetadata.SagaTransition.on("charge", null,
+                                SagaMetadata.TransitionOutcome.COMPENSATED)))
                 .build();
 
         assertRoundTrip(original, SagaMetadata.class);
@@ -312,6 +318,7 @@ class AstJsonRoundTripTest {
                 .inputMapping(SagaStepMetadata.InputMapping.fields(List.of(
                         SagaStepMetadata.FieldMapping.direct("state.address", "command.address"))))
                 .outputMapping(SagaStepMetadata.OutputMapping.expression("$.trackingNumber"))
+                .kind(SagaStepMetadata.StepKind.AWAIT_EVENT)
                 .build();
 
         assertRoundTrip(original, SagaStepMetadata.class);

@@ -3,9 +3,11 @@ package eu.exeris.sdk.sourcemodel.ast;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("SagaMetadata + SagaStepMetadata + nested config")
 class SagaMetadataTest {
@@ -104,8 +106,11 @@ class SagaMetadataTest {
                 .stateClass("OrderSagaState")
                 .permissions(List.of("ROLE_OPS"))
                 .monitoring(monitoring)
+                .transitions(List.of(SagaMetadata.SagaTransition.success("validate", null)))
                 .build();
 
+        assertThat(s.transitions()).hasSize(1);
+        assertThat(s.hasTransitions()).isTrue();
         assertThat(s.description()).isEqualTo("Order processing saga");
         assertThat(s.version()).isEqualTo(2);
         assertThat(s.steps()).containsExactly(step);
@@ -182,8 +187,10 @@ class SagaMetadataTest {
                 .inputMapping(in)
                 .outputMapping(out)
                 .errorHandler("ChargeErrorHandler")
+                .kind(SagaStepMetadata.StepKind.INVOKE)
                 .build();
 
+        assertThat(step.kind()).isEqualTo(SagaStepMetadata.StepKind.INVOKE);
         assertThat(step.description()).isEqualTo("Charge customer");
         assertThat(step.service()).isEqualTo("payments");
         assertThat(step.command()).isEqualTo("ChargeCustomer");
@@ -227,5 +234,107 @@ class SagaMetadataTest {
         assertThat(fm.source()).isEqualTo("a");
         assertThat(fm.target()).isEqualTo("b");
         assertThat(fm.transform()).isNull();
+    }
+
+    // ----- Step kind + typed transitions (0.7.0) -----
+
+    @Test
+    void stepKindAndTransitionOutcomeEnumsAreComplete() {
+        assertThat(SagaStepMetadata.StepKind.values())
+                .containsExactly(
+                        SagaStepMetadata.StepKind.INVOKE,
+                        SagaStepMetadata.StepKind.COMPENSATE,
+                        SagaStepMetadata.StepKind.AWAIT_EVENT,
+                        SagaStepMetadata.StepKind.AWAIT_TIMER);
+        assertThat(SagaMetadata.TransitionOutcome.values())
+                .containsExactly(
+                        SagaMetadata.TransitionOutcome.SUCCESS,
+                        SagaMetadata.TransitionOutcome.FAILURE,
+                        SagaMetadata.TransitionOutcome.TIMEOUT,
+                        SagaMetadata.TransitionOutcome.COMPENSATED);
+    }
+
+    @Test
+    void effectiveKindReturnsExplicitKindWhenSet() {
+        SagaStepMetadata step = SagaStepMetadata.builder("await", 0)
+                .kind(SagaStepMetadata.StepKind.AWAIT_TIMER)
+                .build();
+        assertThat(step.kind()).isEqualTo(SagaStepMetadata.StepKind.AWAIT_TIMER);
+        assertThat(step.effectiveKind()).isEqualTo(SagaStepMetadata.StepKind.AWAIT_TIMER);
+    }
+
+    @Test
+    void effectiveKindInfersFromStructureWhenUnset() {
+        // forward command → INVOKE
+        assertThat(SagaStepMetadata.simple("charge", 0, "ChargeCard").effectiveKind())
+                .isEqualTo(SagaStepMetadata.StepKind.INVOKE);
+        // target service only → INVOKE
+        assertThat(SagaStepMetadata.builder("call", 0).service("payments").build().effectiveKind())
+                .isEqualTo(SagaStepMetadata.StepKind.INVOKE);
+        // compensation only → COMPENSATE
+        assertThat(SagaStepMetadata.builder("undo", 0).compensation("RefundCard").build().effectiveKind())
+                .isEqualTo(SagaStepMetadata.StepKind.COMPENSATE);
+        // a bare step (no command/service/compensation) cannot be inferred → null
+        assertThat(SagaStepMetadata.builder("bare", 0).build().effectiveKind()).isNull();
+        // a blank command is not a forward command
+        assertThat(SagaStepMetadata.builder("blank", 0).command("   ").build().effectiveKind()).isNull();
+    }
+
+    @Test
+    void transitionFactoriesSetOutcomeAndLeaveGuardNull() {
+        assertThat(SagaMetadata.SagaTransition.success("a", "b").on())
+                .isEqualTo(SagaMetadata.TransitionOutcome.SUCCESS);
+        assertThat(SagaMetadata.SagaTransition.failure("a", "b").on())
+                .isEqualTo(SagaMetadata.TransitionOutcome.FAILURE);
+        assertThat(SagaMetadata.SagaTransition.timeout("a", "b").on())
+                .isEqualTo(SagaMetadata.TransitionOutcome.TIMEOUT);
+        SagaMetadata.SagaTransition t = SagaMetadata.SagaTransition.on("a", "b",
+                SagaMetadata.TransitionOutcome.COMPENSATED);
+        assertThat(t.on()).isEqualTo(SagaMetadata.TransitionOutcome.COMPENSATED);
+        assertThat(t.guard()).isNull();
+        assertThat(t.hasGuard()).isFalse();
+        assertThat(t.isTerminal()).isFalse();
+    }
+
+    @Test
+    void transitionCompactConstructorNormalizes() {
+        // null outcome defaults to SUCCESS
+        assertThat(new SagaMetadata.SagaTransition("a", "b", null, null).on())
+                .isEqualTo(SagaMetadata.TransitionOutcome.SUCCESS);
+        // blank guard normalizes to null
+        assertThat(new SagaMetadata.SagaTransition("a", "b", SagaMetadata.TransitionOutcome.SUCCESS, "   ").guard())
+                .isNull();
+        // non-blank guard kept; hasGuard true
+        SagaMetadata.SagaTransition guarded =
+                new SagaMetadata.SagaTransition("a", "b", SagaMetadata.TransitionOutcome.FAILURE, "state.retryable");
+        assertThat(guarded.guard()).isEqualTo("state.retryable");
+        assertThat(guarded.hasGuard()).isTrue();
+        // null / blank target is terminal
+        assertThat(SagaMetadata.SagaTransition.on("a", null, SagaMetadata.TransitionOutcome.COMPENSATED).isTerminal())
+                .isTrue();
+        assertThat(SagaMetadata.SagaTransition.on("a", "   ", SagaMetadata.TransitionOutcome.SUCCESS).isTerminal())
+                .isTrue();
+        // from is required
+        assertThatThrownBy(() -> new SagaMetadata.SagaTransition(null, "b",
+                SagaMetadata.TransitionOutcome.SUCCESS, null))
+                .isInstanceOf(NullPointerException.class).hasMessageContaining("from");
+    }
+
+    @Test
+    void sagaTransitionsNormalizeAndCopyDefensively() {
+        // simple() and a null positional both yield an empty, present list
+        assertThat(SagaMetadata.simple("S").transitions()).isEmpty();
+        assertThat(SagaMetadata.simple("S").hasTransitions()).isFalse();
+        SagaMetadata nullTransitions = new SagaMetadata("S", null, 1, List.of(),
+                SagaMetadata.CompensationStrategy.ALL_OR_NOTHING, SagaMetadata.CompensationOrder.REVERSE,
+                "PT30M", "PT10M", 3, "PT1S", null, true, null, List.of(), null, null);
+        assertThat(nullTransitions.transitions()).isEmpty();
+
+        // builder defensively copies — mutating the source list afterwards does not leak in
+        List<SagaMetadata.SagaTransition> src = new ArrayList<>();
+        src.add(SagaMetadata.SagaTransition.success("a", "b"));
+        SagaMetadata s = SagaMetadata.builder("S").transitions(src).build();
+        src.add(SagaMetadata.SagaTransition.failure("b", "a"));
+        assertThat(s.transitions()).hasSize(1);
     }
 }
