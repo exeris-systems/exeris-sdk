@@ -274,6 +274,10 @@ class SagaMetadataTest {
         // compensation only → COMPENSATE
         assertThat(SagaStepMetadata.builder("undo", 0).compensation("RefundCard").build().effectiveKind())
                 .isEqualTo(SagaStepMetadata.StepKind.COMPENSATE);
+        // forward command AND compensation (the common saga shape) → INVOKE (forward wins)
+        assertThat(SagaStepMetadata.builder("reserve", 0)
+                .command("ReserveInventory").compensation("ReleaseInventory").build().effectiveKind())
+                .isEqualTo(SagaStepMetadata.StepKind.INVOKE);
         // a bare step (no command/service/compensation) cannot be inferred → null
         assertThat(SagaStepMetadata.builder("bare", 0).build().effectiveKind()).isNull();
         // a blank command is not a forward command
@@ -288,7 +292,7 @@ class SagaMetadataTest {
                 .isEqualTo(SagaMetadata.TransitionOutcome.FAILURE);
         assertThat(SagaMetadata.SagaTransition.timeout("a", "b").on())
                 .isEqualTo(SagaMetadata.TransitionOutcome.TIMEOUT);
-        SagaMetadata.SagaTransition t = SagaMetadata.SagaTransition.on("a", "b",
+        SagaMetadata.SagaTransition t = SagaMetadata.SagaTransition.ofOutcome("a", "b",
                 SagaMetadata.TransitionOutcome.COMPENSATED);
         assertThat(t.on()).isEqualTo(SagaMetadata.TransitionOutcome.COMPENSATED);
         assertThat(t.guard()).isNull();
@@ -309,15 +313,21 @@ class SagaMetadataTest {
                 new SagaMetadata.SagaTransition("a", "b", SagaMetadata.TransitionOutcome.FAILURE, "state.retryable");
         assertThat(guarded.guard()).isEqualTo("state.retryable");
         assertThat(guarded.hasGuard()).isTrue();
-        // null / blank target is terminal
-        assertThat(SagaMetadata.SagaTransition.on("a", null, SagaMetadata.TransitionOutcome.COMPENSATED).isTerminal())
+        // null target is terminal
+        assertThat(SagaMetadata.SagaTransition.ofOutcome("a", null, SagaMetadata.TransitionOutcome.COMPENSATED).isTerminal())
                 .isTrue();
-        assertThat(SagaMetadata.SagaTransition.on("a", "   ", SagaMetadata.TransitionOutcome.SUCCESS).isTerminal())
-                .isTrue();
-        // from is required
+        // blank target normalizes to null (terminal on the wire, not a whitespace string)
+        SagaMetadata.SagaTransition blankTarget =
+                SagaMetadata.SagaTransition.ofOutcome("a", "   ", SagaMetadata.TransitionOutcome.SUCCESS);
+        assertThat(blankTarget.to()).isNull();
+        assertThat(blankTarget.isTerminal()).isTrue();
+        // from is required (non-null and non-blank)
         assertThatThrownBy(() -> new SagaMetadata.SagaTransition(null, "b",
                 SagaMetadata.TransitionOutcome.SUCCESS, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("from");
+        assertThatThrownBy(() -> new SagaMetadata.SagaTransition("   ", "b",
+                SagaMetadata.TransitionOutcome.SUCCESS, null))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("from");
     }
 
     @Test

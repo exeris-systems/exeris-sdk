@@ -72,8 +72,9 @@ branch fires on. 0.7.0 grows both into an outcome-edged state-machine graph.
   (`List<SagaTransition>`); `SagaTransition(from, to, on, guard)` carries a
   `TransitionOutcome` (`SUCCESS`/`FAILURE`/`TIMEOUT`/`COMPENSATED`), a null/blank
   `to` marks a terminal edge, and an optional SpEL `guard` narrows the edge. New
-  `hasTransitions()`, factories (`success`/`failure`/`timeout`/`on`), and a
-  compact constructor normalizing `transitions` null → empty (defensive copy).
+  `hasTransitions()`, factories (`success`/`failure`/`timeout`/`ofOutcome`), and a
+  compact constructor normalizing `transitions` null → empty (defensive copy),
+  `SagaTransition` blank `to`/`guard` → null and rejecting a null/blank `from`.
 
 **Impact:** both components are **appended at the end** of their records, so the
 all-args constructor *arity* grew but existing positional prefixes are unchanged

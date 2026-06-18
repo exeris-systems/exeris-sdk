@@ -301,11 +301,27 @@ class AstJsonRoundTripTest {
                         SagaMetadata.SagaTransition.success("reserve", "charge"),
                         new SagaMetadata.SagaTransition("charge", "reserve",
                                 SagaMetadata.TransitionOutcome.FAILURE, "state.retryable"),
-                        SagaMetadata.SagaTransition.on("charge", null,
+                        SagaMetadata.SagaTransition.ofOutcome("charge", null,
                                 SagaMetadata.TransitionOutcome.COMPENSATED)))
                 .build();
 
         assertRoundTrip(original, SagaMetadata.class);
+    }
+
+    @Test
+    @DisplayName("SagaTransition omits a normalized-away blank target on the wire")
+    void sagaTransitionBlankTargetOmittedFromJson() {
+        // Regression (PR #61): a blank `to` must normalize to null so the key is
+        // absent on the wire (NON_NULL), not serialized as the whitespace string
+        // "to": "   " that a downstream `to == null` check would miss.
+        String json;
+        try {
+            json = mapper.writeValueAsString(SagaMetadata.SagaTransition.ofOutcome(
+                    "charge", "   ", SagaMetadata.TransitionOutcome.COMPENSATED));
+        } catch (Exception e) {
+            throw new AssertionError("serialize failed: " + e.getMessage(), e);
+        }
+        assertThat(json).contains("\"from\"").doesNotContain("\"to\"");
     }
 
     @Test

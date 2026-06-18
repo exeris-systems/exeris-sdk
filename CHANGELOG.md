@@ -37,7 +37,7 @@ for per-version upgrade steps.
   inferring `effectiveKind()`, and `SagaMetadata` grew `transitions`
   (`SagaTransition` edges = `from` → `to` `on` a `TransitionOutcome` of
   SUCCESS / FAILURE / TIMEOUT / COMPENSATED, optional SpEL `guard`, terminal on
-  null `to`), with `hasTransitions`, `success`/`failure`/`timeout`/`on`
+  null `to`), with `hasTransitions`, `success`/`failure`/`timeout`/`ofOutcome`
   factories, and normalization. Promotes the step list + `dependsOn` DAG into an
   outcome-edged state-machine graph; AST-owned enums (zero-coupling). Both
   components appended at the end (constructor arity grew). Shares the `"0.7.0"`
