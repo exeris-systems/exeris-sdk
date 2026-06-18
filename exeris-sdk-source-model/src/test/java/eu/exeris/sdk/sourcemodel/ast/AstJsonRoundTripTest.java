@@ -66,6 +66,11 @@ class AstJsonRoundTripTest {
                         RelationshipMetadata.builder("customer", "Customer")
                                 .type(RelationshipMetadata.RelationType.MANY_TO_ONE)
                                 .build()))
+                .rules(List.of(
+                        RuleMetadata.of("hasLineItems", "lineItems.size() > 0"),
+                        new RuleMetadata("discountNeedsApproval",
+                                "discount <= 0 or approvedBy != null",
+                                "order.rule.discountNeedsApproval", "WARN", "spel")))
                 .build();
 
         assertRoundTrip(original, DomainMetadata.class);
@@ -97,9 +102,31 @@ class AstJsonRoundTripTest {
                 .dataType("currency")
                 .displayNameKey("order.field.amount.label")
                 .descriptionKey("order.field.amount.help")
+                .derived(DerivedMetadata.of("unitPrice * quantity", List.of("unitPrice", "quantity")))
                 .build();
 
         assertRoundTrip(original, FieldMetadata.class);
+    }
+
+    @Test
+    @DisplayName("DerivedMetadata round-trips (full + minimal)")
+    void derivedMetadataRoundTrips() {
+        // Full: explicit language + cross-aggregate dependency path.
+        assertRoundTrip(new DerivedMetadata("customer.tier == 'GOLD' ? 0.1 : 0", "jexl",
+                List.of("customer.tier")), DerivedMetadata.class);
+        // Minimal: default language (null on the wire), no dependencies.
+        assertRoundTrip(DerivedMetadata.of("unitPrice * quantity"), DerivedMetadata.class);
+    }
+
+    @Test
+    @DisplayName("RuleMetadata round-trips (full + minimal)")
+    void ruleMetadataRoundTrips() {
+        // Full: message + non-default severity + explicit language.
+        assertRoundTrip(new RuleMetadata("discountNeedsApproval",
+                "discount <= 0 or approvedBy != null", "order.rule.discountNeedsApproval",
+                "WARN", "spel"), RuleMetadata.class);
+        // Minimal: default severity / language (null on the wire).
+        assertRoundTrip(RuleMetadata.of("hasLineItems", "lineItems.size() > 0"), RuleMetadata.class);
     }
 
     @Test

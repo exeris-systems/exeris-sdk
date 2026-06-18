@@ -99,7 +99,10 @@ public record DomainMetadata(
         @JsonProperty("sagaMetadata") SagaMetadata sagaMetadata,
         @JsonProperty("eventSourced") EventSourcedMetadata eventSourced,
         @JsonProperty("internalApi") InternalApiMetadata internalApi,
-        @JsonProperty("systemFields") SystemFieldsMetadata systemFields
+        @JsonProperty("systemFields") SystemFieldsMetadata systemFields,
+
+        // Declarative behaviour (0.7.0): entity-level @Rule invariants. See RFC-2026-06-18.
+        @JsonProperty("rules") List<RuleMetadata> rules
 ) {
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -174,6 +177,10 @@ public record DomainMetadata(
 
     public boolean hasEventHandlers() {
         return eventHandlers != null && !eventHandlers.isEmpty();
+    }
+
+    public boolean hasRules() {
+        return rules != null && !rules.isEmpty();
     }
 
     public boolean hasRelationships() {
@@ -258,6 +265,7 @@ public record DomainMetadata(
         private List<RelationshipMetadata> relationships = List.of();
         private List<ProjectionMetadata> projections = List.of();
         private List<EventHandlerMetadata> eventHandlers = List.of();
+        private List<RuleMetadata> rules = List.of();
         private UIMetadata uiMetadata = null;
         private GraphMetadata graphMetadata = null;
         private SagaMetadata sagaMetadata = null;
@@ -299,6 +307,7 @@ public record DomainMetadata(
         public Builder relationships(List<RelationshipMetadata> v) { this.relationships = v; return this; }
         public Builder projections(List<ProjectionMetadata> v) { this.projections = v; return this; }
         public Builder eventHandlers(List<EventHandlerMetadata> v) { this.eventHandlers = v; return this; }
+        public Builder rules(List<RuleMetadata> v) { this.rules = v; return this; }
         public Builder uiMetadata(UIMetadata v) { this.uiMetadata = v; return this; }
         public Builder graphMetadata(GraphMetadata v) { this.graphMetadata = v; return this; }
         public Builder sagaMetadata(SagaMetadata v) { this.sagaMetadata = v; return this; }
@@ -316,7 +325,8 @@ public record DomainMetadata(
                     fullTextSearch, searchConfig,
                     tableName,
                     fields, actions, events, relationships, projections, eventHandlers,
-                    uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields
+                    uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields,
+                    rules
             );
         }
     }
