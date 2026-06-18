@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-task-classifier
-description: Router/Planner triage skill for exeris-sdk. Classifies task type (annotation contract / AST wire-format / UI kit / stability / docs / publish-readiness), scope, severity, and recommends primary agent.
+description: Triage skill for exeris-sdk — use FIRST on any non-trivial SDK task, before editing annotations, AST records, UI kit, poms, or docs. Classifies task type (annotation contract / AST wire-format / UI kit / stability / docs / publish-readiness), scope, and severity, and routes to the right specialist agent.
 ---
 
 # Exeris SDK Task Classifier
@@ -8,8 +8,13 @@ description: Router/Planner triage skill for exeris-sdk. Classifies task type (a
 ## Purpose
 Classify incoming work before execution. Triage only — no implementation.
 
+## When to Use
+- At the START of any non-trivial exeris-sdk task, before any edit.
+- Whenever a request could plausibly touch more than one module or concern.
+- Skip for a single-file, already-scoped, one-line change.
+
 ## Output Contract
-1. `task_class` (`ANNOTATION_CONTRACT` | `AST_WIRE_FORMAT` | `UI_KIT` | `STABILITY_DEPRECATION` | `DOCS_ADR` | `PUBLISH_READINESS` | `MULTI_DOMAIN`)
+1. `task_class` (`ANNOTATION_CONTRACT` | `AST_WIRE_FORMAT` | `UI_KIT` | `STABILITY_DEPRECATION` | `DOCS_ADR` | `PUBLISH_READINESS` | `BUILD_INVARIANTS` | `MULTI_DOMAIN`)
 2. `scope` (single-module | cross-module | npm-only | cross-repo downstream impact)
 3. `severity` (low | medium | high | critical)
 4. `primary_risk`
@@ -22,7 +27,18 @@ Classify incoming work before execution. Triage only — no implementation.
 - `STABILITY_DEPRECATION`: public-API removal / rename; deprecation pipeline application.
 - `DOCS_ADR`: `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003.
 - `PUBLISH_READINESS`: Sonatype Central Portal, POM metadata, sources/javadoc attachments, version bump.
+- `BUILD_INVARIANTS`: `maven.compiler.release` (JDK 26 floor), `jacoco-maven-plugin` version, reactor `<modules>`, root/parent build-plugin config.
 - `MULTI_DOMAIN`: ≥2 first-order concerns.
+
+## Review Skill per Class
+After classifying, fire the matching enforcement skill (these are the canonical guardrails):
+- `ANNOTATION_CONTRACT` → `exeris-sdk-annotation-contract-review` (+ `exeris-sdk-zero-runtime-coupling-review` if imports/deps change).
+- `AST_WIRE_FORMAT` → `exeris-sdk-ast-jackson-contract-review` (+ `exeris-sdk-coverage-gates-review` for test placement).
+- `STABILITY_DEPRECATION` → `exeris-sdk-deprecation-pipeline-review`; if `@Field`/`@Validation` scoped → also `exeris-sdk-field-validation-scoping-review`.
+- `UI_KIT` → `exeris-sdk-coverage-gates-review`.
+- `PUBLISH_READINESS` → `exeris-sdk-publish-readiness-review`.
+- `BUILD_INVARIANTS` → `exeris-sdk-build-invariants-review`.
+- Any new dep / import (any class) → `exeris-sdk-zero-runtime-coupling-review`.
 
 ## Guardrails
 - Preserve zero runtime coupling.

@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-ast-jackson-contract-review
-description: AST + Jackson 3 wire-format contract review for exeris-sdk. Use on every PR touching `eu.exeris.sdk.sourcemodel.ast.*` or Jackson configuration.
+description: AST + Jackson 3 wire-format contract review for exeris-sdk. Use whenever you add/change/remove an AST record under `eu.exeris.sdk.sourcemodel.ast.*`, touch Jackson config (`@JsonInclude`, serializers/deserializers), or bump `jackson-annotations` / `jackson.version` in the BOM — during editing, not only at PR review.
 ---
 
 # Exeris SDK AST + Jackson 3 Wire-Format Contract Review
@@ -9,10 +9,10 @@ description: AST + Jackson 3 wire-format contract review for exeris-sdk. Use on 
 Enforce the wire-format contract that ties together processor (Repo `exeris-tooling`), codegen (same), LSP (Repo `exeris-platform`), and future consumers: AST types are records (Jackson 3 silently drops fields on classes with record-style accessors); `FAIL_ON_NULL_FOR_PRIMITIVES=false` is the consumer contract; `@JsonInclude(NON_DEFAULT)` boxed-zero hazard avoided; `jackson-annotations` pinned to 2.21.
 
 ## When to Use
-- Any PR adding / removing / changing AST records under `eu.exeris.sdk.sourcemodel.ast.*`.
-- Any PR touching Jackson configuration (`@JsonInclude`, custom serializer / deserializer).
-- Any PR touching `jackson-annotations` version in BOM.
-- Any PR adding `@JsonInclude(NON_DEFAULT)` to a new boxed-numeric field.
+- Any change or PR adding / removing / changing AST records under `eu.exeris.sdk.sourcemodel.ast.*`.
+- Any change or PR touching Jackson configuration (`@JsonInclude`, custom serializer / deserializer).
+- Any change or PR touching `jackson-annotations` version in BOM.
+- Any change or PR adding `@JsonInclude(NON_DEFAULT)` to a new boxed-numeric field.
 
 ## Required Inputs
 - PR diff scoped to AST + Jackson config.

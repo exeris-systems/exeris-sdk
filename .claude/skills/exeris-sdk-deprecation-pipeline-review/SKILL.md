@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-deprecation-pipeline-review
-description: Deprecation pipeline review for exeris-sdk. Use whenever public API (annotation, AST record, attribute, public method) is removed or renamed.
+description: Deprecation pipeline review for exeris-sdk. Use whenever public API (annotation, AST record, attribute, public method) is removed, renamed, or moved between canonical annotations (e.g. `@Validation.X` → `@Field.X`).
 ---
 
 # Exeris SDK Deprecation Pipeline Review
@@ -9,11 +9,11 @@ description: Deprecation pipeline review for exeris-sdk. Use whenever public API
 Enforce: removing or renaming public API requires `@Deprecated(forRemoval = true)` + canonical replacement in javadoc + processor fallback-with-warning for ≥ 1 minor release + `MIGRATION.md` entry. Downstream consumers pin exact 0.x versions; the deprecation window is what gives them a safe upgrade path.
 
 ## When to Use
-- Any PR removing a public `@interface` from `exeris-sdk-annotations`.
-- Any PR removing / renaming an attribute on a public annotation.
-- Any PR removing / renaming a public AST record or component.
-- Any PR removing / renaming a public method on an AST record.
-- Any PR moving an attribute from one canonical location to another (e.g. `@Validation.X` → `@Field.X`).
+- Any change or PR removing a public `@interface` from `exeris-sdk-annotations`.
+- Any change or PR removing / renaming an attribute on a public annotation.
+- Any change or PR removing / renaming a public AST record or component.
+- Any change or PR removing / renaming a public method on an AST record.
+- Any change or PR moving an attribute from one canonical location to another (e.g. `@Validation.X` → `@Field.X`).
 
 ## Required Inputs
 - PR diff scoped to public-API surface.
