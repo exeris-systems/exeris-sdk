@@ -85,6 +85,32 @@ path. All additions are by-name on the wire (an old baseline reads `kind` back
 `null` and `transitions` back empty); both enums are AST-owned (no annotation
 dependency).
 
+### Declarative-behaviour AST records (`DerivedMetadata` / `RuleMetadata`)
+
+**Why:** the declarative-behaviour layer (RFC-2026-06-18) needs the AST to carry
+`@Derived` / `@Rule` so a domain can author the declarative form. Two new records
+plus two trailing facets:
+
+- **`DerivedMetadata(expression, language, dependsOn)`** — a new `FieldMetadata`
+  facet: `FieldMetadata` gains a trailing `derived` component (+ `.derived(...)`
+  builder setter, `hasDerived()`). `language` blank → null (`effectiveLanguage()`
+  ⇒ `"spel"`); `dependsOn` null → empty (defensive copy); entries may be sibling
+  field names or related-entity paths.
+- **`RuleMetadata(name, expression, message, severity, language)`** — a new
+  `DomainMetadata.rules` list (+ `.rules(...)` builder setter, `hasRules()`).
+  Blank `message` / `severity` / `language` → null; the consumer applies the
+  semantic default (`effectiveSeverity()` ⇒ `"ERROR"`, `effectiveLanguage()` ⇒
+  `"spel"`).
+
+**Impact:** both facets are **appended at the end** of `FieldMetadata` /
+`DomainMetadata`, so the all-args constructor *arity* grew (positional callers add
+one trailing argument — `null` is fine) while existing prefixes are unchanged.
+Builders and factories are the unaffected path. Additive / by-name on the wire
+(an old baseline reads `derived` back `null`, `rules` back empty). Shares the
+`"0.7.0"` schema (same release). The `-io` reader does not populate these yet
+(reader↔processor parity); processor extraction + codegen are the `exeris-tooling`
+follow-up.
+
 ---
 
 ## 0.5.x → 0.6.x

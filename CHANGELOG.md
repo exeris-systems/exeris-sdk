@@ -43,6 +43,16 @@ for per-version upgrade steps.
   components appended at the end (constructor arity grew). Shares the `"0.7.0"`
   schema (same release as the projection growth). See
   [`MIGRATION.md`](MIGRATION.md#06x--07x).
+- **Declarative-behaviour layer (`@Derived` / `@Rule`)** — RFC-2026-06-18
+  (ACCEPTED). Annotations `@Derived` / `@Rule` / `@Rules` in
+  `exeris-sdk-annotations`, and AST records `DerivedMetadata` (a `FieldMetadata`
+  facet via `derived`) + `RuleMetadata` (a `DomainMetadata.rules` list).
+  Expression stored verbatim + `language` tag (default `"spel"`); `@Rule`
+  `severity` default `"ERROR"`; blank → null normalization; `dependsOn` allows
+  related-entity paths. Both facets appended at the end (constructor arity grew);
+  shares the `"0.7.0"` schema. Shipped reserved — no processor extraction /
+  codegen consumes them yet (the `-io` reader stays in parity); generation is the
+  `exeris-tooling` follow-up. See [`MIGRATION.md`](MIGRATION.md#06x--07x).
 
 ## [0.6.0] — 2026-06-17
 

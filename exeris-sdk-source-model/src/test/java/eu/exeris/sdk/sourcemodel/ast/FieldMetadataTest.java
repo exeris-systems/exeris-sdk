@@ -15,7 +15,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new FieldMetadata(null, "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
@@ -23,7 +23,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullType() {
         assertThatThrownBy(() -> new FieldMetadata("amount", null, null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 
@@ -31,7 +31,7 @@ class FieldMetadataTest {
     void compactConstructorDefaultsNullComputedFromToEmptyList() {
         FieldMetadata f = new FieldMetadata("a", "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null);
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null);
         assertThat(f.computedFrom()).isNotNull().isEmpty();
     }
 

@@ -161,6 +161,31 @@
  * coordinated {@code exeris-tooling} work (RFC-worthy) — the SDK supplies only
  * the record the state machine serializes into.
  *
+ * <h2>Declarative behaviour — derived fields + rules (0.7.0)</h2>
+ * <p>The declarative-behaviour layer lets a domain declare the <em>mechanical</em>
+ * slice of behaviour the AST otherwise can't describe:
+ * <ul>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.DerivedMetadata}</strong> — a
+ *       {@code FieldMetadata} facet ({@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata#derived()},
+ *       like {@code dataType}) for a {@code @Derived} field/value computed from
+ *       others (roll-up / formula). Carries the {@code expression}, a
+ *       {@code language} tag, and {@code dependsOn} hints (sibling field names or
+ *       related-entity paths).</li>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.RuleMetadata}</strong> — a
+ *       {@code DomainMetadata.rules} list entry for a {@code @Rule} named invariant
+ *       ({@code name}, {@code expression}, {@code message}, {@code severity}).</li>
+ * </ul>
+ * <p>Expressions are stored verbatim and tagged by {@code language}; the AST
+ * interprets neither (zero runtime coupling). Defaulted attributes follow the
+ * blank → {@code null} discipline under {@code @JsonInclude} and the consumer
+ * applies the semantic default ({@code effectiveLanguage()} ⇒ {@code "spel"},
+ * {@code RuleMetadata.effectiveSeverity()} ⇒ {@code "ERROR"}), so the common case
+ * carries neither on the wire. As with the other behaviour facets, this is
+ * reader↔processor-parity-neutral: the {@code -io} reader does <em>not</em>
+ * populate {@code derived} / {@code rules} yet, and the {@code @Derived} /
+ * {@code @Rule} processor extraction + codegen are coordinated
+ * {@code exeris-tooling} work. See {@code RFC-2026-06-18}.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

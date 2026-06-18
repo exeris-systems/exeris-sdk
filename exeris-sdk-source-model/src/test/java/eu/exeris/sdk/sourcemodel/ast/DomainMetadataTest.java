@@ -144,11 +144,12 @@ class DomainMetadataTest {
             DomainMetadata nullLists = new DomainMetadata("Order", "p", "", "", "", "", "v1",
                     null, true, false, false, false, false, false, false, false,
                     null, null, false, false, "PT5M", "", false, "english", null,
-                    null, null, null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null, null, null);
             assertThat(nullLists.hasFields()).isFalse();
             assertThat(nullLists.hasActions()).isFalse();
             assertThat(nullLists.hasEvents()).isFalse();
             assertThat(nullLists.hasEventHandlers()).isFalse();
+            assertThat(nullLists.hasRules()).isFalse();
             assertThat(nullLists.hasRelationships()).isFalse();
         }
     }
@@ -213,7 +214,7 @@ class DomainMetadataTest {
             DomainMetadata d = new DomainMetadata("Order", "p", "", "", "", "", "v1",
                     List.of(), true, false, false, false, false, false, false, false,
                     List.of(), List.of(), false, false, "PT5M", "", false, "english", null,
-                    null, null, null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null, null, null);
             assertThat(d.findField("anything")).isEmpty();
         }
     }

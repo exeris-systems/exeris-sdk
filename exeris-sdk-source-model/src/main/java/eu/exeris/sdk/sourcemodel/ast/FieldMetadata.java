@@ -47,7 +47,10 @@ public record FieldMetadata(
         // when present, the key resolves against the app message bundle and the
         // literal displayName / description is the fallback text. Null when unset.
         String displayNameKey,
-        String descriptionKey
+        String descriptionKey,
+        // Declarative derivation (0.7.0): present when the field carries a
+        // @Derived expression; null for an ordinary stored field. See RFC-2026-06-18.
+        DerivedMetadata derived
 ) {
 
     public FieldMetadata {
@@ -82,6 +85,9 @@ public record FieldMetadata(
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
     }
+
+    @JsonIgnore
+    public boolean hasDerived() { return derived != null; }
 
     @JsonIgnore
     public boolean isEnum() { return enumType != null && !enumType.isBlank(); }
@@ -132,6 +138,7 @@ public record FieldMetadata(
         private boolean inUpdate = true;
         private String displayNameKey;
         private String descriptionKey;
+        private DerivedMetadata derived;
 
         private Builder(String name, String type) {
             this.name = name;
@@ -170,12 +177,13 @@ public record FieldMetadata(
         // do not survive as ""-valued keys under @JsonInclude(NON_DEFAULT).
         public Builder displayNameKey(String v) { this.displayNameKey = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder descriptionKey(String v) { this.descriptionKey = (v == null || v.isBlank()) ? null : v; return this; }
+        public Builder derived(DerivedMetadata v) { this.derived = v; return this; }
 
         public FieldMetadata build() {
             return new FieldMetadata(name, type, columnName, displayName, description, required, unique,
                     indexed, searchable, sortable, filterable, audited, readOnly, hidden, defaultValue,
                     minLength, maxLength, min, max, pattern, format, dataType, enumType, computed, computedFrom,
-                    inCreate, inUpdate, displayNameKey, descriptionKey);
+                    inCreate, inUpdate, displayNameKey, descriptionKey, derived);
         }
     }
 }
