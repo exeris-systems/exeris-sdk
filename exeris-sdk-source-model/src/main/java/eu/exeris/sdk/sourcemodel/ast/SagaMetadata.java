@@ -142,8 +142,14 @@ public record SagaMetadata(
     ) {
         public SagaTransition {
             Objects.requireNonNull(from, "from");
+            if (from.isBlank()) {
+                throw new IllegalArgumentException("from must not be blank");
+            }
             if (on == null) {
                 on = TransitionOutcome.SUCCESS;
+            }
+            if (to != null && to.isBlank()) {
+                to = null;
             }
             if (guard != null && guard.isBlank()) {
                 guard = null;
@@ -151,7 +157,7 @@ public record SagaMetadata(
         }
 
         /** An edge firing on {@code outcome} from {@code from} to {@code to}. */
-        public static SagaTransition on(String from, String to, TransitionOutcome outcome) {
+        public static SagaTransition ofOutcome(String from, String to, TransitionOutcome outcome) {
             return new SagaTransition(from, to, outcome, null);
         }
 

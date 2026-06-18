@@ -301,7 +301,7 @@ class AstJsonRoundTripTest {
                         SagaMetadata.SagaTransition.success("reserve", "charge"),
                         new SagaMetadata.SagaTransition("charge", "reserve",
                                 SagaMetadata.TransitionOutcome.FAILURE, "state.retryable"),
-                        SagaMetadata.SagaTransition.on("charge", null,
+                        SagaMetadata.SagaTransition.ofOutcome("charge", null,
                                 SagaMetadata.TransitionOutcome.COMPENSATED)))
                 .build();
 
