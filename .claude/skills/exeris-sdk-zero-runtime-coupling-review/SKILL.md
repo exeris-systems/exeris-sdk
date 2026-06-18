@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-zero-runtime-coupling-review
-description: Zero runtime coupling review for exeris-sdk. Use on every PR adding deps in any module pom OR adding any new import in any source file.
+description: Zero runtime coupling review for exeris-sdk. Use whenever you add a dependency to any module pom (annotations / source-model / bom / parent) or add a new import in any Java/TS source file — catches kernel / tooling / platform / framework leakage into the upstream-most repo.
 ---
 
 # Exeris SDK Zero Runtime Coupling Review
@@ -9,10 +9,10 @@ description: Zero runtime coupling review for exeris-sdk. Use on every PR adding
 Enforce: this is the most upstream Exeris repo. Nothing here depends on kernel, tooling, or platform — even transitively. Annotations are `@Retention(SOURCE)` and the annotations module has no compile-time deps; the source-model module only pulls `jackson-annotations`.
 
 ## When to Use
-- Any PR adding / removing / changing deps in `exeris-sdk-annotations/pom.xml`.
-- Any PR adding / removing / changing deps in `exeris-sdk-source-model/pom.xml`.
-- Any PR touching `exeris-sdk-bom/pom.xml` or `exeris-sdk-parent/pom.xml`.
-- Any PR adding new imports in any source file (Java or TS).
+- Any change or PR adding / removing / changing deps in `exeris-sdk-annotations/pom.xml`.
+- Any change or PR adding / removing / changing deps in `exeris-sdk-source-model/pom.xml`.
+- Any change or PR touching `exeris-sdk-bom/pom.xml` or `exeris-sdk-parent/pom.xml`.
+- Any change or PR adding new imports in any source file (Java or TS).
 
 ## Required Inputs
 - PR diff.

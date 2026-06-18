@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-field-validation-scoping-review
-description: Field/Validation canonical scoping review for exeris-sdk. Use whenever `@Field` or `@Validation` attributes are touched, or when processor-derived properties (`notNull`, `notBlank`) are in scope.
+description: Field/Validation canonical scoping review for exeris-sdk. Use whenever `@Field` or `@Validation` attributes (or the `FieldMetadata` / `ValidationMetadata` AST records) are touched, or when processor-derived properties (`notNull`, `notBlank`) are in scope.
 ---
 
 # Exeris SDK Field/Validation Canonical Scoping Review
@@ -11,11 +11,11 @@ Enforce: `@Field` owns field-shape + lifecycle (`required`, `inCreate`, `inUpdat
 This is the single most likely regression surface in the repo.
 
 ## When to Use
-- Any PR adding / removing / moving attributes on `@Field`.
-- Any PR adding / removing / moving attributes on `@Validation`.
-- Any PR touching `FieldMetadata` or `ValidationMetadata` AST records.
-- Any PR touching processor-derived properties (`notNull`, `notBlank` ← `required`).
-- Any PR touching either of the two package-info files.
+- Any change or PR adding / removing / moving attributes on `@Field`.
+- Any change or PR adding / removing / moving attributes on `@Validation`.
+- Any change or PR touching `FieldMetadata` or `ValidationMetadata` AST records.
+- Any change or PR touching processor-derived properties (`notNull`, `notBlank` ← `required`).
+- Any change or PR touching either of the two package-info files.
 
 ## Required Inputs
 - PR diff.
