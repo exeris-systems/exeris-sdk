@@ -12,9 +12,16 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. Only `0.6.0` has a release tag / link.
+> are when each milestone landed. `0.6.0` and `0.7.0` are tagged releases (with
+> links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.7.0] — 2026-06-18
+
+The AST-expressiveness milestone — the SDK side of behaviour / choreography /
+topology modeling is complete: projection source / read-model framing, the JVM
+method behind `@Action`, the saga state machine, and the declarative
+`@Derived` / `@Rule` layer. All additions are wire-additive on the `"0.7.0"`
+schema; downstream generation of the new surfaces is `exeris-tooling` work.
 
 ### Changed
 - **`SchemaVersion.CURRENT`** bumped `"0.6.0"` → `"0.7.0"` to name the
@@ -32,6 +39,11 @@ for per-version upgrade steps.
   consistency / monitoring / query API) is deferred. Canonical constructor
   changed arity + order — prefer the builder / factories. See
   [`MIGRATION.md`](MIGRATION.md#06x--07x).
+- **`ActionMetadata.methodName`** — the JVM method behind an `@Action`, distinct
+  from the `@Action(name)` identity, with `effectiveMethodName()` falling back to
+  the action name. Unlike the other 0.7.0 additions it **is** populated by the
+  `-io` reader (the writer keys on the effective action name, so no write-path
+  divergence). Appended at the end of the record.
 - **Saga step `kind` + typed transitions** — `SagaStepMetadata` grew `kind`
   (`StepKind` = INVOKE / COMPENSATE / AWAIT_EVENT / AWAIT_TIMER) with an
   inferring `effectiveKind()`, and `SagaMetadata` grew `transitions`
@@ -139,4 +151,5 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.7.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.7.0
 [0.6.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.6.0
