@@ -176,11 +176,19 @@ public record SagaMetadata(
             return new SagaTransition(from, to, TransitionOutcome.TIMEOUT, null);
         }
 
-        /** Whether this edge is terminal (no target step — saga end / abort). */
-        public boolean isTerminal() { return to == null || to.isBlank(); }
+        /**
+         * Whether this edge is terminal (no target step — saga end / abort).
+         * The compact constructor normalizes a blank {@code to} to {@code null},
+         * so the terminal invariant is exactly {@code to == null}.
+         */
+        public boolean isTerminal() { return to == null; }
 
-        /** Whether this edge carries a guard condition. */
-        public boolean hasGuard() { return guard != null && !guard.isBlank(); }
+        /**
+         * Whether this edge carries a guard condition. The compact constructor
+         * normalizes a blank {@code guard} to {@code null}, so a present
+         * {@code guard} is always non-blank.
+         */
+        public boolean hasGuard() { return guard != null; }
     }
 
     /**
