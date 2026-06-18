@@ -128,6 +128,39 @@
  * as source-written {@code String} names, the same zero-coupling discipline as
  * the capability and event-handler records.
  *
+ * <h2>Saga step kind + typed transitions (0.7.0)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata} was already a rich
+ * step descriptor (order, service/command, compensation, timeout/retry,
+ * parallel, condition, {@code dependsOn}, mappings), but two behavioural facts
+ * were missing. 0.7.0 adds them:
+ * <ul>
+ *   <li><strong>{@code SagaStepMetadata.kind}</strong> — the step's behavioural
+ *       {@code StepKind} ({@code INVOKE} / {@code COMPENSATE} / {@code AWAIT_EVENT}
+ *       / {@code AWAIT_TIMER}). Today the kind is only <em>implied</em> by which
+ *       of {@code service}/{@code command}/{@code compensation} is set;
+ *       {@code effectiveKind()} infers {@code INVOKE}/{@code COMPENSATE} from that
+ *       structure but deliberately cannot infer the await kinds — which is exactly
+ *       why the explicit field exists.</li>
+ *   <li><strong>{@code SagaMetadata.transitions}</strong> — typed, outcome-edged
+ *       {@code SagaTransition} edges ({@code from} → {@code to} {@code on} a
+ *       {@code TransitionOutcome} of {@code SUCCESS}/{@code FAILURE}/{@code TIMEOUT}/
+ *       {@code COMPENSATED}, with an optional SpEL {@code guard}). {@code order}
+ *       and {@code dependsOn} sequence steps but never carry the <em>outcome</em>
+ *       a branch fires on, so a success→next / failure→compensate / timeout→retry
+ *       branch (or a loop) couldn't be drawn or generated. This promotes the step
+ *       list + {@code dependsOn} DAG into an outcome-edged state-machine graph.</li>
+ * </ul>
+ * <p>Both use AST-owned enums (consistent with {@code SagaMetadata}'s existing
+ * {@code CompensationStrategy} / {@code CompensationOrder} / {@code TriggerType}),
+ * not source-written strings — there is no annotation-side {@code kind} or
+ * {@code @SagaTransition} to mirror, so the enums are defined here and stay
+ * zero-coupling. As with {@code dataType}, the i18n keys, event handlers, and
+ * the projection growth, this is reader↔processor-parity-neutral: the
+ * {@code -io} reader does <em>not</em> populate {@code kind} / {@code transitions}
+ * yet, and the matching {@code @SagaTransition} annotation + extraction is
+ * coordinated {@code exeris-tooling} work (RFC-worthy) — the SDK supplies only
+ * the record the state machine serializes into.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

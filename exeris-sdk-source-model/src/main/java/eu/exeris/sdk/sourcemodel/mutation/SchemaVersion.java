@@ -47,7 +47,11 @@ public final class SchemaVersion {
      *       by-name and back-compatible to read, but the schema names the shape,
      *       so a {@code "0.6.0"} baseline reads as {@code SCHEMA_VERSION_SKEW}.
      *       (The 0.6.0 schema already covered {@code DomainMetadata.eventHandlers},
-     *       which landed within the 0.6.0 release.)</li>
+     *       which landed within the 0.6.0 release.) The 0.7.0 schema likewise
+     *       also covers the saga state-machine growth that landed within the same
+     *       0.7.0 release: {@code SagaMetadata.transitions} (typed, outcome-edged
+     *       transitions) and {@code SagaStepMetadata.kind} — additive, by-name,
+     *       so no further bump within 0.7.0.</li>
      * </ul>
      */
     public static final String CURRENT = "0.7.0";

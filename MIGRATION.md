@@ -14,9 +14,11 @@ the upgrade steps required.
 
 ### `SchemaVersion.CURRENT` bumped `"0.6.0"` → `"0.7.0"`
 
-**Why:** the `ProjectionMetadata` growth below is a JSON-affecting AST shape
-change, and the baseline-trust schema version names the AST shape (see
-`eu.exeris.sdk.sourcemodel.mutation.SchemaVersion`).
+**Why:** the `ProjectionMetadata` and saga-state-machine growth below are
+JSON-affecting AST shape changes, and the baseline-trust schema version names
+the AST shape (see `eu.exeris.sdk.sourcemodel.mutation.SchemaVersion`). Both
+land within the 0.7.0 release, so they share the single `"0.7.0"` schema (the
+same batching as `DomainMetadata.eventHandlers` under 0.6.0) — no second bump.
 
 **Impact:** a baseline JSON stamped `"schemaVersion": "0.6.0"` now reads as
 `NO_BASELINE(SCHEMA_VERSION_SKEW)` — same posture as the 0.6.0 bump. The
@@ -55,6 +57,32 @@ non-cacheable, no source); a new `of(name, aggregateType, fields)` factory and a
 All additions are by-name on the wire (an old baseline reads back with the new
 lists empty and the new strings `null`). The compact constructor normalizes
 blank → `null` and null list → empty.
+
+### Saga step `kind` + typed transitions
+
+**Why:** `SagaStepMetadata` and `SagaMetadata` modelled steps as an ordered,
+`dependsOn`-linked list but couldn't express a step's *kind* or the *outcome* a
+branch fires on. 0.7.0 grows both into an outcome-edged state-machine graph.
+
+- **`SagaStepMetadata`** — new trailing component `kind` (`StepKind` = `INVOKE` /
+  `COMPENSATE` / `AWAIT_EVENT` / `AWAIT_TIMER`); new `effectiveKind()` infers
+  `INVOKE`/`COMPENSATE` from the command/compensation structure (await kinds
+  require the explicit field). New builder setter `.kind(...)`.
+- **`SagaMetadata`** — new trailing component `transitions`
+  (`List<SagaTransition>`); `SagaTransition(from, to, on, guard)` carries a
+  `TransitionOutcome` (`SUCCESS`/`FAILURE`/`TIMEOUT`/`COMPENSATED`), a null/blank
+  `to` marks a terminal edge, and an optional SpEL `guard` narrows the edge. New
+  `hasTransitions()`, factories (`success`/`failure`/`timeout`/`on`), and a
+  compact constructor normalizing `transitions` null → empty (defensive copy).
+
+**Impact:** both components are **appended at the end** of their records, so the
+all-args constructor *arity* grew but existing positional prefixes are unchanged
+in order. Code calling `new SagaStepMetadata(...)` / `new SagaMetadata(...)`
+**positionally** must add the trailing argument (`null` / `null` is fine — they
+normalize). The `simple(...)` factories and the builders are the unaffected
+path. All additions are by-name on the wire (an old baseline reads `kind` back
+`null` and `transitions` back empty); both enums are AST-owned (no annotation
+dependency).
 
 ---
 
