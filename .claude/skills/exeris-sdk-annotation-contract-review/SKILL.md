@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-annotation-contract-review
-description: Annotation contract review for exeris-sdk. Use whenever you add, change, or remove a public `@interface` in `exeris-sdk-annotations` (root, `system`, or `security` subpackages) — enforces `@Retention(SOURCE)` + `@Target`, the invariant every downstream consumer depends on.
+description: Annotation contract review for exeris-sdk. Use whenever you add, change, or remove a public `@interface` in `exeris-sdk-annotations` (any package — root, `system`, `security`, or a newly introduced subpackage) — enforces `@Retention(SOURCE)` + `@Target`, the invariant every downstream consumer depends on.
 ---
 
 # Exeris SDK Annotation Contract Review

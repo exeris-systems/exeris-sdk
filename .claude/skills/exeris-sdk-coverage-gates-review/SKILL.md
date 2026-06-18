@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-coverage-gates-review
-description: Coverage-gate review for exeris-sdk. Use whenever you add new code/branches to `exeris-sdk-source-model` or `exeris-sdk-ui-kit`, add or restructure a test, or hit a JaCoCo (85% BUNDLE) / Vitest (85% per-file) failure — enforces where new tests belong.
+description: Coverage-gate review for exeris-sdk. Use whenever you add new code/branches to `exeris-sdk-source-model` (`ast.*`, `mutation.*`) or `exeris-sdk-ui-kit`, add or restructure a test, or hit a JaCoCo (85% BUNDLE) / Vitest (85% per-file) failure — enforces where new tests belong.
 ---
 
 # Exeris SDK Coverage-Gate Review

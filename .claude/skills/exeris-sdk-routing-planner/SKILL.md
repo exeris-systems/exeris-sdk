@@ -21,7 +21,7 @@ Given a classified task (see `exeris-sdk-task-classifier`), produce a minimal, r
 5. `minimal_next_action`
 
 ## Routing Patterns
-- `ANNOTATION_CONTRACT` → `exeris-sdk-implementer` primary; `verification` mandatory (`AnnotationContractTest`); `docs-adr` if scoping rationale changed; `architect` if zero-coupling at risk.
+- `ANNOTATION_CONTRACT` → `exeris-sdk-implementer` primary; `verification` mandatory (`AnnotationContractTest` via `exeris-sdk-annotation-contract-review`); `docs-adr` if scoping rationale changed; `architect` if zero-coupling at risk.
 - `AST_WIRE_FORMAT` → `exeris-sdk-implementer` primary; `verification` mandatory (`AstJsonRoundTripTest`); `architect` for records-only + Jackson 3 contract; `docs-adr` for downstream-consumer impact in `MIGRATION.md`.
 - `UI_KIT` → `exeris-sdk-implementer` primary; `verification` for Vitest 85% per-file gate.
 - `STABILITY_DEPRECATION` → `exeris-sdk-architect` primary (deprecation pipeline policy); `docs-adr` mandatory (`MIGRATION.md` entry); `implementer` for code.

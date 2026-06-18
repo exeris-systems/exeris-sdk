@@ -38,13 +38,16 @@ After classifying, fire the matching enforcement skill (these are the canonical 
 - `UI_KIT` → `exeris-sdk-coverage-gates-review`.
 - `PUBLISH_READINESS` → `exeris-sdk-publish-readiness-review`.
 - `BUILD_INVARIANTS` → `exeris-sdk-build-invariants-review`.
+- `DOCS_ADR` → `exeris-sdk-docs-adr` agent (no enforcement skill — pure doc/ADR work).
 - Any new dep / import (any class) → `exeris-sdk-zero-runtime-coupling-review`.
 
 ## Guardrails
 - Preserve zero runtime coupling.
 - Preserve AST records-only rule.
 - Preserve `jackson-annotations` 2.21 pin.
-- Preserve JDK 26 floor.
+- Preserve JDK 26 floor (`maven.compiler.release=26`); never lower it to fix a build failure.
+- Preserve `jacoco-maven-plugin` ≥ 0.8.14 + coverage gates (85% source-model BUNDLE / ui-kit per-file).
+- Preserve ui-kit npm-only (excluded from the Maven reactor).
 - Preserve Field/Validation canonical scoping.
 - Preserve deprecation pipeline.
 - If uncertain, emit `MULTI_DOMAIN` and state both.
