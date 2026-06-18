@@ -12,7 +12,8 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. Only `0.6.0` has a release tag / link.
+> are when each milestone landed. `0.6.0` and `0.7.0` are tagged releases (with
+> links); the earlier entries are milestone labels only.
 
 ## [0.7.0] — 2026-06-18
 
