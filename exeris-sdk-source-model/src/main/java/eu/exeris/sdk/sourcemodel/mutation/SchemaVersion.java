@@ -55,9 +55,17 @@ public final class SchemaVersion {
      *       ({@code DerivedMetadata}) and {@code DomainMetadata.rules}
      *       ({@code RuleMetadata}) — all additive, by-name, so no further bump
      *       within 0.7.0.</li>
+     *   <li>{@code "0.8.0"} — bumped for the streaming AST growth: {@code
+     *       ActionMetadata} gained {@code streaming} / {@code streamEventType} /
+     *       {@code realTimeUpdates}, the per-action twin of the {@code @Action}
+     *       streaming attributes, unblocking the tooling per-action SSE stream
+     *       emitter (ADR-043 / RFC-2026-06-22). Same posture as the prior bumps —
+     *       the additions are by-name and back-compatible to read, but the schema
+     *       names the shape, so a {@code "0.7.0"} baseline reads as
+     *       {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
-    public static final String CURRENT = "0.7.0";
+    public static final String CURRENT = "0.8.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.

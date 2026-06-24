@@ -14,18 +14,45 @@ class ActionMetadataTest {
     @Test
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new ActionMetadata(null, null, null, "POST", null,
-                false, false, false, false, List.of(), List.of(), List.of(), null))
+                false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
     void compactConstructorDefaultsNullHttpMethodToPost() {
         ActionMetadata a = new ActionMetadata("approve", null, null, null, null,
-                false, false, false, false, null, null, null, null);
+                false, false, false, false, null, null, null, null, false, null, false);
         assertThat(a.httpMethod()).isEqualTo("POST");
         assertThat(a.params()).isEmpty();
         assertThat(a.permissions()).isEmpty();
         assertThat(a.producesEvents()).isEmpty();
+    }
+
+    @Test
+    void compactConstructorNormalizesBlankStreamEventTypeToNull() {
+        ActionMetadata a = new ActionMetadata("generate-report", null, null, "POST", null,
+                false, false, false, false, null, null, null, null, true, "   ", false);
+        assertThat(a.streamEventType()).isNull();
+        assertThat(a.hasStreamEventType()).isFalse();
+    }
+
+    @Test
+    void streamingFieldsCarryAndDefaultSafely() {
+        // defaults: non-streaming, no event type
+        ActionMetadata plain = ActionMetadata.simple("approve");
+        assertThat(plain.streaming()).isFalse();
+        assertThat(plain.streamEventType()).isNull();
+        assertThat(plain.realTimeUpdates()).isFalse();
+        assertThat(plain.hasStreamEventType()).isFalse();
+
+        // explicit streaming action mirrors @Action(streaming, streamEventType, realTimeUpdates)
+        ActionMetadata streaming = ActionMetadata.builder("generate-report")
+                .streaming(true).streamEventType("ReportProgress").realTimeUpdates(true)
+                .build();
+        assertThat(streaming.streaming()).isTrue();
+        assertThat(streaming.streamEventType()).isEqualTo("ReportProgress");
+        assertThat(streaming.realTimeUpdates()).isTrue();
+        assertThat(streaming.hasStreamEventType()).isTrue();
     }
 
     @Test
@@ -91,8 +118,12 @@ class ActionMetadataTest {
                 .permissions(List.of("ROLE_MGR", "ROLE_ADMIN"))
                 .producesEvents(List.of("OrderRejected"))
                 .methodName("doReject")
+                .streaming(true).streamEventType("RejectProgress").realTimeUpdates(true)
                 .build();
 
+        assertThat(a.streaming()).isTrue();
+        assertThat(a.streamEventType()).isEqualTo("RejectProgress");
+        assertThat(a.realTimeUpdates()).isTrue();
         assertThat(a.displayName()).isEqualTo("Reject Order");
         assertThat(a.description()).isEqualTo("Reject the pending order");
         assertThat(a.httpMethod()).isEqualTo("DELETE");

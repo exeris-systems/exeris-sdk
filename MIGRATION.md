@@ -10,6 +10,50 @@ the upgrade steps required.
 
 ---
 
+## 0.7.x → 0.8.x
+
+### `SchemaVersion.CURRENT` bumped `"0.7.0"` → `"0.8.0"`
+
+**Why:** the `ActionMetadata` streaming growth below is a JSON-affecting AST
+shape change, and the baseline-trust schema version names the AST shape (see
+`eu.exeris.sdk.sourcemodel.mutation.SchemaVersion`).
+
+**Impact:** a baseline JSON stamped `"schemaVersion": "0.7.0"` now reads as
+`NO_BASELINE(SCHEMA_VERSION_SKEW)` — same posture as the prior bumps. The
+additions are by-name and back-compatible to *read*, but conflict detection
+will not trust a stale-schema baseline; the impact is confined to the
+baseline-trust check. In practice there is nothing to migrate yet: codegen does
+not emit the trust fields until the tooling writer lands, so no `"0.7.0"`
+baselines exist in the wild. **Re-run codegen** to emit a fresh `"0.8.0"`
+baseline once that writer exists.
+
+### `ActionMetadata` grew the per-action streaming fields
+
+**Why:** the `@Action` annotation has declared `streaming` / `streamEventType`
+/ `realTimeUpdates` since the early surface, but `ActionMetadata` carried none
+of them, so the tooling per-action SSE stream emitter (RFC-2026-06-22, Slice 2)
+had no metadata to extract. 0.8.0 adds the faithful AST twin, unblocking that
+driver. (The entity-level `@ExerisDomain(realTimeApi)` driver was already
+plumbed via `DomainMetadata.realTimeApi`.) See `docs/adr/ADR-043.link.md`.
+
+- **New components** — three **trailing** components `streaming` (`boolean`),
+  `streamEventType` (`String`), `realTimeUpdates` (`boolean`), appended after
+  `methodName`. New builder setters (`.streaming(...)` / `.streamEventType(...)`
+  / `.realTimeUpdates(...)`) and a `hasStreamEventType()` convenience. The
+  compact constructor normalizes blank `streamEventType` → `null`.
+
+**Impact:** both booleans and the string are **appended at the end** of the
+record, so the all-args constructor *arity* grew from 13 → 16 while existing
+positional prefixes are unchanged in order. Code calling `new ActionMetadata(…)`
+**positionally** must add the three trailing defaults (`false, null, false` is
+fine — they normalize). The `simple(name)` factory and `ActionMetadata.builder`
+are the unaffected path. All additions are by-name on the wire (an old baseline
+reads `streaming` / `realTimeUpdates` back `false` and `streamEventType` back
+`null`). The processor extraction of `@Action(streaming)` + codegen consumption,
+with `-io` reader parity, are the `exeris-tooling` follow-up (Slice 2).
+
+---
+
 ## 0.6.x → 0.7.x
 
 ### `SchemaVersion.CURRENT` bumped `"0.6.0"` → `"0.7.0"`

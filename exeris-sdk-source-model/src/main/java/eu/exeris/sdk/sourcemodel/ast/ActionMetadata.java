@@ -39,7 +39,37 @@ public record ActionMetadata(
          *
          * @since 0.7.0
          */
-        String methodName
+        String methodName,
+
+        /**
+         * Whether the action returns a streaming (server-push) response rather than
+         * responding once — the AST twin of {@code @Action(streaming=true)}. When
+         * {@code true}, build-time codegen emits a kernel {@code HttpStreamHandler}
+         * bound to a streaming route (ADR-043) instead of a respond-once handler.
+         *
+         * @since 0.8.0
+         */
+        boolean streaming,
+
+        /**
+         * The SSE {@code event:} name carried on each emitted {@link #streaming()}
+         * frame — the AST twin of {@code @Action(streamEventType=…)}. Optional:
+         * {@code null} when unset (normalized from a blank annotation value).
+         * Meaningful only when {@link #streaming()} is {@code true}.
+         *
+         * @since 0.8.0
+         */
+        String streamEventType,
+
+        /**
+         * Whether clients may subscribe to this action's progress in real time —
+         * the AST twin of {@code @Action(realTimeUpdates=true)}. Distinct from
+         * {@link #streaming()}: streaming is the response shape, this is the
+         * subscribe-to-progress affordance.
+         *
+         * @since 0.8.0
+         */
+        boolean realTimeUpdates
 ) {
 
     public ActionMetadata {
@@ -48,10 +78,11 @@ public record ActionMetadata(
         params = params != null ? List.copyOf(params) : List.of();
         permissions = permissions != null ? List.copyOf(permissions) : List.of();
         producesEvents = producesEvents != null ? List.copyOf(producesEvents) : List.of();
+        if (streamEventType != null && streamEventType.isBlank()) streamEventType = null;
     }
 
     public static ActionMetadata simple(String name) {
-        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null);
+        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false);
     }
 
     public static Builder builder(String name) {
@@ -64,6 +95,8 @@ public record ActionMetadata(
     public boolean hasPermissions() { return !permissions.isEmpty(); }
     @JsonIgnore
     public boolean hasProducedEvents() { return !producesEvents.isEmpty(); }
+    @JsonIgnore
+    public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
 
     @JsonIgnore
     public String effectiveDisplayName() {
@@ -94,6 +127,9 @@ public record ActionMetadata(
         private List<String> permissions = new ArrayList<>();
         private List<String> producesEvents = new ArrayList<>();
         private String methodName;
+        private boolean streaming = false;
+        private String streamEventType;
+        private boolean realTimeUpdates = false;
 
         private Builder(String name) { this.name = name; }
 
@@ -110,10 +146,14 @@ public record ActionMetadata(
         public Builder permissions(List<String> v) { this.permissions = new ArrayList<>(v); return this; }
         public Builder producesEvents(List<String> v) { this.producesEvents = new ArrayList<>(v); return this; }
         public Builder methodName(String v) { this.methodName = v; return this; }
+        public Builder streaming(boolean v) { this.streaming = v; return this; }
+        public Builder streamEventType(String v) { this.streamEventType = v; return this; }
+        public Builder realTimeUpdates(boolean v) { this.realTimeUpdates = v; return this; }
 
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
-                    async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName);
+                    async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName,
+                    streaming, streamEventType, realTimeUpdates);
         }
     }
 }
