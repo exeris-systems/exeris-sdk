@@ -152,6 +152,19 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("ActionMetadata round-trips streaming fields (0.8.0, NON_DEFAULT inclusion)")
+    void streamingActionMetadataRoundTrips() {
+        ActionMetadata original = ActionMetadata.builder("generate-report")
+                .description("Stream report progress")
+                .streaming(true)
+                .streamEventType("ReportProgress")
+                .realTimeUpdates(true)
+                .build();
+
+        assertRoundTrip(original, ActionMetadata.class);
+    }
+
+    @Test
     @DisplayName("ActionParamMetadata round-trips (record with NON_NULL inclusion)")
     void actionParamMetadataRoundTrips() {
         ActionParamMetadata original = ActionParamMetadata.builder("amount", "BigDecimal")
