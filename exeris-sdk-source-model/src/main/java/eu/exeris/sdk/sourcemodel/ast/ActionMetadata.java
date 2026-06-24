@@ -96,7 +96,7 @@ public record ActionMetadata(
     @JsonIgnore
     public boolean hasProducedEvents() { return !producesEvents.isEmpty(); }
     @JsonIgnore
-    public boolean hasStreamEventType() { return streamEventType != null && !streamEventType.isBlank(); }
+    public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
 
     @JsonIgnore
     public String effectiveDisplayName() {
