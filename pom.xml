@@ -71,6 +71,7 @@
         <module>exeris-sdk-annotations</module>
         <module>exeris-sdk-source-model</module>
         <module>exeris-sdk-source-model-io</module>
+        <module>exeris-sdk-composition-spec</module>
     </modules>
 
     <properties>
