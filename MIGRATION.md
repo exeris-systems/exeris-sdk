@@ -52,6 +52,29 @@ reads `streaming` / `realTimeUpdates` back `false` and `streamEventType` back
 `null`). The processor extraction of `@Action(streaming)` + codegen consumption,
 with `-io` reader parity, are the `exeris-tooling` follow-up (Slice 2).
 
+### Presentation / front model (`@View` / `ViewMetadata`) added — reserved
+
+**Why:** RFC-2026-06-25 — a unified, framework-neutral presentation IR for views
+composed beyond a single entity (the Headless CMS gap). New annotations
+`@View` / `@Region` / `@Block` / `@Bind` and AST records `ViewMetadata` /
+`RegionMetadata` / `ComponentNodeMetadata` / `BindingMetadata` (+ `ViewKind` /
+`BlockType` / `BindSource`).
+
+**Impact:** none on existing types. The records are net-new and standalone (not
+referenced by `DomainMetadata`), so no existing wire shape changes and
+`SchemaVersion` stays `"0.8.0"`. Nothing to migrate: the surface is **reserved**
+— no processor/codegen/`-io` consumes it yet (parity, ADR-042); generation is the
+`exeris-tooling` Angular 22 emitter, gated on that emitter + a Headless CMS corpus.
+
+**`@UI` convergence (no action yet):** `@View`/`ViewMetadata` is the single
+presentation model `@UI` is being absorbed into — entity-level view selection
+becomes a `@View`; field-level render detail is reused as the leaf field facet of
+`ComponentNodeMetadata` (the existing `UIMetadata.UIFieldMetadata` record).
+`@UI` is **not** deprecated yet and keeps working unchanged; the formal
+`@Deprecated(forRemoval)` migration (with `@View` as the replacement and a
+processor fallback window) runs only once the emitter lands and `@View` can
+actually replace it. No code change is required of `@UI` users today.
+
 ---
 
 ## 0.6.x → 0.7.x

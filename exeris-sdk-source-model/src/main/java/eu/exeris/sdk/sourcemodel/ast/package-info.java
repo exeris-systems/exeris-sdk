@@ -186,6 +186,39 @@
  * {@code @Rule} processor extraction + codegen are coordinated
  * {@code exeris-tooling} work. See {@code RFC-2026-06-18}.
  *
+ * <h2>Presentation IR — the front facet (0.8.0, reserved)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.ViewMetadata} is a net-new,
+ * <strong>entity-optional</strong> record family modelling the <em>front facet</em>
+ * of a unit — a page / section / component / fragment
+ * ({@link eu.exeris.sdk.sourcemodel.ast.ViewKind}) composed of
+ * {@link eu.exeris.sdk.sourcemodel.ast.RegionMetadata} regions, each holding a
+ * recursive tree of {@link eu.exeris.sdk.sourcemodel.ast.ComponentNodeMetadata}
+ * nodes whose leaves carry {@link eu.exeris.sdk.sourcemodel.ast.BindingMetadata}
+ * bindings ({@link eu.exeris.sdk.sourcemodel.ast.BlockType} /
+ * {@link eu.exeris.sdk.sourcemodel.ast.BindSource} are AST-owned enums,
+ * null-tolerated with {@code effective*()} defaults like
+ * {@code SagaStepMetadata.kind}). It is orthogonal to the backend (entity /
+ * action / capability) facet, references the data source of truth only by name,
+ * and never generates persistence.
+ * <p>The IR is the <strong>shared</strong> front-facet model authored through
+ * <em>two front-doors</em>: the backend-anchored Java annotations
+ * ({@code @View} / {@code @Region} / {@code @Block} / {@code @Bind} in
+ * {@code exeris-sdk-annotations}, which attach presentation to a real backend
+ * type) and a frontend-only path (Studio / hand-authored presentation-IR JSON,
+ * owned by {@code exeris-platform} / {@code exeris-tooling}). Both converge on
+ * {@code ViewMetadata}; the AST itself is front-door-agnostic.
+ * <p>These records deliberately use {@code @JsonInclude(NON_NULL)} (not the
+ * prevailing {@code NON_DEFAULT}), per RFC-2026-06-25's "Storage &amp; defaults on
+ * the wire": the planned numeric component / binding fields would hit the
+ * boxed-zero trap {@code NON_DEFAULT} carries, and {@code NON_NULL} +
+ * blank/null-list normalization in the compact constructors avoids it by
+ * construction. As with the other behaviour facets this is a <strong>reserved</strong>
+ * surface and reader↔processor-parity-neutral: no Open-Core processor / codegen /
+ * {@code -io} reader consumes it yet (the Angular 22 signal-first emitter is
+ * {@code exeris-tooling} work, pending RFC-2026-06-25's build gate), and these
+ * records are net-new standalone types not referenced by {@code DomainMetadata}
+ * — so {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

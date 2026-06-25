@@ -10,6 +10,16 @@ import java.lang.annotation.*;
  *   <li><strong>Field level:</strong> Configures how a field should be displayed in the UI</li>
  * </ul>
  *
+ * <p><strong>Successor:</strong> {@code @View} and the unified presentation IR
+ * ({@code ViewMetadata}, RFC-2026-06-25) are the single presentation model into
+ * which {@code @UI} is being absorbed — entity-level view selection becomes a
+ * {@code @View}, and the field-level render detail here is reused as the leaf
+ * field facet of {@code ViewMetadata} (the {@code UIMetadata.UIFieldMetadata}
+ * record). {@code @UI} is <em>not</em> deprecated yet: it remains the functional,
+ * generated path until the presentation emitter lands; the formal
+ * {@code @Deprecated(forRemoval)} migration runs only once {@code @View} can
+ * actually replace it. See RFC-2026-06-25 for the convergence plan.
+ *
  * <h2>Entity-Level Usage (within @ExerisDomain):</h2>
  * <pre>{@code
  * @ExerisDomain(
