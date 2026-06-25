@@ -17,6 +17,15 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Security
+- **Jackson bumped to pick up upstream security fixes** — `jackson-databind` /
+  `jackson-datatype-jsr310` `3.1.2` → `3.2.0` and `jackson-annotations`
+  `2.21` → `2.22` in the BOM. Adopted ecosystem-wide (`exeris-platform-bom` was
+  already pinned to `3.2.0` pending this SDK BOM bump). The two versions stay on
+  their separate 3.x / 2.x tracks — the pairing is dictated by `jackson-bom
+  3.2.0` (`jackson.version.annotations=2.22`), and `2.22` still ships
+  `JsonSerializeAs` (the AST floor). No wire-format, schema, or public-API change.
+
 ## [0.7.0] — 2026-06-18
 
 The AST-expressiveness milestone — the SDK side of behaviour / choreography /

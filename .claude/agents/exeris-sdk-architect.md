@@ -15,7 +15,7 @@ Architect/reviewer for the most upstream Exeris repo. Prioritise wire-format and
 - Enforce **AST as wire-format contract**: every consumer (processor, codegen, LSP, future capability registry) agrees on one shape of "what a domain is". Adding a field to `DomainMetadata` is a wire-format change.
 - Enforce **records-only for AST types** — `ActionParamMetadata` was a class with record-style accessors and Jackson 3 silently dropped every field. Never regress.
 - Enforce **Jackson 3 contract**: AST primitives behave with `FAIL_ON_NULL_FOR_PRIMITIVES=false`; `@JsonInclude(NON_DEFAULT)` drops `Long(0)` — avoid `0` as meaningful value until Field/Validation overlap fix.
-- Enforce **`jackson-annotations` pinned to 2.21** (deliberate; Jackson 3 keeps annotations on 2.x line; `3.0-rc*` track abandoned).
+- Enforce **`jackson-annotations` pinned to 2.22** (deliberate; Jackson 3 keeps annotations on 2.x line; `3.0-rc*` track abandoned).
 - Enforce **JDK 26 floor**: `maven.compiler.release=26` across the reactor. Never lower to "fix" build failures.
 - Enforce **ui-kit npm-only** (NOT in Maven reactor).
 - Enforce **Maven Central distribution** (NOT GitHub Packages) — Sonatype Central Portal.
@@ -36,7 +36,7 @@ Architect/reviewer for the most upstream Exeris repo. Prioritise wire-format and
 ## Hard Constraints
 - Zero runtime coupling preserved.
 - AST records (never classes).
-- `jackson-annotations` 2.21 pinned.
+- `jackson-annotations` 2.22 pinned.
 - JDK 26 floor preserved.
 - ui-kit npm-only.
 - Maven Central distribution.
