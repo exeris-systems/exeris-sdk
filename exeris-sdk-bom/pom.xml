@@ -16,11 +16,17 @@
     <description>Single Source of Truth for Exeris SDK module versions and third-party deps.</description>
 
     <properties>
-        <jackson.version>3.1.2</jackson.version>
-        <!-- Jackson 3.x deliberately keeps annotations on the legacy 2.x line
-             (see jackson-bom 3.x: jackson.version.annotations=2.20). The 3.0-rc*
-             annotations track was abandoned. -->
-        <jackson.annotations.version>2.21</jackson.annotations.version>
+        <jackson.version>3.2.0</jackson.version>
+        <!-- Jackson 3.x deliberately keeps annotations on the legacy 2.x line.
+             The pairing is dictated by jackson-bom: jackson-bom 3.2.0 sets
+             jackson.version.annotations=2.22, so databind/datatype 3.2.0 pairs
+             with annotations 2.22 (2.22 still ships JsonSerializeAs, the floor
+             the AST relies on). The 3.0-rc* annotations track was abandoned.
+             Bump 3.1.2/2.21 -> 3.2.0/2.22 (2026-06, security fixes; adopted
+             ecosystem-wide — exeris-platform-bom was already pinned to 3.2.0
+             pending this SDK BOM bump). Keep the two on their separate
+             3.x / 2.x lines — do not "unify" them. -->
+        <jackson.annotations.version>2.22</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
 

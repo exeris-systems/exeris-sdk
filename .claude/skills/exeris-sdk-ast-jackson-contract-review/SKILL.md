@@ -6,7 +6,7 @@ description: AST + Jackson 3 wire-format contract review for exeris-sdk. Use whe
 # Exeris SDK AST + Jackson 3 Wire-Format Contract Review
 
 ## Purpose
-Enforce the wire-format contract that ties together processor (Repo `exeris-tooling`), codegen (same), LSP (Repo `exeris-platform`), and future consumers: AST types are records (Jackson 3 silently drops fields on classes with record-style accessors); `FAIL_ON_NULL_FOR_PRIMITIVES=false` is the consumer contract; `@JsonInclude(NON_DEFAULT)` boxed-zero hazard avoided; `jackson-annotations` pinned to 2.21.
+Enforce the wire-format contract that ties together processor (Repo `exeris-tooling`), codegen (same), LSP (Repo `exeris-platform`), and future consumers: AST types are records (Jackson 3 silently drops fields on classes with record-style accessors); `FAIL_ON_NULL_FOR_PRIMITIVES=false` is the consumer contract; `@JsonInclude(NON_DEFAULT)` boxed-zero hazard avoided; `jackson-annotations` on the 2.x line (2.22).
 
 ## When to Use
 - Any change or PR adding / removing / changing AST records under `eu.exeris.sdk.sourcemodel.ast.*`.
@@ -24,14 +24,14 @@ Enforce the wire-format contract that ties together processor (Repo `exeris-tool
 2. **`AstJsonRoundTripTest` coverage** — every public AST record has a case there. New record without test → reject.
 3. **Boxed-zero hazard** — flag any new boxed-numeric field with `@JsonInclude(NON_DEFAULT)` where `0` could be a meaningful value. Jackson 3 drops boxed-zero on serialise.
 4. **Primitive boolean fields** — primitive boolean defaults to `false`; combined with `@JsonInclude(NON_DEFAULT)` the field disappears when `false`. Document if this is meaningful to the consumer (it usually is — that's why `FAIL_ON_NULL_FOR_PRIMITIVES=false` is the canonical mapper config).
-5. **`jackson-annotations` version** — MUST stay at 2.21. Any bump → hard reject unless the upstream Jackson 3 release lifts the abandoned `3.0-rc*` annotations track.
-6. **`jackson.version` (databind / datatype)** — bump implies coordinated `jackson-annotations` review (2.21 floor is required for `JsonSerializeAs`).
+5. **`jackson-annotations` version** — MUST stay on the **2.x** line (currently `2.22`), never unified onto the databind 3.x number. The exact value is dictated by the matching `jackson-bom`'s `jackson.version.annotations`; a change is legitimate only when it tracks that pairing (and keeps `JsonSerializeAs`, floor `2.21`). Moving it onto a 3.x number, or off the jackson-bom-dictated value, → hard reject.
+6. **`jackson.version` (databind / datatype)** — bump implies coordinated `jackson-annotations` review: read the new `jackson-bom`'s `jackson.version.annotations` and move `jackson.annotations.version` to match (currently `3.2.0` → `2.22`; `JsonSerializeAs` floor `2.21` preserved).
 7. **`@JsonInclude` consistency** — new fields use the same `@JsonInclude` directive as the rest of the AST (verify against `FieldMetadata`, `ValidationMetadata`, `DomainMetadata`).
 8. **Cross-repo impact** — AST shape change visibly affects processor / codegen / LSP. Flag for `MIGRATION.md` entry and downstream coordination.
 9. **Decision and report** — `APPROVE` / `CONDITIONAL` / `REJECT`.
 
 ## Decision Logic
-- **APPROVE**: Record-only; round-trip test case present; boxed-zero hazard absent or documented; `jackson-annotations` 2.21 stable; `@JsonInclude` consistent.
+- **APPROVE**: Record-only; round-trip test case present; boxed-zero hazard absent or documented; `jackson-annotations` on its 2.x line (2.22), jackson-bom-paired; `@JsonInclude` consistent.
 - **CONDITIONAL**: Missing round-trip test case for an otherwise sound record — propose the test.
 - **REJECT**: AST class instead of record; new record without round-trip test; boxed-zero hazard introduced without rationale; `jackson-annotations` bump without coordination.
 
@@ -50,7 +50,7 @@ Enforce the wire-format contract that ties together processor (Repo `exeris-tool
 3. **`AstJsonRoundTripTest` coverage** (covered / new record without test)
 4. **Boxed-zero hazard** (none / present + rationale)
 5. **Primitive boolean awareness** (consumer contract honoured)
-6. **`jackson-annotations` version** (2.21 / bump — coordinated)
+6. **`jackson-annotations` version** (2.x line, 2.22 — jackson-bom-paired, coordinated on bump)
 7. **`@JsonInclude` consistency**
 8. **Cross-repo impact** (none / processor + codegen + LSP coordination required)
 9. **Verdict** (`APPROVE` / `CONDITIONAL` / `REJECT`)
