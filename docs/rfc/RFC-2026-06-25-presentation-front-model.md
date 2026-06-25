@@ -1,0 +1,161 @@
+# RFC-2026-06-25: Should exeris-sdk introduce a first-class, entity-optional presentation/front model (a framework-neutral presentation IR), and with what shape and commitment?
+
+| Field             | Value                                                                 |
+|:------------------|:----------------------------------------------------------------------|
+| **Status**        | **IN-REVIEW**                                                       |
+| **Author(s)**     | arkstack-dev                                                          |
+| **Date Opened**   | 2026-06-25                                                           |
+| **Date Closed**   | —                                                                    |
+| **Umbrella**      | Feeds [RFC-2026-06-25 — publishable-unit / marketplace surface](../../../exeris-docs/rfc/RFC-2026-06-25-publishable-unit-marketplace.md) (owned by `exeris-docs`, platform-scope): the presentation IR is the **front facet** of a publishable unit; that RFC owns the unit-as-distributable question. |
+| **Target ADR(s)** | TBD — a thin SDK-side "presentation IR surface" ADR (the ADR-037/038 shape) that also **annotates the scope of [ADR-003](../adr/ADR-003%20Entity-First%20Development%20Strategy.md)** (entity = source of truth for *data*; presentation IR = source of truth for *composition*). Number reserved in `exeris-docs/adr-index.md` only once the build gate below opens (cross-repo, same protocol as ADR-037/038). |
+| **Affected Repos**| `exeris-sdk` (annotations + AST IR), `exeris-tooling` (processor extraction + the framework-neutral-IR → **Angular 22 signal-first emitter**, sibling to the SSE emitter RFC-2026-06-22; `-io` reader in parity), `exeris-platform` (Studio visual page/composition editing + LSP rendering of the presentation tree), `exeris-sdk-ui-kit` (framework-agnostic primitives the *emitted* front consumes — a downstream consumer, **not** an emitter target owner) |
+| **Reviewers**     | —                                                                    |
+
+## Question
+
+The SDK's presentation surface today is **entity-attached**: `@UI` (entity + field level), `@UIGroup`, `@Tab`, `@NavMenu`, and `@Field(ui = …)` all hang off an `@ExerisDomain` type, and every generated view (list / detail / create / edit) is derived from **exactly one** entity. There is **no way to express a presentation artifact that is not one-to-one with a persisted entity** — a page composed from several content types, a section of authored (non-entity) copy, a navigation tree, a landing/campaign layout, a reusable block placed into a slot. **Should the SDK introduce a first-class, *entity-optional* presentation/front model — a framework-neutral IR for pages/views/components with explicit data bindings — and if so, with what IR shape, what binding model, where the entity↔front boundary sits relative to Entity-First (ADR-003), and what emitter target / commitment-timing** — given the roadmap's "let real usage inform the cut" discipline and the inert-attribute honesty rule?
+
+## Context
+
+This question is asked now because the **Headless CMS SKU needs it and the entity-attached surface structurally cannot supply it.** The HLA records `exeris-sku-headless-cms` as a Service Boundary SKU — *"Content as `@ExerisDomain` types, generated REST + GraphQL surfaces"* — composed of `content-types`, `content-versioning`, `asset-management`, `rest-emission`, `graphql-emission`, etc. Content modelling is solved by Entity-First: a content type **is** an `@ExerisDomain`. What is **not** solved is *composition*: a CMS deals in pages, sections, navigation, slots, and reusable blocks that draw from zero, one, or many content types plus authored content. None of those is a persisted business entity, so the only way to get a generated view for one today is to invent a fake "carrier entity" per page — which pollutes the data model with presentation artifacts and still cannot express multi-entity composition or authored-only regions. The presentation layer needs its own first-class lane.
+
+The "headless" contract is not at risk from this — it is *strengthened*. A pure-headless consumer ignores the presentation IR entirely and consumes REST/GraphQL; the IR is an **optional delivery-side composition layer** that turns a headless content API into an optionally-batteries-included one (headless API + an optional generated reference front). The presentation model never generates persistence and never sits in the data path; it is strictly additive.
+
+Two framings make the requirement precise. First, **Entity-First is a backend strategy that also eases front generation, but it is not the only entry point.** Today every generated view is *derived from* an entity, which is exactly why entity-driven fronts are cheap — but there are presentation artifacts that need **no backend at all**: a fully authored page, a static landing/section, a navigation fragment, a layout shell. These must be **first-class, not a degenerate special case** — a `@View` whose nodes bind to nothing (`source = STATIC` / `NONE`) is a complete, backend-less front the platform can emit. So the platform needs **both** lanes: entity-driven fronts (backend + generated front) *and* backend-less fronts (front only). Second, **there is already one JSON the build emits for the front** — the AST metadata hand-off (`exeris-metadata/<…>.json`, the records in `exeris-sdk-source-model`) that the codegen and Studio/LSP already consume. The presentation IR must **ride that same wire-format**, not a second parallel pipeline: Studio's Headless CMS, the Angular 22 emitter, and the LSP all read one metadata artifact that now carries presentation nodes alongside entity/field/action metadata. One JSON, two lanes feeding it.
+
+The cost of the wrong answer is the SDK's most recently-learned lesson, twice over. First, **inert-attribute honesty**: the 0.6.x roadmap section removed attributes that advertised behaviour no consumer honoured, and the streaming saga (`realTimeApi` / `@Action(streaming)`) proved the discipline — those attributes sat inert for releases until the kernel SPI (ADR-043) landed. Shipping a presentation IR with no emitter behind it would manufacture exactly that anti-pattern at a *much larger* scale (a whole new artifact family, not one attribute). Second, **the premise of the repo**: ADR-003 (Entity-First) says the `@ExerisDomain` class is the single source of truth. An entity-optional presentation model is the first surface that deliberately steps *outside* a single entity, so the entity↔front boundary must be drawn carefully enough to *extend* Entity-First rather than fork it.
+
+This RFC's deliverable is therefore the **agreed presentation-IR design** (IR shape, binding model, entity↔front boundary, emitter ownership) plus an **explicit build gate** tied to the informing usage — not a shipped surface. When the gate opens, the SDK side is a transcription, not a re-design.
+
+## Investigation
+
+### Prior art
+
+- **Within the SDK** — the entity-attached presentation surface is already substantial and sets the conventions any new IR must match: `@UI` carries a closed `ComponentType` enum **plus a `customComponent` String escape hatch** (the proven "closed enum + opaque-string escape" pattern), an opaque `props` JSON string, and SpEL `visibleWhen` / `enabledWhen` expressions; `@Field.ui`, `@UIGroup`, `@Tab`, `@NavMenu` model field display, grouping, tabs, and navigation. The new IR is the *entity-optional generalisation* of exactly this vocabulary — it should reuse the component-type-plus-escape-hatch and opaque-`props` conventions, not invent parallel ones.
+- **`@Projection`** — already models an entity-optional **read** artifact (a CQRS view built from events, `model = …View.class`, with its own REST/GraphQL exposure). It is the closest existing precedent for "an artifact that is first-class but not a persisted aggregate," and it is the natural **data source** a presentation node binds to. The presentation IR is the *composition* counterpart to `@Projection`'s *read-model* counterpart.
+- **The inert-attribute rule (0.6.x) + the streaming precedent (0.8.0)** — a surface must be consumed end-to-end or carry an explicit "reserved / generation pending" honesty note and a realisation path. `realTimeApi` / `@Action(streaming)` shipped as declared shape, the AST carried it, but it stayed inert (javadoc-honesty note) until the kernel affordance (ADR-043) landed. A presentation IR must take the same posture: it is meaningless until an emitter exists.
+- **The additive-surface discipline + reader↔processor parity (ADR-042)** — every AST growth (saga / event-handler / projection / declarative-behaviour / streaming) shipped additive and by-name, with `-io` *not* reading what the processor does not yet write. A presentation-IR record family is the same kind of change.
+- **The declarative-behaviour RFC (RFC-2026-06-18) and the universe RFC (RFC-2026-06-24)** — the two immediate precedents for an SDK-owned IR whose *generation* lives in tooling: store the declared shape as records carrying **opaque strings**, name a default expression convention via a discriminator rather than embedding an evaluator, and gate the build on real usage. This RFC reuses that exact posture.
+- **External shape-setters** — every serious "content + presentation as data" system converges on a **tree of typed nodes with bindings**, framework-neutral at the schema layer with framework-specific *renderers* downstream: Sanity/Contentful "portable text" + block schemas, Builder.io / Plasmic component trees, Strapi's dynamic zones, the JSON-Schema-for-UI family (JSONForms, RJSF). The consistent lesson: the *schema* (node tree + binding) is portable; the *renderer* (React/Angular/Vue) is a target, not part of the schema. That maps cleanly onto SDK-owns-IR / tooling-owns-emitter.
+
+### Constraints
+
+- **Zero runtime coupling.** The IR expresses *what is composed and what it binds to* — a framework-neutral tree of records and strings. It must not name an Angular (or any framework) type, import a UI runtime, or encode signal/zone specifics. The **Angular 22 signal-first emitter is `exeris-tooling`'s**; the framework-agnostic primitives are `exeris-sdk-ui-kit`'s (a consumer of the emitted output). This is the same boundary as streaming (`streaming = true` in the SDK; `HttpStreamHandler` shape downstream) and as the established memory rule that *signal-first / Angular-v22 is codegen's job, and the ui-kit stays framework-agnostic*.
+- **ADR-003 boundary.** Entity-First must be *extended*, not violated. The entity stays the single source of truth for **data** (SQL / REST / GraphQL / DTO) and remains the *cheap path* to a front. The presentation IR is a *parallel, narrower* source of truth for **composition** that (a) never generates persistence, (b) only *references* the data source of truth by name when it binds to data at all, and (c) is strictly opt-in. The right mental model is **two orthogonal facets — a backend facet (data/API) and a front facet (presentation) — each independently present or absent**, giving four quadrants over **one** metadata-JSON:
+
+  | | **front** | **no front** |
+  |---|---|---|
+  | **backend** | entity-driven view (today's `@UI`, cheap path) · entity-optional composition (many sources + authored) | **API-only** — entity / `@Action` / cap with no `@View` (the Caps/SKU service-boundary shape) |
+  | **no backend** | **front-only** — a fully authored `@View`, binds to no entity | — (degenerate) |
+
+  The presentation IR (`@View` / `PresentationMetadata`) is precisely the **front facet**; the backend facet is the existing entity/action/capability surface. They compose freely: the API-only quadrant is already expressible today (it is simply the absence of a `@View`), and naming it matters because it is the foundation the **caps/SKU marketplace** direction builds on (a publishable unit can ship any quadrant). The resulting ADR should annotate ADR-003's scope to say exactly this: entity = SoT for data; presentation IR = SoT for composition; the two are orthogonal and either may be absent.
+- **Wire-format contract (ADR-037) + parity (ADR-042).** New AST records must be records, round-trip through `AstJsonRoundTripTest`, and be additive / by-name; `-io` reads them only once the processor extracts them.
+- **Inert-attribute honesty.** A shipped presentation IR with no emitter is a regression on arrival — at family scale. It ships only behind a landed emitter, or reserved with the honesty note once the build gate opens.
+
+### Data gathered
+
+- No `@View` / `@Page` / presentation-tree annotations and no presentation-IR AST records exist in any repo today — greenfield.
+- The entity-attached presentation surface (`@UI`, `@UIGroup`, `@Tab`, `@NavMenu`, `@Field.ui`) **exists and is rich**, but is structurally single-entity: there is no node-tree, no slot/region concept, and no binding that can reference more than the owning entity's own fields.
+- **The build trigger is NOT yet met** (see *Build gate* below). The informing usage is the Headless CMS SKU corpus (`exeris-sku-headless-cms` + `content-types` / `content-versioning` caps) and the Angular 22 emitter landing in tooling — neither exists on disk yet; the SKU is an H1-2028 GA target in the HLA roadmap. This is the same situation the universe RFC is in (design-now, build-gated), **not** the declarative-behaviour situation (corpus already in hand).
+
+## Options Considered
+
+The non-controversial parts are fixed by precedent: annotation names live in `exeris-sdk-annotations`, AST records in `exeris-sdk-source-model`, bindings/expressions are stored as opaque `String`s, the IR is framework-neutral, and **all generation — including the Angular 22 signal-first emitter — is `exeris-tooling`**. The genuinely open forks are **(1) the entity-coupling stance + timing** and **(2) the binding model**.
+
+### Fork 1 — entity-coupling stance / commitment / timing
+
+#### Option A: Stay entity-attached — extend `@UI` only
+
+Keep presentation hanging off `@ExerisDomain`; add more knobs to `@UI` / `@Tab` to approximate composition.
+
+**Pros:** no new artifact family; smallest surface; ADR-003 untouched.
+**Cons:** structurally cannot model an entity-less page, a multi-entity composition, an authored-only section, or a navigation tree that is not one entity's. It forces the fake-carrier-entity anti-pattern — polluting the data model with presentation rows — and *still* cannot express the multi-source composition a CMS page needs. It does not solve the stated problem.
+**Cost:** low effort, but it does not deliver the Headless CMS enabler — wrong outcome.
+
+#### Option B: First-class, entity-optional presentation IR
+
+Introduce a top-level presentation artifact (`@View` / `@Page`, `@Target(TYPE)`, `@Retention(SOURCE)`) placed on a plain class — **not** an `@ExerisDomain` — plus a framework-neutral AST tree (page → region/slot → component-node → binding) that references entities / projections / actions **by name**. Reuses the `ComponentType`-plus-`customComponent` escape hatch and opaque-`props` conventions. The Angular 22 signal-first emitter (tooling) walks the IR; the IR names no Angular type.
+
+**Pros:** the only option that actually models entity-optional composition; extends Entity-First cleanly (presentation is a parallel SoT for arrangement, referencing — never duplicating — the data SoT); framework-neutral IR means Angular 22 is the *first* target, not the *only* one (other front targets are additive); reuses established SDK conventions rather than inventing parallel ones.
+**Cons:** a large new `0.x` artifact family; if shipped before an emitter exists, it ships inert at family scale (the honesty violation, magnified) — which is why it must be paired with Option-C timing, not shipped eagerly.
+**Cost:** high (new annotation family + AST record family + tooling emitter), but it is the only design that meets the requirement.
+
+#### Option C (do-nothing-for-now / design-on-paper): Accept the framed IR; gate the build on the Headless CMS corpus + the Angular 22 emitter
+
+Do not ship the surface this milestone. The RFC's **deliverable is the agreed IR + binding + boundary design**, plus an **explicit trigger**: build when (a) the Angular 22 signal-first emitter is being authored in `exeris-tooling` (so the IR ships behind a real consumer, not inert), **and** (b) the Headless CMS SKU / `content-types` workloads produce a concrete corpus of hand-rolled page/composition shapes (the named informing usage). When both land, implementation is a transcription.
+
+**Pros:** discipline-consistent — matches the universe RFC exactly (design now, build on the upstream/downstream signal) and the declarative-behaviour deferral pattern; avoids a fresh inert surface *at family scale*; no premature `0.x` lock on a large artifact family; the expensive part (the IR / boundary debate) is done now and captured.
+**Cons:** nothing ships this milestone; relies on the SKU corpus actually arriving — mitigated by naming the trigger, and the cost of waiting is zero because no consumer can emit a front today regardless.
+**Cost:** lowest; the design work *is* the deliverable.
+
+### Fork 2 — binding model (applies whenever the build happens)
+
+How a presentation node references data:
+
+- **Option α: Bind only to existing AST artifacts (structural)** — a binding names an entity field path, a `@Projection` read-model, or an `@Action`, and nothing else; no expressions. Portable and simple, but cannot express authored/static content or a derived/transformed value, and forces every dynamic bit to be a pre-existing projection.
+- **Option β: Opaque binding descriptor — a `source` discriminator + opaque `ref`/`path`/`expression`** — a binding carries `source` (an AST-owned enum: `ENTITY` / `PROJECTION` / `ACTION` / `STATIC` / `SLOT` / `NONE`), an opaque `ref` string (the named artifact), an opaque `path` string (a field path the SDK never resolves), and an optional opaque `expression` + `language` tag reusing the declarative-behaviour stance (default ⇒ the SDK's SpEL convention). The SDK interprets none of it; path/expression *resolution* against the data model is build-time tooling's job.
+- **Option γ: SDK defines a content-query / composition DSL** — a portable grammar for selecting and composing content. Hands the SDK a language spec **and a parser** to own — scope explosion and a runtime artifact the SDK has no business holding.
+
+## Recommendation
+
+**Adopt the Option B IR shape under Option C timing, with Fork 2 Option β bindings. Settle the entity-optional presentation IR, the binding model, and the entity↔front boundary now; ship nothing this milestone; build when the Angular 22 signal-first emitter is authored in `exeris-tooling` and the Headless CMS SKU produces a page/composition corpus. The IR is framework-neutral (SDK), the Angular 22 emitter is tooling's, and `exeris-sdk-ui-kit` stays framework-agnostic as a consumer of the emitted output.**
+
+Option B is the only design that models what a Headless CMS actually composes (entity-optional pages drawing from many sources + authored content + navigation + slots), and it extends rather than forks ADR-003: the entity remains the single source of truth for *data*; the presentation IR is a parallel, narrower source of truth for *composition* that only references the data SoT by name and never generates persistence. Option C timing is mandatory because shipping a whole artifact family with no emitter is the inert-attribute anti-pattern at its largest — and the informing usage (the SKU corpus) does not exist yet, exactly the universe RFC's situation. Option β bindings keep the SDK pure (it stores `(source, ref, path, expression?, language?)` and interprets none of it), let presentation nodes bind to entities, projections, actions, **or** authored/static content, and reuse the already-blessed expression-discriminator convention instead of inventing a new one — while Option γ would saddle the SDK with a DSL and parser it must not own.
+
+The framework-neutral-IR boundary is what makes this the *Headless CMS enabler* the roadmap wants: with content **and** presentation expressed as data, Angular 22 (signal-first) is the **first** emitter target, not the only one — additional targets (other frameworks, static export, a render-time API) are additive tooling work over the same IR, and the ui-kit stays framework-agnostic throughout. Crucially the IR **rides the existing metadata-JSON wire-format** (`exeris-sdk-source-model` records, the `exeris-metadata/<…>.json` hand-off the codegen and Studio/LSP already read) rather than a second pipeline — so Studio's Headless CMS, the emitter, and the LSP consume **one** artifact that now carries presentation nodes beside entity/field/action metadata. And the IR serves every front-bearing quadrant through one shape: an entity-driven view, a multi-source composition, and a **backend-less front-only** view (all-`STATIC`/`NONE` bindings) are the same `PresentationMetadata` with different bindings — so "no backend, just front" is a first-class case, not a workaround. The fourth quadrant, **API-only / front-less** (a cap/SKU service boundary with no `@View`), needs nothing from this IR — it is the absence of the front facet — but the orthogonal framing is what lets a future caps/SKU marketplace describe a publishable unit as *any* combination of the two facets.
+
+### Designed surface (decided on paper — not built)
+
+So the future ADR does not re-litigate it. Names are provisional and corpus-adjustable; the *shape* is the commitment.
+
+- **`@View`** (working name; `@Page` is the alternative for the route-bearing kind) — `@Target(TYPE)`, `@Retention(SOURCE)`, placed on a **plain class, not an `@ExerisDomain`**. Attributes: `name`, `kind` (AST-owned enum `PAGE` / `SECTION` / `COMPONENT` / `FRAGMENT`), `route` (opaque string, meaningful for `PAGE`), `title` / `titleKey` (i18n-key-friendly, the 0.6 convention), `layout` (opaque layout key). Whether composition is authored as nested annotations (`@Region` / `@Block`) or derived from the class's structure is an **open question** below; the *IR* models it as a tree regardless.
+- **AST IR (framework-neutral records, all in `exeris-sdk-source-model`):**
+  - `PresentationMetadata` — `name`, `kind`, `route`, `title`, `layout`, `regions : List<RegionMetadata>`.
+  - `RegionMetadata` — `slot` (region/slot name), `components : List<ComponentNodeMetadata>`.
+  - `ComponentNodeMetadata` — `type` (the component/block key; reuse the `@UI.ComponentType`-plus-`customComponent` closed-enum-plus-escape-hatch convention, or a coarser block taxonomy — open question), `binding : BindingMetadata`, `props` (opaque JSON string, the `@UI.props` convention), `children : List<ComponentNodeMetadata>` (recursive tree).
+  - `BindingMetadata` — `source` (AST-owned enum `ENTITY` / `PROJECTION` / `ACTION` / `STATIC` / `SLOT` / `NONE`), `ref` (opaque artifact name), `path` (opaque field path), `expression` (opaque string) + `language` (default `""` ⇒ the SpEL convention, reusing the declarative-behaviour tag treatment).
+- **Escape hatch** — strictly opt-in: a presentation artifact exists only where `@View` is declared; everything else is a hand-written front by definition. Absence **is** the escape hatch (the declarative-behaviour precedent) — no `manual=true` flag. The `CUSTOM` component type + `customComponent` string remains the per-node escape out of the closed taxonomy.
+- **Storage & defaults on the wire** — all strings; AST-owned enums for `kind` / `source` (no annotation-enum mirror to duplicate, the saga-enum precedent); `@JsonInclude(NON_NULL)` with annotation defaults of `""` normalised blank → `null` in compact constructors, so defaulted attributes stay off the wire and semantic defaults are applied by the consumer. **`NON_NULL` is a deliberate divergence from the prevailing `NON_DEFAULT` AST convention**, not an oversight: the planned numeric component/binding fields (e.g. grid spans, ordinals, min/max props) would hit the boxed-zero trap CLAUDE.md documents for `NON_DEFAULT` (`Long(0)` treated as "empty" and dropped on serialization). `NON_NULL` + blank/zero→null normalization avoids it by construction; an implementer must **not** "correct" this back to `NON_DEFAULT` (it is the same reasoning the declarative-behaviour RFC pinned for `RuleMetadata`).
+- **Parity** — when built, `-io` reads the presentation records only once the `exeris-tooling` processor extracts them, in lock-step (ADR-042).
+- **Emitter ownership (fixed, not a fork)** — the **Angular 22 signal-first emitter is `exeris-tooling`** (a sibling to the SSE emitter, RFC-2026-06-22); it walks `PresentationMetadata`→Angular components, mapping bindings to signal inputs and actions to typed clients. The SDK names no Angular type; `exeris-sdk-ui-kit` provides framework-agnostic primitives the emitted front consumes.
+
+### Build gate — NOT yet met
+
+Build when **both** hold: (1) the **Angular 22 presentation emitter is being authored in `exeris-tooling`** (so the IR ships behind a real consumer, never inert) — itself the subject of a future tooling-side emitter RFC, sibling to RFC-2026-06-22; and (2) the **Headless CMS SKU / `content-types` workloads produce a concrete corpus** of hand-rolled page/composition shapes (≥ a handful of distinct page/section/block patterns — the same "real adopter, repeated need" bar the declarative-behaviour trigger used), the named informing usage (HLA: `exeris-sku-headless-cms`, H1-2028 GA target). Until both land, the design here is the deliverable and the surface ships nothing.
+
+### Why not the alternatives?
+
+- **Option A (entity-attached only)** — structurally cannot model entity-optional composition; forces the fake-carrier-entity anti-pattern and still fails multi-source pages. Does not solve the problem.
+- **Option C-as-permanent (never build)** — would withdraw the RFC; rejected because the Headless CMS SKU has a concrete, roadmapped need — the gate defers the build, it does not deny it.
+- **Binding α (structural only)** — cannot express authored/static content or a transformed value without forcing a projection for every dynamic bit; β subsumes it (a structural bind is just `expression = ""`).
+- **Binding γ (own DSL)** — hands the SDK a language spec + parser to maintain; out of scope and anti-zero-coupling, exactly as the declarative-behaviour γ was rejected.
+
+### Risks of the recommendation
+
+- **Designing the IR before the SKU corpus exists can misjudge the node/binding shape** — accepted and bounded: the design is explicitly provisional, the corpus is what validates/adjusts the record field-lists *before* the build, and the additive-surface discipline means later patterns *extend* the IR rather than reshape what ships. The gate ensures no generated front is unwound by an early miscut.
+- **The entity↔front boundary could erode toward presentation-first** — mitigated by the hard rule that the presentation IR never generates persistence and only references the data SoT by name; the resulting ADR pins this against ADR-003.
+- **A framework-neutral IR risks lowest-common-denominator expressiveness vs. a hand-written Angular front** — bounded by the `CUSTOM` / `customComponent` escape hatch and opaque `props`: anything the IR cannot model is dropped to a named custom component, never forced into the tree.
+- **Two presentation surfaces now coexist** (entity-attached `@UI` and the entity-optional IR) — flagged as a follow-up: whether the entity-attached views become a *generated special case* of the IR (an `@ExerisDomain` projecting a default `PresentationMetadata`) is a later unification question, not pre-solved here.
+
+## Decision Record
+
+<Filled in when status reaches ACCEPTED / REJECTED / WITHDRAWN. The build gate above must open first.>
+
+| Field            | Value                                                                  |
+|:-----------------|:-----------------------------------------------------------------------|
+| **Outcome**      | — (IN-REVIEW; no outcome recorded yet)                                 |
+| **Date**         | —                                                                      |
+| **Resulting ADR(s)** | TBD — SDK-side "presentation IR surface" ADR annotating ADR-003 scope; number reserved in `exeris-docs/adr-index.md` only once the build gate opens (cross-repo). |
+| **Notes**        | —                                                                      |
+
+## Open questions / follow-ups
+
+- **Composition authoring shape** — nested annotations (`@Region` / `@Block`) vs. class-structure-derived vs. a hybrid. Decide against the SKU corpus; the AST tree shape is fixed regardless. — owner: SDK roadmap; target: build gate.
+- **Component taxonomy** — reuse `@UI.ComponentType` (form-field granularity) or introduce a coarser **block** enum (hero / list / grid / rich-text / nav / slot) for page composition. — owner: SDK + tooling emitter; target: build gate.
+- **Navigation** — whether `@NavMenu` folds into the presentation IR (nav as a `PresentationMetadata` of `kind = FRAGMENT`) or stays a separate entity-attached surface. — owner: SDK roadmap.
+- **Entity-attached `@UI` unification** — whether generated entity views become a default-projected `PresentationMetadata` so there is one presentation model, not two. — owner: SDK roadmap; revisit once the IR has real usage.
+- **Angular 22 presentation-emitter RFC (tooling)** — the sibling tooling-side RFC (to RFC-2026-06-22) that fixes the IR→signal-first-component mapping; the build gate references it. — owner: `exeris-tooling`.
+- **i18n / content-versioning interplay** — how `title`/`props` text keys and `content-versioning` drafts/publish interact at the presentation layer. — owner: Headless CMS SKU; target: build gate.
+- **Annotation name — `@View` vs `@Page`** — the `kind`-bearing artifact's name is still a working name; resolve (or one annotation with a `kind`, vs `@View`+`@Page` as distinct route-bearing/non-route kinds) before this RFC moves to ACCEPTED. — owner: SDK roadmap.
+- **Recursive round-trip coverage** — `ComponentNodeMetadata.children : List<ComponentNodeMetadata>` is a recursive tree; when built, `AstJsonRoundTripTest` must exercise **nested depth** (a node with non-empty children, ≥2 levels), not just a leaf / empty-child case — a flat region does not prove the recursive serialization. — owner: SDK verification; target: build.
+- **Named constraint — no `manual` flag** — "un-annotated ⇒ hand-written" (absence is the escape hatch) is a deliberate invariant, recorded here so it stays traceable when the entity-attached `@UI` unification question is taken up. — owner: SDK roadmap.
