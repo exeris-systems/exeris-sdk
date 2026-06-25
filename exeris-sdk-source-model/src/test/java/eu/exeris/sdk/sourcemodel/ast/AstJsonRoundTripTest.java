@@ -530,7 +530,7 @@ class AstJsonRoundTripTest {
 
     @Test
     @DisplayName("ViewMetadata round-trips full view (>=2 regions, >=1 component each, a non-NONE binding)")
-    void presentationMetadataRoundTrips() {
+    void viewMetadataRoundTrips() {
         RegionMetadata header = new RegionMetadata("header",
                 List.of(ComponentNodeMetadata.leaf(BlockType.HERO, BindingMetadata.staticBinding())));
         RegionMetadata body = new RegionMetadata("body",

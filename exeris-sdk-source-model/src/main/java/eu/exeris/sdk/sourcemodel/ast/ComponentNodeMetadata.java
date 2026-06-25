@@ -77,7 +77,7 @@ public record ComponentNodeMetadata(
     /** Whether this node has child nodes. */
     @JsonIgnore
     public boolean hasChildren() {
-        return children != null && !children.isEmpty();
+        return !children.isEmpty();
     }
 
     /** Whether this node carries a leaf field-render facet (the {@code @UI} successor). */

@@ -86,7 +86,7 @@ public record ViewMetadata(
     /** Whether this view carries any regions. */
     @JsonIgnore
     public boolean hasRegions() {
-        return regions != null && !regions.isEmpty();
+        return !regions.isEmpty();
     }
 
     public static final class Builder {

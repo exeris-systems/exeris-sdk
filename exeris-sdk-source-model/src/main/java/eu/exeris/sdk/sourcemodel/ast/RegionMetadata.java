@@ -37,6 +37,6 @@ public record RegionMetadata(
     /** Whether this region carries any component nodes. */
     @JsonIgnore
     public boolean hasComponents() {
-        return components != null && !components.isEmpty();
+        return !components.isEmpty();
     }
 }
