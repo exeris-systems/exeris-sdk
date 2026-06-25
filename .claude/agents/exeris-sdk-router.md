@@ -40,7 +40,7 @@ If multiple categories apply, route by primary risk first.
 - Zero runtime coupling: annotations `@Retention(SOURCE)`; annotations module has no compile-time deps; source-model only pulls `jackson-annotations`.
 - AST records are wire-format; downstream consumers (processor / codegen / LSP) treat shape change as a contract change, not internal refactor.
 - AST types MUST be records (not classes with record-style accessors — Jackson 3 silently drops fields).
-- `jackson-annotations` pinned to 2.21 (deliberate; Jackson 3 keeps annotations on 2.x line).
+- `jackson-annotations` pinned to 2.22 (deliberate; Jackson 3 keeps annotations on 2.x line).
 - JDK 26 floor non-negotiable (kernel + processor reasons).
 - ui-kit is npm-only, NOT in Maven reactor.
 - Maven Central distribution (NOT GitHub Packages) — Sonatype Central Portal.

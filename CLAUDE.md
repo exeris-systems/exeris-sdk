@@ -120,9 +120,9 @@ Every public AST record is exercised by `AstJsonRoundTripTest` (serialize → de
 
 The mutation surface in `eu.exeris.sdk.sourcemodel.mutation` (`MutationOp` / `MutationResult`, 0.5.0, ADR-042) has its own analogous guard, `MutationWireFormatTest` — it round-trips every op and result *through the sealed-interface type* so the polymorphic `"op"` / `"outcome"` discriminator is exercised and the concrete subtype is recovered. When adding a new `MutationOp` / `MutationResult` variant, add its case there (and register the `@JsonSubTypes` entry — these are sealed, polymorphic types, not flat records).
 
-### `jackson-annotations` pinned to 2.21 on purpose
+### `jackson-annotations` stays on the 2.x line on purpose (databind 3.x ≠ annotations version)
 
-The BOM has `jackson.version = 3.1.2` (databind / datatype) but `jackson.annotations.version = 2.21`. Jackson 3.x deliberately keeps annotations on the legacy 2.x line (`jackson-bom` 3.x: `jackson.version.annotations=2.20+`) — the `3.0-rc*` annotations track was abandoned upstream. `2.21` specifically is required for Jackson 3 databind `3.1.2` to load (`JsonSerializeAs` is a 2.21 addition). Do not "unify" these two versions.
+The BOM has `jackson.version = 3.2.0` (databind / datatype) but `jackson.annotations.version = 2.22`. Jackson 3.x deliberately keeps annotations on the legacy 2.x line — the `3.0-rc*` annotations track was abandoned upstream. The exact pairing is **dictated by `jackson-bom`**: `jackson-bom 3.2.0` declares `jackson.version.annotations=2.22`, so databind `3.2.0` pairs with annotations `2.22` (and `2.22` still ships `JsonSerializeAs`, the floor the AST relies on — added back at `2.21`). When bumping `jackson.version`, read the matching `jackson-bom`'s `jackson.version.annotations` and move `jackson.annotations.version` to match — but **never "unify" the two onto one number**; they are intentionally on different (3.x / 2.x) tracks. (History: `3.1.2/2.21` → `3.2.0/2.22` in 2026-06 for upstream security fixes, adopted ecosystem-wide.)
 
 ## ADR-003 — Entity-First
 

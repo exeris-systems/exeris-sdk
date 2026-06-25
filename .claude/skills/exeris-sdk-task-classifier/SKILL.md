@@ -44,7 +44,7 @@ After classifying, fire the matching enforcement skill (these are the canonical 
 ## Guardrails
 - Preserve zero runtime coupling.
 - Preserve AST records-only rule.
-- Preserve `jackson-annotations` 2.21 pin.
+- Preserve `jackson-annotations` 2.22 pin.
 - Preserve JDK 26 floor (`maven.compiler.release=26`); never lower it to fix a build failure.
 - Preserve `jacoco-maven-plugin` ≥ 0.8.14 + coverage gates (85% source-model BUNDLE / ui-kit per-file).
 - Preserve ui-kit npm-only (excluded from the Maven reactor).
