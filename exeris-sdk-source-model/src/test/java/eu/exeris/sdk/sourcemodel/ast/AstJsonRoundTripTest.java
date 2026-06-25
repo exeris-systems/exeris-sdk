@@ -467,6 +467,91 @@ class AstJsonRoundTripTest {
         assertRoundTrip(CapabilityModuleMetadata.empty(), CapabilityModuleMetadata.class);
     }
 
+    @Test
+    @DisplayName("BindingMetadata round-trips each source flavour")
+    void bindingMetadataRoundTrips() {
+        assertRoundTrip(BindingMetadata.none(), BindingMetadata.class);
+        assertRoundTrip(BindingMetadata.entity("Order", "amount"), BindingMetadata.class);
+        assertRoundTrip(BindingMetadata.projection("OrderSummary", "total"), BindingMetadata.class);
+        assertRoundTrip(BindingMetadata.action("placeOrder"), BindingMetadata.class);
+        assertRoundTrip(
+                new BindingMetadata(BindSource.STATIC, null, null, "#now()", "spel"),
+                BindingMetadata.class);
+    }
+
+    @Test
+    @DisplayName("ComponentNodeMetadata leaf round-trips with binding")
+    void componentNodeLeafRoundTrips() {
+        assertRoundTrip(
+                ComponentNodeMetadata.leaf(BlockType.RICH_TEXT, BindingMetadata.staticBinding()),
+                ComponentNodeMetadata.class);
+    }
+
+    @Test
+    @DisplayName("ComponentNodeMetadata round-trips a NESTED tree (>=2 levels of non-empty children)")
+    void componentNodeNestedRoundTrips() {
+        // grid > card > [list(entity), nav-leaf] — proves the recursive children
+        // serialize/deserialize beyond a flat leaf.
+        ComponentNodeMetadata deepChild =
+                ComponentNodeMetadata.leaf(BlockType.LIST, BindingMetadata.entity("Order", "lines"));
+        ComponentNodeMetadata navLeaf =
+                ComponentNodeMetadata.leaf(BlockType.NAV, BindingMetadata.none());
+        ComponentNodeMetadata card =
+                ComponentNodeMetadata.container(BlockType.CARD, List.of(deepChild, navLeaf));
+        ComponentNodeMetadata grid =
+                ComponentNodeMetadata.container(BlockType.GRID, List.of(card));
+
+        assertThat(grid.hasChildren()).isTrue();
+        assertThat(grid.children().getFirst().hasChildren()).isTrue();
+        assertRoundTrip(grid, ComponentNodeMetadata.class);
+    }
+
+    @Test
+    @DisplayName("ComponentNodeMetadata round-trips a leaf field-render facet (the @UI successor)")
+    void componentNodeFieldFacetRoundTrips() {
+        ComponentNodeMetadata fieldLeaf = ComponentNodeMetadata.fieldLeaf(
+                BlockType.FORM,
+                BindingMetadata.entity("Product", "price"),
+                UIMetadata.UIFieldMetadata.simple("price", UIMetadata.ComponentType.NUMBER_INPUT));
+        assertThat(fieldLeaf.hasField()).isTrue();
+        assertRoundTrip(fieldLeaf, ComponentNodeMetadata.class);
+    }
+
+    @Test
+    @DisplayName("RegionMetadata round-trips with components")
+    void regionMetadataRoundTrips() {
+        assertRoundTrip(
+                new RegionMetadata("main",
+                        List.of(ComponentNodeMetadata.leaf(BlockType.HERO, BindingMetadata.none()))),
+                RegionMetadata.class);
+        // empty region: slot null, components []
+        assertRoundTrip(new RegionMetadata(null, null), RegionMetadata.class);
+    }
+
+    @Test
+    @DisplayName("ViewMetadata round-trips full view (>=2 regions, >=1 component each, a non-NONE binding)")
+    void viewMetadataRoundTrips() {
+        RegionMetadata header = new RegionMetadata("header",
+                List.of(ComponentNodeMetadata.leaf(BlockType.HERO, BindingMetadata.staticBinding())));
+        RegionMetadata body = new RegionMetadata("body",
+                List.of(ComponentNodeMetadata.container(BlockType.GRID,
+                        List.of(ComponentNodeMetadata.leaf(BlockType.LIST,
+                                BindingMetadata.projection("ProductSummary", "items"))))));
+
+        ViewMetadata original = ViewMetadata.builder("ProductLanding")
+                .kind(ViewKind.PAGE)
+                .route("/products")
+                .title("Products")
+                .titleKey("products.title")
+                .layout("default-shell")
+                .regions(List.of(header, body))
+                .build();
+
+        assertRoundTrip(original, ViewMetadata.class);
+        // minimal: kind null/dropped, regions [], read back via effectiveKind default
+        assertRoundTrip(ViewMetadata.builder("Bare").build(), ViewMetadata.class);
+    }
+
     private <T> void assertRoundTrip(T original, Class<T> type) {
         String json;
         T parsed;

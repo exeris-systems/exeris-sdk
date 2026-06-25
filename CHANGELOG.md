@@ -17,6 +17,25 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Added
+- **Unified presentation / front model (`@View` / `ViewMetadata`)** —
+  RFC-2026-06-25 (ACCEPTED). Annotations `@View` / `@Region` / `@Block` / `@Bind`
+  in `exeris-sdk-annotations`, and AST records `ViewMetadata` / `RegionMetadata` /
+  `ComponentNodeMetadata` / `BindingMetadata` (+ AST-owned enums `ViewKind` /
+  `BlockType` / `BindSource`) in `exeris-sdk-source-model`. A framework-neutral,
+  entity-optional composition IR (view → region → component-node → binding;
+  `ComponentNodeMetadata` is a recursive tree). Authored class-structure-derived;
+  `@JsonInclude(NON_NULL)` with blank→null / null-list→empty normalization and
+  `effective*()` defaults. **One presentation model, not a split:** `@UI` is
+  being subsumed — its field-level render detail is reused as the leaf field
+  facet of `ComponentNodeMetadata` (`UIMetadata.UIFieldMetadata`), its entity-level
+  view selection becomes a `@View`. **Shipped reserved** — no processor/codegen/
+  reader consumes it yet (the `-io` reader stays in parity, ADR-042); generation
+  is the `exeris-tooling` Angular 22 emitter, gated on the emitter + a Headless
+  CMS corpus. `@UI` carries a successor note but is **not** deprecated yet (it
+  stays the functional path until the emitter lands). Net-new standalone records,
+  not referenced by `DomainMetadata` — `SchemaVersion` unchanged (`"0.8.0"`).
+
 ### Security
 - **Jackson bumped to pick up upstream security fixes** — `jackson-databind` /
   `jackson-datatype-jsr310` `3.1.2` → `3.2.0` and `jackson-annotations`

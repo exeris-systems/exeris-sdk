@@ -53,11 +53,12 @@ class AnnotationContractTest {
         List<Class<? extends Annotation>> annotations = discoverAnnotations("eu.exeris.sdk.annotation");
         assertThat(annotations)
                 .as("should discover at least the well-known core annotations")
-                .hasSizeGreaterThanOrEqualTo(20)
+                .hasSizeGreaterThanOrEqualTo(24)
                 .extracting(Class::getSimpleName)
                 .contains("ExerisDomain", "Action", "Field", "Relationship",
                         "Saga", "DomainEvent", "UI", "Validation",
-                        "Derived", "Rule", "Rules");
+                        "Derived", "Rule", "Rules",
+                        "View", "Region", "Block", "Bind");
 
         List<String> missingRetention = new ArrayList<>();
         List<String> wrongRetention = new ArrayList<>();
