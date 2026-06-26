@@ -11,6 +11,8 @@ package eu.exeris.sdk.composition.runtime;
  */
 public final class CompositionStampException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     public CompositionStampException(String message) {
         super(message);
     }

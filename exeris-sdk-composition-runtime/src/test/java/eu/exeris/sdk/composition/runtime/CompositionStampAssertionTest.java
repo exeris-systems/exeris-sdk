@@ -25,11 +25,15 @@ class CompositionStampAssertionTest {
                         new CapManifest.Provided("com.api.PaymentApi", "1.2.0")))));
     }
 
-    /** A self-consistent manifest: stamp binding == the binding recomputed over its modules. */
+    /**
+     * A self-consistent manifest at a real composition version ("1.0.0"): stamp binding == the binding
+     * recomputed over its modules. compositionVersion does not enter the binding (cap set only), so
+     * using a real version here keeps every binding-related test unaffected.
+     */
     private static CapManifest valid() {
         List<CapManifest.Module> modules = fixtureModules();
         return new CapManifest(2,
-                new CapManifest.Stamp(true, "0.0.0", CompositionBinding.compute(modules)),
+                new CapManifest.Stamp(true, "1.0.0", CompositionBinding.compute(modules)),
                 modules, null);
     }
 
@@ -41,8 +45,12 @@ class CompositionStampAssertionTest {
 
     @Test
     void unversionedCompositionIsTolerated() {
-        // valid() uses compositionVersion "0.0.0" — the default until the codegen plugin wires it.
-        assertThatCode(() -> CompositionStampAssertion.assertConsistent(valid()))
+        // compositionVersion "0.0.0" is the default until the codegen plugin wires a real one; it is a
+        // build input the asserter deliberately does NOT assert. Distinct fixture from valid() ("1.0.0").
+        List<CapManifest.Module> modules = fixtureModules();
+        CapManifest defaultVersion = new CapManifest(2,
+                new CapManifest.Stamp(true, "0.0.0", CompositionBinding.compute(modules)), modules, null);
+        assertThatCode(() -> CompositionStampAssertion.assertConsistent(defaultVersion))
                 .doesNotThrowAnyException();
     }
 
@@ -100,6 +108,21 @@ class CompositionStampAssertionTest {
         // The classpath carries PaymentApi at a different version than the manifest pins.
         assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(
                 valid(), Map.of("com.api.PaymentApi", "9.9.9")))
+                .isInstanceOf(CompositionStampException.class)
+                .hasMessageContaining("version drift");
+    }
+
+    @Test
+    void unversionedManifestProvideVsVersionedClasspathIsDrift() {
+        // Reverse asymmetry: the manifest declares an unversioned provide (null) but the classpath
+        // carries a real version. Drift must fire in this direction too (containsKey + Objects.equals),
+        // not only when the classpath version differs from a versioned manifest entry.
+        List<CapManifest.Module> modules = List.of(
+                new CapManifest.Module("com.app.X", new CapManifest.ModuleBody(
+                        Collections.singletonList(new CapManifest.Provided("com.api.Y", null)))));
+        CapManifest m = new CapManifest(2,
+                new CapManifest.Stamp(true, "1.0.0", CompositionBinding.compute(modules)), modules, null);
+        assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(m, Map.of("com.api.Y", "1.0.0")))
                 .isInstanceOf(CompositionStampException.class)
                 .hasMessageContaining("version drift");
     }

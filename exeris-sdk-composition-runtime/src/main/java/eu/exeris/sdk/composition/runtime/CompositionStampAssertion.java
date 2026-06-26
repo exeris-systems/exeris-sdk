@@ -185,16 +185,28 @@ public final class CompositionStampAssertion {
                 continue;
             }
             for (CapManifest.Provided provided : body.provides()) {
+                // Only services actually observed on the classpath are checked; an absent service is
+                // simply not part of this deployment's observed set. containsKey (not get() != null)
+                // distinguishes "absent" from "present but unversioned" (a null map value, e.g. from
+                // serviceVersions() of an unversioned provide): an unversioned-vs-versioned mismatch in
+                // EITHER direction is drift, while null == null (both unversioned) is consistent.
+                if (!classpath.containsKey(provided.service())) {
+                    continue;
+                }
                 String onClasspath = classpath.get(provided.service());
-                if (onClasspath != null && !onClasspath.equals(provided.version())) {
+                if (!Objects.equals(onClasspath, provided.version())) {
                     throw new CompositionStampException("composition version drift for service '"
                             + provided.service() + "' (module " + module.qualifiedName() + ")"
-                            + "\n  manifest pins: " + provided.version()
-                            + "\n  on classpath:  " + onClasspath
+                            + "\n  manifest pins: " + renderVersion(provided.version())
+                            + "\n  on classpath:  " + renderVersion(onClasspath)
                             + "\n  cause: a cap was deployed at a different version than was validated");
                 }
             }
         }
+    }
+
+    private static String renderVersion(String version) {
+        return version == null ? "(unversioned)" : version;
     }
 
     private static CapManifest parse(String json, String source) {
@@ -219,7 +231,9 @@ public final class CompositionStampAssertion {
      *
      * <p>Precondition: {@code manifest} must be well-formed (no null module elements) — typically a
      * manifest that already passed {@link #assertConsistent}. Passing a manifest with a null module
-     * entry NPEs, by design; this is a post-assertion helper, not an entry validator.
+     * entry NPEs, by design; this is a post-assertion helper, not an entry validator. (A null service
+     * would map to a {@code null} key; {@link #assertConsistent} rejects a null service before this is
+     * ever reached, so a post-assertion caller never hits it.)
      */
     public static Map<String, String> serviceVersions(CapManifest manifest) {
         Map<String, String> versions = new HashMap<>();
