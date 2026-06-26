@@ -10,7 +10,7 @@
 | **Driven By**   | [RFC-2026-06-03](../rfc/RFC-2026-06-03-source-model-parser-writer.md) (ACCEPTED)               |
 | **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) Entity-First |
 
-> ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](../../../exeris-docs/adr-index.md). The gap between ADR-003 and ADR-037 in this repo is expected — 004–036 are owned by other Exeris repos.
+> ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md). The gap between ADR-003 and ADR-037 in this repo is expected — 004–036 are owned by other Exeris repos.
 
 ## Context and Problem Statement
 
