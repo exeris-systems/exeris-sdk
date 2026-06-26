@@ -1,6 +1,7 @@
 package eu.exeris.sdk.composition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.Collections;
 import java.util.List;
@@ -107,6 +108,17 @@ class CompositionBindingTest {
                 new CapManifest.Module("com.app.Empty", new CapManifest.ModuleBody(List.of()))));
         // All three are "a module named com.app.Empty that provides nothing" → one canonical form.
         assertThat(nullBody).isEqualTo(nullProvides).isEqualTo(emptyProvides);
+    }
+
+    @Test
+    void computeManifestOverloadToleratesNullModules() {
+        // "modules" absent from the JSON leaves the component null under the consumer mapper config;
+        // the convenience overload must bind it as an empty composition, never NPE.
+        CapManifest noModules = new CapManifest(2,
+                new CapManifest.Stamp(true, "0.0.0", GOLDEN_VERSIONED), null, null);
+        String emptyComposition = CompositionBinding.compute(List.<CapManifest.Module>of());
+        assertThatCode(() -> CompositionBinding.compute(noModules)).doesNotThrowAnyException();
+        assertThat(CompositionBinding.compute(noModules)).isEqualTo(emptyComposition);
     }
 
     @Test

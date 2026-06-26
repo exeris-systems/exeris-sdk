@@ -39,9 +39,16 @@ public final class CompositionBinding {
     private CompositionBinding() {
     }
 
-    /** Convenience: compute the binding over a manifest's module set. */
+    /**
+     * Convenience: compute the binding over a manifest's module set. A {@code null} module list
+     * (the {@code "modules"} field absent from the JSON — the consumer mapper leaves a reference-type
+     * component null, since {@code FAIL_ON_NULL_FOR_PRIMITIVES} guards only primitives) is treated as
+     * an empty composition rather than throwing, so a malformed or wrong-schema manifest surfaces as
+     * the asserter's descriptive handshake failure, not an opaque {@link NullPointerException} here.
+     */
     public static String compute(CapManifest manifest) {
-        return compute(manifest.modules());
+        List<CapManifest.Module> modules = manifest.modules();
+        return compute(modules != null ? modules : List.of());
     }
 
     /**

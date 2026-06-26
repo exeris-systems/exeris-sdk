@@ -35,6 +35,16 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Test-only. The records are annotation-free by design; this lets the round-trip test
+             prove the documented mapper contract (FAIL_ON_UNKNOWN_PROPERTIES=false +
+             FAIL_ON_NULL_FOR_PRIMITIVES=false) and that the wire keys match the tooling producer.
+             Test scope keeps it off the published artifact's dependency tree, so the zero-coupling
+             guarantee — and the ban-javaparser enforcer (compile/runtime only) — is unaffected. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

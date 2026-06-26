@@ -56,6 +56,12 @@ public record CapManifest(
     /**
      * One {@code @CapabilityModule} in the composition.
      *
+     * <p><b>Component name is wire-pinned.</b> These records are annotation-free, so each component
+     * name <em>is</em> the JSON key. The producer (the tooling's {@code CapabilityModuleDescriptor})
+     * emits the body under the key {@code "module"}; renaming this component (e.g. to {@code body})
+     * would silently deserialize the body to {@code null} for every real manifest. Leave it as
+     * {@code module} unless the producer's wire shape changes in lockstep.
+     *
      * @param qualifiedName the module class's fully-qualified name (the binding's sort key)
      * @param module        the module body; may be {@code null} for a module that provides nothing
      */
