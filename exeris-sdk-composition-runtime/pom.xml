@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.exeris</groupId>
+        <artifactId>exeris-sdk-parent</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+        <relativePath>../exeris-sdk-parent</relativePath>
+    </parent>
+
+    <artifactId>exeris-sdk-composition-runtime</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Exeris SDK :: Composition Runtime</name>
+    <description>
+        Boot-time composition validation-stamp assertion (ADR-024 obligation 8/8a). A generic,
+        once-tested library every SKU bootstrap invokes at startup, before any cap enters
+        initialize: it ASSERTS the tooling-emitted stamp in cap-manifest.json (presence,
+        well-formedness, content-binding-match, version-match) and fails fast on drift. It does
+        NOT re-validate (no @Requires->@Provides DAG re-resolution). The binding it recomputes is
+        the ONE canonical definition in exeris-sdk-composition-spec (obligation 8b) — no verbatim
+        port. Ships into the SKU jar; carries no kernel or codegen dependency (obligation 9 — the
+        kernel stays cap-blind; the build-time pipeline is not dragged onto the SKU classpath).
+    </description>
+
+    <dependencies>
+        <!-- The shared cap-manifest.json schema + the ONE canonical content-binding (obligation 8b).
+             The asserter recomputes the binding through this, instead of a byte-verbatim port. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-composition-spec</artifactId>
+        </dependency>
+
+        <!-- JSON parse of cap-manifest.json at boot. Managed at 3.2.0 by the SDK BOM. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar-no-fork</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 85% instruction + line gate: the assertion is real boot-time logic with many
+                 fail-fast branches; coverage is meaningful here. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.instruction.coverage.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.coverage.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ADR-037 zero-coupling guard: a SKU-classpath runtime must not drag the build-time
+                 pipeline. JavaParser (the codegen marker dependency) must never reach this tree. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-javaparser-zero-coupling</id>
+                        <phase>verify</phase>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>com.github.javaparser</exclude>
+                                    </excludes>
+                                    <message>The composition-runtime ships into the SKU jar — JavaParser (build-time codegen) must not appear on its dependency tree.</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
