@@ -439,10 +439,11 @@ public @interface Field {
      *   <li>"json" - Syntax highlight JSON</li>
      * </ul>
      *
-     * <p>Modelled in the AST as {@code FieldMetadata.dataType} (since 0.6.0).
-     * Until the build-time processor and the {@code -io} reader begin extracting
-     * it together, the value is carried by the annotation but not yet propagated
-     * to generators — see the {@code dataType} vs {@code format} note in the
+     * <p>Modelled in the AST as {@code FieldMetadata.dataType} (since 0.6.0) and
+     * propagated end-to-end: the build-time processor and the {@code -io} reader
+     * extract it in lock-step (ADR-042), and the Angular emitter renders it
+     * ({@code currency}/{@code percent} pipes, {@code url} as a link); see the
+     * {@code dataType} vs {@code format} note in the
      * {@code eu.exeris.sdk.sourcemodel.ast} package-info.
      *
      * @return data type hint

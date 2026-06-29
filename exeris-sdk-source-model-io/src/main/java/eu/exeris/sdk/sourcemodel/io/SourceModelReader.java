@@ -438,18 +438,24 @@ public final class SourceModelReader {
     private List<DomainEventMetadata> events(ClassOrInterfaceDeclaration type) {
         List<DomainEventMetadata> events = new ArrayList<>();
         String entitySimpleName = type.getNameAsString();
+        // EV1: the entity's @Field-annotated field names in declaration order —
+        // the universe payload resolution selects from, computed once. Shared,
+        // lock-step with ExerisDomainProcessor.entityFieldNames (ADR-042).
+        List<String> entityFieldNames = entityFieldNames(type);
         for (AnnotationExpr annotation : type.getAnnotations()) {
             String simpleName = simpleName(annotation.getNameAsString());
             if ("DomainEvent".equals(simpleName)) {
-                events.add(singleEvent(annotation, entitySimpleName));
+                events.add(singleEvent(annotation, entitySimpleName, entityFieldNames));
             } else if ("DomainEvents".equals(simpleName)) {
                 for (AnnotationExpr inner : containedAnnotations(annotation)) {
-                    events.add(singleEvent(inner, entitySimpleName));
+                    events.add(singleEvent(inner, entitySimpleName, entityFieldNames));
                 }
             }
         }
         for (BodyDeclaration<?> member : type.getMembers()) {
             if (member instanceof ClassOrInterfaceDeclaration nested && !nested.isInterface()) {
+                // Legacy nested-class form: name + topic only, mirroring the
+                // processor (which reads no payload attributes on this path).
                 nested.getAnnotationByName("DomainEvent").ifPresent(annotation ->
                         events.add(DomainEventMetadata.withTopic(
                                 nested.getNameAsString(), stringAttr(annotation, "topic").orElse(null))));
@@ -463,15 +469,67 @@ public final class SourceModelReader {
      * {@code extractSingleEventMetadata}: an absent/blank {@code name} is derived as
      * {@code entityName + suffix(trigger)} with {@code trigger} defaulting to
      * {@code CREATE}; {@code aggregateType} is always the entity class name.
+     *
+     * <p>EV1: resolves the payload field subset (ADR-042 lock-step with the
+     * processor) — see {@link #resolvePayloadFields} — and reads
+     * {@code sensitiveFields} verbatim.
      */
-    private DomainEventMetadata singleEvent(AnnotationExpr annotation, String entitySimpleName) {
+    private DomainEventMetadata singleEvent(AnnotationExpr annotation, String entitySimpleName,
+                                            List<String> entityFieldNames) {
         String name = stringAttr(annotation, "name")
                 .filter(s -> !s.isBlank())
                 .orElseGet(() -> entitySimpleName
                         + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
         String topic = stringAttr(annotation, "topic").orElse(null);
         String description = stringAttr(annotation, "description").orElse(null);
-        return new DomainEventMetadata(name, topic, description, entitySimpleName);
+        return DomainEventMetadata.builder(name)
+                .topic(topic)
+                .description(description)
+                .aggregateType(entitySimpleName)
+                .payloadFields(resolvePayloadFields(annotation, entityFieldNames))
+                .sensitiveFields(stringArrayAttr(annotation, "sensitiveFields").orElse(List.of()))
+                .build();
+    }
+
+    /**
+     * The entity's {@code @Field}-annotated field names in declaration order. This
+     * is the universe EV1 payload resolution selects from; it must agree byte-for-byte
+     * with {@code ExerisDomainProcessor.entityFieldNames} (ADR-042 lock-step).
+     * {@code @Relationship} fields are excluded (they are modelled separately and the
+     * processor's @Field scan does not pick them up as payload fields).
+     */
+    private List<String> entityFieldNames(ClassOrInterfaceDeclaration type) {
+        List<String> names = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            if (field.getAnnotationByName("Field").isEmpty()) {
+                continue;
+            }
+            for (VariableDeclarator var : field.getVariables()) {
+                names.add(var.getNameAsString());
+            }
+        }
+        return names;
+    }
+
+    /**
+     * EV1 payload-field resolution, the deterministic mirror of the processor's:
+     * ({@code @DomainEvent.includeFields} if non-empty, else ALL of the entity's
+     * {@code @Field} names) minus {@code @DomainEvent.excludeFields}, preserving
+     * entity-declaration order. {@code includeComputed}/{@code includePreviousValues}
+     * are intentionally OUT of EV1 — there is no computed-field source in the
+     * persisted field list yet.
+     */
+    private List<String> resolvePayloadFields(AnnotationExpr annotation, List<String> entityFieldNames) {
+        List<String> include = stringArrayAttr(annotation, "includeFields").orElse(List.of());
+        List<String> base = include.isEmpty() ? entityFieldNames : include;
+        Set<String> exclude = Set.copyOf(stringArrayAttr(annotation, "excludeFields").orElse(List.of()));
+        List<String> resolved = new ArrayList<>(base.size());
+        for (String fieldName : base) {
+            if (!exclude.contains(fieldName)) {
+                resolved.add(fieldName);
+            }
+        }
+        return resolved;
     }
 
     /**
@@ -877,12 +935,11 @@ public final class SourceModelReader {
      * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
      * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
      * populates it, so reading it here would be a divergence, not a fix.
-     * {@code @Field.dataType} is the same case as of 0.6.0: {@link FieldMetadata}
-     * now carries a {@code dataType} component (so the AST can model it), but
-     * neither this reader nor the processor populates it yet — wiring it here
-     * alone would diverge from the codegen baseline and break conflict detection,
-     * so reader and processor must start reading it together (a coordinated
-     * cross-repo change). (The remaining unread {@code @Field} attributes —
+     * {@code @Field.dataType} <b>is</b> read (since the coordinated cross-repo
+     * wiring of Wave 1A): the processor's {@code extractFieldMetadata} now
+     * populates {@link FieldMetadata#dataType()} and this reader mirrors it, so the
+     * two stay in lock-step on the codegen baseline (ADR-042). (The remaining unread
+     * {@code @Field} attributes —
      * {@code inList}, {@code inDetail}, {@code order}, {@code ui}, {@code cssClass},
      * {@code group}, {@code sensitive}, {@code encrypted}, {@code maskPattern},
      * {@code writeOnly}, {@code compositeUnique} — have no {@code FieldMetadata}
@@ -903,6 +960,7 @@ public final class SourceModelReader {
         boolAttr(field, "inUpdate").ifPresent(builder::inUpdate);
         boolAttr(field, "computed").ifPresent(builder::computed);
         stringArrayAttr(field, "computedFrom").ifPresent(builder::computedFrom);
+        stringAttr(field, "dataType").ifPresent(builder::dataType);
         if (validation != null) {
             applyValidation(field, validation, builder);
         }

@@ -178,11 +178,34 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("DomainEventMetadata round-trips")
+    @DisplayName("DomainEventMetadata round-trips (full payload + empty/minimal)")
     void domainEventMetadataRoundTrips() {
-        DomainEventMetadata original = new DomainEventMetadata(
-                "OrderShipped", "orders.shipped", "Order has shipped", "Order");
-        assertRoundTrip(original, DomainEventMetadata.class);
+        // Full: EV1 resolved payload field list + sensitive-field subset.
+        DomainEventMetadata full = DomainEventMetadata.builder("OrderShipped")
+                .topic("orders.shipped")
+                .description("Order has shipped")
+                .aggregateType("Order")
+                .payloadFields(List.of("orderNumber", "amount", "customerEmail"))
+                .sensitiveFields(List.of("customerEmail"))
+                .build();
+        assertRoundTrip(full, DomainEventMetadata.class);
+
+        // Empty/minimal: the pre-EV1 4-tuple shape still round-trips. Both EV1
+        // lists default to empty (the compact constructor normalizes null ->
+        // List.of()); empty lists serialize as [] and read back as empty, so the
+        // deep-equality holds.
+        DomainEventMetadata minimal = new DomainEventMetadata(
+                "OrderCreated", "orders.created", "Order created", "Order");
+        assertThat(minimal.payloadFields()).isEmpty();
+        assertThat(minimal.sensitiveFields()).isEmpty();
+        // Pin the wire shape: under class-level @JsonInclude(NON_NULL) the
+        // normalized-empty lists emit [] (NOT absent — NON_NULL only drops null),
+        // matching DomainMetadata's builder-built list members. Machine-checked so
+        // the prose above can't silently drift to "keys are absent".
+        String minimalJson = mapper.writeValueAsString(minimal);
+        assertThat(minimalJson).contains("\"payloadFields\":[]");
+        assertThat(minimalJson).contains("\"sensitiveFields\":[]");
+        assertRoundTrip(minimal, DomainEventMetadata.class);
     }
 
     @Test
