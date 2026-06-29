@@ -17,7 +17,8 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@code payloadFields} — the RESOLVED payload field <em>names</em>, in
- *       entity-declaration order. Resolution semantics (shared by the processor
+ *       {@code @DomainEvent.includeFields} order when that attribute is set, else
+ *       in entity-declaration order. Resolution semantics (shared by the processor
  *       and the {@code -io} reader, ADR-042 lock-step):
  *       ({@code @DomainEvent.includeFields} if non-empty, else ALL of the
  *       entity's {@code @Field} names) minus {@code @DomainEvent.excludeFields}.</li>
@@ -31,9 +32,17 @@ import java.util.List;
  * field's type by name from there (the same zero-duplication discipline the
  * {@link ProjectionMetadata#fields()} subset uses). This follows the additive
  * by-name JSON / {@code @JsonInclude(NON_NULL)} grow precedent of
- * {@link DomainMetadata}'s {@code projections} / {@code eventHandlers} members:
- * absent lists are simply missing on the wire, and the EV1 metadata can grow
- * further without a wire break.
+ * {@link DomainMetadata}'s {@code projections} / {@code eventHandlers} members.
+ *
+ * <p><strong>Wire form of the EV1 lists.</strong> The compact constructor
+ * normalizes {@code null} to {@link List#of()}, so {@code payloadFields} and
+ * {@code sensitiveFields} are never {@code null}; under the class-level
+ * {@code @JsonInclude(NON_NULL)} an empty list therefore serializes as {@code []}
+ * (it is not suppressed — {@code NON_NULL} only drops {@code null}). This matches
+ * how {@link DomainMetadata}'s builder-constructed list members behave. Old tooling
+ * stays safe via {@code @JsonIgnoreProperties(ignoreUnknown = true)}, and both an
+ * absent key and {@code []} read back to {@link List#of()} through the compact
+ * constructor, so the EV1 metadata can grow further without a wire break.
  *
  * <p><strong>Out of EV1 scope.</strong> {@code @DomainEvent.includeComputed} and
  * {@code includePreviousValues} do not contribute to {@code payloadFields} yet —
@@ -82,7 +91,7 @@ public record DomainEventMetadata(
         return new DomainEventMetadata(name, topic, null, null, List.of(), List.of());
     }
 
-    /** @since 0.1.0 (EV1) */
+    /** @since 0.8.0 (EV1) */
     public static Builder builder(String name) {
         return new Builder(name);
     }

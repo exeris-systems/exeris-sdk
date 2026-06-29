@@ -198,6 +198,13 @@ class AstJsonRoundTripTest {
                 "OrderCreated", "orders.created", "Order created", "Order");
         assertThat(minimal.payloadFields()).isEmpty();
         assertThat(minimal.sensitiveFields()).isEmpty();
+        // Pin the wire shape: under class-level @JsonInclude(NON_NULL) the
+        // normalized-empty lists emit [] (NOT absent — NON_NULL only drops null),
+        // matching DomainMetadata's builder-built list members. Machine-checked so
+        // the prose above can't silently drift to "keys are absent".
+        String minimalJson = mapper.writeValueAsString(minimal);
+        assertThat(minimalJson).contains("\"payloadFields\":[]");
+        assertThat(minimalJson).contains("\"sensitiveFields\":[]");
         assertRoundTrip(minimal, DomainEventMetadata.class);
     }
 
