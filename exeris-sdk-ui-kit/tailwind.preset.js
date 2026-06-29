@@ -4,7 +4,7 @@
  * Extend your project's tailwind.config.js with this preset.
  *
  * Usage in tailwind.config.js:
- *   import exerisPreset from '@exeris/ui-kit/tailwind.preset.js';
+ *   import exerisPreset from '@exeris-systems/ui-kit/tailwind.preset.js';
  *   export default {
  *     presets: [exerisPreset],
  *     // ... your config

@@ -1,5 +1,5 @@
 /**
- * @exeris/ui-kit
+ * @exeris-systems/ui-kit
  *
  * Exeris UI Kit - Base styles and design tokens for generated components.
  *

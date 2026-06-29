@@ -69,9 +69,9 @@ describe('Tailwind v4 @theme entry (B1)', () => {
 
 describe('package exports (B2)', () => {
   it('exposes the v4 theme and the v3 preset so the documented imports resolve', () => {
-    expect(pkg.exports['./theme'], 'v4 consumers @import "@exeris/ui-kit/theme"')
+    expect(pkg.exports['./theme'], 'v4 consumers @import "@exeris-systems/ui-kit/theme"')
       .toBe('./src/styles/theme.css');
-    expect(pkg.exports['./tailwind.preset.js'], 'README imports @exeris/ui-kit/tailwind.preset.js')
+    expect(pkg.exports['./tailwind.preset.js'], 'README imports @exeris-systems/ui-kit/tailwind.preset.js')
       .toBe('./tailwind.preset.js');
   });
 });

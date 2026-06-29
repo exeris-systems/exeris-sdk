@@ -1,8 +1,22 @@
 {
-  "name": "@exeris/ui-kit",
+  "name": "@exeris-systems/ui-kit",
   "version": "0.1.0",
   "description": "Exeris UI Kit - Base styles and assets for generated components",
   "type": "module",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exeris-systems/exeris-sdk.git",
+    "directory": "exeris-sdk-ui-kit"
+  },
+  "files": [
+    "dist",
+    "src",
+    "tailwind.preset.js",
+    "README.md"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -20,7 +34,8 @@
     "build:css": "tailwindcss -i src/styles/index.css -o dist/styles.css",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "exeris",

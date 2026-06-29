@@ -1,0 +1,57 @@
+name: publish-ui-kit
+
+# Publishes @exeris-systems/ui-kit to GitHub Packages (npm.pkg.github.com).
+#
+# The scope (@exeris-systems) matches the repo owner, as GitHub Packages requires.
+# Interim home until the package moves to the public npm registry; consumers point
+# `@exeris-systems:registry=https://npm.pkg.github.com` (the generated front emits
+# that .npmrc) and authenticate with a token that has `read:packages`.
+#
+# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.1.0), or manual dispatch.
+# Bump exeris-sdk-ui-kit/package.json `version` before tagging — npm publish refuses
+# to overwrite an already-published version.
+
+on:
+  push:
+    tags:
+      - 'ui-kit-v*'
+  workflow_dispatch:
+    inputs:
+      dist-tag:
+        description: 'npm dist-tag to publish under'
+        default: 'latest'
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: publish @exeris-systems/ui-kit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (GitHub Packages registry)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@exeris-systems'
+          cache: npm
+          cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
+
+      - name: Install + build + test
+        working-directory: exeris-sdk-ui-kit
+        run: |
+          npm ci
+          npm run build
+          npm test
+
+      - name: Publish to GitHub Packages
+        working-directory: exeris-sdk-ui-kit
+        run: npm publish --tag "${{ github.event.inputs.dist-tag || 'latest' }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
