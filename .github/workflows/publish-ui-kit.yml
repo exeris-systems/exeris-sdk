@@ -1,0 +1,70 @@
+name: publish-ui-kit
+
+# Publishes @exeris-systems/ui-kit to GitHub Packages (npm.pkg.github.com).
+#
+# The scope (@exeris-systems) matches the repo owner, as GitHub Packages requires.
+# Interim home until the package moves to the public npm registry; consumers point
+# `@exeris-systems:registry=https://npm.pkg.github.com` (the generated front emits
+# that .npmrc) and authenticate with a token that has `read:packages`.
+#
+# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.1.0), or manual dispatch.
+# Bump exeris-sdk-ui-kit/package.json `version` before tagging — npm publish refuses
+# to overwrite an already-published version.
+
+on:
+  push:
+    tags:
+      - 'ui-kit-v*'
+  workflow_dispatch:
+    inputs:
+      dist-tag:
+        description: 'npm dist-tag to publish under'
+        default: 'latest'
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: publish @exeris-systems/ui-kit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Catch a tag/version mismatch early with a clear message, instead of the
+      # cryptic late failure from `npm publish` ("cannot publish over previously
+      # published versions" — or a silent wrong-version publish).
+      - name: Assert tag version matches package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: exeris-sdk-ui-kit
+        run: |
+          TAG="${GITHUB_REF_NAME#ui-kit-v}"
+          PKG=$(node -p "require('./package.json').version")
+          [ "$TAG" = "$PKG" ] || { echo "Tag version $TAG != package.json $PKG"; exit 1; }
+
+      - name: Set up Node.js (GitHub Packages registry)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@exeris-systems'
+          cache: npm
+          cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
+
+      # No explicit build here — `prepublishOnly` (package.json) runs `npm run build`
+      # right before `npm publish`, so dist/ is fresh for exactly one build. The tests
+      # exercise src/ + tailwind.preset.js directly, so they need no prior build.
+      - name: Install + test
+        working-directory: exeris-sdk-ui-kit
+        run: |
+          npm ci
+          npm test
+
+      - name: Publish to GitHub Packages
+        working-directory: exeris-sdk-ui-kit
+        run: npm publish --tag "${{ github.event.inputs.dist-tag || 'latest' }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

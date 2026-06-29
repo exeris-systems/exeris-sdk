@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * Vitest config for @exeris/ui-kit.
+ * Vitest config for @exeris-systems/ui-kit.
  *
  * This package is overwhelmingly CSS + design tokens; the only TypeScript
  * is an interface declaration and a constant object in src/index.ts, plus

@@ -1,4 +1,4 @@
-# @exeris/ui-kit
+# @exeris-systems/ui-kit
 
 > Exeris UI Kit - Base styles and design tokens for generated components
 
@@ -12,8 +12,10 @@
 ## Installation
 
 ```bash
-npm install @exeris/ui-kit
+npm install @exeris-systems/ui-kit
 ```
+
+> **Note:** this package is published to **GitHub Packages**, which requires authentication even for reads. Add `@exeris-systems:registry=https://npm.pkg.github.com` to your `.npmrc` and authenticate with a token that has `read:packages`. This requirement is lifted once the package moves to the public npm registry.
 
 ## Usage
 
@@ -26,7 +28,7 @@ ships two ways — pick the one matching your Tailwind major.
 **Tailwind v3** — JS preset in `tailwind.config.js`:
 
 ```javascript
-import exerisPreset from '@exeris/ui-kit/tailwind.preset.js';
+import exerisPreset from '@exeris-systems/ui-kit/tailwind.preset.js';
 
 export default {
   presets: [exerisPreset],
@@ -40,7 +42,7 @@ apply). Import the `@theme` entry next to Tailwind:
 
 ```css
 @import "tailwindcss";
-@import "@exeris/ui-kit/theme";
+@import "@exeris-systems/ui-kit/theme";
 ```
 
 Both entries declare the same tokens, so generated components render identically
@@ -51,7 +53,7 @@ on either major; a parity test keeps them in sync.
 In your main CSS file:
 
 ```css
-@import '@exeris/ui-kit/styles';
+@import '@exeris-systems/ui-kit/styles';
 ```
 
 Or in Angular's `angular.json`:
@@ -59,7 +61,7 @@ Or in Angular's `angular.json`:
 ```json
 {
   "styles": [
-    "node_modules/@exeris/ui-kit/src/styles/index.css",
+    "node_modules/@exeris-systems/ui-kit/src/styles/index.css",
     "src/styles.css"
   ]
 }

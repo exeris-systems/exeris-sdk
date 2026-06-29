@@ -10,7 +10,7 @@
  *
  * Usage (Tailwind v4, CSS-first):
  *   @import "tailwindcss";
- *   @import "@exeris/ui-kit/theme";
+ *   @import "@exeris-systems/ui-kit/theme";
  *
  * v3 consumers keep using `tailwind.preset.js` instead (see README). The token
  * values here mirror the v3 preset and the `--exeris-*` custom properties in

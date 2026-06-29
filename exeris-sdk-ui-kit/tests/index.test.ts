@@ -4,7 +4,7 @@ import { defaultTheme, type ExerisTheme } from '../src/index';
 /**
  * Shape contract: the exported `defaultTheme` is what generated Angular
  * components fall back to when a host app does not override design tokens.
- * Renaming a key here is a breaking change for consumers of @exeris/ui-kit,
+ * Renaming a key here is a breaking change for consumers of @exeris-systems/ui-kit,
  * so the test pins both the structure and the values.
  */
 describe('defaultTheme', () => {
