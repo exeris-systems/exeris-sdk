@@ -15,6 +15,8 @@
 npm install @exeris-systems/ui-kit
 ```
 
+> **Note:** this package is published to **GitHub Packages**, which requires authentication even for reads. Add `@exeris-systems:registry=https://npm.pkg.github.com` to your `.npmrc` and authenticate with a token that has `read:packages`. This requirement is lifted once the package moves to the public npm registry.
+
 ## Usage
 
 ### With Tailwind CSS

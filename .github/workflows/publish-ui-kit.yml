@@ -34,6 +34,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Catch a tag/version mismatch early with a clear message, instead of the
+      # cryptic late failure from `npm publish` ("cannot publish over previously
+      # published versions" — or a silent wrong-version publish).
+      - name: Assert tag version matches package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: exeris-sdk-ui-kit
+        run: |
+          TAG="${GITHUB_REF_NAME#ui-kit-v}"
+          PKG=$(node -p "require('./package.json').version")
+          [ "$TAG" = "$PKG" ] || { echo "Tag version $TAG != package.json $PKG"; exit 1; }
+
       - name: Set up Node.js (GitHub Packages registry)
         uses: actions/setup-node@v4
         with:
@@ -43,11 +54,13 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
-      - name: Install + build + test
+      # No explicit build here — `prepublishOnly` (package.json) runs `npm run build`
+      # right before `npm publish`, so dist/ is fresh for exactly one build. The tests
+      # exercise src/ + tailwind.preset.js directly, so they need no prior build.
+      - name: Install + test
         working-directory: exeris-sdk-ui-kit
         run: |
           npm ci
-          npm run build
           npm test
 
       - name: Publish to GitHub Packages
