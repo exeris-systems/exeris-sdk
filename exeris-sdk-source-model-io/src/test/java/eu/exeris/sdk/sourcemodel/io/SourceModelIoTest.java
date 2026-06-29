@@ -1,6 +1,7 @@
 package eu.exeris.sdk.sourcemodel.io;
 
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
@@ -1069,6 +1070,87 @@ class SourceModelIoTest {
             DomainMetadata domain = reader.read(ACCOUNT).orElseThrow();
             assertThat(domain.events()).isEmpty();
         }
+
+        // ── EV1: resolved payload-field subset (ADR-042 lock-step with the processor) ──
+
+        private static final String ORDER_WITH_FIELDS = """
+                package app.budgethq.order;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.DomainEvent;
+                import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                import eu.exeris.sdk.annotation.Field;
+
+                @ExerisDomain(name = "Order")
+                @DomainEvent(name = "OrderCreated", trigger = Trigger.CREATE, topic = "orders.created")
+                @DomainEvent(name = "OrderPicked", trigger = Trigger.ACTION, topic = "orders.picked",
+                        includeFields = {"amount", "orderNumber"}, sensitiveFields = "customerEmail")
+                @DomainEvent(name = "OrderRedacted", trigger = Trigger.UPDATE, topic = "orders.redacted",
+                        excludeFields = {"customerEmail"})
+                public class Order {
+                    @Field private String orderNumber;
+                    @Field private java.math.BigDecimal amount;
+                    @Field private String customerEmail;
+                }
+                """;
+
+        @Test
+        void defaultPayloadIsAllFieldNamesInDeclarationOrder() {
+            // No includeFields/excludeFields -> ALL @Field names, declaration order.
+            DomainMetadata domain = reader.read(ORDER_WITH_FIELDS).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderCreated");
+                assertThat(e.payloadFields())
+                        .containsExactly("orderNumber", "amount", "customerEmail");
+                assertThat(e.sensitiveFields()).isEmpty();
+            });
+        }
+
+        @Test
+        void includeFieldsRestrictsPayloadVerbatim() {
+            // includeFields non-empty -> exactly those names (in written order),
+            // and sensitiveFields is read verbatim (single brace-elided element).
+            DomainMetadata domain = reader.read(ORDER_WITH_FIELDS).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderPicked");
+                assertThat(e.payloadFields()).containsExactly("amount", "orderNumber");
+                assertThat(e.sensitiveFields()).containsExactly("customerEmail");
+            });
+        }
+
+        @Test
+        void excludeFieldsRemovedFromDefaultPayload() {
+            // No includeFields, excludeFields removes a name -> remaining @Field
+            // names in declaration order.
+            DomainMetadata domain = reader.read(ORDER_WITH_FIELDS).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderRedacted");
+                assertThat(e.payloadFields()).containsExactly("orderNumber", "amount");
+            });
+        }
+
+        @Test
+        void payloadResolutionMatchesProcessorBaselineAndUnmodeledFacetsEmpty() {
+            // The reader's resolved payload is the processor baseline (computed by
+            // the identical includeFields-else-all minus-excludeFields rule), and
+            // adding payload reading introduces no annotation-level divergence.
+            assertThat(reader.unmodeledFacets(ORDER_WITH_FIELDS)).isEmpty();
+
+            DomainMetadata domain = reader.read(ORDER_WITH_FIELDS).orElseThrow();
+            // Baseline: same resolution rule expressed independently here.
+            List<String> all = List.of("orderNumber", "amount", "customerEmail");
+            assertThat(eventNamed(domain, "OrderCreated").payloadFields()).isEqualTo(all);
+            assertThat(eventNamed(domain, "OrderPicked").payloadFields())
+                    .isEqualTo(List.of("amount", "orderNumber"));
+            assertThat(eventNamed(domain, "OrderRedacted").payloadFields())
+                    .isEqualTo(all.stream().filter(f -> !f.equals("customerEmail")).toList());
+        }
+
+        private DomainEventMetadata eventNamed(DomainMetadata domain, String name) {
+            return domain.events().stream()
+                    .filter(e -> name.equals(e.name()))
+                    .findFirst()
+                    .orElseThrow();
+        }
     }
 
     @Nested
@@ -1412,6 +1494,35 @@ class SourceModelIoTest {
                 assertThat(field.required()).isFalse();
                 assertThat(field.searchable()).isTrue(); // simple() path
             });
+        }
+
+        @Test
+        void readsFieldDataTypeAndStaysOnTheCodegenBaseline() {
+            // ADR-042 lock-step (Wave 1A): the reader now mirrors the processor's
+            // @Field.dataType extraction. The value reaches FieldMetadata.dataType and
+            // a @Field(dataType=...) source produces no unmodeled facet (the read is
+            // attribute-complete against the codegen baseline, so reattach/conflict
+            // detection does not misread it as user drift).
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Field;
+                    @ExerisDomain(name = "Invoice")
+                    public class Invoice {
+                        @Field(label = "Amount", dataType = "currency") private java.math.BigDecimal amount;
+                        @Field(label = "Reference") private String reference;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            // present-only: the annotated dataType is read…
+            assertThat(domain.findField("amount")).get()
+                    .extracting("dataType").isEqualTo("currency");
+            // …and an unset dataType stays null (no "" leaking onto the wire)
+            assertThat(domain.findField("reference")).get()
+                    .extracting("dataType").isNull();
+            // the equivalence guard stays empty (dataType is an attribute, not a
+            // guarded annotation; UNMODELED_FACET_ANNOTATIONS remains empty)
+            assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
     }
 }
