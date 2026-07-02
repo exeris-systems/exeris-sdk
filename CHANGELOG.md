@@ -15,6 +15,8 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.8.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
 ## [0.8.0] — 2026-07-02
 
 The events + composition milestone, cut in lockstep with kernel v0.10.0: the
