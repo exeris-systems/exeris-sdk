@@ -393,6 +393,12 @@ public final class SourceModelReader {
                     .filter(s -> !s.isBlank())
                     .ifPresent(builder::description);
             stringAttr(action.get(), "httpMethod").ifPresent(builder::httpMethod);
+            // Per-action streaming driver (ADR-043, tooling Slice 2 parity):
+            // streaming + streamEventType mirror the processor's extraction;
+            // realTimeUpdates is deliberately unextracted on both sides until
+            // it has a generator consumer.
+            builder.streaming(boolAttr(action.get(), "streaming", false));
+            stringAttr(action.get(), "streamEventType").ifPresent(builder::streamEventType);
             for (Parameter parameter : method.getParameters()) {
                 parameter.getAnnotationByName("ActionParam")
                         .ifPresent(ann -> builder.addParam(actionParam(parameter, ann)));

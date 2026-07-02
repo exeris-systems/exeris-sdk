@@ -17,7 +17,47 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Changed
+- **`SchemaVersion.CURRENT`** bumped `"0.7.0"` → `"0.8.0"` to name the
+  `ActionMetadata` streaming growth below (a `"0.7.0"` baseline now reads as
+  `SCHEMA_VERSION_SKEW`). The other 0.8.0 additions ride the same schema.
+- **UI kit published to GitHub Packages** — `@exeris-systems/ui-kit` on the org
+  registry. The public npm-registry publish under `@exeris/ui-kit` stays a
+  1.0.0 GA item.
+- **Kernel v0.10.0 lockstep (docs + javadoc)** — `@DomainEvent.topic` carries
+  the ADR-050 stance (binding-agnostic kernel sink on `EventTypeSpec`; the
+  Community Kafka binding honours it on publish + subscribe; the in-memory bus
+  treats it as advisory), anchored by a new `docs/adr/ADR-050.link.md` stub;
+  the streaming attribute javadocs reflect the shipped kernel SSE SPI (ADR-043)
+  + tooling emitters (`realTimeApi` live at the entity level, per-action
+  pending the tooling EV1-stream producer pass, `realTimeUpdates` still inert);
+  `RFC-2026-06-24` (universe data-scope) moved DRAFT → ACCEPTED on the kernel
+  shared-scope decision (RFC-2026-07-02) — the build stays gated on the
+  ADR-012 amendment.
+
 ### Added
+- **`ActionMetadata` per-action streaming fields** — `streaming` /
+  `streamEventType` / `realTimeUpdates`, the faithful AST twin of the
+  `@Action` streaming attributes (the per-action SSE driver, ADR-043 /
+  RFC-2026-06-22 Slice 2). Trailing components; blank `streamEventType` → null.
+  See [`MIGRATION.md`](MIGRATION.md#07x--08x).
+- **`DomainEventMetadata` resolved payload framing (EV1)** — `payloadFields`
+  (resolved payload field *names*: `includeFields` if non-empty, else all
+  `@Field` names, minus `excludeFields`) and `sensitiveFields` (verbatim), the
+  AST side of the generated event-payload story (kernel ADR-046 / tooling EV1).
+  Field names, not `FieldMetadata` copies; the `-io` reader shares the same
+  resolution semantics (ADR-042 lock-step). Trailing components, null-list →
+  empty. See [`MIGRATION.md`](MIGRATION.md#07x--08x).
+- **Composition spec + runtime modules** — `exeris-sdk-composition-spec` (the
+  shared SKU manifest schema + binding, ADR-024 obligation 8b) and
+  `exeris-sdk-composition-runtime` (the SKU-boot composition-stamp asserter on
+  that shared spec, ADR-024 obligation 8a): two new publishable jars, wired
+  into the reactor and the BOM with sources/javadoc attached.
+- **`-io` reader parity growth** — the reader now reads `@Field.dataType`
+  (closing UI-kit gap B5, coordinated with the tooling processor flip per
+  ADR-042) and the per-action streaming driver (`@Action.streaming` /
+  `streamEventType`; `realTimeUpdates` stays unextracted on both sides until
+  it has a generator consumer).
 - **Unified presentation / front model (`@View` / `ViewMetadata`)** —
   RFC-2026-06-25 (ACCEPTED). Annotations `@View` / `@Region` / `@Block` / `@Bind`
   in `exeris-sdk-annotations`, and AST records `ViewMetadata` / `RegionMetadata` /

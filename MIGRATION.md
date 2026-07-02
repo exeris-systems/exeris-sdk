@@ -49,8 +49,48 @@ positional prefixes are unchanged in order. Code calling `new ActionMetadata(…
 fine — they normalize). The `simple(name)` factory and `ActionMetadata.builder`
 are the unaffected path. All additions are by-name on the wire (an old baseline
 reads `streaming` / `realTimeUpdates` back `false` and `streamEventType` back
-`null`). The processor extraction of `@Action(streaming)` + codegen consumption,
-with `-io` reader parity, are the `exeris-tooling` follow-up (Slice 2).
+`null`). The processor extraction of `@Action(streaming)` + codegen consumption
+landed in `exeris-tooling` (Slice 2, #106), and the `-io` reader reads the same
+two attributes since 0.8.0 (see the parity section below); `realTimeUpdates` is
+deliberately unextracted on both sides until it has a generator consumer.
+
+### `DomainEventMetadata` grew resolved payload framing (EV1)
+
+**Why:** the generated event story (kernel Event-Payload Codec SPI, ADR-046 /
+the tooling EV1 payload pass) needs the *resolved* payload shape — which fields
+an event actually carries — on the event's AST record, not recomputed by every
+consumer.
+
+- **New components** — two **trailing** `List<String>` components:
+  `payloadFields` (resolved payload field *names*, in `includeFields` order when
+  set: `@DomainEvent.includeFields` if non-empty, else all of the entity's
+  `@Field` names, minus `excludeFields`) and `sensitiveFields` (the
+  `@DomainEvent.sensitiveFields` names, verbatim). Field names, not
+  `FieldMetadata` copies — the field definitions live once on
+  `DomainMetadata.fields()`. Null lists normalize to empty (defensive copies);
+  the resolution semantics are shared by the processor and the `-io` reader
+  (ADR-042 lock-step).
+
+**Impact:** the all-args constructor arity grew 4 → 6; positional callers add
+two trailing `List.of()` (`null` also normalizes). The `simple(name)` /
+`withTopic(name, topic)` factories and `builder(name)` are the unaffected path.
+By-name on the wire — an old baseline reads both lists back empty.
+`@DomainEvent.includeComputed` / `includePreviousValues` do not contribute yet
+(no computed-field source in the persisted field list).
+
+### `-io` reader parity: `@Field.dataType` + the per-action streaming driver
+
+**Why:** ADR-042 conflict detection compares `read(currentSource)` against the
+processor-emitted baseline, so the reader must read exactly what the processor
+writes. 0.8.0 closes two coordinated flips: the `exeris-tooling` processor began
+extracting `@Field.dataType` (UI-kit gap B5) and the per-action streaming driver
+(`@Action.streaming` / `streamEventType`, tooling Slice 2), and the reader now
+mirrors both. `@Action.realTimeUpdates` is deliberately unextracted on **both**
+sides (no generator consumer yet) — parity holds by omission.
+
+**Impact:** nothing to migrate — read-side only, additive. Sources using these
+attributes now round-trip them; blank `streamEventType` / unset `dataType` stay
+off the wire (null).
 
 ### Presentation / front model (`@View` / `ViewMetadata`) added — reserved
 
