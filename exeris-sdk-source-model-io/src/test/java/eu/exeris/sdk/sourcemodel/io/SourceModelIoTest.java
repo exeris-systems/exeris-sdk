@@ -767,6 +767,49 @@ class SourceModelIoTest {
             DomainMetadata domain = reader.read(INVOICE).orElseThrow();
             assertThat(domain.fields()).extracting("name").containsExactly("number");
         }
+
+        @Test
+        void readsPerActionStreamingDriverInProcessorParity() {
+            String src = """
+                    package app.reporting;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Action;
+                    @ExerisDomain(name = "Report")
+                    public class Report {
+                        @Action(name = "generate", path = "/generate",
+                                streaming = true, streamEventType = "ReportProgress")
+                        public void generate() { }
+
+                        // blank streamEventType normalizes to null ("no event type")
+                        @Action(name = "tail", path = "/tail", streaming = true, streamEventType = "")
+                        public void tail() { }
+
+                        // realTimeUpdates is deliberately NOT read (processor parity:
+                        // no generator consumer yet, so extracting it would only
+                        // create an inert AST attribute)
+                        @Action(name = "watch", path = "/watch", realTimeUpdates = true)
+                        public void watch() { }
+                    }
+                    """;
+            DomainMetadata report = reader.read(src).orElseThrow();
+
+            assertThat(report.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("generate");
+                assertThat(a.streaming()).isTrue();
+                assertThat(a.streamEventType()).isEqualTo("ReportProgress");
+                assertThat(a.hasStreamEventType()).isTrue();
+            });
+            assertThat(report.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("tail");
+                assertThat(a.streaming()).isTrue();
+                assertThat(a.streamEventType()).isNull();
+            });
+            assertThat(report.actions()).anySatisfy(a -> {
+                assertThat(a.name()).isEqualTo("watch");
+                assertThat(a.streaming()).isFalse();
+                assertThat(a.realTimeUpdates()).isFalse();
+            });
+        }
     }
 
     @Nested
