@@ -465,11 +465,17 @@ public @interface Action {
      * public Flux<ReportProgress> generateReport() { ...  }
      * }</pre>
      *
-     * <p><strong>Open-Core status:</strong> server-push is not wired in
-     * Open-Core — there is no streaming HTTP affordance behind it yet (a
-     * kernel-owned SPI). This and the related {@link #streamEventType()} /
-     * {@link #realTimeUpdates()} attributes are inert until that affordance
-     * lands; they gain meaning once it does.
+     * <p><strong>Open-Core status (kernel v0.10.0, ADR-043):</strong>
+     * partially live. The kernel server-push affordance (SSE-first
+     * {@code HttpStreamExchange}) shipped with kernel v0.10.0, and the
+     * tooling emits the per-action streaming route + parity TS RxJS client —
+     * but the generated per-action stream body is still a keep-alive
+     * scaffold (it does not yet push the real event feed; that is the
+     * pending tooling EV1-stream producer pass). A declared streaming action
+     * therefore serves a live SSE route with placeholder events for now.
+     * This and the related {@link #streamEventType()} /
+     * {@link #realTimeUpdates()} attributes flip fully live when that
+     * producer pass lands; WebSocket/WebTransport stays deferred.
      *
      * @return true for streaming response
      */
@@ -479,8 +485,9 @@ public @interface Action {
      * Event type name for streaming responses.
      * <p>Used in SSE event type or WebTransport message type.
      *
-     * <p><strong>Open-Core status:</strong> inert until the streaming
-     * affordance lands — see {@link #streaming()}.
+     * <p><strong>Open-Core status:</strong> see {@link #streaming()} — the
+     * kernel affordance and the emitters shipped (kernel v0.10.0, ADR-043);
+     * the per-action event feed awaits the tooling EV1-stream producer pass.
      *
      * @return stream event type name
      */
@@ -495,8 +502,12 @@ public @interface Action {
      *   <li>Useful for tracking async operation status</li>
      * </ul>
      *
-     * <p><strong>Open-Core status:</strong> inert until the streaming
-     * affordance lands — see {@link #streaming()}.
+     * <p><strong>Open-Core status:</strong> still inert — unlike
+     * {@link #streaming()}, this attribute is deliberately not extracted by
+     * the tooling processor yet (a separate subscribe-to-progress affordance
+     * with no generator consumer; the extraction lands together with its
+     * consumer). The kernel affordance itself shipped (kernel v0.10.0,
+     * ADR-043), so only the tooling half is pending.
      *
      * @return true for real-time subscription support
      */
