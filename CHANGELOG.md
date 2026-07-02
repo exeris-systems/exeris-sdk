@@ -12,10 +12,18 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0` and `0.7.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.8.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.8.0] — 2026-07-02
+
+The events + composition milestone, cut in lockstep with kernel v0.10.0: the
+AST grows the per-action streaming twin (ADR-043) and the resolved
+event-payload framing (EV1, pairing with the kernel Event-Payload Codec SPI,
+ADR-046); the `-io` reader closes both coordinated parity flips
+(`@Field.dataType`, the streaming driver); two new composition modules ship
+the ADR-024 SKU manifest spec + boot-stamp asserter; and the reserved `@View`
+presentation IR seed lands. Schema `"0.7.0"` → `"0.8.0"`.
 
 ### Changed
 - **`SchemaVersion.CURRENT`** bumped `"0.7.0"` → `"0.8.0"` to name the
@@ -221,5 +229,6 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.8.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.8.0
 [0.7.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.7.0
 [0.6.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.6.0
