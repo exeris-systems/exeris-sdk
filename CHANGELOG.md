@@ -57,7 +57,7 @@ for per-version upgrade steps.
   (closing UI-kit gap B5, coordinated with the tooling processor flip per
   ADR-042) and the per-action streaming driver (`@Action.streaming` /
   `streamEventType`; `realTimeUpdates` stays unextracted on both sides until
-  it has a generator consumer).
+  it has a generator consumer). See [`MIGRATION.md`](MIGRATION.md#07x--08x).
 - **Unified presentation / front model (`@View` / `ViewMetadata`)** —
   RFC-2026-06-25 (ACCEPTED). Annotations `@View` / `@Region` / `@Block` / `@Bind`
   in `exeris-sdk-annotations`, and AST records `ViewMetadata` / `RegionMetadata` /
