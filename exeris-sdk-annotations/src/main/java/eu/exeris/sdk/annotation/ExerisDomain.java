@@ -145,11 +145,14 @@ public @interface ExerisDomain {
     /**
      * Whether to generate real-time streaming endpoints (SSE/WebTransport).
      *
-     * <p><strong>Open-Core status:</strong> server-push is not wired in
-     * Open-Core — there is no streaming HTTP affordance behind it yet (a
-     * kernel-owned SPI). Setting this is inert until that affordance lands;
-     * the attribute gains meaning once it does. See also
-     * {@link Action#streaming()} / {@link Action#realTimeUpdates()}.
+     * <p><strong>Open-Core status (kernel v0.10.0, ADR-043):</strong> live at
+     * the entity level. The kernel server-push SPI (SSE-first
+     * {@code HttpStreamExchange} / {@code HttpStreamHandler} /
+     * {@code HttpRouter.streamRoute}) shipped with kernel v0.10.0, and the
+     * tooling emits the entity-level stream route + TS {@code EventSource}
+     * client backed by the real domain-event feed. SSE is the shipped
+     * transport; the WebTransport/WebSocket half stays deferred kernel-side.
+     * See also {@link Action#streaming()} / {@link Action#realTimeUpdates()}.
      *
      * @return true to generate real-time API
      */

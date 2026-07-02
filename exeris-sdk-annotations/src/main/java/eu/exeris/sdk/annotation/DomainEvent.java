@@ -199,10 +199,14 @@ public @interface DomainEvent {
      *   <li>RabbitMQ: "domain.aggregate.event" or use exchange + routing key</li>
      * </ul>
      *
-     * <p><strong>Open-Core status:</strong> broker topic/queue routing is a
-     * messaging-tier concern. The Open-Core event engine does not route on
-     * {@code topic} — it is preserved by the generator as a source reference
-     * only, and gains routing meaning under the enterprise/Kafka messaging tier.
+     * <p><strong>Open-Core status (ADR-050):</strong> {@code topic} is a
+     * binding-agnostic routing target. The generator lands it on the per-type
+     * {@code EventTypeSpec} (the kernel registration record) — not on the
+     * per-instance event descriptor, which stays primitive-only. Broker bindings
+     * (e.g. Kafka) map it to the concrete broker topic on publish and subscribe;
+     * the Open-Core in-memory event bus treats it as advisory and routes by
+     * event-type ordinal only (topic-blind by design). A blank {@code topic}
+     * means "no override" — the binding falls back to its default routing.
      *
      * @return topic name
      */
