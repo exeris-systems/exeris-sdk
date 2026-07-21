@@ -54,6 +54,53 @@ There is **no code migration**: the interface never existed before 0.9.0 —
 implement (public no-arg constructor required; default no-ops mean you
 implement only the subset you need).
 
+### `SchemaVersion.CURRENT` bumped `"0.8.0"` → `"0.9.0"`
+
+**Why:** `FieldMetadata.min/max/minLength/maxLength` moved to per-component
+`@JsonInclude(NON_NULL)`, so zero-valued bounds (e.g. `min = 0` non-negativity)
+now survive serialization — previously the class-level
+`@JsonInclude(NON_DEFAULT)` silently dropped boxed zero. The wire can express
+states it could not before; the schema version names the shape (ADR-042
+posture).
+
+**Impact:** a baseline stamped `"schemaVersion": "0.8.0"` reads as
+`NO_BASELINE(SCHEMA_VERSION_SKEW)`. Unlike prior bumps, the tooling processor
+NOW stamps `schemaVersion` into `exeris-metadata/<entity>.json`, so 0.8.0
+baselines exist in the wild — **re-run codegen once** after upgrading to emit
+fresh `"0.9.0"` baselines. Consumer mapper posture unchanged:
+`FAIL_ON_NULL_FOR_PRIMITIVES=false` still required.
+
+### `min = 0` / `max = 0` / `minLength = 0` / `maxLength = 0` are now meaningful
+
+The "avoid 0 as a meaningful bound" caveat is retired. Generators that
+null-check bounds now see them: `@Validation(min = 0)` yields the DB
+`CHECK (col >= 0)`, OpenAPI `minimum: 0`, and client validators. If you wrote
+`0` expecting it to be ignored, remove the attribute.
+
+### `ValidationMetadata` is removed — `FieldMetadata` is the canonical carrier
+
+**Why:** the record was never populated by the processor or the `-io` reader,
+never referenced by `DomainMetadata`, and never consumed by any generator; the
+constraint values it mirrors live on `FieldMetadata`
+(`minLength`/`maxLength`/`min`/`max`/`pattern`), populated from `@Validation`.
+`notNull`/`notBlank` semantics derive from `FieldMetadata.required`;
+`patternMessage` is dropped (no `@Validation` source, no consumer).
+
+**Window:** removed outright in 0.9.0 — no deprecation cycle. The pipeline's
+window exists for consumers that need to migrate, and none can exist here: no
+processor ever wrote the record, no generator ever read it, and no SDK
+artifact has ever been published to a registry, so there is no external
+compile-time dependent (0.x permits the break). Any in-org compile-time
+reference migrates to `FieldMetadata`. No `@Field` / `@Validation` source
+change is required.
+
+### `-io` reader parity: `@Validation.minLength` / `maxLength` (bugfix)
+
+The reader now reads both into `FieldMetadata`, matching what the processor
+has extracted all along; previously they were silently dropped on read,
+causing spurious ADR-042 drift on any field declaring them. Read-side only;
+nothing to migrate — sources using them now round-trip.
+
 ---
 
 ## 0.7.x → 0.8.x

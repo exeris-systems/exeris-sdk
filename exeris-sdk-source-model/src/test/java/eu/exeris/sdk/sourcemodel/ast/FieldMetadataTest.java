@@ -64,6 +64,26 @@ class FieldMetadataTest {
     }
 
     @Test
+    void builderPreservesZeroValuedBounds() {
+        // 0.9.0: zero is a meaningful bound (per-component NON_NULL on the
+        // wire); the builder and accessors must hand back 0, not null.
+        FieldMetadata f = FieldMetadata.builder("amount", "Long")
+                .min(0L).max(0L).minLength(0).maxLength(0)
+                .build();
+        assertThat(f.min()).isEqualTo(0L);
+        assertThat(f.max()).isEqualTo(0L);
+        assertThat(f.minLength()).isEqualTo(0);
+        assertThat(f.maxLength()).isEqualTo(0);
+    }
+
+    @Test
+    void hasValidationTrueWhenOnlyZeroMinSet() {
+        // A zero bound is a real constraint (e.g. min = 0 non-negativity), not
+        // an unset one — hasValidation() is a null-check, not a truthiness check.
+        assertThat(FieldMetadata.builder("a", "Long").min(0L).build().hasValidation()).isTrue();
+    }
+
+    @Test
     void effectiveColumnNameUsesExplicitWhenSet() {
         FieldMetadata f = FieldMetadata.builder("orderNumber", "String").columnName("order_no").build();
         assertThat(f.effectiveColumnName()).isEqualTo("order_no");
