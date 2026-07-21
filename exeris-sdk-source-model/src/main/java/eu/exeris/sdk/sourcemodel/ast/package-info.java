@@ -19,31 +19,39 @@
  * The wire-format guard test {@code AstJsonRoundTripTest} configures the
  * mapper accordingly and is the canonical reference.
  *
- * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0)</h2>
- * <p>The annotation surface ({@code @Field} / {@code @Validation}) historically
- * exposed overlapping attributes. The AST mirrors the resolution chosen on the
- * annotation side:
+ * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0, finalized 0.9.0)</h2>
+ * <p>The annotation surface splits field-shape ({@code @Field}) from constraint
+ * declarations ({@code @Validation}); the AST carries both on a single record:
  * <ul>
  *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata}</strong>
- *       owns {@code required}, {@code inCreate}, {@code inUpdate}. These are
- *       field-shape / lifecycle facts — populated from {@code @Field} only.
- *       {@code @Validation.required} (deprecated, removal in 1.0.0) is ignored
- *       by the processor.</li>
+ *       owns {@code required}, {@code inCreate}, {@code inUpdate} — field-shape /
+ *       lifecycle facts populated from {@code @Field} only
+ *       ({@code @Validation.required}, deprecated, removal in 1.0.0, is ignored
+ *       by the processor) — and is the <em>sole AST carrier</em> of the
+ *       constraint values {@code minLength}, {@code maxLength}, {@code min},
+ *       {@code max}, {@code pattern}, populated <em>from {@code @Validation}</em>
+ *       by the build-time processor and the {@code -io} reader.
+ *       ({@code @Field} never declared these attributes — the historically
+ *       documented "basic shape hints on {@code @Field}" overlap was fictional
+ *       at the annotation level; ADR-054.) DB NOT NULL / not-blank semantics
+ *       derive from {@code FieldMetadata.required} at generator level. Since
+ *       0.9.0 the four numeric bounds use per-component
+ *       {@code @JsonInclude(NON_NULL)} so a zero-valued bound (e.g.
+ *       {@code min = 0} non-negativity) survives the wire; the class-level
+ *       {@code NON_DEFAULT} treated boxed zero as "empty" and dropped it.
+ *       (Same rationale as {@code ViewMetadata}'s deliberate {@code NON_NULL}
+ *       choice — see the presentation-IR section below.)</li>
  *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.ValidationMetadata}</strong>
- *       owns the constraint rules: {@code minLength}, {@code maxLength},
- *       {@code min}, {@code max}, {@code pattern}, {@code email}, {@code url},
- *       {@code future}, {@code past}. {@code notNull} / {@code notBlank} are
- *       <em>expected to be derived</em> from {@code FieldMetadata.required}
- *       at processor-build time (see {@code ExerisDomainProcessor} in the
- *       tooling repo) — they are not separately configurable on
- *       {@code @Validation} since 0.2.0.</li>
+ *       is {@code @Deprecated(forRemoval = true)} since 0.9.0 and is removed in
+ *       1.0.0 (ADR-054): it was never populated by any processor or reader,
+ *       never referenced by {@code DomainMetadata}, and never consumed by any
+ *       generator — it never appeared on the domain wire. Its {@code notNull} /
+ *       {@code notBlank} "derived from {@code required}" design never happened
+ *       (the derivation lives at generator level, from
+ *       {@code FieldMetadata.required}); {@code patternMessage} is dropped as
+ *       unconsumed (no {@code @Validation} source). Do not add a parallel AST
+ *       validation carrier — constraint values live on {@code FieldMetadata}.</li>
  * </ul>
- * <p>{@code FieldMetadata} also carries a few constraint-shaped fields
- * ({@code minLength}, {@code maxLength}, {@code min}, {@code max},
- * {@code pattern}) that overlap with {@code ValidationMetadata}. Those remain
- * for now — they describe basic shape hints used by the processor before
- * {@code @Validation} is consulted. A full deduplication is tracked in the
- * 0.6.0–0.9.0 cleanup phase once budgetHQ usage informs the right cut.
  *
  * <h2>{@code dataType} vs {@code format} on FieldMetadata (0.6.0)</h2>
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} carries two distinct

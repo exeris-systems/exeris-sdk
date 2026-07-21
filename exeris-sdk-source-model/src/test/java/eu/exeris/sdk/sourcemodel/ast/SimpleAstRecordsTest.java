@@ -19,6 +19,7 @@ class SimpleAstRecordsTest {
 
     @Nested
     @DisplayName("ValidationMetadata")
+    @SuppressWarnings("removal") // guards the deprecated record's factories until its 1.0.0 removal (ADR-054)
     class Validation {
         @Test
         void withNotNullSetsOnlyNotNull() {
