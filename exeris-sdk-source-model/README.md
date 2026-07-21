@@ -9,7 +9,9 @@ Canonical AST/metadata describing an Exeris domain.
 `RelationshipMetadata`, `DomainEventMetadata`, `ProjectionMetadata`,
 `SagaMetadata`, `SagaStepMetadata`, `EventSourcedMetadata`, `EnumMetadata`,
 `GraphMetadata`, `GraphPropertyMetadata`, `GraphEdgeMetadata`, `GraphQueryMetadata`,
-`UIMetadata`, `ValidationMetadata`, `SystemFieldsMetadata`, `InternalApiMetadata`.
+`UIMetadata`, `ValidationMetadata` (deprecated 0.9.0, removal 1.0.0 —
+`FieldMetadata` is the constraint carrier), `SystemFieldsMetadata`,
+`InternalApiMetadata`.
 
 The records are Jackson-serializable (annotated with `@JsonProperty`,
 `@JsonInclude`, `@JsonIgnoreProperties`) so they round-trip through the

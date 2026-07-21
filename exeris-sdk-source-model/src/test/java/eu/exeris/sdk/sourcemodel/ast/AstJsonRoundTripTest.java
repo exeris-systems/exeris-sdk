@@ -308,6 +308,7 @@ class AstJsonRoundTripTest {
 
     @Test
     @DisplayName("ValidationMetadata round-trips")
+    @SuppressWarnings("removal") // guards the deprecated record's wire shape until its 1.0.0 removal (ADR-054)
     void validationMetadataRoundTrips() {
         ValidationMetadata original = new ValidationMetadata(
                 true, true, 1, 255, 0L, 1000L, "[A-Z]+", "must be uppercase",

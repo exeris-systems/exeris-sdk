@@ -35,6 +35,27 @@ null-check bounds now see them: `@Validation(min = 0)` yields the DB
 `CHECK (col >= 0)`, OpenAPI `minimum: 0`, and client validators. If you wrote
 `0` expecting it to be ignored, remove the attribute.
 
+### `ValidationMetadata` is deprecated — `FieldMetadata` is the canonical carrier
+
+**Why:** the record was never populated by the processor or the `-io` reader,
+never referenced by `DomainMetadata`, and never consumed by any generator; the
+constraint values it mirrors live on `FieldMetadata`
+(`minLength`/`maxLength`/`min`/`max`/`pattern`), populated from `@Validation`.
+`notNull`/`notBlank` semantics derive from `FieldMetadata.required`;
+`patternMessage` is dropped (no `@Validation` source, no consumer).
+
+**Window:** `@Deprecated(forRemoval = true)` in 0.9.0; **removed in 1.0.0**.
+No processor fallback window applies — no processor ever wrote it; there is
+nothing to migrate off at build time. Compile-time references migrate to
+`FieldMetadata`. No `@Field` / `@Validation` source change is required.
+
+### `-io` reader parity: `@Validation.minLength` / `maxLength` (bugfix)
+
+The reader now reads both into `FieldMetadata`, matching what the processor
+has extracted all along; previously they were silently dropped on read,
+causing spurious ADR-042 drift on any field declaring them. Read-side only;
+nothing to migrate — sources using them now round-trip.
+
 ---
 
 ## 0.7.x → 0.8.x
