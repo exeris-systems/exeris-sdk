@@ -23,7 +23,9 @@
  *
  *   <dt>{@link eu.exeris.sdk.annotation.capability.CapabilityLifecycle @CapabilityLifecycle}</dt>
  *   <dd>Marks the class owning the cap's lifecycle hooks (marker only — the
- *       lifecycle interface is a kernel SPI type).</dd>
+ *       {@code CapabilityLifecycleHooks} interface lives SDK-side in the
+ *       zero-dependency composition-lifecycle module, driven by the
+ *       composition-runtime boot conductor; ADR-024 amendment 2026-06-25).</dd>
  * </dl>
  *
  * <h2>Service references</h2>
@@ -35,12 +37,16 @@
  * pipeline records the service by name (normalized to its fully-qualified form)
  * rather than loading the class.
  *
- * <h2>What stays out of the SDK</h2>
+ * <h2>What stays out of this module</h2>
  * <p>These annotations are SOURCE-retained markers and data only. Deliberately
  * <em>not</em> here:
  * <ul>
- *   <li><strong>The lifecycle interface</strong> — a kernel SPI type; the SDK
- *       ships only the {@code @CapabilityLifecycle} marker.</li>
+ *   <li><strong>The lifecycle interface</strong> — not an annotation:
+ *       {@code CapabilityLifecycleHooks} is a runtime type that lands in the
+ *       zero-dependency {@code exeris-sdk-composition-lifecycle} module, driven
+ *       by the boot conductor in {@code exeris-sdk-composition-runtime} (ADR-024
+ *       amendments 2026-06-25 / 2026-07-21, planned 0.9.0); this module ships
+ *       only the {@code @CapabilityLifecycle} marker.</li>
  *   <li><strong>Licensing</strong> — {@code community} / {@code commercial} /
  *       {@code enterprise-private} is a per-cap-repository property, never an
  *       annotation field.</li>

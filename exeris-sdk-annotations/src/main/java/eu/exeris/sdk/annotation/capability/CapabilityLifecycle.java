@@ -9,13 +9,19 @@ import java.lang.annotation.Target;
 /**
  * Marks the class that owns a capability's <strong>lifecycle hooks</strong> —
  * the four-phase {@code initialize} / {@code ready} / {@code drain} /
- * {@code terminate} sequence bound to the kernel bootstrap state machine.
+ * {@code terminate} sequence the boot conductor drives after the kernel
+ * reports {@code KERNEL READY}.
  *
  * <p>This is a <strong>marker only</strong>. The lifecycle <em>interface</em>
- * itself is a kernel SPI type and deliberately stays kernel-side — the SDK must
- * not reference kernel bootstrap. The annotation merely records "this class is
- * the cap's lifecycle owner"; the kernel and the build-time tooling bind the
- * behaviour and derive the invocation order from the {@link Requires} graph.
+ * ({@code CapabilityLifecycleHooks}) lives SDK-side — in the zero-dependency
+ * {@code exeris-sdk-composition-lifecycle} module, driven by the boot
+ * conductor in {@code exeris-sdk-composition-runtime} (ADR-024 amendments
+ * 2026-06-25 / 2026-07-21, planned for 0.9.0) — never kernel-side: the
+ * conductor is invoked by the generated SKU bootstrap and is not a kernel
+ * {@code Subsystem}, so neither side references kernel bootstrap. The
+ * annotation merely records "this class is the cap's lifecycle owner"; the
+ * build-time tooling derives the invocation order from the {@link Requires}
+ * graph and emits it as the manifest {@code initOrder} the conductor replays.
  *
  * <h2>Cardinality</h2>
  * <p>Zero or one per capability. Absence is valid — a cap with no
@@ -27,7 +33,7 @@ import java.lang.annotation.Target;
  * <pre>{@code
  * @CapabilityLifecycle
  * public final class GatewayLifecycle implements CapabilityLifecycleHooks {
- *     // initialize / ready / drain / terminate — interface from the kernel SPI
+ *     // initialize / ready / drain / terminate — interface from exeris-sdk-composition-lifecycle
  * }
  * }</pre>
  *
