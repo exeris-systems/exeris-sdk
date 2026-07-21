@@ -82,7 +82,7 @@ When adding a new Maven module that's intended for publish, mirror the `attach-s
 
 ## Distribution: Maven Central, not GitHub Packages
 
-> **Status (0.9.0 cycle):** Central publishing is being wired now — Central Portal publishing plugin + GPG signing in a release profile + a release workflow. Releases 0.6.0–0.8.0 shipped as git tag + GitHub Release only; there are no `eu.exeris` artifacts on Maven Central yet, and downstream repos currently resolve SDK artifacts from a local `mvn install`. The Central flow below is the target state.
+> **Status (2026-07-21):** Central publishing is deliberately **not wired yet** — the SDK does not move to Central before the kernel does (ecosystem-wide sequencing decision). Releases ship as git tag + GitHub Release; there are no `eu.exeris` artifacts on Maven Central, and downstream repos resolve SDK artifacts from a local `mvn install`. The wiring (Central Portal plugin + GPG release profile + publish workflow) is prepared on the parked branch `feat/0.9.0-central-publish-wiring`; the Central flow below is the target state once the ecosystem switches, kernel first.
 
 The parent `exeris-systems/CLAUDE.md` describes a `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` flow for cross-repo `eu.exeris:*` resolution. **That does not apply here.** The SDK publishes to Sonatype Central Portal (see `<distributionManagement>` in root `pom.xml`):
 

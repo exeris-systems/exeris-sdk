@@ -70,7 +70,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 ### 0.9.0 — planned scope (release plan 2026-07-21)
 
-- [ ] **Wire Maven Central publishing** — Sonatype Central Portal plugin + GPG signing in a release profile + a release workflow; namespace verification; first actual Central publish (0.6.0–0.8.0 shipped as git tag + GitHub Release only)
+- [ ] **Wire Maven Central publishing** *(deferred — gated on the kernel moving to Central first; the SDK does not publish ahead of the ecosystem)* — Sonatype Central Portal plugin + GPG signing in a release profile + a release workflow; namespace verification; first actual Central publish (0.6.0–0.8.0 shipped as git tag + GitHub Release only). Wiring is prepared and parked on `feat/0.9.0-central-publish-wiring`; 0.9.0 ships as git tag + GitHub Release
 - [ ] **Field/Validation `min`/`max`/`pattern` overlap** — the deferred cut, evidence-driven (budgetHQ corpus + tooling consumers), incl. the boxed-zero `Long(0)` NON_DEFAULT hazard fix; schema bump to `"0.9.0"` if the wire shape changes
 - [ ] **Final deprecation sweep before 1.0.0** — anything slated for 1.0.0 removal must be `@Deprecated(forRemoval = true)` in 0.9.0 (≥ 1-minor fallback window)
 - [ ] **`@SagaTransition` annotation + `@SagaStep` `kind` attribute** — the SDK half of the 0.7.0 saga-graph records; may ship reserved
