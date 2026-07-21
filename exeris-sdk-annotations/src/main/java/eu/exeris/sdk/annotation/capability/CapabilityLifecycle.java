@@ -16,12 +16,14 @@ import java.lang.annotation.Target;
  * ({@code CapabilityLifecycleHooks}) lives SDK-side — in the zero-dependency
  * {@code exeris-sdk-composition-lifecycle} module, driven by the boot
  * conductor in {@code exeris-sdk-composition-runtime} (ADR-024 amendments
- * 2026-06-25 / 2026-07-21, planned for 0.9.0) — never kernel-side: the
+ * 2026-06-25 / 2026-07-21, landed in 0.9.0) — never kernel-side: the
  * conductor is invoked by the generated SKU bootstrap and is not a kernel
  * {@code Subsystem}, so neither side references kernel bootstrap. The
  * annotation merely records "this class is the cap's lifecycle owner"; the
  * build-time tooling derives the invocation order from the {@link Requires}
- * graph and emits it as the manifest {@code initOrder} the conductor replays.
+ * graph and emits it as the manifest {@code initOrder} (with this class's
+ * fully-qualified name as the module-body {@code lifecycleOwner}) that the
+ * conductor replays.
  *
  * <h2>Cardinality</h2>
  * <p>Zero or one per capability. Absence is valid — a cap with no
@@ -33,7 +35,7 @@ import java.lang.annotation.Target;
  * <pre>{@code
  * @CapabilityLifecycle
  * public final class GatewayLifecycle implements CapabilityLifecycleHooks {
- *     // initialize / ready / drain / terminate — interface from the SDK composition runtime
+ *     // initialize / ready / drain / terminate — interface from exeris-sdk-composition-lifecycle
  * }
  * }</pre>
  *

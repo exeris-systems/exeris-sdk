@@ -63,6 +63,11 @@
             </dependency>
             <dependency>
                 <groupId>eu.exeris</groupId>
+                <artifactId>exeris-sdk-composition-lifecycle</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>eu.exeris</groupId>
                 <artifactId>exeris-sdk-composition-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -10,43 +10,21 @@
         <relativePath>../exeris-sdk-parent</relativePath>
     </parent>
 
-    <artifactId>exeris-sdk-composition-runtime</artifactId>
+    <artifactId>exeris-sdk-composition-lifecycle</artifactId>
     <packaging>jar</packaging>
 
-    <name>Exeris SDK :: Composition Runtime</name>
+    <name>Exeris SDK :: Composition Lifecycle</name>
     <description>
-        Boot-time composition validation-stamp assertion (ADR-024 obligation 8/8a). A generic,
-        once-tested library every SKU bootstrap invokes at startup, before any cap enters
-        initialize: it ASSERTS the tooling-emitted stamp in cap-manifest.json (presence,
-        well-formedness, content-binding-match, version-match) and fails fast on drift. It does
-        NOT re-validate (no @Requires->@Provides DAG re-resolution). The binding it recomputes is
-        the ONE canonical definition in exeris-sdk-composition-spec (obligation 8b) — no verbatim
-        port. Ships into the SKU jar; carries no kernel or codegen dependency (obligation 9 — the
-        kernel stays cap-blind; the build-time pipeline is not dragged onto the SKU classpath).
+        The cap-facing four-phase lifecycle hooks interface (ADR-024 obligation 8a):
+        CapabilityLifecycleHooks — initialize / ready / drain / terminate — implemented by a cap's
+        @CapabilityLifecycle owner and driven by the boot conductor in exeris-sdk-composition-runtime.
+        Zero dependencies by contract: cap authors compile against exeris-sdk-annotations + this jar
+        only, with no Jackson (or anything else) dragged onto their classpath.
     </description>
 
     <dependencies>
-        <!-- The shared cap-manifest.json schema + the ONE canonical content-binding (obligation 8b).
-             The asserter recomputes the binding through this, instead of a byte-verbatim port. -->
-        <dependency>
-            <groupId>eu.exeris</groupId>
-            <artifactId>exeris-sdk-composition-spec</artifactId>
-        </dependency>
-
-        <!-- The cap-facing four-phase hooks interface the boot conductor drives (obligation 8a).
-             The dependency points THIS way only: cap code implements the zero-dep lifecycle
-             module and never depends on this runtime jar. -->
-        <dependency>
-            <groupId>eu.exeris</groupId>
-            <artifactId>exeris-sdk-composition-lifecycle</artifactId>
-        </dependency>
-
-        <!-- JSON parse of cap-manifest.json at boot. Managed at 3.2.0 by the SDK BOM. -->
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
+        <!-- Test-only. The published artifact has ZERO compile/runtime dependencies (see the
+             enforcer rule below) — that is the module's charter, not an accident. -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -86,8 +64,8 @@
                 </executions>
             </plugin>
 
-            <!-- 85% instruction + line gate: the assertion is real boot-time logic with many
-                 fail-fast branches; coverage is meaningful here. -->
+            <!-- 85% instruction + line gate. The default no-op methods are the published contract
+                 ("implement the subset you need") — the contract test exercises their bytecode. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -119,23 +97,30 @@
                 </executions>
             </plugin>
 
-            <!-- ADR-037 zero-coupling guard: a SKU-classpath runtime must not drag the build-time
-                 pipeline. JavaParser (the codegen marker dependency) must never reach this tree. -->
+            <!-- Zero-dependency guard — the ban-javaparser twin, but stronger: this module bans ALL
+                 compile/runtime-scope dependencies (transitives included). Cap authors implementing
+                 CapabilityLifecycleHooks must get nothing but this jar on their classpath — no
+                 Jackson, no spec records, nothing. Test scope is exempt (junit/assertj only). -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>ban-javaparser-zero-coupling</id>
+                        <id>ban-all-non-test-deps-zero-coupling</id>
                         <phase>verify</phase>
                         <goals><goal>enforce</goal></goals>
                         <configuration>
                             <rules>
                                 <bannedDependencies>
+                                    <!-- Ban everything… -->
                                     <excludes>
-                                        <exclude>com.github.javaparser</exclude>
+                                        <exclude>*</exclude>
                                     </excludes>
-                                    <message>The composition-runtime ships into the SKU jar — JavaParser (build-time codegen) must not appear on its dependency tree.</message>
+                                    <!-- …except test scope (pattern: groupId:artifactId:version:type:scope). -->
+                                    <includes>
+                                        <include>*:*:*:*:test</include>
+                                    </includes>
+                                    <message>exeris-sdk-composition-lifecycle must have ZERO compile/runtime dependencies — cap authors compile against exeris-sdk-annotations + this jar only (ADR-024 obligation 8a). Only test-scope dependencies are allowed.</message>
                                 </bannedDependencies>
                             </rules>
                         </configuration>
