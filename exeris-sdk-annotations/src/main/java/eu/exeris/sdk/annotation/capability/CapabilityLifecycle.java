@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * <pre>{@code
  * @CapabilityLifecycle
  * public final class GatewayLifecycle implements CapabilityLifecycleHooks {
- *     // initialize / ready / drain / terminate — interface from the SDK composition runtime
+ *     // initialize / ready / drain / terminate — interface from exeris-sdk-composition-lifecycle
  * }
  * }</pre>
  *
