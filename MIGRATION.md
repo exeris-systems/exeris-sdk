@@ -10,6 +10,52 @@ the upgrade steps required.
 
 ---
 
+## 0.8.x → 0.9.x
+
+### Composition: no wire break
+
+The 0.9.0 composition-lifecycle slice (`CapabilityLifecycleHooks` + the boot
+conductor, ADR-024 obligations 8a/8a′) changes **no wire format**: the
+cap-manifest `schemaVersion` stays **2** and the content binding is untouched
+(`lifecycleOwner` is deliberately not binding-covered, like `initOrder` —
+golden vectors unchanged). A manifest emitted before 0.9.0 (no
+`lifecycleOwner` fields) boots as a hook-less composition: the conductor
+asserts the stamp, finds no lifecycle owners, and reports ready. Nothing to
+re-emit, nothing to re-deploy.
+
+### `CapManifest.ModuleBody` arity grew (trailing `lifecycleOwner`)
+
+**Why:** the boot conductor discovers each cap's hooks from the manifest, so
+the consumer schema now binds the per-module-body `lifecycleOwner` the tooling
+processor already emits (`NON_NULL`) instead of ignoring it.
+
+**Impact:** `ModuleBody`'s positional constructor arity grew 1 → 2 with a
+**trailing** `String lifecycleOwner` component — same posture as the
+`ActionMetadata` trailing-component growth in 0.8.0: existing positional
+prefixes are unchanged in order, and positional callers add one trailing
+`null` (`new CapManifest.ModuleBody(provides)` →
+`new CapManifest.ModuleBody(provides, null)`). Blank normalizes to `null` in
+the compact constructor; absent/`null`/blank all mean "this cap has no
+lifecycle hooks" (matching `@CapabilityLifecycle`'s zero-or-one cardinality).
+By-name on the wire — an old manifest reads the component back `null`.
+
+### Cap authors: new dependency coordinates for the lifecycle interface
+
+Implement `eu.exeris.sdk.composition.lifecycle.CapabilityLifecycleHooks` from
+the new **`exeris-sdk-composition-lifecycle`** jar (zero dependencies,
+enforcer-proven). Do **not** depend on `exeris-sdk-composition-runtime` from
+cap code — that jar is the SKU-boot side (stamp asserter + conductor) and
+would drag `jackson-databind` onto your classpath; the conductor depends on
+the lifecycle module, never the other way around. The pre-ADR-024 javadoc
+claim that the lifecycle interface would be kernel-side was voided by the
+2026-06-25 re-amendment and the annotation javadoc is corrected accordingly.
+There is **no code migration**: the interface never existed before 0.9.0 —
+`@CapabilityLifecycle`-annotated classes simply gain a real contract to
+implement (public no-arg constructor required; default no-ops mean you
+implement only the subset you need).
+
+---
+
 ## 0.7.x → 0.8.x
 
 ### `SchemaVersion.CURRENT` bumped `"0.7.0"` → `"0.8.0"`

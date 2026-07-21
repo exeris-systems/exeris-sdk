@@ -36,10 +36,10 @@ class CompositionBindingTest {
     private static List<CapManifest.Module> versionedFixture() {
         return List.of(
                 new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
-                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")))),
+                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")), null)),
                 new CapManifest.Module("com.app.Billing", new CapManifest.ModuleBody(List.of(
                         new CapManifest.Provided("com.api.Invoice", "2.0.0"),
-                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")))));
+                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")), null)));
     }
 
     @Test
@@ -61,9 +61,9 @@ class CompositionBindingTest {
         List<CapManifest.Module> shuffled = List.of(
                 new CapManifest.Module("com.app.Billing", new CapManifest.ModuleBody(List.of(
                         new CapManifest.Provided("com.api.PaymentApi", "1.2.0"),
-                        new CapManifest.Provided("com.api.Invoice", "2.0.0")))),
+                        new CapManifest.Provided("com.api.Invoice", "2.0.0")), null)),
                 new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
-                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")))));
+                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")), null)));
         assertThat(CompositionBinding.compute(shuffled)).isEqualTo(GOLDEN_VERSIONED);
     }
 
@@ -71,10 +71,10 @@ class CompositionBindingTest {
     void isSensitiveToAVersionChange() {
         List<CapManifest.Module> bumped = List.of(
                 new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
-                        new CapManifest.Provided("com.api.AuditLog", "9.9.9")))),
+                        new CapManifest.Provided("com.api.AuditLog", "9.9.9")), null)),
                 new CapManifest.Module("com.app.Billing", new CapManifest.ModuleBody(List.of(
                         new CapManifest.Provided("com.api.Invoice", "2.0.0"),
-                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")))));
+                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")), null)));
         assertThat(CompositionBinding.compute(bumped)).isNotEqualTo(GOLDEN_VERSIONED);
     }
 
@@ -82,7 +82,7 @@ class CompositionBindingTest {
     void normalizesUnversionedProvideToEmptyString() {
         List<CapManifest.Module> unversioned = List.of(
                 new CapManifest.Module("com.app.Solo", new CapManifest.ModuleBody(
-                        Collections.singletonList(new CapManifest.Provided("com.api.Thing", null)))));
+                        Collections.singletonList(new CapManifest.Provided("com.api.Thing", null)), null)));
         assertThat(CompositionBinding.compute(unversioned)).isEqualTo(GOLDEN_UNVERSIONED);
     }
 
@@ -91,10 +91,10 @@ class CompositionBindingTest {
         // Guards the exact bug the old platform port had: "service@" must NOT equal "service@null".
         String unversioned = CompositionBinding.compute(List.of(
                 new CapManifest.Module("com.app.Solo", new CapManifest.ModuleBody(
-                        Collections.singletonList(new CapManifest.Provided("com.api.Thing", null))))));
+                        Collections.singletonList(new CapManifest.Provided("com.api.Thing", null)), null))));
         String literalNull = CompositionBinding.compute(List.of(
                 new CapManifest.Module("com.app.Solo", new CapManifest.ModuleBody(
-                        List.of(new CapManifest.Provided("com.api.Thing", "null"))))));
+                        List.of(new CapManifest.Provided("com.api.Thing", "null")), null))));
         assertThat(unversioned).isNotEqualTo(literalNull);
     }
 
@@ -103,11 +103,28 @@ class CompositionBindingTest {
         String nullBody = CompositionBinding.compute(List.of(
                 new CapManifest.Module("com.app.Empty", null)));
         String nullProvides = CompositionBinding.compute(List.of(
-                new CapManifest.Module("com.app.Empty", new CapManifest.ModuleBody(null))));
+                new CapManifest.Module("com.app.Empty", new CapManifest.ModuleBody(null, null))));
         String emptyProvides = CompositionBinding.compute(List.of(
-                new CapManifest.Module("com.app.Empty", new CapManifest.ModuleBody(List.of()))));
+                new CapManifest.Module("com.app.Empty", new CapManifest.ModuleBody(List.of(), null))));
         // All three are "a module named com.app.Empty that provides nothing" → one canonical form.
         assertThat(nullBody).isEqualTo(nullProvides).isEqualTo(emptyProvides);
+    }
+
+    @Test
+    void lifecycleOwnerIsGoldenInvariant() {
+        // 0.9.0: the module body grew lifecycleOwner, which is deliberately NOT binding-covered
+        // (like initOrder — trusted post-assertion). The same cap set with and without owners must
+        // bind byte-identically, and both must still equal the pre-0.9.0 golden vector: adding
+        // lifecycle hooks to a cap never invalidates a deployed composition's stamp.
+        List<CapManifest.Module> withOwners = List.of(
+                new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
+                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")), "com.app.AuditLifecycle")),
+                new CapManifest.Module("com.app.Billing", new CapManifest.ModuleBody(List.of(
+                        new CapManifest.Provided("com.api.Invoice", "2.0.0"),
+                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")), "com.app.BillingLifecycle")));
+        assertThat(CompositionBinding.compute(withOwners))
+                .isEqualTo(CompositionBinding.compute(versionedFixture()))
+                .isEqualTo(GOLDEN_VERSIONED);
     }
 
     @Test

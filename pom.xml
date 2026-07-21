@@ -72,6 +72,7 @@
         <module>exeris-sdk-source-model</module>
         <module>exeris-sdk-source-model-io</module>
         <module>exeris-sdk-composition-spec</module>
+        <module>exeris-sdk-composition-lifecycle</module>
         <module>exeris-sdk-composition-runtime</module>
     </modules>
 

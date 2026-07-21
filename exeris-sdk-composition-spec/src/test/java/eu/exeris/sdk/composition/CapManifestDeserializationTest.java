@@ -34,9 +34,10 @@ class CapManifestDeserializationTest {
 
     /**
      * A realistic emitted manifest: producer-only fields the consumer schema does not model
-     * ({@code name}, {@code packageName}, per-module {@code requires}, {@code lifecycleOwner},
-     * top-level {@code resolutions}, {@code warnings}) are present and must be ignored, and the body
-     * is nested under the wire key {@code "module"}.
+     * ({@code name}, {@code packageName}, per-module {@code requires}, top-level
+     * {@code resolutions}, {@code warnings}) are present and must be ignored, the body is nested
+     * under the wire key {@code "module"}, and the module body carries the {@code lifecycleOwner}
+     * the producer emits {@code NON_NULL} (Audit has one; Billing, hook-less, omits the field).
      */
     private static final String PRODUCER_JSON = """
             {
@@ -54,7 +55,7 @@ class CapManifestDeserializationTest {
                   "module": {
                     "provides": [ { "service": "com.api.AuditLog", "version": "1.0.0" } ],
                     "requires": [],
-                    "lifecycleOwner": null
+                    "lifecycleOwner": "com.app.AuditLifecycle"
                   }
                 },
                 {
@@ -94,6 +95,20 @@ class CapManifestDeserializationTest {
         CapManifest manifest = MAPPER.readValue(PRODUCER_JSON, CapManifest.class);
         assertThat(CompositionBinding.compute(manifest)).isEqualTo(GOLDEN_VERSIONED);
         assertThat(manifest.stamp().contentBinding()).isEqualTo(GOLDEN_VERSIONED);
+    }
+
+    @Test
+    void lifecycleOwnerBindsFromModuleBodyAndReadsNullWhenAbsent() {
+        // 0.9.0 consumer-model growth: the producer has emitted lifecycleOwner (NON_NULL, inside the
+        // module body) since the tooling processor's capability extraction; the consumer schema now
+        // binds it instead of ignoring it. Absent field ⇒ null ⇒ the cap declares no lifecycle hooks.
+        CapManifest manifest = MAPPER.readValue(PRODUCER_JSON, CapManifest.class);
+
+        assertThat(manifest.modules().getFirst().module().lifecycleOwner())
+                .isEqualTo("com.app.AuditLifecycle");
+        assertThat(manifest.modules().get(1).module().lifecycleOwner()).isNull();
+        // Blank normalizes to null in the compact constructor — same identity as absent (no hooks).
+        assertThat(new CapManifest.ModuleBody(null, "   ").lifecycleOwner()).isNull();
     }
 
     @Test

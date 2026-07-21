@@ -42,10 +42,10 @@
  * <em>not</em> here:
  * <ul>
  *   <li><strong>The lifecycle interface</strong> — not an annotation:
- *       {@code CapabilityLifecycleHooks} is a runtime type that lands in the
+ *       {@code CapabilityLifecycleHooks} is a runtime type living in the
  *       zero-dependency {@code exeris-sdk-composition-lifecycle} module, driven
  *       by the boot conductor in {@code exeris-sdk-composition-runtime} (ADR-024
- *       amendments 2026-06-25 / 2026-07-21, planned 0.9.0); this module ships
+ *       amendments 2026-06-25 / 2026-07-21, landed 0.9.0); this module ships
  *       only the {@code @CapabilityLifecycle} marker.</li>
  *   <li><strong>Licensing</strong> — {@code community} / {@code commercial} /
  *       {@code enterprise-private} is a per-cap-repository property, never an
@@ -55,15 +55,23 @@
  *       responsibilities of {@code exeris-tooling}.</li>
  * </ul>
  *
- * <h2>Open-Core status — reserved, not yet consumed</h2>
- * <p>This is a declared shape, not yet a live composition. The AST records and
- * the {@code exeris-sdk-source-model-io} reader for the capability surface
- * exist (0.4.0), but the build-time annotation processor does not yet extract
- * these annotations and no code generator consumes them — so declaring
- * {@code @CapabilityModule} / {@code @Provides} / {@code @Requires} today has
- * no generated effect. The surface is reserved while the {@code exeris-tooling}
- * registry consumer that wires the cap graph end-to-end is built; the
- * annotations gain meaning once it lands.
+ * <h2>Open-Core status — extracted and conducted; generated call site pending</h2>
+ * <p>This surface is consumed end-to-end today. Build-time: the
+ * {@code exeris-tooling} processor extracts {@code @CapabilityModule} /
+ * {@code @Provides} / {@code @Requires} and the {@code @CapabilityLifecycle}
+ * owner, validates the dependency DAG, and emits {@code cap-manifest.json}
+ * (with the validation stamp, the topological {@code initOrder}, and each
+ * module's {@code lifecycleOwner}). Boot-time (SDK 0.9.0): the
+ * {@code exeris-sdk-composition-runtime} asserter verifies the stamp, and the
+ * boot conductor drives the four-phase lifecycle
+ * ({@code initialize → ready → drain → terminate}) from the manifest —
+ * instantiating each {@code lifecycleOwner} reflectively and replaying
+ * {@code initOrder} verbatim. The remaining not-yet piece is the
+ * <em>generated call site</em>: the SKU bootstrap that invokes the conductor
+ * inside {@code kernelMain} after {@code KERNEL READY} ships with the
+ * {@code exeris-tooling} bootstrap emitter (gateway-caps plan); until then a
+ * hand-written SKU entrypoint invokes the conductor directly — the library
+ * contract is identical in both cases.
  *
  * @author Exeris SDK Team
  * @version 0.4.0

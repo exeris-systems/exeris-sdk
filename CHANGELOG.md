@@ -17,6 +17,50 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Added
+- **`exeris-sdk-composition-lifecycle` module** — a new zero-dependency
+  publishable jar (the enforcer bans every compile/runtime-scope dependency)
+  carrying `CapabilityLifecycleHooks`, the cap-facing four-phase lifecycle
+  contract with four default no-op methods (`initialize` / `ready` /
+  `drain(remaining)` / `terminate`) — the runtime twin of the
+  `@CapabilityLifecycle` marker (ADR-024 obligation 8a, see
+  [`docs/adr/ADR-024.link.md`](docs/adr/ADR-024.link.md)). Cap authors compile
+  against `exeris-sdk-annotations` + this jar only; implementations need a
+  public no-arg constructor and implement only the subset they use.
+- **Boot conductor** — `CompositionConductor` + `CompositionBootException` in
+  `exeris-sdk-composition-runtime` (ADR-024 obligation 8a′, amendment
+  2026-07-21): stamp assertion first → manifest-driven reflective hook
+  discovery (all-or-nothing, zero side effects on failure) →
+  `initialize*`/`ready*` in **verbatim** manifest `initOrder` (no DAG
+  re-resolution) → reverse `drain*`/`terminate*` on `shutdown()`/`close()`
+  under one composition-wide drain budget (default 30s, configurable;
+  overrunning drains are interrupted and abandoned, an exhausted budget skips
+  the remaining drains, terminate always runs). A failing `initialize`/`ready`
+  fail-fast-unwinds the touched prefix (drain, then unconditional terminate)
+  before throwing. Invoked by the SKU bootstrap inside `kernelMain` after
+  `KERNEL READY` — never a kernel `Subsystem`.
+- **`CapManifest` module-body `lifecycleOwner` consumer-modeled** — the
+  composition-spec `ModuleBody` grew a trailing `lifecycleOwner` component
+  (blank normalizes to null; absent/null/blank = the cap has no hooks, matching
+  `@CapabilityLifecycle`'s zero-or-one cardinality). It is **not** covered by
+  the content binding (like `initOrder` — trusted post-assertion), so
+  cap-manifest `schemaVersion` stays **2**: no wire break, pre-0.9.0 manifests
+  boot as hook-less. See [`MIGRATION.md`](MIGRATION.md#08x--09x).
+
+### Changed
+- **Capability-surface javadoc honesty refresh** — the `@CapabilityLifecycle`
+  example now points at `exeris-sdk-composition-lifecycle` (the interface's
+  real home), and the capability package-info's stale "reserved, not yet
+  consumed" Open-Core note is rewritten to the live status: the tooling
+  processor extracts the capability annotations and emits the stamped
+  `cap-manifest.json`, the boot conductor (0.9.0) drives the four-phase
+  lifecycle from it, and the remaining not-yet piece is the tooling-generated
+  SKU bootstrap call site.
+- **`composition.runtime` package-info call-site model** — the "follow-up (not
+  this slice)" conductor paragraph is now the landed description: hooks-module
+  split, generated-call-site status, and boundaries updated to "spec + the
+  composition-lifecycle interface + a JSON mapper".
+
 ## [0.8.0] — 2026-07-02
 
 The events + composition milestone, cut in lockstep with kernel v0.10.0: the
