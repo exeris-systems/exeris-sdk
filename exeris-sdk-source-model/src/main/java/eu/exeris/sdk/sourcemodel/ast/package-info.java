@@ -41,16 +41,18 @@
  *       {@code NON_DEFAULT} treated boxed zero as "empty" and dropped it.
  *       (Same rationale as {@code ViewMetadata}'s deliberate {@code NON_NULL}
  *       choice — see the presentation-IR section below.)</li>
- *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.ValidationMetadata}</strong>
- *       is {@code @Deprecated(forRemoval = true)} since 0.9.0 and is removed in
- *       1.0.0 (ADR-054): it was never populated by any processor or reader,
- *       never referenced by {@code DomainMetadata}, and never consumed by any
- *       generator — it never appeared on the domain wire. Its {@code notNull} /
- *       {@code notBlank} "derived from {@code required}" design never happened
- *       (the derivation lives at generator level, from
- *       {@code FieldMetadata.required}); {@code patternMessage} is dropped as
- *       unconsumed (no {@code @Validation} source). Do not add a parallel AST
- *       validation carrier — constraint values live on {@code FieldMetadata}.</li>
+ *   <li><strong>{@code ValidationMetadata} was removed in 0.9.0</strong>
+ *       (ADR-054): it was never populated by any processor or reader, never
+ *       referenced by {@code DomainMetadata}, and never consumed by any
+ *       generator — it never appeared on the domain wire, and no artifact had
+ *       ever been published to a registry, so no external dependent could
+ *       exist and the deprecation window would have been vacuous (0.x permits
+ *       the break). Its {@code notNull} / {@code notBlank} "derived from
+ *       {@code required}" design never happened (the derivation lives at
+ *       generator level, from {@code FieldMetadata.required});
+ *       {@code patternMessage} had no {@code @Validation} source. Do not add a
+ *       parallel AST validation carrier — constraint values live on
+ *       {@code FieldMetadata}.</li>
  * </ul>
  *
  * <h2>{@code dataType} vs {@code format} on FieldMetadata (0.6.0)</h2>

@@ -18,38 +18,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SimpleAstRecordsTest {
 
     @Nested
-    @DisplayName("ValidationMetadata")
-    @SuppressWarnings("removal") // guards the deprecated record's factories until its 1.0.0 removal (ADR-054)
-    class Validation {
-        @Test
-        void withNotNullSetsOnlyNotNull() {
-            ValidationMetadata v = ValidationMetadata.withNotNull();
-            assertThat(v.notNull()).isTrue();
-            assertThat(v.notBlank()).isFalse();
-            assertThat(v.email()).isFalse();
-            assertThat(v.url()).isFalse();
-            assertThat(v.future()).isFalse();
-            assertThat(v.past()).isFalse();
-        }
-
-        @Test
-        void withNotBlankSetsOnlyNotBlank() {
-            ValidationMetadata v = ValidationMetadata.withNotBlank();
-            assertThat(v.notNull()).isFalse();
-            assertThat(v.notBlank()).isTrue();
-        }
-
-        @Test
-        void withLengthCarriesMinAndMax() {
-            ValidationMetadata v = ValidationMetadata.withLength(2, 50);
-            assertThat(v.minLength()).isEqualTo(2);
-            assertThat(v.maxLength()).isEqualTo(50);
-            assertThat(v.notNull()).isFalse();
-            assertThat(v.notBlank()).isFalse();
-        }
-    }
-
-    @Nested
     @DisplayName("DomainEventMetadata")
     class DomainEvent {
         @Test

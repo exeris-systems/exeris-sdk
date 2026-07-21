@@ -67,7 +67,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] Add annotations real users repeatedly hand-roll
 - [ ] AST records — split / merge based on access patterns observed in tooling
 - [ ] Deprecation pipeline (mark `@Deprecated`, document migration in `MIGRATION.md`)
-- [x] **Field/Validation `min`/`max`/`pattern` cut landed (0.9.0 — ADR-054)** — `@Validation` is the sole declaration site, `FieldMetadata` the sole AST carrier (populated by processor + `-io` reader); `ValidationMetadata` deprecated-for-removal (1.0.0); boxed-zero fixed via per-component `NON_NULL` on the four bounds; reader `minLength`/`maxLength` parity restored
+- [x] **Field/Validation `min`/`max`/`pattern` cut landed (0.9.0 — ADR-054)** — `@Validation` is the sole declaration site, `FieldMetadata` the sole AST carrier (populated by processor + `-io` reader); `ValidationMetadata` removed outright (never-consumed orphan, zero published artifacts — a deprecation window would have protected nobody; 0.x break); boxed-zero fixed via per-component `NON_NULL` on the four bounds; reader `minLength`/`maxLength` parity restored
 
 ### 0.9.0 — planned scope (release plan 2026-07-21)
 

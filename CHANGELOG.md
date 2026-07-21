@@ -31,11 +31,13 @@ for per-version upgrade steps.
   `pattern` ×5, `min`/`minLength` ×0). Docs (CLAUDE.md, both package-infos, the
   scoping review skill) retire the "@Field owns shape hints" framing. ADR-054.
 
-### Deprecated
-- **`ValidationMetadata`** — `forRemoval = true`, removal in 1.0.0; never
-  populated by any processor/reader nor consumed by any generator.
-  `FieldMetadata` is the canonical carrier; `notNull`/`notBlank` derive from
-  `FieldMetadata.required`; `patternMessage` dropped as unconsumed. See
+### Removed
+- **`ValidationMetadata`** — removed outright (no deprecation cycle): never
+  populated by any processor/reader nor consumed by any generator, and with
+  zero published artifacts no external dependent can exist — the window would
+  have protected nobody (0.x permits the break). `FieldMetadata` is the
+  canonical carrier; `notNull`/`notBlank` derive from `FieldMetadata.required`;
+  `patternMessage` dropped as unconsumed. See
   [`MIGRATION.md`](MIGRATION.md#08x--09x).
 
 ### Fixed

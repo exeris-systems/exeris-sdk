@@ -112,7 +112,7 @@ The full rationale is in two package-info files; keep them in sync when changing
 - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
 - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
 
-The long-deferred "wider `min` / `max` / `pattern` overlap" cut **landed in 0.9.0 (ADR-054)**, informed by the budgetHQ corpus (19/19 constraint usages on `@Validation`): the overlap was fictional at the annotation level (`@Field` never declared those attributes), and `ValidationMetadata` — never populated by any processor/reader nor consumed by any generator — is deprecated for removal in 1.0.0. Do not reintroduce constraint attributes on `@Field` or a parallel AST validation carrier.
+The long-deferred "wider `min` / `max` / `pattern` overlap" cut **landed in 0.9.0 (ADR-054)**, informed by the budgetHQ corpus (19/19 constraint usages on `@Validation`): the overlap was fictional at the annotation level (`@Field` never declared those attributes), and `ValidationMetadata` — never populated by any processor/reader nor consumed by any generator, with no published artifact for anyone to depend on — was **removed outright in 0.9.0** (0.x permits the break; a deprecation window with zero possible consumers is vacuous). Do not reintroduce constraint attributes on `@Field` or a parallel AST validation carrier.
 
 ## AST records & the Jackson 3 wire-format contract
 

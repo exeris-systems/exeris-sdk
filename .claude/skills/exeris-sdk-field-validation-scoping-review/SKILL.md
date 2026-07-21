@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-field-validation-scoping-review
-description: Field/Validation canonical scoping review for exeris-sdk. Use whenever `@Field` or `@Validation` attributes (or the `FieldMetadata` / deprecated `ValidationMetadata` AST records) are touched, or when generator-derived NOT NULL / not-blank semantics (from `FieldMetadata.required`) are in scope.
+description: Field/Validation canonical scoping review for exeris-sdk. Use whenever `@Field` or `@Validation` attributes (or the `FieldMetadata` AST record) are touched, or when generator-derived NOT NULL / not-blank semantics (from `FieldMetadata.required`) are in scope.
 ---
 
 # Exeris SDK Field/Validation Canonical Scoping Review
@@ -13,7 +13,7 @@ This is the single most likely regression surface in the repo.
 ## When to Use
 - Any change or PR adding / removing / moving attributes on `@Field`.
 - Any change or PR adding / removing / moving attributes on `@Validation`.
-- Any change or PR touching `FieldMetadata` or the deprecated `ValidationMetadata` AST record.
+- Any change or PR touching the `FieldMetadata` AST record (or attempting to resurrect the removed `ValidationMetadata`).
 - Any change or PR touching the generator-derived NOT NULL / not-blank semantics (← `FieldMetadata.required`).
 - Any change or PR touching either of the two package-info files.
 
@@ -26,7 +26,7 @@ This is the single most likely regression surface in the repo.
 - **`@Field`** owns: `required`, `inCreate`, `inUpdate` + presentation / persistence facets. It declares **no constraint attributes** (the only pattern-shaped attribute it has ever had is `maskPattern` — log/PII masking, unrelated).
 - **`@Validation`** owns: ALL constraint declarations — `min`, `max`, `minLength`, `maxLength`, `pattern`, `email`, `url`, `future`, `past`, etc.
 - **`FieldMetadata`** is the **single AST carrier** of the constraint values (`minLength` / `maxLength` / `min` / `max` / `pattern`), populated from `@Validation` by the build-time processor and the `-io` reader. The four numeric bounds are per-component `@JsonInclude(NON_NULL)` (0.9.0) so zero-valued bounds survive the wire.
-- **`ValidationMetadata`** is `@Deprecated(forRemoval = true)` since 0.9.0, **removed in 1.0.0** — never populated by any processor/reader, never referenced by `DomainMetadata`, never consumed by any generator.
+- **`ValidationMetadata`** was **removed outright in 0.9.0** — never populated by any processor/reader, never referenced by `DomainMetadata`, never consumed by any generator, and no published artifact existed for anyone to depend on (the deprecation window would have been vacuous; 0.x permits the break).
 - **Deprecated (forRemoval) in 0.2.x; removed in 1.0.0**:
   - `@Validation.required` → moved to `@Field.required`.
   - `@Validation.validateOn` → moved to `@Field.inCreate` / `@Field.inUpdate`.
@@ -38,7 +38,7 @@ This is the single most likely regression surface in the repo.
 1. **Scoping audit** — confirm every changed attribute is on the canonical annotation:
    - field-shape + lifecycle on `@Field`,
    - constraint declarations on `@Validation`.
-2. **Deprecation alignment** — if the PR touches `@Validation.required` / `@Validation.validateOn` / `ValidationMetadata`, confirm they stay `@Deprecated(forRemoval = true)` with a javadoc pointer to the canonical replacement (`@Field.required` / `@Field.inCreate`+`inUpdate` / `FieldMetadata`).
+2. **Deprecation alignment** — if the PR touches `@Validation.required` / `@Validation.validateOn`, confirm they stay `@Deprecated(forRemoval = true)` with a javadoc pointer to the canonical replacement (`@Field.required` / `@Field.inCreate`+`inUpdate`).
 3. **Derived-semantics check** — NOT NULL / not-blank derive from `FieldMetadata.required` at generator level. Don't make them separately declarable.
 4. **Post-cut protection (ADR-054)** — a constraint attribute proposed on `@Field`, `ValidationMetadata` resurrected / grown / un-deprecated, or a new parallel AST validation carrier → hard reject.
 5. **Package-info sync** — BOTH files must reflect the scoping rationale:
@@ -78,7 +78,7 @@ This is the single most likely regression surface in the repo.
 ## Non-Negotiable Rules
 - Never approve a constraint attribute on `@Field` or field-shape on `@Validation`.
 - Never approve revival of `@Validation.required` / `@Validation.validateOn` as non-deprecated.
-- Never approve `ValidationMetadata` resurrected, grown, or un-deprecated (removal lands in 1.0.0).
+- Never approve `ValidationMetadata` resurrected (removed in 0.9.0) or any parallel AST validation carrier.
 - Never approve NOT NULL / not-blank as separately declarable (they derive from `FieldMetadata.required` at generator level).
 - Never approve a parallel AST validation carrier alongside `FieldMetadata`.
 - Never approve out-of-sync package-info files.
