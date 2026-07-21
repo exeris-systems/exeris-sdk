@@ -28,8 +28,10 @@
  * <p><b>Follow-up (not this slice).</b> The boot conductor (ADR-024 obligation 8a′, amendment
  * 2026-07-21 "Boot Conductor Call Site") — driving each cap through the four-phase lifecycle
  * ({@code initialize → ready → drain → terminate}) in the tooling-supplied {@code initOrder} — is the
- * larger composition-runtime piece; it and the {@code CapabilityLifecycleHooks} interface land in
- * <em>this</em> module (planned for SDK 0.9.0). Call site: the generated SKU bootstrap invokes the
+ * larger composition-runtime piece; the conductor lands in <em>this</em> module, while the
+ * {@code CapabilityLifecycleHooks} interface lands in the new zero-dependency
+ * {@code exeris-sdk-composition-lifecycle} module, so cap authors implementing the hooks never
+ * depend on this jar (planned for SDK 0.9.0). Call site: the generated SKU bootstrap invokes the
  * conductor after the kernel reports {@code KERNEL READY} (stamp assertion first, then the
  * {@code initOrder} loop, with no DAG re-resolution); the conductor is <em>never</em> registered as a
  * kernel {@code Subsystem}, and the cap layer contributes no node to the kernel bootstrap DAG — the

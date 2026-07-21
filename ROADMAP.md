@@ -76,7 +76,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] **`@SagaTransition` annotation + `@SagaStep` `kind` attribute** — the SDK half of the 0.7.0 saga-graph records; may ship reserved
 - [ ] **Hand-rolled-annotation + AST split/merge review** — may close empty; record the disposition
 - [ ] **Doc-sync** — module tables (CLAUDE.md / README / publish-readiness skill), ui-kit package name, Distribution status note (this PR)
-- [ ] **`CapabilityLifecycleHooks` + boot-conductor slice** in `exeris-sdk-composition-runtime` per the ADR-024 amendment 2026-07-21 (conductor invoked by the generated SKU bootstrap after `KERNEL READY`, never a kernel `Subsystem`) + ADR-053 (manifest format = JSON)
+- [ ] **`CapabilityLifecycleHooks` + boot-conductor slice** — hooks in a new zero-dependency `exeris-sdk-composition-lifecycle` module (cap-facing), conductor in `exeris-sdk-composition-runtime`, per the ADR-024 amendment 2026-07-21 (conductor invoked by the generated SKU bootstrap after `KERNEL READY`, never a kernel `Subsystem`) + ADR-053 (manifest format = JSON)
 - [ ] **1.0.0 prep starts** — japicmp/revapi baseline in CI, `MIGRATION-0.x-to-1.0.md` skeleton, public API surface review kickoff
 
 ### Annotation-surface honesty — inert attributes (issues to address)

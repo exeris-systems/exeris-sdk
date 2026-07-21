@@ -13,8 +13,9 @@ import java.lang.annotation.Target;
  * reports {@code KERNEL READY}.
  *
  * <p>This is a <strong>marker only</strong>. The lifecycle <em>interface</em>
- * ({@code CapabilityLifecycleHooks}) lives SDK-side — with the boot-conductor
- * slice in {@code exeris-sdk-composition-runtime} (ADR-024 amendments
+ * ({@code CapabilityLifecycleHooks}) lives SDK-side — in the zero-dependency
+ * {@code exeris-sdk-composition-lifecycle} module, driven by the boot
+ * conductor in {@code exeris-sdk-composition-runtime} (ADR-024 amendments
  * 2026-06-25 / 2026-07-21, planned for 0.9.0) — never kernel-side: the
  * conductor is invoked by the generated SKU bootstrap and is not a kernel
  * {@code Subsystem}, so neither side references kernel bootstrap. The
