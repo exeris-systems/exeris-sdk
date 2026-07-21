@@ -61,6 +61,12 @@ for per-version upgrade steps.
   split, generated-call-site status, and boundaries updated to "spec + the
   composition-lifecycle interface + a JSON mapper".
 
+### Fixed
+- **`-io` reader reads `@Validation.minLength`/`maxLength`** — restores
+  reader↔processor parity (ADR-042); previously both were dropped on read
+  despite processor extraction, causing spurious drift on any field declaring
+  them (14 occurrences in the budgetHQ corpus).
+
 ## [0.8.0] — 2026-07-02
 
 The events + composition milestone, cut in lockstep with kernel v0.10.0: the
