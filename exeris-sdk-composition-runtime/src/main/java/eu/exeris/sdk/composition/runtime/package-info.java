@@ -25,11 +25,18 @@
  * no {@code exeris-kernel} or {@code exeris-tooling} type — only the SDK composition-spec and a JSON
  * mapper — and no kernel package calls into it.
  *
- * <p><b>Follow-up (not this slice).</b> Binding the four-phase cap lifecycle
- * ({@code initialize → ready → drain → terminate}) to the kernel bootstrap state machine as a single
- * opaque {@code Subsystem} (obligation 8a, the boot conductor) is the larger composition-runtime piece;
- * it needs the kernel bootstrap contract and the {@code CapabilityLifecycleHooks} interface, and lands
- * separately with the first real cap.
+ * <p><b>Follow-up (not this slice).</b> The boot conductor (ADR-024 obligation 8a′, amendment
+ * 2026-07-21 "Boot Conductor Call Site") — driving each cap through the four-phase lifecycle
+ * ({@code initialize → ready → drain → terminate}) in the tooling-supplied {@code initOrder} — is the
+ * larger composition-runtime piece; it and the {@code CapabilityLifecycleHooks} interface land in
+ * <em>this</em> module (planned for SDK 0.9.0). Call site: the generated SKU bootstrap invokes the
+ * conductor after the kernel reports {@code KERNEL READY} (stamp assertion first, then the
+ * {@code initOrder} loop, with no DAG re-resolution); the conductor is <em>never</em> registered as a
+ * kernel {@code Subsystem}, and the cap layer contributes no node to the kernel bootstrap DAG — the
+ * kernel stays cap-blind and the SKU artefact boots standalone (the code-detachment guarantee).
+ * Shutdown is SKU-entrypoint-driven: caps drain and terminate in reverse {@code initOrder} (honouring
+ * the drain deadline), then the kernel stops. The composition-manifest format the conductor consumes
+ * is fixed as JSON (ADR-053).
  *
  * @since 0.8.0
  */

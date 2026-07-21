@@ -59,7 +59,7 @@ Do not "fix" build failures by lowering `maven.compiler.release`. If a contribut
 
 ### ui-kit is npm-only
 
-`exeris-sdk-ui-kit/` is **not in the Maven reactor** (despite the README listing it as a module). It's a standalone npm package (`@exeris/ui-kit`, Tailwind preset + CSS). Build it separately:
+`exeris-sdk-ui-kit/` is **not in the Maven reactor** (despite the README listing it as a module). It's a standalone npm package (Tailwind preset + CSS), published interim to **GitHub Packages as `@exeris-systems/ui-kit`** (`.github/workflows/publish-ui-kit.yml`, tag `ui-kit-v*`); publishing to public npm as `@exeris/ui-kit` is a 1.0.0 GA item. Build it separately:
 
 ```bash
 cd exeris-sdk-ui-kit && npm install && npm run build
@@ -73,11 +73,16 @@ cd exeris-sdk-ui-kit && npm install && npm run build
 | `exeris-sdk-parent` | yes (pom) | Common build plugins; imports the BOM |
 | `exeris-sdk-annotations` | **yes** (jar) | Attaches `-sources` and `-javadoc` jars (Maven Central requirement) |
 | `exeris-sdk-source-model` | **yes** (jar) | Same — attaches sources + javadoc |
+| `exeris-sdk-source-model-io` | **yes** (jar) | JavaParser-based parser/writer (ADR-037); JavaParser is confined to this module |
+| `exeris-sdk-composition-spec` | **yes** (jar) | `cap-manifest.json` schema + the one canonical content binding (ADR-024 obligation 8b); zero runtime deps |
+| `exeris-sdk-composition-runtime` | **yes** (jar) | SKU-boot stamp asserter (ADR-024 obligation 8a); ships into the SKU jar; deps = spec + `jackson-databind` |
 | `exeris-sdk-ui-kit` | npm, not Maven | Excluded from the reactor in `pom.xml` |
 
 When adding a new Maven module that's intended for publish, mirror the `attach-sources` + `attach-javadocs` executions from `exeris-sdk-annotations/pom.xml` — without them, Maven Central rejects the artifact.
 
 ## Distribution: Maven Central, not GitHub Packages
+
+> **Status (0.9.0 cycle):** Central publishing is being wired now — Central Portal publishing plugin + GPG signing in a release profile + a release workflow. Releases 0.6.0–0.8.0 shipped as git tag + GitHub Release only; there are no `eu.exeris` artifacts on Maven Central yet, and downstream repos currently resolve SDK artifacts from a local `mvn install`. The Central flow below is the target state.
 
 The parent `exeris-systems/CLAUDE.md` describes a `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` flow for cross-repo `eu.exeris:*` resolution. **That does not apply here.** The SDK publishes to Sonatype Central Portal (see `<distributionManagement>` in root `pom.xml`):
 
