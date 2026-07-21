@@ -15,14 +15,17 @@
 
     <name>Exeris SDK :: Composition Runtime</name>
     <description>
-        Boot-time composition validation-stamp assertion (ADR-024 obligation 8/8a). A generic,
-        once-tested library every SKU bootstrap invokes at startup, before any cap enters
-        initialize: it ASSERTS the tooling-emitted stamp in cap-manifest.json (presence,
-        well-formedness, content-binding-match, version-match) and fails fast on drift. It does
-        NOT re-validate (no @Requires->@Provides DAG re-resolution). The binding it recomputes is
-        the ONE canonical definition in exeris-sdk-composition-spec (obligation 8b) — no verbatim
-        port. Ships into the SKU jar; carries no kernel or codegen dependency (obligation 9 — the
-        kernel stays cap-blind; the build-time pipeline is not dragged onto the SKU classpath).
+        Boot-time composition library (ADR-024 obligations 8a/8a'). A generic, once-tested
+        library every SKU bootstrap invokes at startup: the validation-stamp assertion checks the
+        tooling-emitted stamp in cap-manifest.json (presence, well-formedness,
+        content-binding-match, version-match) and fails fast on drift, then the boot conductor
+        drives each cap's four-phase lifecycle (CapabilityLifecycleHooks from
+        exeris-sdk-composition-lifecycle) in the manifest initOrder — invoked by the SKU
+        bootstrap after KERNEL READY, never a kernel Subsystem. It does NOT re-validate (no
+        @Requires->@Provides DAG re-resolution). The binding it recomputes is the ONE canonical
+        definition in exeris-sdk-composition-spec (obligation 8b) — no verbatim port. Ships into
+        the SKU jar; carries no kernel or codegen dependency (obligation 9 — the kernel stays
+        cap-blind; the build-time pipeline is not dragged onto the SKU classpath).
     </description>
 
     <dependencies>

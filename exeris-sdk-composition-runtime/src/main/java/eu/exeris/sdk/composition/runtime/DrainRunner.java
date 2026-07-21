@@ -47,7 +47,11 @@ interface DrainRunner {
                 try {
                     Thread.sleep(remaining);
                 } catch (InterruptedException cancelled) {
-                    return; // the drain finished in time — the watchdog was cancelled
+                    // The drain finished in time — the caller cancelled this watchdog. Restore the
+                    // flag per convention (S2142); the watchdog thread dies on return, so it goes
+                    // nowhere.
+                    Thread.currentThread().interrupt();
+                    return;
                 }
                 synchronized (gate) {
                     if (!drainOver[0]) {
@@ -61,7 +65,11 @@ interface DrainRunner {
                 hooks.drain(remaining);
                 return true;
             } catch (InterruptedException overrun) {
-                return false; // the watchdog fired — the drain is abandoned
+                // The watchdog fired — the drain is abandoned. Restore the flag per convention
+                // (S2142); the gated clear in the finally below is deliberately the last word, so
+                // the self-inflicted interrupt still never leaks into terminate.
+                Thread.currentThread().interrupt();
+                return false;
             } finally {
                 // Once drainOver is set under the gate, the watchdog can never interrupt again, so
                 // the subsequent flag-clear is guaranteed to be the last word — no leaked interrupt.

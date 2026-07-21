@@ -134,6 +134,22 @@ class CompositionConductorTest {
         assertThat(failure.getCause()).hasMessage("C ready boom");
     }
 
+    @Test
+    void readyFailureOnAMiddleCapStillUnwindsAllCaps() {
+        // C.ready never runs (the ready loop stops at B), yet the unwind still drains and
+        // terminates C — the documented "all caps" semantic: drain may be called on a cap whose
+        // ready never ran; terminate is unconditional either way.
+        CompositionBootException failure = catchThrowableOfType(CompositionBootException.class,
+                () -> conductor(threeCaps(CapAHooks.class, ReadyFailsBHooks.class, CapCHooks.class)).start());
+
+        assertThat(RECORD).containsExactly(
+                "A.init", "B.init", "C.init", "A.ready", "B.ready",
+                "C.drain", "B.drain", "A.drain", "C.term", "B.term", "A.term");
+        assertThat(failure.capName()).isEqualTo("com.app.B");
+        assertThat(failure.phase()).isEqualTo("ready");
+        assertThat(failure.getCause()).hasMessage("B ready boom");
+    }
+
     // ---------------------------------------------------------------- 4. discovery fail-fast
 
     @Test
@@ -448,6 +464,16 @@ class CompositionConductorTest {
         }
         @Override public void drain(Duration remaining) { RECORD.add("C.drain"); }
         @Override public void terminate() { RECORD.add("C.term"); }
+    }
+
+    public static class ReadyFailsBHooks implements CapabilityLifecycleHooks {
+        @Override public void initialize() { RECORD.add("B.init"); }
+        @Override public void ready() {
+            RECORD.add("B.ready");
+            throw new IllegalStateException("B ready boom");
+        }
+        @Override public void drain(Duration remaining) { RECORD.add("B.drain"); }
+        @Override public void terminate() { RECORD.add("B.term"); }
     }
 
     public static class TerminateThrowsCHooks implements CapabilityLifecycleHooks {
