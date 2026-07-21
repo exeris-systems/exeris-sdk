@@ -788,7 +788,8 @@ public final class SourceModelReader {
      * leaves it to the caller). A negative literal is a {@code UnaryExpr} (not an
      * {@code IntegerLiteralExpr}) and so falls through to the caller default;
      * harmless for the count-style attributes read here ({@code snapshotThreshold},
-     * {@code maxRetries}, {@code order}), where a negative value is meaningless.
+     * {@code maxRetries}, {@code order}, {@code minLength}, {@code maxLength}),
+     * where a negative value is meaningless.
      */
     private Optional<Integer> intAttr(AnnotationExpr annotation, String attribute) {
         return value(annotation, attribute)
@@ -978,7 +979,8 @@ public final class SourceModelReader {
      * validation block of {@code extractFieldMetadata} plus
      * {@code applyDeprecatedValidationFallbacks}:
      * <ul>
-     *   <li>{@code min}/{@code max} (long) and {@code pattern} present-only;</li>
+     *   <li>{@code min}/{@code max} (long), {@code minLength}/{@code maxLength}
+     *       (int) and {@code pattern} present-only;</li>
      *   <li>deprecated {@code required = true} → {@code @Field.required} only when
      *       {@code @Field} did not set it (canonical wins);</li>
      *   <li>deprecated {@code validateOn} = {@code "CREATE"}/{@code "UPDATE"} →
@@ -990,14 +992,18 @@ public final class SourceModelReader {
      * value without them, which is what reattach compares.
      */
     private void applyValidation(AnnotationExpr field, AnnotationExpr validation, FieldMetadata.Builder builder) {
-        // Only min/max/pattern are read — the processor's @Validation block reads
-        // exactly these three; @Validation.minLength/maxLength exist on the annotation
-        // but the processor does NOT read them into FieldMetadata, so reading them here
-        // would itself create a divergence. Note: min == 0 is not wire-safe under
-        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that is the
-        // documented Field/Validation overlap follow-up, not introduced here.
+        // min/max/minLength/maxLength/pattern are read present-only, mirroring the
+        // processor's @Validation block exactly: ExerisDomainProcessor extracts all
+        // five into FieldMetadata, guarded on explicit presence in source, so an
+        // absent attribute never floods in the annotation default and stays null on
+        // FieldMetadata here too. Note: min == 0 is not wire-safe under
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that boxed-zero
+        // fix is handled separately — the documented Field/Validation overlap
+        // follow-up, not introduced here.
         longAttr(validation, "min").ifPresent(builder::min);
         longAttr(validation, "max").ifPresent(builder::max);
+        intAttr(validation, "minLength").ifPresent(builder::minLength);
+        intAttr(validation, "maxLength").ifPresent(builder::maxLength);
         stringAttr(validation, "pattern").ifPresent(builder::pattern);
 
         if (boolAttr(validation, "required").orElse(false) && boolAttr(field, "required").isEmpty()) {
