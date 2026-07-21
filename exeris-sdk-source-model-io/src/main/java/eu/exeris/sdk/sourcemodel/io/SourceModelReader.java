@@ -55,8 +55,8 @@ import java.util.TreeSet;
  * attribute surface the processor reads (label, description, required, unique,
  * indexed, searchable, sortable, filterable, readOnly, inCreate, inUpdate,
  * computed, computedFrom) present-only on a {@link FieldMetadata.Builder}, plus
- * field-level {@code @Validation} (min/max/pattern and the deprecated
- * {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
+ * field-level {@code @Validation} (min/max/minLength/maxLength/pattern and the
+ * deprecated {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
  * For relationships, {@code targetEntity} (collection element type unwrapped),
