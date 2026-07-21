@@ -18,37 +18,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SimpleAstRecordsTest {
 
     @Nested
-    @DisplayName("ValidationMetadata")
-    class Validation {
-        @Test
-        void withNotNullSetsOnlyNotNull() {
-            ValidationMetadata v = ValidationMetadata.withNotNull();
-            assertThat(v.notNull()).isTrue();
-            assertThat(v.notBlank()).isFalse();
-            assertThat(v.email()).isFalse();
-            assertThat(v.url()).isFalse();
-            assertThat(v.future()).isFalse();
-            assertThat(v.past()).isFalse();
-        }
-
-        @Test
-        void withNotBlankSetsOnlyNotBlank() {
-            ValidationMetadata v = ValidationMetadata.withNotBlank();
-            assertThat(v.notNull()).isFalse();
-            assertThat(v.notBlank()).isTrue();
-        }
-
-        @Test
-        void withLengthCarriesMinAndMax() {
-            ValidationMetadata v = ValidationMetadata.withLength(2, 50);
-            assertThat(v.minLength()).isEqualTo(2);
-            assertThat(v.maxLength()).isEqualTo(50);
-            assertThat(v.notNull()).isFalse();
-            assertThat(v.notBlank()).isFalse();
-        }
-    }
-
-    @Nested
     @DisplayName("DomainEventMetadata")
     class DomainEvent {
         @Test

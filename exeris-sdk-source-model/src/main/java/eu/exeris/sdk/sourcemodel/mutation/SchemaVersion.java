@@ -63,9 +63,19 @@ public final class SchemaVersion {
      *       the additions are by-name and back-compatible to read, but the schema
      *       names the shape, so a {@code "0.7.0"} baseline reads as
      *       {@code SCHEMA_VERSION_SKEW}.</li>
+     *   <li>{@code "0.9.0"} — bumped for the {@code FieldMetadata} bounds
+     *       inclusion fix: {@code min} / {@code max} / {@code minLength} /
+     *       {@code maxLength} moved from the class-level
+     *       {@code @JsonInclude(NON_DEFAULT)} to per-component
+     *       {@code NON_NULL}, so zero-valued bounds (e.g. {@code min = 0} as a
+     *       non-negativity floor) survive serialization instead of being
+     *       dropped as boxed-zero "empty". No component changed name or type,
+     *       but the wire can now carry keys it previously dropped — the schema
+     *       names the shape, so a {@code "0.8.0"} baseline reads as
+     *       {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
-    public static final String CURRENT = "0.8.0";
+    public static final String CURRENT = "0.9.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.

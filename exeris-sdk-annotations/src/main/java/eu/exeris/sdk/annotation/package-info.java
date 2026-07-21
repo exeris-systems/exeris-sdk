@@ -93,6 +93,8 @@
  *       {@code minLength}, {@code maxLength}, {@code pattern}, {@code email},
  *       {@code url}, {@code positive}, etc.</li>
  * </ul>
+ * <p>{@code @Field} declares no constraint attributes — {@code @Validation} is
+ * the sole declaration site (the AST carrier is {@code FieldMetadata}).
  * <p>Specifically deprecated:
  * <ul>
  *   <li>{@code @Validation.required} → use {@link eu.exeris.sdk.annotation.Field#required()}</li>

@@ -99,19 +99,20 @@ Practical implication while in 0.x: when removing/renaming public API, run the d
 
 ## Field vs Validation canonical scoping
 
-This is the single most likely place to introduce a subtle regression. Fixed in 0.2.0; deprecations removed in 1.0.0:
+This is the single most likely place to introduce a subtle regression. Fixed in 0.2.0; finalized in 0.9.0 (ADR-054); deprecations removed in 1.0.0:
 
-- **`@Field`** owns field-shape and lifecycle: `required`, `inCreate`, `inUpdate` (also basic shape hints `minLength`, `maxLength`, `min`, `max`, `pattern`).
-- **`@Validation`** owns constraint rules: `email`, `url`, `pattern`, `future`, `past`, etc.
+- **`@Field`** owns field-shape and lifecycle: `required`, `inCreate`, `inUpdate`. It declares **no constraint attributes**.
+- **`@Validation`** is the **sole declaration site** of the constraint rules: `min`, `max`, `minLength`, `maxLength`, `pattern`, `email`, `url`, `future`, `past`, etc.
+- **`FieldMetadata`** is the **single AST carrier** of the constraint values (`minLength`/`maxLength`/`min`/`max`/`pattern`), populated from `@Validation` by the processor and the `-io` reader.
 - `@Validation.required` and `@Validation.validateOn` are `@Deprecated(forRemoval = true)`. The downstream processor still reads them as a fallback during 0.2.x with a build warning.
-- `ValidationMetadata.notNull` / `notBlank` are **derived** from `FieldMetadata.required` by the processor — they are not separately configurable.
+- DB NOT NULL / not-blank semantics are **derived** from `FieldMetadata.required` at generator level — they are not separately declared.
 
 The full rationale is in two package-info files; keep them in sync when changing scoping:
 
 - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
 - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
 
-A wider `min` / `max` / `pattern` overlap between `FieldMetadata` and `ValidationMetadata` is documented and **intentionally deferred** to 0.6–0.9; do not unilaterally collapse it — budgetHQ usage is supposed to inform the right cut.
+The long-deferred "wider `min` / `max` / `pattern` overlap" cut **landed in 0.9.0 (ADR-054)**, informed by the budgetHQ corpus (19/19 constraint usages on `@Validation`): the overlap was fictional at the annotation level (`@Field` never declared those attributes), and `ValidationMetadata` — never populated by any processor/reader nor consumed by any generator, with no published artifact for anyone to depend on — was **removed outright in 0.9.0** (0.x permits the break; a deprecation window with zero possible consumers is vacuous). Do not reintroduce constraint attributes on `@Field` or a parallel AST validation carrier.
 
 ## AST records & the Jackson 3 wire-format contract
 
@@ -119,7 +120,7 @@ The `eu.exeris.sdk.sourcemodel.ast.*` records are the build-time hand-off format
 
 1. **They must be records, not classes** — `ActionParamMetadata` was originally a `final class` with record-style accessors, and Jackson 3 silently dropped every field because it didn't recognize them as getters. Every AST type is now a record; keep it that way.
 2. **Downstream Jackson consumers must set `FAIL_ON_NULL_FOR_PRIMITIVES=false`** — Jackson 3 defaults it to `true`, but the AST uses primitive booleans with `@JsonInclude(NON_DEFAULT)` so absent fields arrive as `null`. The guard test `AstJsonRoundTripTest` configures the mapper this way and is the canonical reference.
-3. **`@JsonInclude(NON_DEFAULT)` drops boxed-zero** — `Long(0)` is treated as "empty" by Jackson 3 and dropped on serialization. Avoid `0` as a meaningful value for `min` / `max` on boxed-numeric fields until the Field/Validation overlap fix lands.
+3. **`@JsonInclude(NON_DEFAULT)` drops boxed-zero** — `Long(0)` is treated as "empty" by Jackson 3 and dropped on serialization. Fixed for the `FieldMetadata` bounds (`min`/`max`/`minLength`/`maxLength`) in 0.9.0 via per-component `@JsonInclude(NON_NULL)`, so zero-valued bounds survive the wire (ADR-054). The general caveat still holds for any other boxed-numeric field under class-level `NON_DEFAULT`: avoid `0` as a meaningful value, or give the component the same per-component `NON_NULL` treatment.
 
 Every public AST record is exercised by `AstJsonRoundTripTest` (serialize → deserialize → deep equality). When adding a new AST record or component, add a test case there; this is the wire-format guard that already caught two real bugs.
 

@@ -17,6 +17,29 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Changed
+- **`SchemaVersion.CURRENT`** bumped `"0.8.0"` → `"0.9.0"` — `FieldMetadata`
+  bounds (`min`/`max`/`minLength`/`maxLength`) moved to per-component
+  `@JsonInclude(NON_NULL)`, so zero-valued bounds survive the wire (the
+  NON_DEFAULT boxed-zero drop is fixed; the `ViewMetadata` NON_NULL precedent).
+  Baselines stamped `"0.8.0"` read as `SCHEMA_VERSION_SKEW` — re-run codegen
+  once. See [`MIGRATION.md`](MIGRATION.md#08x--09x).
+- **Field/Validation canonical scoping finalized (the 0.6–0.9 deferred cut)** —
+  `@Validation` is the sole declaration site for
+  `min`/`max`/`minLength`/`maxLength`/`pattern`; `FieldMetadata` the sole AST
+  carrier. Corpus signal: 19/19 budgetHQ usages on `@Validation` (`maxLength` ×14,
+  `pattern` ×5, `min`/`minLength` ×0). Docs (CLAUDE.md, both package-infos, the
+  scoping review skill) retire the "@Field owns shape hints" framing. ADR-054.
+
+### Removed
+- **`ValidationMetadata`** — removed outright (no deprecation cycle): never
+  populated by any processor/reader nor consumed by any generator, and with
+  zero published artifacts no external dependent can exist — the window would
+  have protected nobody (0.x permits the break). `FieldMetadata` is the
+  canonical carrier; `notNull`/`notBlank` derive from `FieldMetadata.required`;
+  `patternMessage` dropped as unconsumed. See
+  [`MIGRATION.md`](MIGRATION.md#08x--09x).
+
 ### Fixed
 - **`-io` reader reads `@Validation.minLength`/`maxLength`** — restores
   reader↔processor parity (ADR-042); previously both were dropped on read
