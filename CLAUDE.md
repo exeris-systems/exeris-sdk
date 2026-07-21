@@ -75,7 +75,8 @@ cd exeris-sdk-ui-kit && npm install && npm run build
 | `exeris-sdk-source-model` | **yes** (jar) | Same — attaches sources + javadoc |
 | `exeris-sdk-source-model-io` | **yes** (jar) | JavaParser-based parser/writer (ADR-037); JavaParser is confined to this module |
 | `exeris-sdk-composition-spec` | **yes** (jar) | `cap-manifest.json` schema + the one canonical content binding (ADR-024 obligation 8b); zero runtime deps |
-| `exeris-sdk-composition-runtime` | **yes** (jar) | SKU-boot stamp asserter (ADR-024 obligation 8a); ships into the SKU jar; deps = spec + `jackson-databind` |
+| `exeris-sdk-composition-lifecycle` | **yes** (jar) | Cap-facing `CapabilityLifecycleHooks` interface — the four-phase lifecycle contract (ADR-024 obligation 8a); zero deps (enforcer-proven), so cap authors compile against annotations + this jar only |
+| `exeris-sdk-composition-runtime` | **yes** (jar) | SKU-boot stamp asserter + boot conductor (ADR-024 obligations 8a/8a′); ships into the SKU jar; deps = spec + lifecycle + `jackson-databind` |
 | `exeris-sdk-ui-kit` | npm, not Maven | Excluded from the reactor in `pom.xml` |
 
 When adding a new Maven module that's intended for publish, mirror the `attach-sources` + `attach-javadocs` executions from `exeris-sdk-annotations/pom.xml` — without them, Maven Central rejects the artifact.

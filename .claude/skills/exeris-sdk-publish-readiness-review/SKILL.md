@@ -23,7 +23,7 @@ Enforce: the SDK publishes to **Sonatype Central Portal** (NOT GitHub Packages).
 ## Canonical Rules (per repo `CLAUDE.md`)
 - Snapshots → `https://central.sonatype.com/repository/maven-snapshots`; releases → `https://central.sonatype.com`.
 - The parent `~/exeris-systems/CLAUDE.md` `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` flow does NOT apply here.
-- Publishable: `exeris-sdk-bom` (pom), `exeris-sdk-parent` (pom), plus five jars — `exeris-sdk-annotations`, `exeris-sdk-source-model`, `exeris-sdk-source-model-io`, `exeris-sdk-composition-spec`, `exeris-sdk-composition-runtime` — each MUST attach `-sources` + `-javadoc`.
+- Publishable: `exeris-sdk-bom` (pom), `exeris-sdk-parent` (pom), plus six jars — `exeris-sdk-annotations`, `exeris-sdk-source-model`, `exeris-sdk-source-model-io`, `exeris-sdk-composition-spec`, `exeris-sdk-composition-lifecycle` (zero-dep by enforcer — the cap-facing hooks interface, ADR-024 obligation 8a), `exeris-sdk-composition-runtime` — each MUST attach `-sources` + `-javadoc`.
 - `exeris-sdk-ui-kit` is npm-only (interim `@exeris-systems/ui-kit` via GitHub Packages; `@exeris/ui-kit` on public npm is the 1.0.0 GA target); it is NOT in the Maven reactor.
 - New publishable module → mirror `attach-sources` + `attach-javadocs` from `exeris-sdk-annotations/pom.xml`.
 

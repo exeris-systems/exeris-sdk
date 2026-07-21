@@ -22,23 +22,30 @@
  * golden test vector is the cross-module conformance pin.
  *
  * <p><b>Boundaries.</b> The open kernel stays cap-blind (ADR-024 obligation 9): this module depends on
- * no {@code exeris-kernel} or {@code exeris-tooling} type — only the SDK composition-spec and a JSON
- * mapper — and no kernel package calls into it.
+ * no {@code exeris-kernel} or {@code exeris-tooling} type — only the SDK composition-spec, the
+ * composition-lifecycle interface, and a JSON mapper — and no kernel package calls into it.
  *
- * <p><b>Follow-up (not this slice).</b> The boot conductor (ADR-024 obligation 8a′, amendment
- * 2026-07-21 "Boot Conductor Call Site") — driving each cap through the four-phase lifecycle
- * ({@code initialize → ready → drain → terminate}) in the tooling-supplied {@code initOrder} — is the
- * larger composition-runtime piece; the conductor lands in <em>this</em> module, while the
- * {@code CapabilityLifecycleHooks} interface lands in the new zero-dependency
+ * <p><b>The boot conductor (landed, SDK 0.9.0).</b> The larger composition-runtime piece — the boot
+ * conductor (ADR-024 obligation 8a′, amendment 2026-07-21 "Boot Conductor Call Site"),
+ * {@link eu.exeris.sdk.composition.runtime.CompositionConductor} — drives each cap through the
+ * four-phase lifecycle ({@code initialize → ready → drain → terminate}) in the tooling-supplied
+ * {@code initOrder}, replayed verbatim (stamp assertion first, then reflective hook discovery from
+ * the manifest's per-module {@code lifecycleOwner}, then the phase loops — with no DAG
+ * re-resolution); a boot failure unwinds the touched caps and surfaces as
+ * {@link eu.exeris.sdk.composition.runtime.CompositionBootException}. The hooks module is split on
+ * purpose: the {@code CapabilityLifecycleHooks} interface lives in the zero-dependency
  * {@code exeris-sdk-composition-lifecycle} module, so cap authors implementing the hooks never
- * depend on this jar (planned for SDK 0.9.0). Call site: the generated SKU bootstrap invokes the
- * conductor after the kernel reports {@code KERNEL READY} (stamp assertion first, then the
- * {@code initOrder} loop, with no DAG re-resolution); the conductor is <em>never</em> registered as a
- * kernel {@code Subsystem}, and the cap layer contributes no node to the kernel bootstrap DAG — the
- * kernel stays cap-blind and the SKU artefact boots standalone (the code-detachment guarantee).
- * Shutdown is SKU-entrypoint-driven: caps drain and terminate in reverse {@code initOrder} (honouring
- * the drain deadline), then the kernel stops. The composition-manifest format the conductor consumes
- * is fixed as JSON (ADR-053).
+ * depend on this jar (or its Jackson dependency). Call-site model: the generated SKU bootstrap
+ * invokes the conductor inside {@code kernelMain} after the kernel reports {@code KERNEL READY};
+ * the conductor is <em>never</em> registered as a kernel {@code Subsystem}, and the cap layer
+ * contributes no node to the kernel bootstrap DAG — the kernel stays cap-blind and the SKU artefact
+ * boots standalone (the code-detachment guarantee). Shutdown is SKU-entrypoint-driven: caps drain
+ * and terminate in reverse {@code initOrder} (honouring the composition-wide drain deadline), then
+ * the kernel stops. The composition-manifest format the conductor consumes is fixed as JSON
+ * (ADR-053). Tooling-emitter status: the generated SKU bootstrap that emits this call site ships
+ * with the {@code exeris-tooling} bootstrap emitter (gateway-caps plan, Phase 1/2); until then a
+ * hand-written SKU entrypoint invokes the conductor directly — the library contract is identical in
+ * both cases.
  *
  * @since 0.8.0
  */

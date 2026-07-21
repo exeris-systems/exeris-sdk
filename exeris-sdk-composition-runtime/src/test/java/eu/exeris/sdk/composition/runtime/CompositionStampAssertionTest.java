@@ -19,10 +19,10 @@ class CompositionStampAssertionTest {
     private static List<CapManifest.Module> fixtureModules() {
         return List.of(
                 new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
-                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")))),
+                        new CapManifest.Provided("com.api.AuditLog", "1.0.0")), null)),
                 new CapManifest.Module("com.app.Billing", new CapManifest.ModuleBody(List.of(
                         new CapManifest.Provided("com.api.Invoice", "2.0.0"),
-                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")))));
+                        new CapManifest.Provided("com.api.PaymentApi", "1.2.0")), null)));
     }
 
     /**
@@ -60,7 +60,7 @@ class CompositionStampAssertionTest {
         // Keep the original (valid) stamp but tamper the modules → recomputed binding diverges.
         CapManifest tampered = new CapManifest(2, m.stamp(), List.of(
                 new CapManifest.Module("com.app.Audit", new CapManifest.ModuleBody(List.of(
-                        new CapManifest.Provided("com.api.AuditLog", "9.9.9"))))), null);
+                        new CapManifest.Provided("com.api.AuditLog", "9.9.9")), null))), null);
         assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(tampered))
                 .isInstanceOf(CompositionStampException.class)
                 .hasMessageContaining("binding mismatch");
@@ -119,7 +119,7 @@ class CompositionStampAssertionTest {
         // not only when the classpath version differs from a versioned manifest entry.
         List<CapManifest.Module> modules = List.of(
                 new CapManifest.Module("com.app.X", new CapManifest.ModuleBody(
-                        Collections.singletonList(new CapManifest.Provided("com.api.Y", null)))));
+                        Collections.singletonList(new CapManifest.Provided("com.api.Y", null)), null)));
         CapManifest m = new CapManifest(2,
                 new CapManifest.Stamp(true, "1.0.0", CompositionBinding.compute(modules)), modules, null);
         assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(m, Map.of("com.api.Y", "1.0.0")))
@@ -170,7 +170,7 @@ class CompositionStampAssertionTest {
     void nullQualifiedNameIsNamedNotAnNpe() {
         CapManifest.Stamp wellFormedStamp = new CapManifest.Stamp(true, "0.0.0", "sha256:" + "0".repeat(64));
         CapManifest m = new CapManifest(2, wellFormedStamp, List.of(
-                new CapManifest.Module(null, new CapManifest.ModuleBody(List.of()))), null);
+                new CapManifest.Module(null, new CapManifest.ModuleBody(List.of(), null))), null);
         assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(m))
                 .isInstanceOf(CompositionStampException.class)
                 .hasMessageContaining("null qualifiedName");
@@ -181,7 +181,7 @@ class CompositionStampAssertionTest {
         CapManifest.Stamp wellFormedStamp = new CapManifest.Stamp(true, "0.0.0", "sha256:" + "0".repeat(64));
         CapManifest m = new CapManifest(2, wellFormedStamp, List.of(
                 new CapManifest.Module("com.app.X", new CapManifest.ModuleBody(
-                        Collections.singletonList(new CapManifest.Provided(null, "1.0.0"))))), null);
+                        Collections.singletonList(new CapManifest.Provided(null, "1.0.0")), null))), null);
         assertThatThrownBy(() -> CompositionStampAssertion.assertConsistent(m))
                 .isInstanceOf(CompositionStampException.class)
                 .hasMessageContaining("null service");
@@ -193,7 +193,7 @@ class CompositionStampAssertionTest {
         // normalizes it to "service@", so a self-consistent manifest with one must pass, NOT be rejected.
         List<CapManifest.Module> modules = List.of(
                 new CapManifest.Module("com.app.X", new CapManifest.ModuleBody(
-                        Collections.singletonList(new CapManifest.Provided("com.api.Y", null)))));
+                        Collections.singletonList(new CapManifest.Provided("com.api.Y", null)), null)));
         CapManifest m = new CapManifest(2,
                 new CapManifest.Stamp(true, "0.0.0", CompositionBinding.compute(modules)), modules, null);
         assertThatCode(() -> CompositionStampAssertion.assertConsistent(m))

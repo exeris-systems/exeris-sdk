@@ -10,8 +10,9 @@ import java.util.List;
  * (ADR-024 obligation 8b): the tooling that produces the manifest and the runtime that
  * consumes it agree on these records instead of each maintaining a private mirror. It models
  * the <em>consumer-relevant</em> subset — schema version, the validation {@link Stamp}, the
- * resolved {@link Module} set (for the {@link CompositionBinding}), and {@link #initOrder()}
- * (the topological cap order the boot conductor will replay). Producer-only diagnostics the
+ * resolved {@link Module} set (for the {@link CompositionBinding}), {@link #initOrder()}
+ * (the topological cap order the boot conductor replays), and the per-module-body
+ * {@code lifecycleOwner} (the conductor's hook-discovery input). Producer-only diagnostics the
  * tooling also emits ({@code name}, {@code packageName}, per-module {@code requires},
  * {@code resolutions}, {@code warnings}) are deliberately absent — a consumer deserializes
  * with {@code FAIL_ON_UNKNOWN_PROPERTIES=false} and ignores them.
@@ -70,9 +71,24 @@ public record CapManifest(
     /**
      * The provided-service body of a module.
      *
-     * @param provides the services this module {@code @Provides}; may be {@code null} or empty
+     * <p><b>{@code lifecycleOwner} is not part of the content binding.</b> Like {@code initOrder},
+     * it is a tooling-derived field the binding does not hash — post-assertion the manifest is
+     * trusted as a correctness artifact, so the boot conductor reads it verbatim. The producer
+     * ({@code ExerisDomainProcessor}) emits it {@code NON_NULL} inside the module body; absent /
+     * {@code null} / blank means the cap declares no lifecycle hooks, matching
+     * {@code @CapabilityLifecycle}'s zero-or-one cardinality (a blank value normalizes to
+     * {@code null} in the compact constructor). Trailing component since 0.9.0.
+     *
+     * @param provides       the services this module {@code @Provides}; may be {@code null} or empty
+     * @param lifecycleOwner the fully-qualified name of the cap's {@code @CapabilityLifecycle}
+     *                       class (the {@code CapabilityLifecycleHooks} implementation the boot
+     *                       conductor instantiates), or {@code null} for a cap with no hooks
      */
-    public record ModuleBody(List<Provided> provides) {}
+    public record ModuleBody(List<Provided> provides, String lifecycleOwner) {
+        public ModuleBody {
+            if (lifecycleOwner != null && lifecycleOwner.isBlank()) lifecycleOwner = null;
+        }
+    }
 
     /**
      * One provided service.
