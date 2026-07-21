@@ -17,6 +17,14 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Changed
+- **`SchemaVersion.CURRENT`** bumped `"0.8.0"` → `"0.9.0"` — `FieldMetadata`
+  bounds (`min`/`max`/`minLength`/`maxLength`) moved to per-component
+  `@JsonInclude(NON_NULL)`, so zero-valued bounds survive the wire (the
+  NON_DEFAULT boxed-zero drop is fixed; the `ViewMetadata` NON_NULL precedent).
+  Baselines stamped `"0.8.0"` read as `SCHEMA_VERSION_SKEW` — re-run codegen
+  once. See [`MIGRATION.md`](MIGRATION.md#08x--09x).
+
 ### Fixed
 - **`-io` reader reads `@Validation.minLength`/`maxLength`** — restores
   reader↔processor parity (ADR-042); previously both were dropped on read

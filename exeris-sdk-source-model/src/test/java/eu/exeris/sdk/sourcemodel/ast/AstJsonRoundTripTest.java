@@ -79,10 +79,8 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("FieldMetadata round-trips (NON_DEFAULT inclusion)")
     void fieldMetadataRoundTrips() {
-        // Note: with @JsonInclude(NON_DEFAULT), Jackson 3 treats Long(0) as
-        // empty for boxed wrappers and drops it on serialization. Avoid 0 as a
-        // meaningful min/max value until tracked under the Field/Validation
-        // overlap fix (SDK 0.2 follow-up).
+        // Bounds may be any value incl. 0 since 0.9.0 (per-component NON_NULL);
+        // the zero-bound wire contract is pinned in fieldMetadataZeroBoundsRoundTrip.
         FieldMetadata original = FieldMetadata.builder("amount", "BigDecimal")
                 .required(true)
                 .unique(true)
@@ -106,6 +104,44 @@ class AstJsonRoundTripTest {
                 .build();
 
         assertRoundTrip(original, FieldMetadata.class);
+    }
+
+    @Test
+    @DisplayName("FieldMetadata zero-valued bounds survive the wire (0.9.0, per-component NON_NULL)")
+    void fieldMetadataZeroBoundsRoundTrip() {
+        // min = 0 is a legitimate non-negativity floor. Under the pre-0.9.0
+        // class-level NON_DEFAULT, Jackson 3 treated boxed zero as "empty" and
+        // silently dropped all four bound keys; per-component NON_NULL keeps
+        // them. The deep-equality round trip alone would catch the drop
+        // (null != 0), but the JSON-key assertions document the wire contract.
+        FieldMetadata original = FieldMetadata.builder("amount", "Long")
+                .min(0L)
+                .max(0L)
+                .minLength(0)
+                .maxLength(0)
+                .build();
+
+        String json = mapper.writeValueAsString(original);
+        assertThat(json)
+                .contains("\"min\":0")
+                .contains("\"max\":0")
+                .contains("\"minLength\":0")
+                .contains("\"maxLength\":0");
+
+        assertRoundTrip(original, FieldMetadata.class);
+    }
+
+    @Test
+    @DisplayName("FieldMetadata absent bounds stay absent (NON_NULL drops null, not zero)")
+    void fieldMetadataAbsentBoundsStayAbsent() {
+        // NON_NULL only rescues zero — it must not start emitting null-valued
+        // keys for unset bounds ("no bound" stays absent on the wire).
+        String json = mapper.writeValueAsString(FieldMetadata.simple("notes", "String"));
+        assertThat(json)
+                .doesNotContain("\"min\"")
+                .doesNotContain("\"max\"")
+                .doesNotContain("\"minLength\"")
+                .doesNotContain("\"maxLength\"");
     }
 
     @Test

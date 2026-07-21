@@ -10,6 +10,11 @@ import java.util.Objects;
 /**
  * Metadata for entity fields defined with @Field annotation.
  *
+ * <p>{@code FieldMetadata} is the single canonical AST carrier of the
+ * {@code @Validation} constraint values ({@code min} / {@code max} /
+ * {@code minLength} / {@code maxLength} / {@code pattern}); DB NOT NULL /
+ * not-blank semantics derive from {@link #required()} at generator level.
+ *
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -31,9 +36,18 @@ public record FieldMetadata(
         boolean readOnly,
         boolean hidden,
         String defaultValue,
+        // Bounds (0.9.0): per-component NON_NULL — zero is a meaningful bound
+        // (e.g. min = 0 as a non-negativity floor) and survives the wire; the
+        // class-level NON_DEFAULT would treat boxed zero as "empty" and drop
+        // it. Absent means "no bound" (null). pattern stays under NON_DEFAULT:
+        // strings have no zero-analog hazard ("" is correctly dropped).
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Integer minLength,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Integer maxLength,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long min,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long max,
         String pattern,
         String format,
