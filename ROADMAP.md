@@ -69,6 +69,17 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] Deprecation pipeline (mark `@Deprecated`, document migration in `MIGRATION.md`)
 - [x] **Field/Validation `min`/`max`/`pattern` cut landed (0.9.0 — ADR-054)** — `@Validation` is the sole declaration site, `FieldMetadata` the sole AST carrier (populated by processor + `-io` reader); `ValidationMetadata` deprecated-for-removal (1.0.0); boxed-zero fixed via per-component `NON_NULL` on the four bounds; reader `minLength`/`maxLength` parity restored
 
+### 0.9.0 — planned scope (release plan 2026-07-21)
+
+- [ ] **Wire Maven Central publishing** *(deferred — gated on the kernel moving to Central first; the SDK does not publish ahead of the ecosystem)* — Sonatype Central Portal plugin + GPG signing in a release profile + a release workflow; namespace verification; first actual Central publish (0.6.0–0.8.0 shipped as git tag + GitHub Release only). Wiring is prepared and parked on `feat/0.9.0-central-publish-wiring`; 0.9.0 ships as git tag + GitHub Release
+- [ ] **Field/Validation `min`/`max`/`pattern` overlap** — the deferred cut, evidence-driven (budgetHQ corpus + tooling consumers), incl. the boxed-zero `Long(0)` NON_DEFAULT hazard fix; schema bump to `"0.9.0"` if the wire shape changes
+- [ ] **Final deprecation sweep before 1.0.0** — anything slated for 1.0.0 removal must be `@Deprecated(forRemoval = true)` in 0.9.0 (≥ 1-minor fallback window)
+- [ ] **`@SagaTransition` annotation + `@SagaStep` `kind` attribute** — the SDK half of the 0.7.0 saga-graph records; may ship reserved
+- [ ] **Hand-rolled-annotation + AST split/merge review** — may close empty; record the disposition
+- [ ] **Doc-sync** — module tables (CLAUDE.md / README / publish-readiness skill), ui-kit package name, Distribution status note (this PR)
+- [ ] **`CapabilityLifecycleHooks` + boot-conductor slice** — hooks in a new zero-dependency `exeris-sdk-composition-lifecycle` module (cap-facing), conductor in `exeris-sdk-composition-runtime`, per the ADR-024 amendment 2026-07-21 (conductor invoked by the generated SKU bootstrap after `KERNEL READY`, never a kernel `Subsystem`) + ADR-053 (manifest format = JSON)
+- [ ] **1.0.0 prep starts** — japicmp/revapi baseline in CI, `MIGRATION-0.x-to-1.0.md` skeleton, public API surface review kickoff
+
 ### Annotation-surface honesty — inert attributes (issues to address)
 
 > An internal surface review found attributes the SDK **advertises** but no consumer honours — they read as live configuration while silently doing nothing. Logged here as roadmap issues (not yet opened on GitHub). The SDK-owned obligation is the same in every case — **make the annotation tell the truth**: wire it end-to-end, or run the deprecation pipeline so it stops reading as configuration. Some pair with a downstream gap (a tooling consumer or a kernel SPI) tracked in `exeris-tooling` / `exeris-kernel`.

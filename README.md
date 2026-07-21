@@ -12,6 +12,9 @@ by the tooling (`exeris-tooling`) and the platform (`exeris-platform`).
 |---|---|
 | [`exeris-sdk-annotations`](exeris-sdk-annotations) | Pure annotation library: `@ExerisDomain`, `@Action`, `@Field`, `@Relationship`, `@Saga`, `@DomainEvent`, security & system field annotations. |
 | [`exeris-sdk-source-model`](exeris-sdk-source-model) | Canonical AST/metadata types describing an Exeris domain. Single source of truth shared by the annotation processor, codegen, and Studio. |
+| [`exeris-sdk-source-model-io`](exeris-sdk-source-model-io) | JavaParser-based parser and writer: round-trips `.java` ↔ `DomainMetadata` for codegen, LSP, and Studio mutations. |
+| [`exeris-sdk-composition-spec`](exeris-sdk-composition-spec) | Canonical `cap-manifest.json` schema and content-binding algorithm, shared by the tooling emitter and the SKU-boot asserter (ADR-024). |
+| [`exeris-sdk-composition-runtime`](exeris-sdk-composition-runtime) | Boot-time composition validation-stamp assertion, shipped into each SKU artifact and invoked by the SKU bootstrap (ADR-024). |
 | [`exeris-sdk-ui-kit`](exeris-sdk-ui-kit) | Tailwind preset and base styles for generated Angular components (TypeScript / npm). |
 | `exeris-sdk-bom` | Bill of materials for module versions and third-party deps. |
 | `exeris-sdk-parent` | Common Maven build configuration. |
