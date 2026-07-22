@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <strong>region / slot</strong> in the presentation composition tree. A region
  * is a named container into which {@link Block} component nodes are placed.
  *
- * <p><strong>Open-Core status — reserved:</strong> the SDK carries the declared
- * presentation shape, but no Open-Core processor / codegen honours it yet.
- * Generation (the Angular 22 signal-first emitter) is {@code exeris-tooling} work,
- * pending the build gate in RFC-2026-06-25. Declaring it has no generated effect
- * today.
+ * <p><strong>Open-Core status — structurally live:</strong> extracted by the
+ * {@code exeris-tooling} processor and emitted by the codegen-ts Angular view
+ * generator (RFC-2026-06-28, tooling). The remaining piece is the ADR-047
+ * leaf-field facet ({@code @UI}'s field-level render detail) — until it lands,
+ * field-level presentation stays on {@code @UI}.
  *
  * @author Exeris SDK Team
  * @version 0.8.0
@@ -30,7 +30,7 @@ public @interface Region {
 
     /**
      * The slot name for this region. Empty means the slot name is derived from
-     * the annotated member's name by the (future) structure-walking tooling.
+     * the annotated member's name by the structure-walking tooling.
      *
      * @return the slot name, or empty to derive it from the member name
      */

@@ -62,6 +62,14 @@ for per-version upgrade steps.
   later (ADR-042 lock-step parity), so declaring them today has no generated
   effect.
 
+### Added (docs)
+- **`MIGRATION-0.x-to-1.0.md` skeleton** — the 1.0.0-freeze crossing guide,
+  seeded ahead of time: removals landing at 1.0.0 (the two 0.2.0 `@Validation`
+  deprecations — the 0.9.0 sweep added zero), what is deliberately carried
+  through 1.x (`@UI`, `tenantScoped`, the reserved surfaces), the consumer
+  contract recap, and the pre-freeze review backlog. To be validated against
+  budgetHQ before GA.
+
 ### Changed
 - **`SchemaVersion.CURRENT`** bumped `"0.8.0"` → `"0.9.0"` — `FieldMetadata`
   bounds (`min`/`max`/`minLength`/`maxLength`) moved to per-component
@@ -87,6 +95,14 @@ for per-version upgrade steps.
   this slice)" conductor paragraph is now the landed description: hooks-module
   split, generated-call-site status, and boundaries updated to "spec + the
   composition-lifecycle interface + a JSON mapper".
+- **0.9.0 final deprecation sweep — closed with zero new deprecations** (only
+  the 0.2.0 `@Validation.required`/`validateOn` remain `forRemoval`). Honesty
+  refresh: `@View`/`@Region`/`@Block`/`@Bind` reclassified **consumed**
+  (processor + codegen-ts view-gen; the ADR-047 field facet is the remaining
+  piece, so `@UI` stays the field-level path and carries into 1.x);
+  system/security field markers + `@ExerisDomain.validationMode` gain reserved
+  notes (live path = override attributes / canonical names). Dispositions in
+  [`ROADMAP.md`](ROADMAP.md).
 
 ### Removed
 - **`ValidationMetadata`** — removed outright (no deprecation cycle): never

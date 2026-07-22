@@ -23,8 +23,8 @@ import java.lang.annotation.Target;
  * as a multi-source one is, so {@code @UI} is being absorbed into this model rather
  * than kept alongside it (entity-level view selection becomes a {@code @View}; the
  * field-level render detail becomes the leaf field facet of {@code ViewMetadata}).
- * {@code @UI} stays the functional generated path until the presentation emitter
- * lands; see {@code @UI} and RFC-2026-06-25 for the convergence plan.
+ * {@code @UI} stays the functional field-level path until the ADR-047 leaf-field
+ * facet lands; see {@code @UI} and RFC-2026-06-25 for the convergence plan.
  *
  * <p>A purely frontend-only artifact (no backing Java type) is authored through a
  * separate presentation source — Studio or hand-authored presentation IR — not by
@@ -32,12 +32,13 @@ import java.lang.annotation.Target;
  * exactly what this layer avoids); both front-doors converge on the same
  * {@code ViewMetadata}.
  *
- * <p><strong>Open-Core status — reserved:</strong> the SDK carries the declared
- * presentation shape, but no Open-Core processor / codegen honours it yet.
- * Generation (the Angular 22 signal-first emitter) is {@code exeris-tooling} work,
- * pending the build gate in RFC-2026-06-25. Declaring it has no generated effect
- * today; it ships as a reserved surface so the IR shape is fixed when the emitter
- * and the informing Headless CMS corpus land.
+ * <p><strong>Open-Core status — structurally live:</strong> the
+ * {@code exeris-tooling} processor extracts {@code @View} / {@code @Region} /
+ * {@code @Block} / {@code @Bind} into the IR, and the codegen-ts Angular view
+ * generator emits the component tree (RFC-2026-06-28, tooling). The remaining
+ * piece is the ADR-047 leaf-field facet ({@code ViewFieldMetadata} —
+ * {@code @UI}'s field-level render detail); until it lands, field-level
+ * presentation stays on {@code @UI}.
  *
  * <pre>{@code
  * @View(name = "ProductLanding", kind = View.Kind.PAGE, route = "/products")
