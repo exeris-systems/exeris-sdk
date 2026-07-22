@@ -36,8 +36,10 @@ import java.lang.annotation.Target;
  * {@code exeris-tooling} processor extracts {@code @View} / {@code @Region} /
  * {@code @Block} / {@code @Bind} into the IR, and the codegen-ts Angular view
  * generator emits the component tree (RFC-2026-06-28, tooling). The remaining
- * piece is the ADR-047 leaf-field facet ({@code ViewFieldMetadata} —
- * {@code @UI}'s field-level render detail); until it lands, field-level
+ * piece is the ADR-047 leaf-field facet — {@code @UI}'s field-level render
+ * detail, seeded today as {@code UIMetadata.UIFieldMetadata} on
+ * {@code ComponentNodeMetadata.field} (ADR-047 plans its rename/expansion to
+ * {@code ViewFieldMetadata}); until the processor populates it, field-level
  * presentation stays on {@code @UI}.
  *
  * <pre>{@code
