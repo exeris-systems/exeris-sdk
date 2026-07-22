@@ -46,6 +46,21 @@ for per-version upgrade steps.
   the content binding (like `initOrder` — trusted post-assertion), so
   cap-manifest `schemaVersion` stays **2**: no wire break, pre-0.9.0 manifests
   boot as hook-less. See [`MIGRATION.md`](MIGRATION.md#08x--09x).
+- **`@SagaTransition` / `@SagaTransitions` + `@SagaStep.kind`** — the
+  annotation half of the 0.7.0 saga state-machine AST
+  (`SagaMetadata.transitions` / `SagaStepMetadata.kind`): a repeatable
+  saga-class-level outcome-edged transition (`from` / `to` / `on` / SpEL
+  `guard`; blank `to` = terminal edge, loops by pointing `to` at an earlier
+  step) plus a step-kind attribute, with two annotation-side enum mirrors of
+  the AST-owned types (`TransitionOutcome`
+  SUCCESS/FAILURE/TIMEOUT/COMPENSATED; `StepKind` = the four AST kinds plus
+  `UNSPECIFIED`, which exists only annotation-side and maps to an absent AST
+  `kind`, deferring to `SagaStepMetadata.effectiveKind()` structural
+  inference — the await kinds always need the explicit attribute). Shipped **reserved** (the
+  `@Derived`/`@Rule` honesty pattern): no processor extraction nor `-io`
+  reader consumes them yet — the coordinated `exeris-tooling` flip lands
+  later (ADR-042 lock-step parity), so declaring them today has no generated
+  effect.
 
 ### Changed
 - **`SchemaVersion.CURRENT`** bumped `"0.8.0"` → `"0.9.0"` — `FieldMetadata`
@@ -83,6 +98,12 @@ for per-version upgrade steps.
   [`MIGRATION.md`](MIGRATION.md#08x--09x).
 
 ### Fixed
+- **Repeating `@SagaStep` compiles from outside the SDK package** — the
+  `@SagaSteps` container was package-private (a top-level type inside
+  `SagaStep.java`), so repeated `@SagaStep` was a compile error at every
+  external use site ("container … is defined in an inaccessible class or
+  interface"). The container is now `public` in its own file; same FQN, no
+  wire or AST change (the container is flattened on extraction).
 - **`-io` reader reads `@Validation.minLength`/`maxLength`** — restores
   reader↔processor parity (ADR-042); previously both were dropped on read
   despite processor extraction, causing spurious drift on any field declaring

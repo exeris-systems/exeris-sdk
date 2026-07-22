@@ -103,6 +103,36 @@ public @interface SagaStep {
      */
     String[] tags() default {};
 
+    /**
+     * The behavioural kind of this step — invoke / compensate / await-event /
+     * await-timer. Today the kind is only <em>implied</em> by which of
+     * {@link #service()} / {@link #command()} / {@link #compensation()} is
+     * set; declaring it makes the await/dispatch/compensate body generable
+     * rather than hand-written.
+     *
+     * <p>{@link StepKind#UNSPECIFIED} (the default) exists only on the
+     * annotation side — annotation attributes cannot default to {@code null} —
+     * and maps to an <em>absent</em> AST {@code kind}: the AST's
+     * {@code SagaStepMetadata.effectiveKind()} then infers {@code INVOKE} /
+     * {@code COMPENSATE} from the step's command/compensation structure. The
+     * await kinds are never inferred — a pure await step looks identical to an
+     * empty step from the structural fields alone — so
+     * {@link StepKind#AWAIT_EVENT} / {@link StepKind#AWAIT_TIMER} always
+     * require this attribute explicitly.
+     *
+     * <p><strong>Open-Core status — reserved, extraction pending tooling:</strong>
+     * the AST twin ({@code SagaStepMetadata.kind}, since 0.7.0) already exists,
+     * but no build-time processor extracts this attribute yet and the
+     * {@code -io} reader deliberately stays in parity by omission — the two
+     * flip together in {@code exeris-tooling} (ADR-042 lock-step parity).
+     * Until that coordinated flip, declaring a kind has no generated effect.
+     *
+     * @return the step kind, or {@link StepKind#UNSPECIFIED} to defer to
+     *         structural inference
+     * @since 0.9.0
+     */
+    StepKind kind() default StepKind.UNSPECIFIED;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // TARGET SERVICE
     // ═══════════════════════════════════════════════════════════════════════════
@@ -672,6 +702,40 @@ public @interface SagaStep {
     // ENUMS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * The behavioural kind of a saga step (see {@link #kind()}).
+     *
+     * <p>A mirror of the AST-owned {@code SagaStepMetadata.StepKind} — two
+     * separate types mapped by name at extraction time (the
+     * {@code UI.ComponentType} precedent), never an import of the AST type,
+     * preserving the annotation module's zero-dependency contract — plus
+     * {@link #UNSPECIFIED}, which exists only on this side because annotation
+     * attributes cannot default to {@code null}.
+     *
+     * @since 0.9.0
+     */
+    enum StepKind {
+        /**
+         * No explicit kind declared (the default). Maps to an absent AST
+         * {@code kind}; {@code SagaStepMetadata.effectiveKind()} then infers
+         * {@code INVOKE} / {@code COMPENSATE} from the command/compensation
+         * structure. The await kinds are never inferred.
+         */
+        UNSPECIFIED,
+
+        /** Dispatch a forward command to a service. */
+        INVOKE,
+
+        /** Run a compensation (rollback) command. */
+        COMPENSATE,
+
+        /** Block until an expected domain event arrives. */
+        AWAIT_EVENT,
+
+        /** Block until a timer / timeout elapses. */
+        AWAIT_TIMER
+    }
+
     enum InstanceSelection {
         /** Any available instance */
         ANY,
@@ -730,15 +794,3 @@ public @interface SagaStep {
         String expression() default "";
     }
 }
-
-/**
- * Container for multiple @SagaStep annotations.
- */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.SOURCE)
-@Documented
-@interface SagaSteps {
-    SagaStep[] value();
-}
-
-
