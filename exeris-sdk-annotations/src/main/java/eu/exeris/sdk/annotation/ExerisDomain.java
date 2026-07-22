@@ -407,6 +407,14 @@ public @interface ExerisDomain {
      *   <li>NONE: no validation</li>
      * </ul>
      *
+     * <p><strong>Open-Core status — inert by construction (reserved):</strong>
+     * this attribute governs the strictness of system-field <em>marker</em>
+     * validation ({@code @TenantId}, {@code @Version}, …), but the tooling
+     * processor does not scan fields for those markers, so no mode has
+     * anything to validate — the attribute governs nothing until marker
+     * scanning lands. The live system-field path is the field-name override
+     * attributes above / the canonical accessor names.
+     *
      * @return validation mode
      */
     ValidationMode validationMode() default ValidationMode.STRICT;

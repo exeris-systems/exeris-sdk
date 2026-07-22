@@ -15,10 +15,15 @@ import java.lang.annotation.*;
  * which {@code @UI} is being absorbed — entity-level view selection becomes a
  * {@code @View}, and the field-level render detail here is reused as the leaf
  * field facet of {@code ViewMetadata} (the {@code UIMetadata.UIFieldMetadata}
- * record). {@code @UI} is <em>not</em> deprecated yet: it remains the functional,
- * generated path until the presentation emitter lands; the formal
- * {@code @Deprecated(forRemoval)} migration runs only once {@code @View} can
- * actually replace it. See RFC-2026-06-25 for the convergence plan.
+ * record). {@code @View} structural generation is live (tooling processor
+ * extraction + the codegen-ts Angular view generator, RFC-2026-06-28), but the
+ * ADR-047 leaf-field facet subsumption is not implemented yet — so {@code @UI}
+ * remains the functional field-level path and is <em>not</em> deprecated in
+ * 0.9.0 (the rule: {@code @Deprecated(forRemoval)} runs only once {@code @View}
+ * can actually replace it). Consequence: with 1.x minors additive-only,
+ * {@code @UI} is frozen through the 1.x line; the deprecation is targeted at
+ * the 1.x minor where the ADR-047 facet completes, with removal at 2.0. See
+ * RFC-2026-06-25 for the convergence plan.
  *
  * <h2>Entity-Level Usage (within @ExerisDomain):</h2>
  * <pre>{@code

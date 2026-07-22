@@ -17,8 +17,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * binding fields avoid the boxed-zero trap; blank strings normalize to
  * {@code null} in the compact constructor and a null {@code source} is tolerated
  * on the wire, with {@link #effectiveSource()} applying the {@link BindSource#NONE}
- * default. Part of the reserved presentation IR surface — no Open-Core emitter
- * honours it yet.
+ * default. Part of the presentation IR surface, structurally live: extracted by
+ * the {@code exeris-tooling} processor and emitted by the codegen-ts Angular
+ * view generator (RFC-2026-06-28, tooling); the ADR-047 leaf-field facet is the
+ * remaining unpopulated piece.
  *
  * @since 0.8.0
  * @see ComponentNodeMetadata

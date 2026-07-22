@@ -20,6 +20,15 @@
  * public class Order { }
  * }</pre>
  *
+ * <h2>Open-Core status — reserved, not yet consumed</h2>
+ * <p>Both annotations are declared-but-unconsumed: their javadocs promise
+ * generated encryption / RLS policies, but no Open-Core generator implements
+ * them today — the {@code exeris-tooling} processor does not extract either
+ * marker. The <em>live</em> tenancy path is
+ * {@code @ExerisDomain(tenantScoped = true)} plus the system-field override
+ * attributes / canonical accessor names, not {@code @RowLevelSecurity}. They
+ * ship as a reserved surface until a consumer lands.
+ *
  * @author Exeris SDK Team
  * @version 1.0.0
  * @since 1.0.0
