@@ -12,10 +12,26 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.8.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.9.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.9.0] — 2026-07-22
+
+The composition-conductor + contract-truth milestone: the cap lifecycle goes
+live SDK-side — a new zero-dependency `exeris-sdk-composition-lifecycle`
+module (`CapabilityLifecycleHooks`) plus the boot conductor in
+`composition-runtime` (ADR-024 obligations 8a/8a′: invoked by the SKU
+bootstrap after `KERNEL READY`, never a kernel `Subsystem`) — and the
+0.2.0-deferred Field/Validation overlap is cut for good (ADR-054):
+`@Validation` confirmed the sole declaration site, `FieldMetadata` the sole
+AST carrier, `ValidationMetadata` removed outright, zero-valued bounds fixed
+via per-component `NON_NULL`, and `-io` reader `minLength`/`maxLength` parity
+restored. The saga state-machine annotation half ships reserved
+(`@SagaTransition` + `@SagaStep.kind`), the final pre-1.0 deprecation sweep
+closes with zero additions (dispositions + honesty refresh recorded), and the
+1.0.0-freeze crossing guide is seeded. Schema `"0.8.0"` → `"0.9.0"`. Releases
+ship as git tag + GitHub Release — Central publishing is deliberately
+deferred until the kernel moves first (wiring parked).
 
 ### Added
 - **`exeris-sdk-composition-lifecycle` module** — a new zero-dependency
@@ -337,6 +353,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.9.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.9.0
 [0.8.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.8.0
 [0.7.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.7.0
 [0.6.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.6.0
