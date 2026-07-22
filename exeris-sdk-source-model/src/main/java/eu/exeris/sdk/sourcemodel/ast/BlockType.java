@@ -7,7 +7,9 @@ package eu.exeris.sdk.sourcemodel.ast;
  * {@link ComponentNodeMetadata#effectiveType()} applies the {@link #CONTAINER}
  * default. Deliberately distinct from {@code UIMetadata}'s form-field
  * {@code ComponentType}: this is page-composition granularity. Part of the
- * reserved presentation IR surface (RFC-2026-06-25).
+ * presentation IR surface (RFC-2026-06-25), structurally live — extracted by the
+ * tooling processor and emitted by the codegen-ts Angular view generator
+ * (RFC-2026-06-28, tooling).
  *
  * @since 0.8.0
  */

@@ -24,8 +24,12 @@ import java.util.List;
  * {@code NON_DEFAULT}, per RFC-2026-06-25). Blank {@code props} normalizes to
  * {@code null}, a null {@code children} normalizes to an immutable empty list, and
  * a null {@code type} is tolerated on the wire with {@link #effectiveType()}
- * applying the {@link BlockType#CONTAINER} default. Part of the reserved
- * presentation IR surface — no Open-Core emitter honours it yet.
+ * applying the {@link BlockType#CONTAINER} default. Part of the presentation IR
+ * surface, structurally live: extracted by the {@code exeris-tooling} processor
+ * and emitted by the codegen-ts Angular view generator (RFC-2026-06-28,
+ * tooling). The {@code field} leaf facet below is the ADR-047 seed — the
+ * processor passes {@code null} for it today, so field-level render detail
+ * stays on {@code @UI} until the facet subsumption lands.
  *
  * @since 0.8.0
  * @see BlockType

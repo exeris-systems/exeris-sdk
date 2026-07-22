@@ -14,8 +14,10 @@ import java.util.List;
  * {@code NON_DEFAULT}, per RFC-2026-06-25). Blank {@code slot} normalizes to
  * {@code null} (the slot name is then derived from the source member by future
  * tooling) and a null {@code components} normalizes to an immutable empty list.
- * Part of the reserved presentation IR surface — no Open-Core emitter honours it
- * yet.
+ * Part of the presentation IR surface, structurally live: extracted by the
+ * {@code exeris-tooling} processor and emitted by the codegen-ts Angular view
+ * generator (RFC-2026-06-28, tooling); the ADR-047 leaf-field facet is the
+ * remaining unpopulated piece.
  *
  * @since 0.8.0
  * @see ComponentNodeMetadata

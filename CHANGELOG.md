@@ -61,8 +61,6 @@ for per-version upgrade steps.
   reader consumes them yet — the coordinated `exeris-tooling` flip lands
   later (ADR-042 lock-step parity), so declaring them today has no generated
   effect.
-
-### Added (docs)
 - **`MIGRATION-0.x-to-1.0.md` skeleton** — the 1.0.0-freeze crossing guide,
   seeded ahead of time: removals landing at 1.0.0 (the two 0.2.0 `@Validation`
   deprecations — the 0.9.0 sweep added zero), what is deliberately carried

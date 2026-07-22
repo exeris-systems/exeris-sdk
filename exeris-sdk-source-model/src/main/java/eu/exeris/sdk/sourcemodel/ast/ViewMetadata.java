@@ -28,9 +28,13 @@ import java.util.Objects;
  * normalize to {@code null}, a null {@code regions} normalizes to an immutable
  * empty list, and a null {@code kind} is tolerated on the wire with
  * {@link #effectiveKind()} applying the {@link ViewKind#PAGE} default. Part of the
- * reserved presentation IR surface — no Open-Core processor / codegen honours it
- * yet (generation is {@code exeris-tooling} work, pending RFC-2026-06-25's build
- * gate).
+ * presentation IR surface, <strong>structurally live</strong> since the tooling
+ * caught up: the {@code exeris-tooling} processor extracts {@code @View} /
+ * {@code @Region} / {@code @Block} / {@code @Bind} into these records and the
+ * codegen-ts Angular view generator emits the component tree (RFC-2026-06-28,
+ * tooling). The remaining piece is the ADR-047 leaf-field facet — the
+ * {@code ComponentNodeMetadata.field} seed exists but the processor does not
+ * populate it yet, so field-level render detail stays on {@code @UI}.
  *
  * @since 0.8.0
  * @see ViewKind

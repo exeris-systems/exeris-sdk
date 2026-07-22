@@ -222,12 +222,16 @@
  * the wire": the planned numeric component / binding fields would hit the
  * boxed-zero trap {@code NON_DEFAULT} carries, and {@code NON_NULL} +
  * blank/null-list normalization in the compact constructors avoids it by
- * construction. As with the other behaviour facets this is a <strong>reserved</strong>
- * surface and reader↔processor-parity-neutral: no Open-Core processor / codegen /
- * {@code -io} reader consumes it yet (the Angular 22 signal-first emitter is
- * {@code exeris-tooling} work, pending RFC-2026-06-25's build gate), and these
- * records are net-new standalone types not referenced by {@code DomainMetadata}
- * — so {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
+ * construction. The surface is <strong>structurally live</strong> since the
+ * tooling caught up: the {@code exeris-tooling} processor extracts the
+ * {@code @View} family into these records and the codegen-ts Angular view
+ * generator emits the component tree (RFC-2026-06-28, tooling). The remaining
+ * piece is the ADR-047 leaf-field facet ({@code ComponentNodeMetadata.field} —
+ * seeded but not yet populated by the processor), so field-level render detail
+ * stays on {@code @UI}. The {@code -io} reader does not read the {@code @View}
+ * family; because these records are standalone types not referenced by
+ * {@code DomainMetadata}, that gap creates no ADR-042 conflict-detection drift
+ * surface, and {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
  *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
