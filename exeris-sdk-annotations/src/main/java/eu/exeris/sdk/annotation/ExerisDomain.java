@@ -170,6 +170,88 @@ public @interface ExerisDomain {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
+     * The data-scope tier of this entity — the single mutually-exclusive
+     * discriminator for how its rows are partitioned and made visible.
+     *
+     * <p>A mirror of the AST-owned {@code eu.exeris.sdk.sourcemodel.ast.DataScope}
+     * — two separate types mapped by name at extraction time (the
+     * {@code SagaStep.StepKind} / {@code UI.ComponentType} precedent), never an
+     * import of the AST type, preserving the annotation module's zero-dependency
+     * contract — plus {@link DataScope#UNSPECIFIED}, which exists only on this
+     * side because annotation attributes cannot default to {@code null}.
+     *
+     * <p>This is the canonical successor of the deprecated {@link #tenantScoped()}
+     * boolean: {@code GLOBAL} is today's {@code tenantScoped = false} and
+     * {@code TENANT} is today's {@code tenantScoped = true}, with {@code UNIVERSE}
+     * adding the third tier the boolean could not express. Leaving this attribute
+     * {@code UNSPECIFIED} falls back to {@code tenantScoped} for the duration of
+     * the deprecation window (see {@code MIGRATION.md}); declaring both a tier
+     * here and a contradicting {@code tenantScoped} is a build-time error the
+     * processor reports rather than silently resolving.
+     *
+     * <p><strong>Open-Core status — {@code GLOBAL} / {@code TENANT} live,
+     * {@code UNIVERSE} reserved:</strong> the kernel carrier for the shared tier
+     * ({@code sharedScopeKey} + a {@code SHARED_WORLD} row-visibility mode
+     * composing with the physical isolation strategy, read-widen + owner-scoped
+     * write) is fixed by the kernel ADR-012 §4b amendment and implemented with
+     * its read-widen/write-pin TCK on the kernel 0.11 line. The
+     * {@code exeris-tooling} transcription — mapping {@code UNIVERSE} onto
+     * presence of that carrier — is not built yet, so <em>declaring
+     * {@code UNIVERSE} has no generated effect today</em>. {@code GLOBAL} and
+     * {@code TENANT} carry exactly the semantics {@code tenantScoped} already
+     * carried, and are live through the same path.
+     *
+     * @return the data-scope tier, or {@link DataScope#UNSPECIFIED} to defer to
+     *         {@link #tenantScoped()}
+     * @since 0.10.0
+     * @see DataScope
+     */
+    DataScope dataScope() default DataScope.UNSPECIFIED;
+
+    /**
+     * The data-scope tier of an entity (see {@link #dataScope()}).
+     *
+     * <p>A mirror of the AST-owned {@code DataScope} — see {@link #dataScope()}
+     * for why the two types are separate — plus {@link #UNSPECIFIED}.
+     *
+     * @since 0.10.0
+     */
+    enum DataScope {
+        /**
+         * No explicit tier declared (the default). Falls back to
+         * {@link ExerisDomain#tenantScoped()} — {@code true} reads as
+         * {@link #TENANT}, {@code false} as {@link #GLOBAL} — for the duration
+         * of that attribute's deprecation window. Maps to an absent AST
+         * {@code dataScope}; {@code DomainMetadata.effectiveDataScope()} then
+         * applies the same fallback.
+         */
+        UNSPECIFIED,
+
+        /**
+         * Not tenant-partitioned — a global singleton or reference table,
+         * identical for every tenant. Today's {@code tenantScoped = false}.
+         */
+        GLOBAL,
+
+        /**
+         * Tenant-private rows — row-level isolation, one tenant never sees
+         * another's rows. Today's {@code tenantScoped = true}; requires a
+         * {@code @TenantId} field or {@link ExerisDomain#tenantIdField()}.
+         */
+        TENANT,
+
+        /**
+         * Shared world — rows owned by a tenant but readable across tenants
+         * (a common reference dataset, a cross-tenant collaboration space).
+         * Reads widen beyond the owning tenant; writes stay pinned to it.
+         *
+         * <p><strong>Reserved — no generated effect yet</strong>, see the
+         * Open-Core status note on {@link ExerisDomain#dataScope()}.
+         */
+        UNIVERSE
+    }
+
+    /**
      * Whether entity is scoped to tenants (multi-tenancy).
      * <p>When true, requires either:
      * <ul>
@@ -178,7 +260,17 @@ public @interface ExerisDomain {
      * </ul>
      *
      * @return true for multi-tenant isolation
+     * @deprecated since 0.10.0, for removal in 1.0.0. A boolean cannot express
+     *         the third data-scope tier ({@link DataScope#UNIVERSE}), so it did
+     *         double duty for "not partitioned" and "tenant-private". Replaced by
+     *         {@link #dataScope()}: {@code tenantScoped = true} becomes
+     *         {@code dataScope = DataScope.TENANT}, {@code false} becomes
+     *         {@code DataScope.GLOBAL}. The processor reads this attribute as a
+     *         fallback with a build warning while {@code dataScope} is
+     *         {@link DataScope#UNSPECIFIED}; that window closes at 1.0.0. See
+     *         {@code MIGRATION.md} and RFC-2026-06-24.
      */
+    @Deprecated(since = "0.10.0", forRemoval = true)
     boolean tenantScoped() default false;
 
     /**

@@ -43,6 +43,7 @@ class AstJsonRoundTripTest {
                 .tags(List.of("retail", "billing"))
                 .restApi(true)
                 .tenantScoped(true)
+                .dataScope(DataScope.TENANT)
                 .audited(true)
                 .softDelete(true)
                 .versioned(true)
@@ -74,6 +75,51 @@ class AstJsonRoundTripTest {
                 .build();
 
         assertRoundTrip(original, DomainMetadata.class);
+    }
+
+    @Test
+    @DisplayName("DomainMetadata.dataScope survives the wire for every tier, including GLOBAL")
+    void dataScopeRoundTripsForEveryTier() {
+        // GLOBAL is the ordinal-0 constant, so it is the one at risk from the
+        // class-level @JsonInclude(NON_DEFAULT) — the same trap that dropped
+        // boxed-zero FieldMetadata bounds before 0.9.0. Dropping an explicit
+        // GLOBAL would be a silent scope change, not just a lost hint:
+        // effectiveDataScope() would fall back to tenantScoped and could read
+        // the entity back as TENANT.
+        for (DataScope scope : DataScope.values()) {
+            DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
+                    .tenantScoped(true)
+                    .dataScope(scope)
+                    .build();
+
+            assertRoundTrip(original, DomainMetadata.class);
+        }
+    }
+
+    @Test
+    @DisplayName("DomainMetadata with no dataScope reads back absent, not defaulted")
+    void absentDataScopeStaysAbsentOnTheWire() {
+        // A pre-0.10.0 baseline carries only tenantScoped. The absent tier must
+        // stay absent so effectiveDataScope() applies the documented fallback,
+        // rather than being materialised into a concrete tier by the reader.
+        DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
+                .tenantScoped(true)
+                .build();
+
+        assertRoundTrip(original, DomainMetadata.class);
+
+        String json;
+        DomainMetadata parsed;
+        try {
+            json = mapper.writeValueAsString(original);
+            parsed = mapper.readValue(json, DomainMetadata.class);
+        } catch (Exception e) {
+            throw new AssertionError("round-trip failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).doesNotContain("dataScope");
+        assertThat(parsed.dataScope()).isNull();
+        assertThat(parsed.effectiveDataScope()).isEqualTo(DataScope.TENANT);
     }
 
     @Test

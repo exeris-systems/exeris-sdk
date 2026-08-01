@@ -73,9 +73,18 @@ public final class SchemaVersion {
      *       but the wire can now carry keys it previously dropped — the schema
      *       names the shape, so a {@code "0.8.0"} baseline reads as
      *       {@code SCHEMA_VERSION_SKEW}.</li>
+     *   <li>{@code "0.10.0"} — bumped for the data-scope tier:
+     *       {@code DomainMetadata} gained {@code dataScope}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.DataScope}), the
+     *       mutually-exclusive successor of the deprecated {@code tenantScoped}
+     *       boolean (RFC-2026-06-24 / ADR-059). Additive and by-name, and an
+     *       absent {@code dataScope} still reads correctly through
+     *       {@code DomainMetadata.effectiveDataScope()}'s {@code tenantScoped}
+     *       fallback — but the schema names the shape, so a {@code "0.9.0"}
+     *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
-    public static final String CURRENT = "0.9.0";
+    public static final String CURRENT = "0.10.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.
