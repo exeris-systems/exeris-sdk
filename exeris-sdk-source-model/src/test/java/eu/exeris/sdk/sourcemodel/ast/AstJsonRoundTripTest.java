@@ -80,12 +80,15 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("DomainMetadata.dataScope survives the wire for every tier, including GLOBAL")
     void dataScopeRoundTripsForEveryTier() {
-        // GLOBAL is the ordinal-0 constant, so it is the one at risk from the
-        // class-level @JsonInclude(NON_DEFAULT) — the same trap that dropped
-        // boxed-zero FieldMetadata bounds before 0.9.0. Dropping an explicit
-        // GLOBAL would be a silent scope change, not just a lost hint:
-        // effectiveDataScope() would fall back to tenantScoped and could read
-        // the entity back as TENANT.
+        // DomainMetadata is class-level @JsonInclude(NON_NULL) — the deliberate
+        // ViewMetadata posture — so a non-null tier is not at risk today, and the
+        // ordinal-0 / boxed-zero trap that cost the FieldMetadata bounds a fix in
+        // 0.9.0 is NOT armed here. Every tier is still pinned because the cost of
+        // that changing is asymmetric: under NON_DEFAULT it is GLOBAL (ordinal 0)
+        // that drops, and a dropped explicit GLOBAL is not a lost hint — it falls
+        // back through effectiveDataScope() and reads the entity back as TENANT.
+        // A silent tenancy flip is exactly what the tier that looks least
+        // interesting would cause, so it is the one worth asserting.
         for (DataScope scope : DataScope.values()) {
             DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
                     .tenantScoped(true)
