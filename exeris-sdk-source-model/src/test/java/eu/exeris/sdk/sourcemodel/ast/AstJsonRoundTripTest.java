@@ -43,6 +43,7 @@ class AstJsonRoundTripTest {
                 .tags(List.of("retail", "billing"))
                 .restApi(true)
                 .tenantScoped(true)
+                .dataScope(DataScope.TENANT)
                 .audited(true)
                 .softDelete(true)
                 .versioned(true)
@@ -74,6 +75,54 @@ class AstJsonRoundTripTest {
                 .build();
 
         assertRoundTrip(original, DomainMetadata.class);
+    }
+
+    @Test
+    @DisplayName("DomainMetadata.dataScope survives the wire for every tier, including GLOBAL")
+    void dataScopeRoundTripsForEveryTier() {
+        // DomainMetadata is class-level @JsonInclude(NON_NULL) — the deliberate
+        // ViewMetadata posture — so a non-null tier is not at risk today, and the
+        // ordinal-0 / boxed-zero trap that cost the FieldMetadata bounds a fix in
+        // 0.9.0 is NOT armed here. Every tier is still pinned because the cost of
+        // that changing is asymmetric: under NON_DEFAULT it is GLOBAL (ordinal 0)
+        // that drops, and a dropped explicit GLOBAL is not a lost hint — it falls
+        // back through effectiveDataScope() and reads the entity back as TENANT.
+        // A silent tenancy flip is exactly what the tier that looks least
+        // interesting would cause, so it is the one worth asserting.
+        for (DataScope scope : DataScope.values()) {
+            DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
+                    .tenantScoped(true)
+                    .dataScope(scope)
+                    .build();
+
+            assertRoundTrip(original, DomainMetadata.class);
+        }
+    }
+
+    @Test
+    @DisplayName("DomainMetadata with no dataScope reads back absent, not defaulted")
+    void absentDataScopeStaysAbsentOnTheWire() {
+        // A pre-0.10.0 baseline carries only tenantScoped. The absent tier must
+        // stay absent so effectiveDataScope() applies the documented fallback,
+        // rather than being materialised into a concrete tier by the reader.
+        DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
+                .tenantScoped(true)
+                .build();
+
+        assertRoundTrip(original, DomainMetadata.class);
+
+        String json;
+        DomainMetadata parsed;
+        try {
+            json = mapper.writeValueAsString(original);
+            parsed = mapper.readValue(json, DomainMetadata.class);
+        } catch (Exception e) {
+            throw new AssertionError("round-trip failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).doesNotContain("dataScope");
+        assertThat(parsed.dataScope()).isNull();
+        assertThat(parsed.effectiveDataScope()).isEqualTo(DataScope.TENANT);
     }
 
     @Test

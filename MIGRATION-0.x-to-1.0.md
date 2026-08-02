@@ -20,6 +20,14 @@ survives into 1.x unchanged.
   ends at 1.0.0 — sources still setting it silently lose required-ness.
 - **`@Validation.validateOn`** — deprecated since 0.2.0 (`forRemoval = true`).
   Replacement: `@Field.inCreate` / `@Field.inUpdate`. Same fallback window.
+- **`@ExerisDomain.tenantScoped`** — deprecated since 0.10.0
+  (`forRemoval = true`, [ADR-059](docs/adr/ADR-059-data-scope-expression.md)).
+  Replacement: `@ExerisDomain.dataScope` — `true → DataScope.TENANT`,
+  `false → DataScope.GLOBAL`. The processor's read-with-warning fallback (and
+  the AST's `DomainMetadata.effectiveDataScope()` fallback) end at 1.0.0;
+  sources still setting only the boolean silently lose their tier. The AST
+  component `DomainMetadata.tenantScoped` goes with it — `dataScope` becomes
+  the sole carrier and `effectiveDataScope()` collapses to returning it.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -32,9 +40,14 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   implemented yet, so the deprecation gate never opened in 0.x. Plan of
   record: facet lands in a 1.x minor → `@UI` gains `@Deprecated(forRemoval)`
   there → removal at 2.0.
-- **`@ExerisDomain.tenantScoped`** — frozen as a boolean through 1.x; the
-  `DataScope { GLOBAL, TENANT, UNIVERSE }` successor is gated on the kernel
-  ADR-012 amendment and arrives additively in 1.x.
+- ~~**`@ExerisDomain.tenantScoped`**~~ — **moved to §1.** This entry used to
+  read "frozen as a boolean through 1.x; the `DataScope` successor is gated on
+  the kernel ADR-012 amendment and arrives additively in 1.x". That amendment
+  landed on the kernel 0.11 line, so `DataScope` shipped in 0.10.0 and the
+  boolean is a 1.0.0 removal instead. The old plan would have left removal to
+  **2.0**: a deprecation and its removal cannot share a release, and 1.x is
+  additive-only, so a boolean still live at the freeze stays live for the whole
+  1.x line. That sequencing constraint is why 0.10.0 exists as a milestone.
 - **Reserved surfaces** (`@Derived` / `@Rule` / `@SagaTransition` /
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
   system/security field markers, `@ExerisDomain.validationMode`) — frozen as
@@ -49,6 +62,24 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
 - **Builders/factories over positional constructors** — canonical (all-args)
   record constructors grow across 0.x minors; builders and `simple(...)` /
   `of(...)` factories are the stable path and remain so in 1.x.
+- **Record growth stays legal after the freeze — the canonical constructor is
+  not the frozen surface.** Stated explicitly because the bullet above only
+  implies it, and because it is load-bearing: an AST record may gain a
+  **trailing** component in a 1.x minor (by-name on the wire, absent reads back
+  `null`, existing positional prefixes unchanged in order), accompanied by a
+  `SchemaVersion` bump. Positional callers recompile with one added trailing
+  argument; that recompile is the accepted cost, and it is why builders are
+  documented as the stable path. Consumers that must survive a minor without
+  recompiling should construct through builders and factories exclusively.
+
+  **Why this has to be policy and not a footnote:** every surface the SDK
+  expects to grow after 1.0 — the blob and job facets kernel 0.11 opened, flow
+  await, graph multi-hop — arrives as a new component on an existing record.
+  If a trailing component counts as a break, all of it is blocked until 2.0.
+  The 1.0.0 GA japicmp/revapi gate must be configured to encode this
+  distinction (trailing-additive = allowed; reorder, rename, retype, or remove
+  = break). A gate configured on defaults will reject exactly the growth this
+  paragraph permits — see the ROADMAP 1.0.0 GA item.
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.

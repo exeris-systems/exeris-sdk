@@ -15,6 +15,62 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.9.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
+### Added
+- **Data-scope tier — `@ExerisDomain.dataScope` + `DataScope { GLOBAL, TENANT,
+  UNIVERSE }`** ([ADR-059](docs/adr/ADR-059-data-scope-expression.md),
+  implementing [RFC-2026-06-24](docs/rfc/RFC-2026-06-24-universe-data-scope-expression.md)).
+  A single mutually-exclusive discriminator replaces the `tenantScoped`
+  boolean's intent, adding the shared-world tier the boolean could not express.
+  The RFC's build gate opened when its trigger (2) — the kernel ADR-012 §4b
+  in-place amendment — landed on the kernel 0.11 line: a `sharedScopeKey`
+  carrier, a `KernelIsolationClaims` shared-scope claim with fail-closed
+  mapping (type-checked during token validation), persistence publishing
+  `exeris.shared_scope` so RLS widens reads while writes stay pinned to the
+  owning tenant, and `AbstractSharedScopeAccessMatrixTck`.
+
+  The annotation-side enum and the AST-owned
+  `eu.exeris.sdk.sourcemodel.ast.DataScope` are two independent types mapped by
+  name at extraction (the `SagaStep.StepKind` precedent) — the annotations
+  module keeps its zero-dependency contract. The annotation side carries an
+  extra `UNSPECIFIED` constant because annotation attributes cannot default to
+  `null`; the AST expresses that state as an absent field.
+
+  `DataScope.UNIVERSE` ships **reserved**: the kernel enforces the tier, but
+  the `exeris-tooling` transcription onto the kernel carrier is not built, so
+  declaring it has no generated effect yet and the javadoc says so.
+- **`DomainMetadata.effectiveDataScope()`** — the explicit tier if set, else
+  `tenantScoped ? TENANT : GLOBAL`; never `null`. The AST half of the
+  deprecation window, so a baseline written before 0.10.0 reads back with the
+  meaning it always had without every downstream generator re-implementing the
+  three-way decision (the `SagaStepMetadata.effectiveKind()` precedent).
+
+### Changed
+- **`DomainMetadata` gained a trailing `dataScope` component** — positional
+  prefixes unchanged in order, by-name on the wire; positional callers add one
+  trailing `null`, builder callers are unaffected. Same posture as the
+  `ActionMetadata` growth in 0.8.0 and `CapManifest.ModuleBody` in 0.9.0.
+- **`SchemaVersion.CURRENT` `"0.9.0"` → `"0.10.0"`** — a `"0.9.0"` baseline
+  reads as `SCHEMA_VERSION_SKEW`; re-run codegen once after upgrading.
+- **`MIGRATION-0.x-to-1.0.md` §3 now states the record-growth stance as
+  policy** — the canonical record constructor is not part of the frozen 1.0
+  surface; a trailing component may be added in a 1.x minor. Previously this
+  was only implied by the "builders are the stable path" bullet, and it gates
+  every post-1.0 facet (blob, job, flow, graph): if trailing growth counted as
+  a break, all of it would be blocked until 2.0. The 1.0.0 japicmp/revapi gate
+  must be configured to match.
+
+### Deprecated
+- **`@ExerisDomain.tenantScoped`** — `@Deprecated(since = "0.10.0",
+  forRemoval = true)`, removal at 1.0.0. Replaced by `dataScope`
+  (`true → TENANT`, `false → GLOBAL`). The processor reads it as a fallback
+  with a build warning while `dataScope` is `UNSPECIFIED`. Deprecating it now
+  rather than at the freeze is deliberate: a deprecation and its removal cannot
+  share a release and 1.x is additive-only, so a boolean still live at 1.0.0
+  would have been frozen through the whole 1.x line with removal deferred to
+  2.0.
+
 ## [0.9.0] — 2026-07-22
 
 The composition-conductor + contract-truth milestone: the cap lifecycle goes

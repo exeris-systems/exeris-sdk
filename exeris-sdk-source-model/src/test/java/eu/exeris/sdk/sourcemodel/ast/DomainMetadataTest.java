@@ -144,7 +144,7 @@ class DomainMetadataTest {
             DomainMetadata nullLists = new DomainMetadata("Order", "p", "", "", "", "", "v1",
                     null, true, false, false, false, false, false, false, false,
                     null, null, false, false, "PT5M", "", false, "english", null,
-                    null, null, null, null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             assertThat(nullLists.hasFields()).isFalse();
             assertThat(nullLists.hasActions()).isFalse();
             assertThat(nullLists.hasEvents()).isFalse();
@@ -214,7 +214,7 @@ class DomainMetadataTest {
             DomainMetadata d = new DomainMetadata("Order", "p", "", "", "", "", "v1",
                     List.of(), true, false, false, false, false, false, false, false,
                     List.of(), List.of(), false, false, "PT5M", "", false, "english", null,
-                    null, null, null, null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             assertThat(d.findField("anything")).isEmpty();
         }
     }
@@ -281,6 +281,51 @@ class DomainMetadataTest {
             assertThat(d.eventSourced()).isNotNull();
             assertThat(d.internalApi()).isNotNull();
             assertThat(d.systemFields()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("effectiveDataScope: explicit tier wins, tenantScoped is the fallback")
+    class EffectiveDataScope {
+
+        @Test
+        void explicitTierWinsOverTenantScoped() {
+            // The deprecation window's whole point: once the author declares a
+            // tier, the legacy boolean must not override it — not even when the
+            // two disagree, as they do here.
+            DomainMetadata d = base().tenantScoped(true).dataScope(DataScope.GLOBAL).build();
+
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.GLOBAL);
+        }
+
+        @Test
+        void universeIsCarriedVerbatim() {
+            DomainMetadata d = base().dataScope(DataScope.UNIVERSE).build();
+
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.UNIVERSE);
+        }
+
+        @Test
+        void absentTierFallsBackToTenantScopedTrue() {
+            DomainMetadata d = base().tenantScoped(true).build();
+
+            assertThat(d.dataScope()).isNull();
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.TENANT);
+        }
+
+        @Test
+        void absentTierFallsBackToTenantScopedFalse() {
+            DomainMetadata d = base().tenantScoped(false).build();
+
+            assertThat(d.dataScope()).isNull();
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.GLOBAL);
+        }
+
+        @Test
+        void neverReturnsNull() {
+            // An entity always has a tier — a null return would push the
+            // three-way decision back onto every downstream generator.
+            assertThat(base().build().effectiveDataScope()).isNotNull();
         }
     }
 }

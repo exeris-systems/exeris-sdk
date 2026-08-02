@@ -10,6 +10,77 @@ the upgrade steps required.
 
 ---
 
+## 0.9.x → 0.10.x
+
+### `@ExerisDomain.tenantScoped` is deprecated — use `dataScope`
+
+**Why:** a boolean could express only two of the three data-scope tiers, so
+`tenantScoped` did double duty for "not partitioned" and "tenant-private" and
+had no room for the shared-world tier. The kernel now enforces that third tier
+(ADR-012 §4b amendment on the kernel 0.11 line: a `sharedScopeKey` carrier,
+a shared-scope claim with fail-closed mapping, and RLS that widens reads while
+pinning writes to the owning tenant), which opened the build gate
+RFC-2026-06-24 had been waiting on. See [ADR-059](docs/adr/ADR-059-data-scope-expression.md).
+
+**Impact:** `@ExerisDomain.tenantScoped` is `@Deprecated(since = "0.10.0",
+forRemoval = true)`; removal lands at **1.0.0**. The replacement is a single
+mutually-exclusive discriminator:
+
+```java
+// before
+@ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
+
+// after
+@ExerisDomain(module = "sales", path = "/orders", dataScope = DataScope.TENANT)
+```
+
+The mapping is `true → DataScope.TENANT`, `false → DataScope.GLOBAL`. The
+third tier, `DataScope.UNIVERSE`, is new: rows owned by a tenant but readable
+across tenants.
+
+**Nothing breaks on upgrade.** `dataScope` defaults to `UNSPECIFIED`, and while
+it is unspecified the tier falls back to `tenantScoped` — in the annotation
+(the processor reads it as a fallback with a build warning) and in the AST
+(`DomainMetadata.effectiveDataScope()` returns `tenantScoped ? TENANT :
+GLOBAL`). Sources and baselines written before 0.10.0 keep the meaning they
+always had. That fallback window closes at 1.0.0: after the freeze, a source
+still setting only `tenantScoped` silently loses its tier.
+
+**Do not set both** a `dataScope` tier and a contradicting `tenantScoped` —
+the processor reports that as a build error rather than resolving it silently.
+
+### `DataScope.UNIVERSE` is reserved — declaring it has no generated effect yet
+
+The kernel enforces the shared tier, but the `exeris-tooling` transcription
+that maps `UNIVERSE` onto the kernel's `sharedScopeKey` carrier is not built.
+`UNIVERSE` therefore ships with the same honesty note the streaming attributes
+carried before ADR-043: the AST carries the author's intent, no generator acts
+on it. `GLOBAL` and `TENANT` carry exactly the semantics `tenantScoped`
+already carried and are live through the same path.
+
+### `DomainMetadata` arity grew (trailing `dataScope`) + schema `"0.9.0"` → `"0.10.0"`
+
+**Impact:** `DomainMetadata`'s positional constructor gained a **trailing**
+`DataScope dataScope` component — same posture as the `ActionMetadata` growth
+in 0.8.0 and `CapManifest.ModuleBody` in 0.9.0: existing positional prefixes
+are unchanged in order, and positional callers add one trailing `null`. The
+builder (`.dataScope(…)`) is the stable path and needs no change. By-name on
+the wire — an old baseline reads the component back `null`, which is exactly
+the state `effectiveDataScope()`'s fallback is written for.
+
+`SchemaVersion.CURRENT` moves to `"0.10.0"`, so a baseline stamped `"0.9.0"`
+reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after
+upgrading. This is the standard posture (refuse a cross-shape baseline rather
+than assume compatibility), not a signal that anything is wrong.
+
+**`-io` reader parity is deliberately deferred.** The reader reads what the
+processor writes (ADR-042); the `exeris-tooling` processor does not extract
+`dataScope` yet, so the reader would manufacture drift. Parity lands lockstep
+with the processor. The reader's `unmodeledFacets()` guard is unaffected — it
+keys on annotation types, not attributes.
+
+---
+
 ## 0.8.x → 0.9.x
 
 ### Composition: no wire break

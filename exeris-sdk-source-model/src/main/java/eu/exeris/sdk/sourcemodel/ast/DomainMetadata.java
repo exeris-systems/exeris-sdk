@@ -102,7 +102,12 @@ public record DomainMetadata(
         @JsonProperty("systemFields") SystemFieldsMetadata systemFields,
 
         // Declarative behaviour (0.7.0): entity-level @Rule invariants. See RFC-2026-06-18.
-        @JsonProperty("rules") List<RuleMetadata> rules
+        @JsonProperty("rules") List<RuleMetadata> rules,
+
+        // Data-scope tier (0.10.0): the mutually-exclusive successor of the
+        // deprecated tenantScoped boolean. Absent ⇒ fall back to tenantScoped
+        // via effectiveDataScope(). See RFC-2026-06-24 / ADR-059.
+        @JsonProperty("dataScope") DataScope dataScope
 ) {
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -215,6 +220,27 @@ public record DomainMetadata(
         return internalApi != null && internalApi.hidden();
     }
 
+    /**
+     * The entity's effective {@link DataScope}: the explicit {@link #dataScope()}
+     * if one is set, otherwise the fallback from the deprecated
+     * {@link #tenantScoped()} boolean — {@code true} reads as
+     * {@link DataScope#TENANT}, {@code false} as {@link DataScope#GLOBAL}.
+     *
+     * <p>This is the AST half of the {@code tenantScoped} deprecation window
+     * (0.10.0 → removal at 1.0.0): a baseline or metadata file written before
+     * 0.10.0 carries only the boolean, and reads back with the same meaning it
+     * always had. Never returns {@code null} — an entity always has a tier.
+     *
+     * @return the declared tier, or the {@code tenantScoped} fallback
+     * @since 0.10.0
+     */
+    public DataScope effectiveDataScope() {
+        if (dataScope != null) {
+            return dataScope;
+        }
+        return tenantScoped ? DataScope.TENANT : DataScope.GLOBAL;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // BUILDER (for easier construction in processor)
     // ═══════════════════════════════════════════════════════════════════════
@@ -272,6 +298,7 @@ public record DomainMetadata(
         private EventSourcedMetadata eventSourced = null;
         private InternalApiMetadata internalApi = null;
         private SystemFieldsMetadata systemFields = null;
+        private DataScope dataScope = null;
 
         private Builder(String entityName, String packageName) {
             this.entityName = entityName;
@@ -314,6 +341,7 @@ public record DomainMetadata(
         public Builder eventSourced(EventSourcedMetadata v) { this.eventSourced = v; return this; }
         public Builder internalApi(InternalApiMetadata v) { this.internalApi = v; return this; }
         public Builder systemFields(SystemFieldsMetadata v) { this.systemFields = v; return this; }
+        public Builder dataScope(DataScope v) { this.dataScope = v; return this; }
 
         public DomainMetadata build() {
             return new DomainMetadata(
@@ -326,7 +354,7 @@ public record DomainMetadata(
                     tableName,
                     fields, actions, events, relationships, projections, eventHandlers,
                     uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields,
-                    rules
+                    rules, dataScope
             );
         }
     }
