@@ -90,6 +90,20 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- No japicmp here, on purpose. These annotations are
+                 @Retention(SOURCE): they have no runtime presence in a consumer's
+                 image, so japicmp's binary-compatibility model answers a question
+                 nobody is asking. Worse, it answers the real one wrongly — it
+                 reports a new annotation element as METHOD_ABSTRACT_ADDED_TO_CLASS
+                 whether or not the element declares a `default`, and that
+                 distinction is the whole compatibility story for an annotation: an
+                 element with a default leaves every existing usage compiling, one
+                 without it breaks all of them.
+
+                 AnnotationSurfaceContractTest gates this module instead, on the
+                 three rules that actually hold here: no element removed, no
+                 element retyped, and any new element must declare a default. -->
         </plugins>
     </build>
 </project>

@@ -91,6 +91,21 @@
         <jacoco.line.coverage.minimum>0.85</jacoco.line.coverage.minimum>
         <jacoco.instruction.coverage.minimum>0.85</jacoco.instruction.coverage.minimum>
         <maven.enforcer.version>3.5.0</maven.enforcer.version>
+
+        <!-- Semver gate (1.0.0 GA prerequisite). Configured before the freeze on
+             purpose: it has to encode the record-growth stance in
+             MIGRATION-0.x-to-1.0.md §3, and a gate written after the freeze would
+             be written against whatever the code already did.
+
+             The baseline is the last released version. Releases currently ship as
+             git tag + GitHub Release with downstream consumers resolving from a
+             local `mvn install` (Central publishing is deliberately unwired until
+             the kernel moves first), so the baseline resolves locally but not in
+             CI — see japicmp.skip below. -->
+        <japicmp.version>0.23.1</japicmp.version>
+        <japicmp.baseline.version>0.9.0</japicmp.baseline.version>
+        <!-- Overridden to true where no baseline artifact can be resolved. -->
+        <japicmp.skip>false</japicmp.skip>
     </properties>
 
     <build>
@@ -128,6 +143,43 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
                     <version>${maven.enforcer.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.siom79.japicmp</groupId>
+                    <artifactId>japicmp-maven-plugin</artifactId>
+                    <version>${japicmp.version}</version>
+                    <configuration>
+                        <skip>${japicmp.skip}</skip>
+                        <oldVersion>
+                            <dependency>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>${project.artifactId}</artifactId>
+                                <version>${japicmp.baseline.version}</version>
+                                <type>jar</type>
+                            </dependency>
+                        </oldVersion>
+                        <!-- Strict by default. The record-growth relaxation is NOT
+                             here: it is declared per module, and only where records
+                             actually live (exeris-sdk-source-model wholesale;
+                             ApplyResult / CapManifest by name elsewhere). Two gated
+                             modules — composition-lifecycle and composition-runtime —
+                             have no public records at all, and do have exception
+                             classes with meaningful constructor overloads, so a
+                             blanket override would quietly retire a real safety net
+                             in exchange for nothing. -->
+                        <parameter>
+                            <!-- Absent baseline must not read as "no breaks found".
+                                 It reads as "not checked", loudly, and the module's
+                                 own comment says where that is expected. -->
+                            <ignoreMissingOldVersion>false</ignoreMissingOldVersion>
+                            <onlyModified>true</onlyModified>
+                            <accessModifier>public</accessModifier>
+                            <breakBuildOnBinaryIncompatibleModifications>true
+                            </breakBuildOnBinaryIncompatibleModifications>
+                            <breakBuildOnSourceIncompatibleModifications>true
+                            </breakBuildOnSourceIncompatibleModifications>
+                        </parameter>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

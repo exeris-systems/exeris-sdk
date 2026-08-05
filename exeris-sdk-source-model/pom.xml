@@ -136,6 +136,58 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Semver gate. This module is the reason the gate exists: the AST
+                 records are the surface MIGRATION-0.x-to-1.0.md §3 promises may
+                 grow a trailing component in a 1.x minor. See the root pom for
+                 the baseline and the ruleset. -->
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>semver-gate</id>
+                        <phase>verify</phase>
+                        <goals><goal>cmp</goal></goals>
+                        <configuration>
+                            <!-- The record-growth stance, encoded.
+
+                                 A record that gains a trailing component emits
+                                 CONSTRUCTOR_REMOVED for the old canonical ctor, plus
+                                 a new ctor and a new accessor. On plugin defaults
+                                 that is a hard break, which would block every
+                                 post-1.0 facet — blob, job, flow await, graph
+                                 multi-hop — since each arrives as a component on an
+                                 existing record.
+
+                                 Applied module-wide here because this module IS the
+                                 AST and mutation surface: every public type in
+                                 `ast` and `mutation` is a record, an enum, or a
+                                 record-bearing sealed interface. Elsewhere the same
+                                 relaxation is named class by class.
+
+                                 Not weakened by this: removing, renaming or retyping
+                                 a component changes its accessor, so METHOD_REMOVED
+                                 and METHOD_RETURN_TYPE_CHANGED still break.
+
+                                 Not visible to this: a same-arity, same-type REORDER,
+                                 which shows up only in the constructor signal this
+                                 override stops reading. RecordComponentOrderTest
+                                 closes it; the two are a pair. -->
+                            <parameter>
+                                <overrideCompatibilityChangeParameters>
+                                    <overrideCompatibilityChangeParameter>
+                                        <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
+                                        <binaryCompatible>true</binaryCompatible>
+                                        <sourceCompatible>true</sourceCompatible>
+                                        <semanticVersionLevel>MINOR</semanticVersionLevel>
+                                    </overrideCompatibilityChangeParameter>
+                                </overrideCompatibilityChangeParameters>
+                            </parameter>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
