@@ -158,6 +158,15 @@
                                 <type>jar</type>
                             </dependency>
                         </oldVersion>
+                        <!-- Strict by default. The record-growth relaxation is NOT
+                             here: it is declared per module, and only where records
+                             actually live (exeris-sdk-source-model wholesale;
+                             ApplyResult / CapManifest by name elsewhere). Two gated
+                             modules — composition-lifecycle and composition-runtime —
+                             have no public records at all, and do have exception
+                             classes with meaningful constructor overloads, so a
+                             blanket override would quietly retire a real safety net
+                             in exchange for nothing. -->
                         <parameter>
                             <!-- Absent baseline must not read as "no breaks found".
                                  It reads as "not checked", loudly, and the module's
@@ -165,37 +174,6 @@
                             <ignoreMissingOldVersion>false</ignoreMissingOldVersion>
                             <onlyModified>true</onlyModified>
                             <accessModifier>public</accessModifier>
-                            <!-- The record-growth stance, encoded.
-                                 A record that gains a trailing component emits
-                                 CONSTRUCTOR_REMOVED (old canonical ctor) plus a
-                                 new ctor and a new accessor. On defaults that is
-                                 a hard break, which would block every post-1.0
-                                 facet — blob, job, flow await, graph multi-hop —
-                                 since each arrives as a component on an existing
-                                 record. Downgrading it to a MINOR-level, source-
-                                 and binary-compatible change is what makes the
-                                 documented growth path actually buildable.
-
-                                 What this does NOT weaken: removing, renaming or
-                                 retyping a component still changes its accessor,
-                                 so METHOD_REMOVED / METHOD_RETURN_TYPE_CHANGED
-                                 still break the build.
-
-                                 What it cannot see: a same-arity, same-type
-                                 REORDER of components. Reordering leaves every
-                                 accessor intact and shows up only in constructor
-                                 parameter order — which is exactly what this
-                                 override stops reading. RecordComponentOrderTest
-                                 closes that hole; the two are a pair, and
-                                 removing either leaves the stance unenforced. -->
-                            <overrideCompatibilityChangeParameters>
-                                <overrideCompatibilityChangeParameter>
-                                    <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
-                                    <binaryCompatible>true</binaryCompatible>
-                                    <sourceCompatible>true</sourceCompatible>
-                                    <semanticVersionLevel>MINOR</semanticVersionLevel>
-                                </overrideCompatibilityChangeParameter>
-                            </overrideCompatibilityChangeParameters>
                             <breakBuildOnBinaryIncompatibleModifications>true
                             </breakBuildOnBinaryIncompatibleModifications>
                             <breakBuildOnSourceIncompatibleModifications>true

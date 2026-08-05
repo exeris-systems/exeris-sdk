@@ -149,6 +149,42 @@
                         <id>semver-gate</id>
                         <phase>verify</phase>
                         <goals><goal>cmp</goal></goals>
+                        <configuration>
+                            <!-- The record-growth stance, encoded.
+
+                                 A record that gains a trailing component emits
+                                 CONSTRUCTOR_REMOVED for the old canonical ctor, plus
+                                 a new ctor and a new accessor. On plugin defaults
+                                 that is a hard break, which would block every
+                                 post-1.0 facet — blob, job, flow await, graph
+                                 multi-hop — since each arrives as a component on an
+                                 existing record.
+
+                                 Applied module-wide here because this module IS the
+                                 AST and mutation surface: every public type in
+                                 `ast` and `mutation` is a record, an enum, or a
+                                 record-bearing sealed interface. Elsewhere the same
+                                 relaxation is named class by class.
+
+                                 Not weakened by this: removing, renaming or retyping
+                                 a component changes its accessor, so METHOD_REMOVED
+                                 and METHOD_RETURN_TYPE_CHANGED still break.
+
+                                 Not visible to this: a same-arity, same-type REORDER,
+                                 which shows up only in the constructor signal this
+                                 override stops reading. RecordComponentOrderTest
+                                 closes it; the two are a pair. -->
+                            <parameter>
+                                <overrideCompatibilityChangeParameters>
+                                    <overrideCompatibilityChangeParameter>
+                                        <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
+                                        <binaryCompatible>true</binaryCompatible>
+                                        <sourceCompatible>true</sourceCompatible>
+                                        <semanticVersionLevel>MINOR</semanticVersionLevel>
+                                    </overrideCompatibilityChangeParameter>
+                                </overrideCompatibilityChangeParameters>
+                            </parameter>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

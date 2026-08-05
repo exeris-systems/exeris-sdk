@@ -64,7 +64,7 @@ class AnnotationSurfaceContractTest {
         assertThat(actual)
                 .as("should discover the annotation elements; an empty walk would be vacuous")
                 .hasSizeGreaterThanOrEqualTo(100)
-                .containsKey("ExerisDomain#dataScope");
+                .containsKey("eu.exeris.sdk.annotation.ExerisDomain#dataScope");
 
         List<String> violations = new ArrayList<>();
 
@@ -87,9 +87,9 @@ class AnnotationSurfaceContractTest {
             if (recorded.containsKey(element)) continue;
             if (!hasDefault(e.getValue())) {
                 violations.add(("%s is new and declares no default, so every existing usage of "
-                        + "@%s stops compiling. Give it a default, or take the break "
+                        + "%s stops compiling. Give it a default, or take the break "
                         + "deliberately at a major and re-baseline the snapshot.")
-                        .formatted(element, element.substring(0, element.indexOf('#'))));
+                        .formatted(element, simpleNameOf(element)));
             } else {
                 violations.add(("%s is new and correctly defaulted, but is missing from the "
                         + "snapshot. Record it so the next change to it is gated:%n    %s=%s")
@@ -103,6 +103,12 @@ class AnnotationSurfaceContractTest {
         }
     }
 
+    /** {@code a.b.C#el} → {@code @C} — for a message, not for keying. */
+    private static String simpleNameOf(String element) {
+        String type = element.substring(0, element.indexOf('#'));
+        return "@" + type.substring(type.lastIndexOf('.') + 1);
+    }
+
     private static String typeOf(String entry) {
         return entry.substring(0, entry.lastIndexOf(':'));
     }
@@ -111,14 +117,22 @@ class AnnotationSurfaceContractTest {
         return entry.endsWith(":default");
     }
 
-    /** {@code Annotation#element} → {@code type:default|required}. */
+    /**
+     * {@code fully.qualified.Annotation#element} → {@code type:default|required}.
+     *
+     * <p>Keyed by the qualified name, not the simple one: two annotations in
+     * different subpackages may legally share a simple name, and a collision
+     * would silently overwrite one of them here — the test would quietly stop
+     * covering an annotation instead of failing, which is the opposite of what
+     * it exists for.
+     */
     private Map<String, String> discoverSurface() throws Exception {
         Map<String, String> out = new LinkedHashMap<>();
         for (Class<? extends Annotation> a : discoverAnnotations()) {
             List<Method> elements = new ArrayList<>(List.of(a.getDeclaredMethods()));
             elements.sort(Comparator.comparing(Method::getName));
             for (Method m : elements) {
-                out.put(a.getSimpleName() + "#" + m.getName(),
+                out.put(a.getName() + "#" + m.getName(),
                         m.getReturnType().getCanonicalName()
                                 + (m.getDefaultValue() == null ? ":required" : ":default"));
             }

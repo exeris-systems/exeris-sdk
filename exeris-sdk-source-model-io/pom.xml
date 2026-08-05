@@ -124,10 +124,45 @@
                 <groupId>com.github.siom79.japicmp</groupId>
                 <artifactId>japicmp-maven-plugin</artifactId>
                 <executions>
+                    <!-- Two executions on purpose. This module has exactly one
+                         record (ApplyResult); everything else is ordinary classes
+                         whose constructors are real API. A module-wide relaxation
+                         would retire a genuine safety net in exchange for one
+                         record's growth path, so the relaxation is named. -->
                     <execution>
-                        <id>semver-gate</id>
+                        <id>semver-gate-strict</id>
                         <phase>verify</phase>
                         <goals><goal>cmp</goal></goals>
+                        <configuration>
+                            <parameter>
+                                <excludes>
+                                    <exclude>eu.exeris.sdk.sourcemodel.io.ApplyResult</exclude>
+                                </excludes>
+                            </parameter>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>semver-gate-record-growth</id>
+                        <phase>verify</phase>
+                        <goals><goal>cmp</goal></goals>
+                        <configuration>
+                            <parameter>
+                                <includes>
+                                    <include>eu.exeris.sdk.sourcemodel.io.ApplyResult</include>
+                                </includes>
+                                <!-- Trailing-component growth: see
+                                     exeris-sdk-source-model/pom.xml for the full
+                                     rationale and for what this does not weaken. -->
+                                <overrideCompatibilityChangeParameters>
+                                    <overrideCompatibilityChangeParameter>
+                                        <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
+                                        <binaryCompatible>true</binaryCompatible>
+                                        <sourceCompatible>true</sourceCompatible>
+                                        <semanticVersionLevel>MINOR</semanticVersionLevel>
+                                    </overrideCompatibilityChangeParameter>
+                                </overrideCompatibilityChangeParameters>
+                            </parameter>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -101,7 +101,21 @@ freeze or is explicitly re-dispositioned here.
   MINOR-level compatible change, because that is the signal a trailing record
   component produces, while removals, renames and retypes still break the build
   through their accessors. Bound to `verify` in all five non-annotation
-  publishable modules.
+  publishable modules — **strict by default**, with the relaxation declared
+  only where records actually live:
+  - `exeris-sdk-source-model` — module-wide, because `ast` + `mutation` *is*
+    the record surface end to end.
+  - `exeris-sdk-source-model-io` (`ApplyResult`) and
+    `exeris-sdk-composition-spec` (`CapManifest`) — two executions each, the
+    relaxed one naming the single record and the strict one excluding it.
+  - `exeris-sdk-composition-lifecycle` / `-runtime` — strict, no relaxation.
+    They have no public records at all, and do have exception classes with
+    meaningful constructor overloads, so a blanket relaxation would have
+    retired a real safety net in exchange for nothing.
+
+  japicmp 0.23.1's `overrideCompatibilityChangeParameter` carries no class
+  pattern, which is why the scoping is expressed as execution-level
+  `includes`/`excludes` rather than inside the override itself.
 
   Two follow-ons, both deliberate:
   - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
