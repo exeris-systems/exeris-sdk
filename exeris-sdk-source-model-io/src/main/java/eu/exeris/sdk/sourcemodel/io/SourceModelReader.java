@@ -22,6 +22,7 @@ import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
@@ -69,7 +70,8 @@ import java.util.TreeSet;
  * {@code @ExerisDomain} string + boolean attributes the processor reads
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
- * cache/search config) are read present-only. Domain {@code @DomainEvent}s are read
+ * cache/search config) are read present-only, as is the ADR-059
+ * {@code dataScope} tier. Domain {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
@@ -318,6 +320,7 @@ public final class SourceModelReader {
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
         boolAttr(ann, "internalClient").ifPresent(builder::internalClient);
         boolAttr(ann, "tenantScoped").ifPresent(builder::tenantScoped);
+        dataScope(ann).ifPresent(builder::dataScope);
         boolAttr(ann, "softDelete").ifPresent(builder::softDelete);
         boolAttr(ann, "audited").ifPresent(builder::audited);
         boolAttr(ann, "versioned").ifPresent(builder::versioned);
@@ -848,6 +851,35 @@ public final class SourceModelReader {
                 return Optional.empty();
             }
         });
+    }
+
+    /**
+     * ADR-059 data-scope tier, in parity with {@code ExerisDomainProcessor}'s own
+     * {@code dataScope} helper.
+     *
+     * <p>Two constants read as absent rather than as a value. {@code UNSPECIFIED}
+     * exists only because an annotation attribute cannot default to {@code null};
+     * it means "the author declared no tier", so carrying it onto the wire would
+     * invent a fourth tier the AST enum does not have. An unrecognised name reads
+     * as absent for the same reason {@link #relationType} does — the annotation's
+     * {@code ExerisDomain.DataScope} and the AST's {@link DataScope} are distinct
+     * types bridged by constant-name identity, and a rename on one side alone must
+     * not become a parse failure here.
+     *
+     * <p>Both cases leave the component unset, which is exactly what the processor
+     * emits for them, so {@code effectiveDataScope()} resolves through the
+     * {@code tenantScoped} fallback on either path.
+     */
+    private Optional<DataScope> dataScope(AnnotationExpr annotation) {
+        return enumAttr(annotation, "dataScope")
+                .filter(name -> !"UNSPECIFIED".equals(name))
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(DataScope.valueOf(name));
+                    } catch (IllegalArgumentException unknownConstant) {
+                        return Optional.empty();
+                    }
+                });
     }
 
     /** Constant name of an enum-valued annotation attribute, e.g. {@code ONE_TO_MANY}. */

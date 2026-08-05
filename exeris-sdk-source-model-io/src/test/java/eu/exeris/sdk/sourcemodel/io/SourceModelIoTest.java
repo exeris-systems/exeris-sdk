@@ -1,6 +1,7 @@
 package eu.exeris.sdk.sourcemodel.io;
 
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
@@ -144,6 +145,92 @@ class SourceModelIoTest {
             DomainMetadata d = reader.read(src).orElseThrow();
             assertThat(d.restApi()).isTrue();
             assertThat(d.tenantScoped()).isFalse();
+        }
+
+        @Test
+        void readsDataScopeTier() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", module = "billing",
+                                  dataScope = ExerisDomain.DataScope.TENANT)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.dataScope()).isEqualTo(DataScope.TENANT);
+            // The tier is declared alone, so the deprecated boolean stays at its
+            // default — and effectiveDataScope() must answer from the tier, not
+            // from the boolean it did not need.
+            assertThat(d.tenantScoped()).isFalse();
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.TENANT);
+        }
+
+        @Test
+        void readsReservedUniverseTier() {
+            // UNIVERSE is reserved, not rejected: the reader's job is to report what
+            // the source says. Refusing it here would make the AST disagree with the
+            // processor, which extracts it and lets the emitters decide.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Almanac",
+                                  dataScope = ExerisDomain.DataScope.UNIVERSE)
+                    public class Almanac {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().dataScope())
+                    .isEqualTo(DataScope.UNIVERSE);
+        }
+
+        @Test
+        void unspecifiedTierIsAbsentNotAFourthValue() {
+            // UNSPECIFIED exists only because an annotation attribute cannot default
+            // to null. Carrying it through would invent a tier the AST enum lacks.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", tenantScoped = true,
+                                  dataScope = ExerisDomain.DataScope.UNSPECIFIED)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.dataScope()).isNull();
+            // ...so resolution falls through to the deprecated boolean, exactly as it
+            // does for a source that never mentions dataScope at all.
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.TENANT);
+        }
+
+        @Test
+        void unknownTierNameReadsAsAbsent() {
+            // The annotation enum and the AST enum are bridged by constant-name
+            // identity (the relationshipType precedent). A name only one side knows
+            // must degrade to absent, not throw — a reader is not a validator.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", dataScope = ExerisDomain.DataScope.GALAXY)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.dataScope()).isNull();
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.GLOBAL);
+        }
+
+        @Test
+        void absentDataScopeLeavesTheDeprecatedBooleanInCharge() {
+            // The parity case that keeps pre-0.10.0 sources reading back unchanged.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(name = "Invoice", tenantScoped = true)
+                    public class Invoice {}
+                    """;
+            DomainMetadata d = reader.read(src).orElseThrow();
+
+            assertThat(d.dataScope()).isNull();
+            assertThat(d.effectiveDataScope()).isEqualTo(DataScope.TENANT);
         }
 
         @Test

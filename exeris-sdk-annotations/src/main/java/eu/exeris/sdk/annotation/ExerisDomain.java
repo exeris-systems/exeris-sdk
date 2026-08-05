@@ -317,12 +317,29 @@ public @interface ExerisDomain {
     /**
      * Default roles required to access this entity's API.
      *
+     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> declared but
+     * not extracted. No processor reads this attribute into the AST and no
+     * generator consumes it, so today it documents intent and nothing enforces
+     * it — do not treat it as access control. The gap was that the kernel had
+     * no contract to compile it down to: edge authorization was a hardcoded
+     * {@code /secure} path convention, and method-level {@code @RequiresRole}
+     * is written against the kernel by hand. Kernel ADR-061 changes that by
+     * making route authorization a declarable, path-shaped policy behind an
+     * {@code Optional} slot on {@code HttpKernelProviders} — the first surface
+     * these attributes could actually generate into. Wiring them is a
+     * {@code exeris-tooling} slice against a preview-tier SPI, so it is a 1.x
+     * item, not a pre-1.0 one; see {@code ROADMAP.md}.
+     *
      * @return array of role names
      */
     String[] roles() default {};
 
     /**
      * Default permissions required to access this entity's API.
+     *
+     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> declared but
+     * not extracted, on the same terms as {@link #roles()} — see that attribute
+     * for why, and for the kernel contract it would map onto.
      *
      * @return array of permission names
      */

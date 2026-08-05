@@ -85,6 +85,17 @@ public @interface SagaStep {
      * Step name (unique within saga).
      * <p>Used for logging, monitoring, and dependency references.
      *
+     * <p><strong>Kernel v0.11 (ADR-062) — this name is step identity.</strong>
+     * The uniqueness above stopped being a convention: the kernel's
+     * {@code FlowDefinition} rejects a definition whose step names collide, so
+     * a duplicate is a registration failure downstream rather than a confusing
+     * log line. A parked flow also records the name of the step it stopped at,
+     * and resume fails closed when the plan at that position now carries a
+     * different name — which makes <em>renaming</em> a step a breaking change
+     * for sagas already in flight, not just a refactor. The kernel's prescribed
+     * procedure is to drain in-flight sagas before deploying a rename or a
+     * reorder.
+     *
      * @return step name
      */
     String name();
