@@ -96,9 +96,30 @@ freeze or is explicitly re-dispositioned here.
   tests read a `name` attribute the annotation does not declare (JavaParser
   reads source text unvalidated). Drop it from the reader/tests or add the
   attribute deliberately.
-- [ ] **japicmp/revapi semver gate** — needs a resolvable baseline artifact;
-  gated on the Central publish wiring (parked branch). Wire it before 1.0.0 so
-  1.x enforcement starts at GA.
+- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, encoding the
+  record-growth stance in §3: `CONSTRUCTOR_REMOVED` is downgraded to a
+  MINOR-level compatible change, because that is the signal a trailing record
+  component produces, while removals, renames and retypes still break the build
+  through their accessors. Bound to `verify` in all five non-annotation
+  publishable modules.
+
+  Two follow-ons, both deliberate:
+  - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
+    last released jar and no `eu.exeris` artifact is published anywhere yet.
+    An absent baseline is configured to fail, not to pass quietly, so the skip
+    is explicit in the workflow rather than implicit in the plugin. Drop the
+    flag when the Central wiring lands.
+  - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
+    means no runtime presence in a consumer image, and japicmp reports a new
+    annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it
+    declares a `default` — which is the entire compatibility question there.
+    `AnnotationSurfaceContractTest` gates it instead.
+
+  What the gate cannot see is a same-arity, same-type component **reorder** —
+  invisible by construction, since the override stops reading exactly the
+  constructor signal a reorder would show up in. `RecordComponentOrderTest`
+  pins component order against a snapshot and closes it. The two are a pair;
+  removing either leaves the stance unenforced.
 - [ ] **Public API surface review** — everything not in `internal/` is
   contract. Known inputs from the sweep: `ActionMetadata` /
   `InternalApiMetadata` carry components the processor never populates

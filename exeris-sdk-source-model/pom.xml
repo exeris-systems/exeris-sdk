@@ -136,6 +136,22 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Semver gate. This module is the reason the gate exists: the AST
+                 records are the surface MIGRATION-0.x-to-1.0.md §3 promises may
+                 grow a trailing component in a 1.x minor. See the root pom for
+                 the baseline and the ruleset. -->
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>semver-gate</id>
+                        <phase>verify</phase>
+                        <goals><goal>cmp</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

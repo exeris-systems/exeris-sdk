@@ -118,6 +118,19 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Semver gate — ruleset and baseline in the root pom. -->
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>semver-gate</id>
+                        <phase>verify</phase>
+                        <goals><goal>cmp</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

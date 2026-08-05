@@ -36,8 +36,20 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
+      # japicmp.skip: the semver gate compares against the last released jar, and
+      # releases currently ship as git tag + GitHub Release — there are no
+      # eu.exeris artifacts on Maven Central yet (deliberately: the SDK does not
+      # move to Central before the kernel does). A CI runner therefore has no
+      # baseline to resolve, and the gate is configured to fail rather than treat
+      # an absent baseline as "no breaks found". It runs locally, where a prior
+      # `mvn install` leaves the baseline in ~/.m2. Drop this flag when the
+      # Central publish wiring lands — that is what turns the gate on for CI.
+      #
+      # The half of the record-growth stance that needs no baseline —
+      # RecordComponentOrderTest and AnnotationSurfaceContractTest — runs here
+      # unconditionally as an ordinary test.
       - name: mvn -B verify (runs Java tests + JaCoCo 85% gate)
-        run: mvn -B -ntp verify
+        run: mvn -B -ntp verify -Djapicmp.skip=true
 
       - name: ui-kit npm test (Vitest + 85% coverage gate)
         working-directory: exeris-sdk-ui-kit

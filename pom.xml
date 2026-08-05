@@ -91,6 +91,21 @@
         <jacoco.line.coverage.minimum>0.85</jacoco.line.coverage.minimum>
         <jacoco.instruction.coverage.minimum>0.85</jacoco.instruction.coverage.minimum>
         <maven.enforcer.version>3.5.0</maven.enforcer.version>
+
+        <!-- Semver gate (1.0.0 GA prerequisite). Configured before the freeze on
+             purpose: it has to encode the record-growth stance in
+             MIGRATION-0.x-to-1.0.md §3, and a gate written after the freeze would
+             be written against whatever the code already did.
+
+             The baseline is the last released version. Releases currently ship as
+             git tag + GitHub Release with downstream consumers resolving from a
+             local `mvn install` (Central publishing is deliberately unwired until
+             the kernel moves first), so the baseline resolves locally but not in
+             CI — see japicmp.skip below. -->
+        <japicmp.version>0.23.1</japicmp.version>
+        <japicmp.baseline.version>0.9.0</japicmp.baseline.version>
+        <!-- Overridden to true where no baseline artifact can be resolved. -->
+        <japicmp.skip>false</japicmp.skip>
     </properties>
 
     <build>
@@ -128,6 +143,65 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
                     <version>${maven.enforcer.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.siom79.japicmp</groupId>
+                    <artifactId>japicmp-maven-plugin</artifactId>
+                    <version>${japicmp.version}</version>
+                    <configuration>
+                        <skip>${japicmp.skip}</skip>
+                        <oldVersion>
+                            <dependency>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>${project.artifactId}</artifactId>
+                                <version>${japicmp.baseline.version}</version>
+                                <type>jar</type>
+                            </dependency>
+                        </oldVersion>
+                        <parameter>
+                            <!-- Absent baseline must not read as "no breaks found".
+                                 It reads as "not checked", loudly, and the module's
+                                 own comment says where that is expected. -->
+                            <ignoreMissingOldVersion>false</ignoreMissingOldVersion>
+                            <onlyModified>true</onlyModified>
+                            <accessModifier>public</accessModifier>
+                            <!-- The record-growth stance, encoded.
+                                 A record that gains a trailing component emits
+                                 CONSTRUCTOR_REMOVED (old canonical ctor) plus a
+                                 new ctor and a new accessor. On defaults that is
+                                 a hard break, which would block every post-1.0
+                                 facet — blob, job, flow await, graph multi-hop —
+                                 since each arrives as a component on an existing
+                                 record. Downgrading it to a MINOR-level, source-
+                                 and binary-compatible change is what makes the
+                                 documented growth path actually buildable.
+
+                                 What this does NOT weaken: removing, renaming or
+                                 retyping a component still changes its accessor,
+                                 so METHOD_REMOVED / METHOD_RETURN_TYPE_CHANGED
+                                 still break the build.
+
+                                 What it cannot see: a same-arity, same-type
+                                 REORDER of components. Reordering leaves every
+                                 accessor intact and shows up only in constructor
+                                 parameter order — which is exactly what this
+                                 override stops reading. RecordComponentOrderTest
+                                 closes that hole; the two are a pair, and
+                                 removing either leaves the stance unenforced. -->
+                            <overrideCompatibilityChangeParameters>
+                                <overrideCompatibilityChangeParameter>
+                                    <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
+                                    <binaryCompatible>true</binaryCompatible>
+                                    <sourceCompatible>true</sourceCompatible>
+                                    <semanticVersionLevel>MINOR</semanticVersionLevel>
+                                </overrideCompatibilityChangeParameter>
+                            </overrideCompatibilityChangeParameters>
+                            <breakBuildOnBinaryIncompatibleModifications>true
+                            </breakBuildOnBinaryIncompatibleModifications>
+                            <breakBuildOnSourceIncompatibleModifications>true
+                            </breakBuildOnSourceIncompatibleModifications>
+                        </parameter>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
