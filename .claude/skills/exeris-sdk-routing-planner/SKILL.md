@@ -40,7 +40,7 @@ Given a classified task (see `exeris-sdk-task-classifier`), produce a minimal, r
 - `MIGRATION.md` entry when user-visible.
 - Package-info sync (both locations) when scoping touched.
 - Maven Central POM metadata complete when publishable module changed (`exeris-sdk-publish-readiness-review`).
-- JDK 26 floor held; `jacoco-maven-plugin` ≥ 0.8.14; ui-kit out of reactor when build/pom touched (`exeris-sdk-build-invariants-review`).
+- JDK baseline held (release 25, emitted major ≤ 69); `jacoco-maven-plugin` ≥ 0.8.14; ui-kit out of reactor when build/pom touched (`exeris-sdk-build-invariants-review`).
 - New tests extend the canonical class (`AstJsonRoundTripTest` / `<Type>MetadataTest` / `MutationWireFormatTest`), not a parallel one (`exeris-sdk-coverage-gates-review`).
 
 ## Completion Criteria

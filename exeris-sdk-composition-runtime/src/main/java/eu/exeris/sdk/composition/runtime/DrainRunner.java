@@ -12,10 +12,12 @@ import java.time.Duration;
  * <p><b>Why the production runner is calling-thread + watchdog, not {@code StructuredTaskScope}.</b>
  * The preferred shape was a structured fork (fork the drain, join with deadline, interrupt on
  * overrun), because {@code kernelMain} runs inside the kernel's {@code ScopedValue} scope and
- * structured forks inherit {@code ScopedValue} bindings. But on the JDK 26 toolchain this repo pins,
- * {@code java.util.concurrent.StructuredTaskScope} is still a <b>preview API</b> (verified: javac
- * 26.0.1 rejects it without {@code --enable-preview}), and this reactor carries no preview flags and
- * must not gain them. So the production runner executes the drain on the <b>calling thread</b> —
+ * structured forks inherit {@code ScopedValue} bindings. But {@code
+ * java.util.concurrent.StructuredTaskScope} is a <b>preview API</b> on this repo's baseline
+ * (verified: javac 26.0.1 rejects it without {@code --enable-preview}, and the baseline moved
+ * <i>down</i> to JDK 25 LTS in 0.10.0 per ADR-069, where it is preview likewise), and this reactor
+ * carries no preview flags and must not gain them — a preview-stamped class would not load on a
+ * consumer's JDK at all, which is the whole point of the baseline. So the production runner executes the drain on the <b>calling thread</b> —
  * which preserves {@code ScopedValue} bindings trivially — while a single daemon watchdog thread
  * interrupts the calling thread on deadline overrun; the interrupt flag is cleared afterwards so a
  * late interrupt can never leak into the next cap's drain or the terminate phase. The known

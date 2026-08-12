@@ -105,6 +105,21 @@ for per-version upgrade steps.
   a break, all of it would be blocked until 2.0. The 1.0.0 japicmp/revapi gate
   must be configured to match.
 
+- **JDK baseline `26` → `25` LTS** ([ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md),
+  following [kernel ADR-066](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-066-preview-clean-ga-baseline.md)).
+  `maven.compiler.release=25` across the reactor; published jars carry class-file
+  **major 69** and require no `--enable-preview`. For consumers this is a
+  **widening** — anything that built on JDK 26 still does, and JDK 25 LTS becomes
+  reachable, where a major-70 class was previously refused by `javac` outright.
+  No source, wire-format, AST or annotation-surface change of any kind. The
+  kernel measured the old premise false (nothing in the tree used a JDK-26-only
+  API); the same probe here is green at `--release 25` across all six modules
+  with every gate. New `ClassFileBaselineTest` asserts the emitted major rather
+  than the build property. CI now runs a two-row matrix: JDK 25 is the
+  release-bearing row, JDK 26 the forward-compatibility row. Note
+  `exeris-tooling`'s processor has its own baseline — until it follows, an LTS
+  build can compile against the annotations but not run the processor.
+
 ### Deprecated
 - **`@ExerisDomain.tenantScoped`** — `@Deprecated(since = "0.10.0",
   forRemoval = true)`, removal at 1.0.0. Replaced by `dataScope`

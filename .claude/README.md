@@ -31,7 +31,7 @@ annotations + source-model + UI-kit surface.
 
 Project doctrine is **not** duplicated under `.claude/`:
 
-- **`/CLAUDE.md`** (repo root) — load-bearing facts (most-upstream repo, zero runtime coupling, AST as wire-format), build/test, coverage gates, JDK 26 floor non-negotiable, ui-kit npm-only, **Maven Central** (not GitHub Packages), stability + version policy, Field/Validation canonical scoping, AST + Jackson 3 wire-format contract, ADR-003 Entity-First.
+- **`/CLAUDE.md`** (repo root) — load-bearing facts (most-upstream repo, zero runtime coupling, AST as wire-format), build/test, coverage gates, JDK baseline follows the kernel's GA LTS (25, ADR-069), ui-kit npm-only, **Maven Central** (not GitHub Packages), stability + version policy, Field/Validation canonical scoping, AST + Jackson 3 wire-format contract, ADR-003 Entity-First.
 - **`MIGRATION.md`** — version-to-version deprecation pipeline and concrete diffs.
 - **`ROADMAP.md`** — milestone scope (0.1.0 scaffold → 0.2.x quality gates → 0.3.x parser/writer → 0.4.x `@Capability` → 0.5.x mutation surface → 0.6–0.9.x cleanups → 1.0.0 GA = contract surface frozen).
 - **`docs/adr/ADR-003 Entity-First Development Strategy.md`** — architectural premise.

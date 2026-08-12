@@ -39,34 +39,40 @@ never depends on them.
 
 ## Requirements
 
-- JDK 26
+- JDK 25 LTS
 - Maven 3.9+
 - Node 18+ (only for `exeris-sdk-ui-kit`)
 
-### Why JDK 26?
+### Why JDK 25 LTS?
 
-Most consumer teams run JDK 21 LTS, so this baseline is the most common surprise on
-first build. The SDK is pinned to JDK 26 because the **Exeris platform kernel** is,
-and the annotation processor (`exeris-tooling/exeris-processor`) that consumes
-`@ExerisDomain` runs in the same `javac` invocation as your project — it cannot lag
-behind the kernel it generates code for.
+The baseline follows the **Exeris platform kernel**, which moved its distributable
+line to JDK 25 LTS with no preview flags in v0.11.0. The SDK's jars sit on your
+*compile* classpath, so they cannot target a higher class-file major than the
+runtime they describe: `javac` on JDK 25 refuses a major-70 class outright, which
+would put the SDK above a floor the kernel had just lowered.
 
-The kernel's hard requirements:
+The published artifacts carry class-file **major 69** and require no
+`--enable-preview` on your side. A guard test reads the emitted header rather than
+trusting the build flag, because the stamp is what you would trip over.
 
-- **Virtual Threads** (stable since 21, refined through JDK 24's `synchronized`
-  pinning fix in JEP 491) — request handling, saga execution, and IO are
-  virtual-thread-first. Generated controllers and saga runners assume virtual-thread
-  semantics, and the pinning fix is load-bearing under contention.
-- **Foreign Function & Memory API** (stable since 22, JEP 454) — used for native
-  interop without JNI in kernel capability code paths.
+**On JDK 21 LTS.** 21 is still below the baseline, and the kernel's own hard
+requirements are why: Virtual Threads with JDK 24's `synchronized`-pinning fix
+(JEP 491), which is load-bearing under contention, and the Foreign Function &
+Memory API (JEP 454) for native interop in kernel capability paths. Both are GA
+below 25, so they are not what sets the floor — the kernel's GA line is. If you
+need to call into Exeris from a JDK 21 service, keep the Exeris-annotated module
+on the baseline (built and packaged separately) and consume it over the platform's
+wire protocol.
 
-The AST (`exeris-sdk-source-model`) and the Java emitted by `exeris-tooling` also
-use records and pattern matching, but those landed in 16 and 21 — they're not what
-fixes the floor at 26.
+The SDK's own sources use only records and sealed types (16- and 21-era), so
+nothing here pushes the floor upward on its own. See
+[ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md) for the decision and the
+measurement behind it.
 
-This is not an oversight, and we will not be backporting to 21 LTS. If you need to
-call into Exeris from a JDK 21 service, keep the Exeris-annotated module on JDK 26
-(built and packaged separately) and consume it over the platform's wire protocol.
+**Note on the annotation processor.** `exeris-tooling/exeris-processor` runs in the
+same `javac` invocation as your project and has its own baseline; the SDK moving is
+a prerequisite for it following, not a substitute. Until it does, an LTS build can
+compile against the annotations but not yet run the processor.
 
 ## Build
 

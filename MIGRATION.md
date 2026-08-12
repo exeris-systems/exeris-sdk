@@ -49,6 +49,26 @@ still setting only `tenantScoped` silently loses its tier.
 **Do not set both** a `dataScope` tier and a contradicting `tenantScoped` —
 the processor reports that as a build error rather than resolving it silently.
 
+### JDK baseline moves to 25 LTS — a widening, no action required
+
+**Why:** the kernel moved its distributable line to JDK 25 LTS with no preview
+flags (kernel ADR-066), which left the SDK targeting a *higher* class-file major
+than the runtime it describes. These jars are on your compile classpath, so that
+gap was load-bearing: `javac` on JDK 25 rejects a major-70 class with "class file
+has wrong version 70.0, should be 69.0". See
+[ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md).
+
+**Impact:** none, unless you were blocked. Published jars now carry class-file
+major **69** and impose no `--enable-preview`. A build on JDK 26 (or newer) keeps
+working unchanged — this only widens what can consume the SDK.
+
+**If you are on JDK 25 LTS:** you can now compile against `exeris-sdk-annotations`
+and `exeris-sdk-source-model`. Note that `exeris-tooling`'s annotation processor
+runs inside your own `javac` invocation and carries its own baseline; until it
+follows, the annotations resolve but the code generator does not run on 25.
+
+**If you are on JDK 21 LTS:** still below the baseline, unchanged from before.
+
 ### `DataScope.UNIVERSE` is reserved — declaring it has no generated effect yet
 
 The kernel enforces the shared tier, but the `exeris-tooling` transcription
