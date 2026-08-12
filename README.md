@@ -37,6 +37,41 @@ The model lives here, not in tooling, because every consumer must agree on the s
 shape of a domain. Tooling and platform depend on `exeris-sdk-source-model`; the SDK
 never depends on them.
 
+## Documentation
+
+Start with the [**user guide**](docs/guide/) — how to annotate, what the toolchain
+emits, and a per-annotation status matrix saying which of the 938 declared
+attributes actually reach a generator.
+
+| | |
+|---|---|
+| [Getting started](docs/guide/01-getting-started.md) | Resolve artifacts, annotate, generate, read the output. |
+| [Modelling an entity](docs/guide/02-modelling-an-entity.md) | `@ExerisDomain`, `@Field`, `@Validation`, `@Relationship`, `@Action`. |
+| [Behaviour and presentation](docs/guide/03-behaviour-and-presentation.md) | Events, sagas, `@View`, `@UI`, capabilities. |
+| [Status matrix](docs/guide/04-status-matrix.md) | LIVE / PARTIAL / RESERVED / DEPRECATED, per attribute, with evidence. |
+
+Also: [`MIGRATION.md`](MIGRATION.md) for deprecations and their removal releases,
+[`ROADMAP.md`](ROADMAP.md) for what each release added and what 1.0.0 freezes.
+
+## Distribution
+
+**There are no `eu.exeris` artifacts on Maven Central yet.** The Sonatype Central
+Portal endpoints are wired in the root POM's `distributionManagement`, but
+publishing is deliberately not switched on before the kernel moves — an ecosystem
+sequencing decision, not an oversight. Releases ship as a git tag plus a GitHub
+Release.
+
+Until that changes, build from source and consume the local install:
+
+```bash
+mvn -q install
+```
+
+Downstream Exeris repos resolve SDK artifacts the same way. Note that this is
+*not* the `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` GitHub Packages flow the other
+`eu.exeris.*` coordinates use — the SDK's target is Central, and neither path is
+live for it today.
+
 ## Requirements
 
 - JDK 25 LTS

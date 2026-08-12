@@ -167,6 +167,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
 
 - [ ] Public API surface review (everything not in `internal/` is contract)
+- [~] **User documentation** — [`docs/guide/`](docs/guide/) written against traced generator evidence rather than against the SDK's own javadoc: getting started, the modelling surface, behaviour/presentation, and a per-annotation status matrix (LIVE / PARTIAL / RESERVED / DEPRECATED). The front door (`eu.exeris.sdk.annotation` package javadoc, `@ExerisDomain`, `@UI`) was corrected first so the guide is not built on it. What is left before GA: carry the per-attribute status labels down into the remaining annotations' own javadoc, so an IDE hover says what the guide says
+- [ ] Disposition the reserved surface before it freezes — 840 of 938 declared attributes are extracted by nobody (see [the status matrix](docs/guide/04-status-matrix.md)). 1.x is additive-only, so anything still declared at GA is carried to 2.0 whether or not a generator ever arrives. Decide per annotation: keep as declared intent, or drop while 0.x still permits it
 - [ ] `MIGRATION-0.x-to-1.0.md` written and validated against budgetHQ
 - [ ] Annotations module hits Maven Central (Apache-2.0, no Commons Clause)
 - [ ] AST records module hits Maven Central
