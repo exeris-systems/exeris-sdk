@@ -37,6 +37,10 @@ Evidence base: `exeris-tooling` at `9c72a8f`, SDK 0.10.0.
 
 Annotation types: 49. Referenced by the processor at all: **21**.
 
+The per-annotation counts below add up to these totals exactly — 79 + 16 + 3 +
+840 = 938. If they stop adding up, the breakdown is wrong and the snapshot is
+right.
+
 ## Annotations that produce output
 
 ### `@ExerisDomain` — 35 declared
@@ -213,6 +217,8 @@ nothing.
 | `@Rule` / `@Rules` | 6 | RFC-2026-06-18 (ACCEPTED) |
 | `@SagaTransition` / `@SagaTransitions` | 5 | Saga state-machine half |
 | `@Derived` | 3 | RFC-2026-06-18 (ACCEPTED) |
+| `@SagaSteps` | 1 | Repeatable container for `@SagaStep`. Extracted by neither producer — which is the hazard noted above, not a cosmetic gap |
+| `@GraphEdges` | 1 | Repeatable container for `@GraphEdge`, made `public` in 0.10.0 |
 | `system.*` (11 annotations) | 23 | `@PrimaryKey` `@TenantId` `@Version` `@SoftDelete` `@SoftDeleteTimestamp` `@SoftDeletedBy` `@AuditCreatedAt` `@AuditCreatedBy` `@AuditUpdatedAt` `@AuditUpdatedBy` — columns come from the `@ExerisDomain` flags |
 
 ## Why `-Aexeris.strict` will not tell you this

@@ -187,16 +187,18 @@ in the same change as its generator.
 
 ## `@ActionParam` — action parameters
 
-**PARTIAL**, and one known bug. `@Target(PARAMETER)`. 33 declared, 3 read.
+**LIVE**, barely, and with one known bug. `@Target(PARAMETER)`. 33 declared,
+**2 read**.
 
 | Attribute | Status |
 |---|---|
 | `description` | LIVE |
 | `required` | LIVE (defaults to `true`, mirroring the annotation) |
-| `label` | **Declared, and not read.** |
+| `label` | **RESERVED — declared, and read under the wrong key.** See below. |
 
-The parameter's own name always reaches the AST — it comes from the method
-signature, not the annotation.
+The parameter's own name always reaches the AST, but it comes from the method
+signature rather than from the annotation, so it is not one of the 33 declared
+attributes and is not counted here.
 
 The `label` case is a genuine defect rather than a design gap: the processor
 reads the key `"displayName"` from `@ActionParam`, and `@ActionParam` declares
@@ -204,7 +206,7 @@ reads the key `"displayName"` from `@ActionParam`, and `@ActionParam` declares
 permanently null. It lives in `exeris-tooling`, not here; it is recorded in this
 guide so that nobody spends an afternoon on it.
 
-**RESERVED** (30): everything else — `options`, `optionLabels`, `placeholder`,
+**RESERVED** (31): `label` and everything else — `options`, `optionLabels`, `placeholder`,
 `helpText`, `group`, `gridSpan`, `visibleWhen`, `enabledWhen`, `requiredWhen`,
 `defaultValue`, `defaultValueExpression`, `transformExpression`,
 `optionsExpression`, `masked`, `encrypted`, `allowedFileTypes`, `maxFileSize`,

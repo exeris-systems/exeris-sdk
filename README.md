@@ -53,6 +53,25 @@ attributes actually reach a generator.
 Also: [`MIGRATION.md`](MIGRATION.md) for deprecations and their removal releases,
 [`ROADMAP.md`](ROADMAP.md) for what each release added and what 1.0.0 freezes.
 
+## Distribution
+
+**There are no `eu.exeris` artifacts on Maven Central yet.** The Sonatype Central
+Portal endpoints are wired in the root POM's `distributionManagement`, but
+publishing is deliberately not switched on before the kernel moves — an ecosystem
+sequencing decision, not an oversight. Releases ship as a git tag plus a GitHub
+Release.
+
+Until that changes, build from source and consume the local install:
+
+```bash
+mvn -q install
+```
+
+Downstream Exeris repos resolve SDK artifacts the same way. Note that this is
+*not* the `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` GitHub Packages flow the other
+`eu.exeris.*` coordinates use — the SDK's target is Central, and neither path is
+live for it today.
+
 ## Requirements
 
 - JDK 25 LTS

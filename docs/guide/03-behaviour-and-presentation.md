@@ -207,8 +207,8 @@ Three published SDK modules back this:
 
 ## The reserved behaviour layer
 
-`@Derived` and `@Rule` (repeatable via `@Rules`) are **RESERVED** — 8 attributes,
-no extraction, no generator.
+`@Derived` and `@Rule` (repeatable via `@Rules`) are **RESERVED** — 9 attributes
+across the three types, no extraction, no generator.
 
 They exist to let a domain declare the *mechanical* slice of behaviour the AST
 cannot otherwise describe: derived fields and roll-ups (`@Derived`), named

@@ -73,8 +73,11 @@ but it means the surface is mostly aspirational today:
 |---|---|
 | Declared attributes (surface snapshot) | **938** |
 | Annotation types referenced by the processor at all | **21** of 49 |
-| Attributes actually extracted into the AST | **≈ 90** |
-| Of those, read by a generator that emits something | **≈ 65** |
+| Attributes actually extracted into the AST | **98** |
+| Of those, read by a generator that emits something | **79** |
+
+The [status matrix](04-status-matrix.md) is where those numbers are derived, per
+annotation; these are the same figures, not a rounded summary of them.
 
 **You cannot infer from an attribute's existence that it does anything.** That is
 not a bug report; it is how to read this SDK. The [status
