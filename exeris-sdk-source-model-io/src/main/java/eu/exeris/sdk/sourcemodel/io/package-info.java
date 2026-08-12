@@ -39,10 +39,23 @@
  * missing / unparseable / schema-skewed baseline to {@code NO_BASELINE}; slice 4
  * ({@code SourceModelMutationApplier}) applies conflict-aware, with the
  * {@code sourceDigest} as the apply-time {@code STALE_DIGEST} concurrency token.
- * The remaining cross-repo piece is {@code exeris-tooling} codegen emitting
- * {@code sourceDigest} + {@code schemaVersion} into each
- * {@code exeris-metadata/<entity>.json}; conflict-aware <em>batch</em> apply is
- * deferred.
+ *
+ * <p><b>Cross-repo status — the baseline-trust stamp is live.</b> The tooling
+ * half shipped: {@code ExerisDomainProcessor.buildMetadataNode} writes
+ * {@code schemaVersion} and {@code sourceDigest} as sibling fields into each
+ * {@code exeris-metadata/<entity>.json}
+ * ({@code ExerisDomainProcessor.java:1969-1977}), on the {@code @ExerisDomain}
+ * path and on the standalone-{@code @Saga} path alike ({@code :861,887}), so no
+ * emitted metadata file is left unstamped. Two properties a caller should know:
+ * the digest is {@code SourceDigest.of} over the same raw source text this
+ * reader recomputes against, so the {@code STALE_DIGEST} token agrees
+ * byte-for-byte; and off a real {@code javac} (no Compiler Tree API) the digest
+ * degrades to absent and only {@code schemaVersion} is stamped. A digest-less
+ * baseline is still a <em>trusted</em> one — {@code checkBaselineTrust} gates on
+ * {@code schemaVersion} alone — it simply leaves the caller with no
+ * {@code concurrencyToken}, and {@code apply(..., null)} skips the
+ * {@code STALE_DIGEST} check rather than failing it. Conflict-aware
+ * <em>batch</em> apply remains deferred.
  *
  * @since 0.3.0
  */

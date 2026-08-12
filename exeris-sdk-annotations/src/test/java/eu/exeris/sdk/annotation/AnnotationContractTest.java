@@ -4,10 +4,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.io.File;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +28,7 @@ import static org.assertj.core.api.Assertions.fail;
  * <p>
  * Annotations are declarative metadata — there is no executable code on them
  * for JaCoCo to measure. This test discovers every {@code @interface} under
- * {@code eu.exeris.sdk.annotation.*} via the classpath and asserts the two
+ * {@code eu.exeris.sdk.annotation.*} via the classpath and asserts the three
  * invariants the rest of the SDK relies on:
  * <ol>
  *   <li><b>{@code @Retention(SOURCE)}</b> — annotations are consumed at
@@ -36,6 +38,10 @@ import static org.assertj.core.api.Assertions.fail;
  *   <li><b>{@code @Target} is declared</b> — without a target the annotation
  *       silently allows usage in unexpected positions, breaking the
  *       processor's ability to reject misuse.</li>
+ *   <li><b>{@code @Repeatable} containers are public</b> — a package-private
+ *       container compiles here and makes the annotation unrepeatable from
+ *       every other package, which no test living inside this package could
+ *       otherwise observe.</li>
  * </ol>
  * <p>
  * If you add a new annotation, no edit to this test is needed — the package
@@ -84,6 +90,47 @@ class AnnotationContractTest {
                 .isEmpty();
         assertThat(missingTarget)
                 .as("annotations missing @Target — the processor cannot reject misuse without one")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("every @Repeatable annotation's container type is public")
+    void repeatableContainersArePublic() throws Exception {
+        // A container declared package-private compiles inside this package and
+        // fails at every external use site ("GraphEdges.value() is defined in an
+        // inaccessible class or interface"), because the compiler requires the
+        // container to be at least as accessible as the repeatable annotation.
+        // The SDK's own tests could never have caught it — they live in this
+        // package. Two top-level containers carried the defect (@SagaSteps,
+        // fixed in 0.9.0; @GraphEdges, fixed in 0.10.0) and every other one is
+        // nested inside a public @interface, hence implicitly public.
+        //
+        // Read from @Repeatable rather than from the package walk on purpose:
+        // the walk skips nested types, and a nested container is exactly the
+        // shape this assertion must still cover.
+        List<Class<? extends Annotation>> annotations = discoverAnnotations("eu.exeris.sdk.annotation");
+
+        List<String> repeatables = new ArrayList<>();
+        List<String> nonPublicContainers = new ArrayList<>();
+
+        for (Class<? extends Annotation> a : annotations) {
+            Repeatable repeatable = a.getAnnotation(Repeatable.class);
+            if (repeatable == null) {
+                continue;
+            }
+            Class<? extends Annotation> container = repeatable.value();
+            repeatables.add(a.getSimpleName() + " -> " + container.getSimpleName());
+            if (!Modifier.isPublic(container.getModifiers())) {
+                nonPublicContainers.add(container.getName());
+            }
+        }
+
+        assertThat(repeatables)
+                .as("the walk should still be finding the known repeatable annotations")
+                .isNotEmpty();
+        assertThat(nonPublicContainers)
+                .as("@Repeatable container types must be public — a package-private container "
+                        + "makes repeating the annotation a compile error outside this package")
                 .isEmpty();
     }
 

@@ -91,8 +91,42 @@ public @interface Saga {
     String description() default "";
 
     /**
-     * Saga version for schema evolution.
-     * <p>Increment when making breaking changes to saga structure.
+     * Saga version — part of the saga's runtime identity.
+     *
+     * <p><strong>Kernel contract (v0.11, ADR-064).</strong> This attribute used
+     * to be documented as a free-form "increment on breaking changes" marker.
+     * It is not one any more: the kernel keys its plan catalog by
+     * {@code (name, version)}, so registering v2 no longer evicts v1 and both
+     * serve traffic — new instances start on the newest registered version,
+     * parked ones resume on the exact version they parked under. A snapshot
+     * whose version is not registered <em>fails closed</em> rather than being
+     * rebound to the newest plan, and moving a parked saga across versions
+     * happens only through a migration transform the application registers
+     * ({@code FlowExecutionPlanFactory.registerMigration}). The value is
+     * deliberately application-declared rather than derived from the
+     * definition's content: a content hash would make an added comment a new
+     * version.
+     *
+     * <p><strong>What that means for an author.</strong> Bumping this is a
+     * deployment decision, not a comment. Leaving it alone while changing step
+     * structure keeps in-flight sagas resuming onto the changed plan, which is
+     * the data-corruption class ADR-062 and ADR-064 exist to close; bumping it
+     * without registering a migration parks the old instances until their
+     * version is registered again. Monotonic within a name; a definition built
+     * without one is version {@code 1}.
+     *
+     * <p><strong>Open-Core status — declared, not extracted (verified
+     * 2026-08-12).</strong> Neither AST producer reads this attribute:
+     * the build-time processor's saga extraction takes {@code name},
+     * {@code description}, {@code timeout} and {@code maxRetries} only, and the
+     * {@code -io} reader mirrors exactly that set. {@code SagaMetadata} does
+     * carry a {@code version} component, but it holds the builder default
+     * {@code 1} on every run — so writing {@code version = 3} produces an AST
+     * that says {@code 1}, silently, at any strictness. Both producers are
+     * blind in the same way, so this is not an ADR-042 divergence; it is a hole
+     * in both. Until extraction lands, the kernel contract above is reachable
+     * only by hand-written {@code FlowDefinition} code, not by declaring it
+     * here.
      *
      * @return saga version
      */

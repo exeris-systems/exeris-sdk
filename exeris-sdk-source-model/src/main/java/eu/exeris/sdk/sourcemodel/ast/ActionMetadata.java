@@ -67,6 +67,20 @@ public record ActionMetadata(
          * {@link #streaming()}: streaming is the response shape, this is the
          * subscribe-to-progress affordance.
          *
+         * <p><strong>Open-Core status — reserved, extraction pending
+         * tooling:</strong> unlike its two neighbours {@link #streaming()} and
+         * {@link #streamEventType()}, which the {@code exeris-tooling}
+         * processor does extract, this component is never populated from
+         * annotated source. The processor declines it by name — "deliberately
+         * NOT extracted here … extracting it would only create an inert
+         * {@code ActionMetadata} attribute" ({@code exeris-tooling}
+         * {@code exeris-processor/.../ExerisDomainProcessor.java:1377-1381}) —
+         * and no generator reads it back. On the build-time path it is
+         * therefore always {@code false}; only hand-built metadata can set it,
+         * and setting it changes no generated artifact. The extraction lands in
+         * the same change that introduces its consumer, matching the Open-Core
+         * status note on {@code @Action.realTimeUpdates()}.
+         *
          * @since 0.8.0
          */
         boolean realTimeUpdates

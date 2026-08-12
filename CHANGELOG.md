@@ -45,8 +45,52 @@ for per-version upgrade steps.
   deprecation window, so a baseline written before 0.10.0 reads back with the
   meaning it always had without every downstream generator re-implementing the
   three-way decision (the `SagaStepMetadata.effectiveKind()` precedent).
+- **Semver enforcement, in three pieces that only work together** — `japicmp`
+  bound to `verify` in the five non-annotation publishable modules, strict by
+  default, with `CONSTRUCTOR_REMOVED` downgraded to a compatible change only
+  where records actually live (that is the signal a trailing component
+  produces; on plugin defaults it fails the build, which would have blocked
+  every post-1.0 facet). `RecordComponentOrderTest` pins component order for
+  every public record in `ast` + `mutation` against a snapshot, closing the one
+  hole the override opens — a same-arity, same-type reorder is invisible to
+  japicmp by construction and survives by-name Jackson binding.
+  `AnnotationSurfaceContractTest` replaces japicmp in the annotations module,
+  which is `@Retention(SOURCE)` and has no runtime presence to compare: no
+  element removed, none retyped, every new element defaulted. Each was verified
+  non-vacuous against a deliberately introduced break. CI still runs japicmp
+  with `-Djapicmp.skip=true` — there is no published baseline artifact to
+  resolve, and an absent baseline is configured to fail rather than pass
+  quietly.
+- **`AnnotationContractTest.repeatableContainersArePublic`** — every
+  `@Repeatable` annotation's container type must be `public`. Reads the
+  container off the `@Repeatable` meta-annotation rather than off the package
+  walk, which skips nested types. Catches the `@GraphEdges` class of defect
+  below at the source instead of one symptom at a time.
 
 ### Changed
+- **`-io` reader extracts `@ExerisDomain.dataScope`** (ADR-059 parity) — with
+  `UNSPECIFIED` and any unrecognised constant reading as *absent*, which is the
+  processor's exact behaviour, so both paths fall through the `tenantScoped`
+  fallback in `effectiveDataScope()`. Taken only after `exeris-tooling` landed
+  the processor side: the reader reads what the processor writes.
+- **Annotation honesty notes against kernel v0.11** — `@ExerisDomain.roles` /
+  `permissions` (ADR-061: route authorization is the first contract they could
+  compile into; ADR-063: only `permissions` has a destination, since
+  `RouteRequirement` decides on named scopes and declares no role kind),
+  `@SagaStep.name` (ADR-062: step identity is enforced, so renaming a step
+  breaks in-flight sagas — the javadoc carries the kernel's drain-before-reorder
+  procedure), and `@Saga.version` (ADR-064: the kernel keys its plan catalog by
+  `(name, version)` and fails closed on an unregistered version — while the
+  attribute reaches no AST on either producer, so `version = 3` yields a
+  `SagaMetadata.version` of `1`, silently).
+- **`@Field`, `@Action.path`, `@ExerisDomain.graphqlApi` and the
+  `@SagaSteps` container carry accurate status notes** — from the 2026-08
+  evidence survey, which traced attributes to the *emitted artifact* rather
+  than to the AST and so found what the 0.9.0 sweep structurally could not:
+  attributes that are extracted and then dropped at the far end of the chain.
+  `@SagaSteps` in particular claimed hand-written containers were "read
+  identically"; repeating `@SagaStep` compiles and then yields no step from the
+  processor and only the first from the `-io` reader.
 - **`DomainMetadata` gained a trailing `dataScope` component** — positional
   prefixes unchanged in order, by-name on the wire; positional callers add one
   trailing `null`, builder callers are unaffected. Same posture as the
@@ -70,6 +114,21 @@ for per-version upgrade steps.
   share a release and 1.x is additive-only, so a boolean still live at 1.0.0
   would have been frozen through the whole 1.x line with removal deferred to
   2.0.
+
+### Fixed
+- **`@GraphEdges` is `public`, so `@GraphEdge` can be repeated outside the
+  SDK's own package** — the container was a top-level type declared without
+  `public` inside `GraphEdge.java`, so every external repeated use failed with
+  "`GraphEdges.value()` is defined in an inaccessible class or interface"; the
+  compiler requires the container to be at least as accessible as the
+  repeatable annotation at every use site. Confirmed and re-confirmed by
+  compiling from an external package, not inferred. Same FQN (the type moved to
+  its own `GraphEdges.java`, per the `SagaSteps` precedent), no wire or AST
+  change — containers are flattened on extraction. This is the identical defect
+  fixed for `@SagaSteps` in 0.9.0; the guard added above is what makes it the
+  last one of its class. Note the fix buys compilation only: `@GraphEdge` is
+  extracted by neither producer, so a repeated *or* single edge declaration
+  still reaches no AST.
 
 ## [0.9.0] — 2026-07-22
 
