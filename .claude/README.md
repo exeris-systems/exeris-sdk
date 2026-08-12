@@ -20,9 +20,7 @@ annotations + source-model + UI-kit surface.
   - `exeris-sdk-implementer.md` — annotations / AST records / UI kit code changes
   - `exeris-sdk-verification.md` — `AnnotationContractTest`, `AstJsonRoundTripTest`, JaCoCo gate, Vitest gate
   - `exeris-sdk-docs-adr.md` — `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003
-- `commands/` — slash commands (`/<command-name>`):
-  - `zero-runtime-coupling-check.md`, `ast-jackson-contract.md`, `field-validation-scoping.md`, `deprecation-pipeline.md`, `maven-central-publish-readiness.md`
-- `skills/` — invocable skills (`/<skill-name>`):
+- `skills/` — invocable skills (`/<skill-name>`), the single entry point for every audit:
   - `exeris-sdk-task-classifier`, `exeris-sdk-routing-planner`
   - `exeris-sdk-zero-runtime-coupling-review`, `exeris-sdk-ast-jackson-contract-review`
   - `exeris-sdk-field-validation-scoping-review`, `exeris-sdk-deprecation-pipeline-review`

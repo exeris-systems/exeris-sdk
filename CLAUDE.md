@@ -26,13 +26,6 @@ Two practical consequences:
 
 ## Build & test
 
-```bash
-# UI kit (separate npm package — not in the Maven reactor)
-cd exeris-sdk-ui-kit
-npm ci && npm test                # Vitest run
-npm run test:coverage             # also enforces 85% per-file gate
-```
-
 ### Coverage gates
 
 - **`exeris-sdk-source-model`** — `jacoco-maven-plugin` ≥ 0.8.14 (earlier versions reject Java 26 class file v70; the baseline is v69 as of ADR-069, so this is no longer load-bearing — but downgrading buys nothing). Bound to `verify` with a **0.85 BUNDLE-level** threshold on both `INSTRUCTION` and `LINE` counters. Configured in `exeris-sdk-source-model/pom.xml`; thresholds are properties (`jacoco.instruction.coverage.minimum`, `jacoco.line.coverage.minimum`) so a per-build override is possible without editing the pom (e.g. for a one-off debug `-Djacoco.instruction.coverage.minimum=0`). The pluginManagement entry + agent/report executions live in the root `pom.xml` and `exeris-sdk-parent/pom.xml`.
@@ -58,6 +51,7 @@ This was `26` until 0.10.0, on the stated rationale that the kernel required it.
 
 ```bash
 cd exeris-sdk-ui-kit && npm install && npm run build
+npm run test:coverage   # Vitest + the 85% per-file gate
 ```
 
 ## Maven module layout — what's publishable
