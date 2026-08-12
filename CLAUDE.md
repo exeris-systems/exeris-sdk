@@ -27,18 +27,11 @@ Two practical consequences:
 ## Build & test
 
 ```bash
-mvn clean install              # full reactor build + JaCoCo + 85% gate
-mvn -pl exeris-sdk-source-model -am test                         # one module + deps
-mvn -pl exeris-sdk-source-model test -Dtest=AstJsonRoundTripTest # single test class
-mvn -pl exeris-sdk-source-model test -Dtest=AstJsonRoundTripTest#fieldMetadataRoundTrips
-
 # UI kit (separate npm package — not in the Maven reactor)
 cd exeris-sdk-ui-kit
 npm ci && npm test                # Vitest run
 npm run test:coverage             # also enforces 85% per-file gate
 ```
-
-CI runs `mvn -B -ntp verify` on JDK 25 LTS (Temurin — the release-bearing row) and JDK 26 (forward-compatibility row) and then `npm ci && npm run test:coverage` in the ui-kit, for push and PRs to `main` (`.github/workflows/build.yml`). The JaCoCo HTML report and the v8 lcov for ui-kit are uploaded as build artifacts.
 
 ### Coverage gates
 
