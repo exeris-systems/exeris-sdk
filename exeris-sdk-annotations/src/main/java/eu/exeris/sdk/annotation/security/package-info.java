@@ -25,9 +25,11 @@
  * generated encryption / RLS policies, but no Open-Core generator implements
  * them today — the {@code exeris-tooling} processor does not extract either
  * marker. The <em>live</em> tenancy path is
- * {@code @ExerisDomain(tenantScoped = true)} plus the system-field override
- * attributes / canonical accessor names, not {@code @RowLevelSecurity}. They
- * ship as a reserved surface until a consumer lands.
+ * {@code @ExerisDomain(dataScope = DataScope.TENANT)} — which emits the tenant
+ * column, the RLS policy and the query filter — plus the system-field override
+ * attributes / canonical accessor names, not {@code @RowLevelSecurity}.
+ * ({@code tenantScoped = true} is the deprecated spelling of the same tier; see
+ * ADR-059.) They ship as a reserved surface until a consumer lands.
  *
  * @author Exeris SDK Team
  * @version 1.0.0
