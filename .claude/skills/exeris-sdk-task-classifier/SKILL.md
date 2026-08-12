@@ -27,7 +27,7 @@ Classify incoming work before execution. Triage only — no implementation.
 - `STABILITY_DEPRECATION`: public-API removal / rename; deprecation pipeline application.
 - `DOCS_ADR`: `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003.
 - `PUBLISH_READINESS`: Sonatype Central Portal, POM metadata, sources/javadoc attachments, version bump.
-- `BUILD_INVARIANTS`: `maven.compiler.release` (JDK 26 floor), `jacoco-maven-plugin` version, reactor `<modules>`, root/parent build-plugin config.
+- `BUILD_INVARIANTS`: `maven.compiler.release` (JDK baseline, ADR-069), `jacoco-maven-plugin` version, reactor `<modules>`, root/parent build-plugin config.
 - `MULTI_DOMAIN`: ≥2 first-order concerns.
 
 ## Review Skill per Class
@@ -45,7 +45,7 @@ After classifying, fire the matching enforcement skill (these are the canonical 
 - Preserve zero runtime coupling.
 - Preserve AST records-only rule.
 - Preserve `jackson-annotations` 2.22 pin.
-- Preserve JDK 26 floor (`maven.compiler.release=26`); never lower it to fix a build failure.
+- Preserve the JDK baseline (`maven.compiler.release=25`, ADR-069); never move it in either direction to fix a build failure — it tracks the kernel's GA line.
 - Preserve `jacoco-maven-plugin` ≥ 0.8.14 + coverage gates (85% source-model BUNDLE / ui-kit per-file).
 - Preserve ui-kit npm-only (excluded from the Maven reactor).
 - Preserve Field/Validation canonical scoping.

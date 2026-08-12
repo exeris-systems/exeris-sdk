@@ -12,7 +12,7 @@ Default entry point for triage on the most upstream Exeris repo.
 
 It does four things:
 1. classifies the task,
-2. identifies primary risk against repo invariants (zero runtime coupling, AST wire-format stability, Field/Validation canonical scoping, deprecation pipeline, JDK 26 floor, Maven Central publish-readiness, Entity-First),
+2. identifies primary risk against repo invariants (zero runtime coupling, AST wire-format stability, Field/Validation canonical scoping, deprecation pipeline, the JDK baseline (ADR-069), Maven Central publish-readiness, Entity-First),
 3. builds a lightweight execution plan,
 4. routes execution to the most appropriate specialized agent persona.
 
@@ -41,7 +41,7 @@ If multiple categories apply, route by primary risk first.
 - AST records are wire-format; downstream consumers (processor / codegen / LSP) treat shape change as a contract change, not internal refactor.
 - AST types MUST be records (not classes with record-style accessors — Jackson 3 silently drops fields).
 - `jackson-annotations` pinned to 2.22 (deliberate; Jackson 3 keeps annotations on 2.x line).
-- JDK 26 floor non-negotiable (kernel + processor reasons).
+- JDK baseline tracks the kernel's GA LTS: release 25, emitted class-file major ≤ 69 (ADR-069).
 - ui-kit is npm-only, NOT in Maven reactor.
 - Maven Central distribution (NOT GitHub Packages) — Sonatype Central Portal.
 - Field/Validation canonical scoping respected (`required`, `inCreate`, `inUpdate` on `@Field`; constraint rules on `@Validation`).

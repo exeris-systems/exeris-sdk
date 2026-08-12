@@ -81,7 +81,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>26</maven.compiler.source>
         <maven.compiler.target>26</maven.compiler.target>
-        <maven.compiler.release>26</maven.compiler.release>
+        <!-- JDK 25 LTS — the kernel's GA baseline (ADR-069, following kernel ADR-066).
+             Do not raise above the kernel's baseline: these jars sit on a consumer's
+             compile classpath, and a higher class-file major locks out the LTS-only
+             deployments the kernel deliberately admitted. ClassFileBaselineTest guards
+             the emitted major, not this property. -->
+        <maven.compiler.release>25</maven.compiler.release>
         <maven.build.timestamp.format>yyyyMMdd-HHmmss</maven.build.timestamp.format>
 
         <!-- Coverage gate for modules that opt in via jacoco:check execution.

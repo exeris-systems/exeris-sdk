@@ -1,6 +1,6 @@
 ---
 name: exeris-sdk-implementer
-description: Delivery agent for exeris-sdk. Use to implement annotation `@interface` code, AST record code, UI kit TS/CSS, BOM/parent pom changes while preserving zero runtime coupling, AST wire-format contract, and JDK 26 floor.
+description: Delivery agent for exeris-sdk. Use to implement annotation `@interface` code, AST record code, UI kit TS/CSS, BOM/parent pom changes while preserving zero runtime coupling, AST wire-format contract, and the JDK baseline (ADR-069).
 tools: Read, Edit, Write, Bash, Grep, Glob, WebFetch, TodoWrite
 model: inherit
 ---
@@ -22,7 +22,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 - All AST types are records — Jackson 3 needs accessors it recognises as getters (records win this for free).
 - Boxed-numeric fields with `@JsonInclude(NON_DEFAULT)`: avoid `0` as a meaningful value (Jackson 3 drops it).
 - Records use primitive booleans with `FAIL_ON_NULL_FOR_PRIMITIVES=false` consumer contract (documented in `eu.exeris.sdk.sourcemodel.ast` package-info).
-- `maven.compiler.release=26` across the reactor — do not lower.
+- `maven.compiler.release=25` across the reactor (ADR-069, the kernel's GA LTS) — do not raise it above the kernel's baseline, and do not lower it below what the sources need.
 - ui-kit: TS strict, Vitest tests; 85% per-file coverage on lines / statements / functions / branches.
 - Source-model: 85% BUNDLE-level instruction + line gate via JaCoCo (`jacoco-maven-plugin` ≥ 0.8.14).
 - When removing / renaming public API: apply deprecation pipeline (`@Deprecated(forRemoval = true)` + javadoc replacement pointer + processor fallback-with-warning ≥ 1 minor release + `MIGRATION.md` entry).

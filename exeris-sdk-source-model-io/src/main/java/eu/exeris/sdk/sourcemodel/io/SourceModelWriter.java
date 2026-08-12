@@ -45,9 +45,10 @@ import java.util.Optional;
  * solving, which this module deliberately avoids. {@code @ExerisDomain} is
  * matched by simple name. Instances are <b>not thread-safe</b> (single
  * {@code JavaParser}); use one per call-site or guard externally. The parser
- * language level is JavaParser's {@code CURRENT} (Java 21 in 3.28.x); Java 26
- * added no new grammar, so entity-shaped sources parse, but revisit when a
- * 26-aware JavaParser ships.
+ * language level is JavaParser's {@code CURRENT} (Java 21 in 3.28.x); neither the
+ * JDK 25 LTS baseline (ADR-069) nor the JDK 26 the reactor also builds against
+ * added grammar an entity-shaped source uses, so those sources parse — revisit
+ * when JavaParser ships a level matching the baseline.
  *
  * @since 0.3.0
  */

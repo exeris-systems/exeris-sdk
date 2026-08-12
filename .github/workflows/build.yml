@@ -16,7 +16,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['26']
+        # 25 is the release-bearing row — the kernel's GA baseline (ADR-069), and
+        # the toolchain a published artifact must come from. 26 stays as a
+        # forward-compatibility row: it catches source that stops compiling on a
+        # newer JDK, which a single-row matrix would surface only downstream.
+        java: ['25', '26']
 
     steps:
       - name: Checkout

@@ -144,7 +144,8 @@
  *
  * <h2>Architecture Principles</h2>
  * <ul>
- *   <li><strong>Java 26 Only:</strong> Built for Virtual Threads (Project Loom)</li>
+ *   <li><strong>Java 25 LTS baseline:</strong> follows the kernel's GA line (ADR-069);
+ *       the kernel is virtual-thread-first (Project Loom)</li>
  *   <li><strong>Schema-First:</strong> Annotations define contracts, code is generated</li>
  *   <li><strong>Hyper-Density:</strong> Optimized for minimal resource usage</li>
  *   <li><strong>Multi-Tenant Native:</strong> Built-in tenant isolation via PostgreSQL RLS</li>

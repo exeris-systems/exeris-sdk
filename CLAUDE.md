@@ -38,24 +38,26 @@ npm ci && npm test                # Vitest run
 npm run test:coverage             # also enforces 85% per-file gate
 ```
 
-CI runs `mvn -B -ntp verify` on JDK 26 (Temurin) and then `npm ci && npm run test:coverage` in the ui-kit, for push and PRs to `main` (`.github/workflows/build.yml`). The JaCoCo HTML report and the v8 lcov for ui-kit are uploaded as build artifacts.
+CI runs `mvn -B -ntp verify` on JDK 25 LTS (Temurin — the release-bearing row) and JDK 26 (forward-compatibility row) and then `npm ci && npm run test:coverage` in the ui-kit, for push and PRs to `main` (`.github/workflows/build.yml`). The JaCoCo HTML report and the v8 lcov for ui-kit are uploaded as build artifacts.
 
 ### Coverage gates
 
-- **`exeris-sdk-source-model`** — `jacoco-maven-plugin` ≥ 0.8.14 (earlier versions reject Java 26 class file v70). Bound to `verify` with a **0.85 BUNDLE-level** threshold on both `INSTRUCTION` and `LINE` counters. Configured in `exeris-sdk-source-model/pom.xml`; thresholds are properties (`jacoco.instruction.coverage.minimum`, `jacoco.line.coverage.minimum`) so a per-build override is possible without editing the pom (e.g. for a one-off debug `-Djacoco.instruction.coverage.minimum=0`). The pluginManagement entry + agent/report executions live in the root `pom.xml` and `exeris-sdk-parent/pom.xml`.
+- **`exeris-sdk-source-model`** — `jacoco-maven-plugin` ≥ 0.8.14 (earlier versions reject Java 26 class file v70; the baseline is v69 as of ADR-069, so this is no longer load-bearing — but downgrading buys nothing). Bound to `verify` with a **0.85 BUNDLE-level** threshold on both `INSTRUCTION` and `LINE` counters. Configured in `exeris-sdk-source-model/pom.xml`; thresholds are properties (`jacoco.instruction.coverage.minimum`, `jacoco.line.coverage.minimum`) so a per-build override is possible without editing the pom (e.g. for a one-off debug `-Djacoco.instruction.coverage.minimum=0`). The pluginManagement entry + agent/report executions live in the root `pom.xml` and `exeris-sdk-parent/pom.xml`.
 - **`exeris-sdk-annotations`** — the gate is **deliberately not applied** to this module. The annotation `@interface` declarations have no method bodies, so JaCoCo reports 0 covered instructions (with thousands of synthetic accessor instructions in the denominator) and the metric is meaningless. Instead the module has `AnnotationContractTest`, which discovers every annotation by classpath reflection and asserts (a) `@Retention(SOURCE)` and (b) presence of `@Target` across both the root package and the `system` / `security` subpackages. This is the actual invariant that downstream consumers depend on; if you add a new annotation, the test picks it up automatically.
 - **`exeris-sdk-ui-kit`** — Vitest with the v8 coverage provider, **85% per-file** thresholds on lines / statements / functions / branches. Coverage scope is `src/**/*.ts` + `tailwind.preset.js`; the rest of the package is CSS, which Vitest cannot meaningfully measure.
 
 When a test for `eu.exeris.sdk.sourcemodel.ast` adds new uncovered branches, prefer expanding `AstJsonRoundTripTest` (for wire-format concerns) or the focused `<Type>MetadataTest` class (for builder / convenience-method concerns) over introducing a parallel test class.
 
-### JDK 26 is not negotiable
+### The JDK baseline follows the kernel's GA line — JDK 25 LTS
 
-`maven.compiler.release=26` across the reactor. Even though SDK code itself only uses records / sealed types (21-era features), the version floor is fixed at 26 because:
+`maven.compiler.release=25` across the reactor (ADR-069, following kernel ADR-066). These jars sit on a consumer's **compile** classpath, so the rule runs in both directions:
 
-- The downstream processor (`exeris-tooling/exeris-processor`) runs in the same `javac` invocation as a consumer's project — its Java version cannot lag the kernel it generates code for.
-- The kernel (`exeris-kernel`) requires Virtual Threads (with the JDK 24 `synchronized`-pinning fix) and Foreign Function & Memory API.
+- **Do not raise it above the kernel's GA baseline.** A major-70 class is refused outright by `javac` on JDK 25 ("class file has wrong version 70.0, should be 69.0"), which locks out the LTS-only deployments the kernel deliberately admitted. The floor follows the kernel; it does not lead it.
+- **Do not lower it below what the SDK's own sources need** (records / sealed types, 21-era). 21 is not a target: it would put the SDK below the kernel's baseline, the same mismatch pointing the other way.
 
-Do not "fix" build failures by lowering `maven.compiler.release`. If a contributor reports a 21-LTS build failure, the answer is "build the Exeris module on 26 and consume it over the wire," not a backport. The rationale is in `README.md` and `ROADMAP.md` — keep them aligned if it changes.
+`ClassFileBaselineTest` guards the **emitted class-file major** (≤ 69) rather than the property — the stamp is what a consumer trips over, and a module-level `<release>` or a plugin default that re-raises the target would not be caught by asserting on the property. Verified non-vacuous by building at 26.
+
+This was `26` until 0.10.0, on the stated rationale that the kernel required it. Kernel ADR-066 measured that premise false ("the `26` in the build was never load-bearing") and moved to 25 LTS; the SDK followed before the 1.0.0 freeze so that GA covers an artifact an LTS consumer can accept. `exeris-tooling` has its own baseline and its own decision — the SDK half is a prerequisite, not a substitute. If the baseline changes again, keep `README.md`, `ROADMAP.md` and ADR-069 aligned.
 
 ### ui-kit is npm-only
 
