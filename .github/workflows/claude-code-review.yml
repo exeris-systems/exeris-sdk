@@ -42,29 +42,87 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Review this PR. The repo is a Java 25 LTS / Maven project in the Exeris
-            open-core stack.
+            Review this PR. The repo is `exeris-sdk` — the upstream-most repo in
+            the Exeris open-core stack, Java 25 LTS / Maven, plus a standalone npm
+            ui-kit. It ships pure annotations and a canonical AST that downstream
+            repos (processor, codegen, LSP) compile against, so its contracts
+            break other people's builds, not its own runtime.
+
+            Read `CLAUDE.md` first. It documents the invariants below and is the
+            authority where this prompt and the repo disagree.
 
             Focus on:
-            1. **Correctness** — bugs, edge cases, broken contracts, merge artifacts
-               (duplicated sections, orphan blocks, etc.)
-            2. **Scope** — does the diff match the PR title/description? Anything
-               in scope that's missing? Anything out of scope that should be split?
-            3. **Public API** — flag anything that would need deprecation handling
-               before 1.0.0 freezes the contract
-            4. **Build / publish** — POM correctness, missing javadoc/sources jars
-               on publishable modules, Maven Central metadata gaps
-            5. **Risk** — call out functional, security, performance risks
-               explicitly (state "none" if applicable; don't pad)
+
+            1. **Correctness** — bugs, edge cases, broken contracts, merge
+               artifacts (duplicated sections, orphan blocks, references to files
+               the PR deletes).
+
+            2. **Repo invariants** — the documented failure modes, in rough order
+               of how expensive they are to discover downstream:
+               - *Zero runtime coupling.* Annotations stay `@Retention(SOURCE)`
+                 and carry no compile-time deps; `exeris-sdk-source-model` pulls
+                 only `jackson-annotations`. No kernel / tooling / platform /
+                 Spring type may enter any module, even transitively.
+               - *AST wire format.* Every `eu.exeris.sdk.sourcemodel.ast.*` type
+                 must stay a **record** — Jackson 3 silently drops fields from a
+                 class with record-style accessors. A new record or component
+                 needs an `AstJsonRoundTripTest` case; a new `MutationOp` /
+                 `MutationResult` variant needs a `MutationWireFormatTest` case
+                 **and** its `@JsonSubTypes` entry. Under class-level
+                 `@JsonInclude(NON_DEFAULT)` a boxed `0` is dropped on
+                 serialization — a new boxed-numeric component where zero is
+                 meaningful needs per-component `NON_NULL`.
+               - *Field/Validation canonical scoping.* `@Field` owns shape and
+                 lifecycle (`required`, `inCreate`, `inUpdate`); `@Validation` is
+                 the sole declaration site for constraints; `FieldMetadata` is the
+                 single AST carrier. Flag any constraint attribute reappearing on
+                 `@Field`, and any parallel AST validation carrier — that shape
+                 was removed in 0.9.0 (ADR-054) and must not come back.
+               - *JDK baseline.* `maven.compiler.release` stays 25 and the emitted
+                 class-file major stays ≤ 69 (ADR-069). These jars sit on a
+                 consumer's compile classpath; a major-70 class is refused
+                 outright by `javac` on JDK 25.
+               - *Jackson version pairing.* `jackson.version` (3.x, databind) and
+                 `jackson.annotations.version` (2.x) are deliberately on separate
+                 tracks, pinned by the matching `jackson-bom`. Flag any attempt to
+                 unify them onto one number.
+
+            3. **Public API & stability** — 1.0.0 freezes the contract. Flag
+               anything removed, renamed, or moved between canonical annotations
+               without the deprecation pipeline in `MIGRATION.md`
+               (`@Deprecated(forRemoval = true)`, documented replacement,
+               processor fallback window).
+
+            4. **Test coverage of the change** — new branches in
+               `exeris-sdk-source-model` belong in `AstJsonRoundTripTest` (wire
+               format) or the focused `<Type>MetadataTest` (builders /
+               convenience), not a parallel test class. New annotations are picked
+               up automatically by `AnnotationContractTest`. ui-kit changes face a
+               Vitest 85% per-file gate.
+
+            5. **Build & publish** — POM correctness; publishable modules must
+               attach `-sources` and `-javadoc` jars. Note that Maven Central
+               publishing is deliberately **not** wired yet (the SDK does not move
+               to Central before the kernel does), so absent Central release
+               wiring is the intended state, not a gap to report.
+
+            6. **Scope** — does the diff match the PR title and description?
+               Anything in scope that's missing, or out of scope that should be
+               split?
+
+            7. **Risk** — functional, security, performance. State "none" when
+               that's the answer; do not pad.
 
             Skip cosmetic nits unless they affect the above. Be specific: cite
-            `file:line`. Lead with blockers, then in-scope improvements, then
+            `file:line`, and say what breaks rather than that something "could be
+            improved". Lead with blockers, then in-scope improvements, then
             non-blocking suggestions. End with a clear verdict
             (LGTM / Approve with nits / Request changes).
 
-            Post your review as a single PR review (not many separate comments).
-            Use inline comments only when they materially help — file:line in the
-            text body is usually clearer.
+            Post your findings as a single comment. Use inline comments only when
+            a specific line needs the annotation to make sense — `file:line` in
+            the body is usually clearer. Do not split the review across several
+            top-level comments.
 
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(git log:*),Bash(git show:*),Bash(git diff:*),Bash(git status:*),Bash(git branch:*),Bash(git remote:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git log:*),Bash(git show:*),Bash(git diff:*),Bash(git status:*),Bash(git branch:*),Bash(git remote:*)"
