@@ -80,10 +80,11 @@
  * <h2>Quick start</h2>
  *
  * <h3>1. Resolve the artifacts</h3>
- * <p>There are no {@code eu.exeris} artifacts on Maven Central yet — Central
- * publishing is wired but deliberately not switched on before the kernel moves
- * (see the repository {@code README.md}). Until then, build the SDK from source
- * and consume the local install:
+ * <p>There are no {@code eu.exeris} artifacts on Maven Central yet. The Central
+ * Portal endpoints are wired in the root POM, but publishing is deliberately not
+ * switched on before the kernel moves — an ecosystem sequencing decision.
+ * Releases ship as a git tag plus a GitHub Release. Until that changes, build the
+ * SDK from source and consume the local install:
  * <pre>{@code
  * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk && mvn -q install
  * }</pre>
