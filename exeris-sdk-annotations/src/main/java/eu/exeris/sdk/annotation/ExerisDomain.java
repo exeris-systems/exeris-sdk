@@ -3,16 +3,26 @@ package eu.exeris.sdk.annotation;
 import java.lang.annotation.*;
 
 /**
- * Marks a class as an Exeris domain entity (aggregate root).
- * <p>This is the primary annotation that enables code generation for:
+ * Marks a class as an Exeris domain entity (aggregate root) — the root of the
+ * build-time generation chain.
+ *
+ * <p><strong>Status: LIVE.</strong> This annotation is extracted by the
+ * {@code exeris-tooling} processor and by the SDK's own {@code -io} reader, and
+ * drives every emitter. Individual attributes below carry their own status —
+ * see the status vocabulary in the {@linkplain eu.exeris.sdk.annotation package
+ * documentation}; not every attribute of a LIVE annotation is itself LIVE.
+ *
+ * <p>What the toolchain emits from an annotated class today:
  * <ul>
- *   <li>REST API controllers and endpoints</li>
- *   <li>GraphQL schema and resolvers</li>
- *   <li>Service layer with business logic</li>
- *   <li>Repository with dynamic queries</li>
- *   <li>DTOs and mappers</li>
- *   <li>Angular components and services</li>
+ *   <li>REST handler, service layer, and repository with dynamic queries</li>
+ *   <li>A Flyway migration for the entity table</li>
+ *   <li>The OpenAPI document for the emitted REST surface</li>
+ *   <li>TypeScript types and Angular service / form / list components</li>
+ *   <li>Domain event, event handler, saga driver, and graph-sync writer where
+ *       the corresponding annotations are present</li>
  * </ul>
+ * <p>There is <strong>no</strong> GraphQL emitter in the toolchain;
+ * {@link #graphqlApi()} reaches the AST and is read by no generator.
  *
  * <h2>Minimal Example:</h2>
  * <pre>{@code
@@ -27,41 +37,37 @@ import java.lang.annotation.*;
  * }</pre>
  *
  * <h2>Full Example with System Fields:</h2>
+ * <p>System columns are derived from the <em>entity-level flags</em> below. The
+ * {@code eu.exeris.sdk.annotation.system} annotations ({@code @PrimaryKey},
+ * {@code @TenantId}, {@code @SoftDelete}, {@code @Version}, {@code @Audit*}) are
+ * RESERVED — no reader extracts them, so adding them changes nothing. They are
+ * omitted here deliberately, so that the example shows what actually generates
+ * the columns:
  * <pre>{@code
  * @ExerisDomain(
  *     module = "sales",
  *     path = "/orders",
- *     tenantScoped = true,
- *     softDelete = true,
- *     audited = true,
- *     versioned = true
+ *     dataScope = ExerisDomain.DataScope.TENANT,   // tenant column + RLS policy + query filter
+ *     softDelete = true,                           // deleted_at column + filtered reads
+ *     audited = true,                              // created/updated audit columns
+ *     versioned = true                             // optimistic-locking version column
  * )
  * public class Order {
  *     @Field(label = "ID")
- *     @PrimaryKey
  *     private UUID id;
  *
- *     @Field(label = "Organization")
- *     @TenantId
- *     private UUID organizationId;
+ *     @Field(label = "Order Number", required = true, unique = true)
+ *     @Validation(minLength = 3, maxLength = 32)   // sibling, never nested inside @Field
+ *     private String orderNumber;
  *
- *     @Field(label = "Archived")
- *     @SoftDelete
- *     private boolean archived;
- *
- *     @Field(label = "Version")
- *     @Version
- *     private Long version;
- *
- *     @Field(label = "Created At")
- *     @AuditCreatedAt
- *     private Instant createdAt;
+ *     @Field(label = "Status", filterable = true)
+ *     private OrderStatus status;
  * }
  * }</pre>
+ * <p>The class needs no superclass — the SDK ships no base entity type.
  *
  * @author Exeris SDK Team
- * @version 2.0.0
- * @since 1.0.0
+ * @since 0.1.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -136,9 +142,20 @@ public @interface ExerisDomain {
     boolean restApi() default true;
 
     /**
-     * Whether to generate GraphQL schema and resolvers.
+     * Whether to generate a GraphQL schema and resolvers.
      *
-     * @return true to generate GraphQL API
+     * <p><strong>Status: PARTIAL.</strong> The value is extracted into
+     * {@code DomainMetadata} and survives the wire, but there is no GraphQL
+     * emitter anywhere in {@code exeris-tooling} — no generator reads it, so
+     * setting it to {@code true} produces nothing. It is kept as the declared
+     * intent for a GraphQL emitter rather than removed, so that domains which
+     * already express the intent do not have to be rewritten when one lands.
+     *
+     * <p>Unrelated to the {@code @Graph} / {@code @GraphEdge} /
+     * {@code @GraphProperty} family, which describes projection into a graph
+     * <em>database</em>.
+     *
+     * @return true to declare a GraphQL API — currently with no generated effect
      */
     boolean graphqlApi() default false;
 

@@ -4,11 +4,30 @@ import java.lang.annotation.*;
 
 /**
  * Configures UI component generation for Exeris domain entities and fields.
- * <p>This annotation can be used at two levels:
+ *
+ * <p><strong>Status: PARTIAL, and the two levels differ. Read this before
+ * writing {@code @UI} anywhere.</strong>
  * <ul>
- *   <li><strong>Entity level:</strong> Defines which views should be generated (list, detail, forms)</li>
- *   <li><strong>Field level:</strong> Configures how a field should be displayed in the UI</li>
+ *   <li><strong>Entity level</strong> — applied as a sibling of the annotated
+ *       type, the view flags ({@code listView}, {@code detailView},
+ *       {@code createForm}, {@code editForm}, {@code searchable},
+ *       {@code filterable}, {@code exportable}) are extracted into
+ *       {@code UIMetadata} and reach the AST. No emitter gates on them: which
+ *       Angular artifacts are generated is a codegen CLI setting, not an
+ *       annotation. The only {@code UIMetadata} member a generator reads is
+ *       {@code listColumns}, and no {@code @UI} attribute populates it. So the
+ *       flags are honest design intent that currently changes nothing emitted.</li>
+ *   <li><strong>Field level</strong> — RESERVED. No reader extracts a
+ *       field-level {@code @UI} in either form, so none of the attributes below
+ *       ({@code componentType}, {@code displayInList}, {@code displayOrder},
+ *       {@code placeholder}, {@code width}, {@code format}, …) has any effect
+ *       today. They are the declared shape of the leaf field facet described
+ *       under "Successor" below.</li>
  * </ul>
+ * <p>Both levels are read <strong>only in the sibling form</strong>. The nested
+ * members {@code @ExerisDomain(ui = @UI(...))} and {@code @Field(ui = @UI(...))}
+ * compile and are looked at by nobody — see "The nested-form trap" in the
+ * {@linkplain eu.exeris.sdk.annotation package documentation}.
  *
  * <p><strong>Successor:</strong> {@code @View} and the unified presentation IR
  * ({@code ViewMetadata}, RFC-2026-06-25) are the single presentation model into
@@ -17,51 +36,57 @@ import java.lang.annotation.*;
  * field facet of {@code ViewMetadata} (the {@code UIMetadata.UIFieldMetadata}
  * record). {@code @View} structural generation is live (tooling processor
  * extraction + the codegen-ts Angular view generator, RFC-2026-06-28), but the
- * ADR-047 leaf-field facet subsumption is not implemented yet — so {@code @UI}
- * remains the functional field-level path and is <em>not</em> deprecated in
- * 0.9.0 (the rule: {@code @Deprecated(forRemoval)} runs only once {@code @View}
- * can actually replace it). Consequence: with 1.x minors additive-only,
- * {@code @UI} is frozen through the 1.x line; the deprecation is targeted at
- * the 1.x minor where the ADR-047 facet completes, with removal at 2.0. See
- * RFC-2026-06-25 for the convergence plan.
+ * ADR-047 leaf-field facet subsumption is not implemented yet. {@code @UI} is
+ * therefore <em>not</em> deprecated — the rule is that
+ * {@code @Deprecated(forRemoval)} runs only once {@code @View} can actually
+ * replace it, and the facet it would be replaced by does not exist. That is a
+ * reason to keep the annotation, not evidence that it works: neither level
+ * currently produces output, and the field level is not extracted at all.
+ * Consequence: with 1.x minors additive-only, {@code @UI} is frozen through the
+ * 1.x line; the deprecation is targeted at the 1.x minor where the ADR-047 facet
+ * completes, with removal at 2.0. See RFC-2026-06-25 for the convergence plan.
  *
- * <h2>Entity-Level Usage (within @ExerisDomain):</h2>
+ * <h2>Entity-Level Usage — sibling of the annotated type</h2>
+ * <p>The flags reach {@code UIMetadata}; no emitter gates on them yet.
  * <pre>{@code
- * @ExerisDomain(
- *     module = "sales",
- *     aggregate = "Order",
- *     ui = @UI(
- *         listView = true,        // Generate list/table view
- *         detailView = true,      // Generate detail/view page
- *         createForm = true,      // Generate create form
- *         editForm = true,        // Generate edit form
- *         searchable = true,      // Add search functionality
- *         filterable = true,      // Add filter panel
- *         exportable = true       // Add export (CSV, Excel, PDF)
- *     )
+ * @ExerisDomain(module = "sales", aggregate = "Order", path = "/orders")
+ * @UI(                        // sibling — NOT @ExerisDomain(ui = @UI(...))
+ *     listView = true,        // intent: generate list/table view
+ *     detailView = true,      // intent: generate detail/view page
+ *     createForm = true,      // intent: generate create form
+ *     editForm = true,        // intent: generate edit form
+ *     searchable = true,
+ *     filterable = true,
+ *     exportable = true
  * )
  * public class Order { }
  * }</pre>
+ * <p>Note the reader convention: when a standalone {@code @UI} is present, the
+ * four view flags default to {@code true} and {@code exportable} to
+ * {@code false} — "you added {@code @UI}, so the views are on" — which is
+ * stronger than the per-attribute defaults declared on this annotation.
  *
- * <h2>Field-Level Usage (within @Field):</h2>
+ * <h2>Field-Level Usage — RESERVED, no reader</h2>
+ * <p>Shown in the sibling form for when a reader lands. Neither this nor the
+ * nested {@code @Field(ui = @UI(...))} form is extracted today:
  * <pre>{@code
- * @Field(
- *     label = "Order Number",
- *     ui = @UI(
- *         displayInList = true,       // Show in list view
- *         displayInDetail = true,     // Show in detail view
- *         editableInForm = true,      // Allow editing in forms
- *         displayOrder = 1,           // Display position (1 = first)
- *         componentType = ComponentType.TEXT_INPUT,
- *         width = "200px",
- *         format = "uppercase"        // Text transformation
- *     )
+ * @Field(label = "Order Number")
+ * @UI(                                  // sibling — and currently a no-op
+ *     displayInList = true,
+ *     displayInDetail = true,
+ *     editableInForm = true,
+ *     displayOrder = 1,
+ *     componentType = ComponentType.TEXT_INPUT,
+ *     width = "200px",
+ *     format = "uppercase"
  * )
  * private String orderNumber;
  * }</pre>
  *
  * <h2>Component Types:</h2>
- * <p>The {@code componentType} attribute determines which Angular component is generated:
+ * <p>The {@code componentType} attribute names which Angular component a
+ * field-level reader would generate. RESERVED along with the rest of the
+ * field-level surface — no component is selected from it today:
  * <ul>
  *   <li>{@code TEXT_INPUT} - Standard text input field</li>
  *   <li>{@code TEXT_AREA} - Multi-line text area</li>
