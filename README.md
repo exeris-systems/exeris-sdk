@@ -37,6 +37,22 @@ The model lives here, not in tooling, because every consumer must agree on the s
 shape of a domain. Tooling and platform depend on `exeris-sdk-source-model`; the SDK
 never depends on them.
 
+## Documentation
+
+Start with the [**user guide**](docs/guide/) — how to annotate, what the toolchain
+emits, and a per-annotation status matrix saying which of the 938 declared
+attributes actually reach a generator.
+
+| | |
+|---|---|
+| [Getting started](docs/guide/01-getting-started.md) | Resolve artifacts, annotate, generate, read the output. |
+| [Modelling an entity](docs/guide/02-modelling-an-entity.md) | `@ExerisDomain`, `@Field`, `@Validation`, `@Relationship`, `@Action`. |
+| [Behaviour and presentation](docs/guide/03-behaviour-and-presentation.md) | Events, sagas, `@View`, `@UI`, capabilities. |
+| [Status matrix](docs/guide/04-status-matrix.md) | LIVE / PARTIAL / RESERVED / DEPRECATED, per attribute, with evidence. |
+
+Also: [`MIGRATION.md`](MIGRATION.md) for deprecations and their removal releases,
+[`ROADMAP.md`](ROADMAP.md) for what each release added and what 1.0.0 freezes.
+
 ## Requirements
 
 - JDK 25 LTS

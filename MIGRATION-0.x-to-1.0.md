@@ -35,11 +35,18 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
 
 ## 2. What is deliberately NOT removed (carried through 1.x)
 
-- **`@UI`** — stays the functional field-level presentation path. The `@View`
-  structural generation is live, but the ADR-047 leaf-field facet is not
-  implemented yet, so the deprecation gate never opened in 0.x. Plan of
-  record: facet lands in a 1.x minor → `@UI` gains `@Deprecated(forRemoval)`
-  there → removal at 2.0.
+- **`@UI`** — carried, but not for the reason this entry used to give. It said
+  `@UI` "stays the functional field-level presentation path"; there is no such
+  path. `extractUIMetadata` is called from the entity extraction path only, so
+  field-level `@UI` is not extracted in either the sibling or the nested form,
+  and the entity-level view flags reach `UIMetadata` and are read by no emitter
+  (which Angular artifacts get generated is a codegen CLI setting). The
+  conclusion is unchanged and the premise was wrong: `@View` structural
+  generation is live, the ADR-047 leaf-field facet is not implemented, and the
+  deprecation gate never opened because there is nothing to deprecate `@UI` in
+  favour of — which is not the same as `@UI` working. Plan of record is
+  unaffected: facet lands in a 1.x minor → `@UI` gains `@Deprecated(forRemoval)`
+  there → removal at 2.0. See [the status matrix](docs/guide/04-status-matrix.md#ui--38-declared).
 - ~~**`@ExerisDomain.tenantScoped`**~~ — **moved to §1.** This entry used to
   read "frozen as a boolean through 1.x; the `DataScope` successor is gated on
   the kernel ADR-012 amendment and arrives additively in 1.x". That amendment
@@ -141,8 +148,12 @@ freeze or is explicitly re-dispositioned here.
   `@InternalApi`'s five attributes are inert (documented SDK↔AST drift);
   graph sub-annotations (`@GraphEdge` / `@GraphProperty` / `@GraphQuery`) and
   `@QueryParam` are unextracted with no AST twin.
-- [ ] **Tooling lockstep debt at the freeze** — `@Relationship.relationshipType`
-  extraction bug (processor reads key `"type"`); the reserved-surface
+- [ ] **Tooling lockstep debt at the freeze** — ~~`@Relationship.relationshipType`
+  extraction bug (processor reads key `"type"`)~~ **resolved upstream in tooling
+  `add5505`, verified 2026-08-05; see the ROADMAP entry for what made this line
+  stale.** Still open: `@ActionParam.label`, read under the non-existent key
+  `"displayName"` (`ExerisDomainProcessor:1405`) — the same annotation-key vs
+  AST-key shape, in the same file; the reserved-surface
   extraction flips (`@SagaTransition`, `@Derived`/`@Rule`, `@EventHandler`,
   `@Projection`) each need their coordinated processor + `-io` reader flip
   (ADR-042) as they come live.
