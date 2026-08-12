@@ -32,9 +32,25 @@ public enum DataScope {
      * Shared world — rows owned by a tenant but readable across tenants; reads
      * widen beyond the owning tenant, writes stay pinned to it.
      *
-     * <p><strong>Reserved:</strong> no generator consumes this tier yet, so it
-     * carries author intent without generated effect. See the Open-Core status
-     * note on {@code @ExerisDomain.dataScope()}.
+     * <p><strong>Open-Core status — consumed today, but narrower than
+     * declared:</strong> this tier is not inert, and reading it as "declared
+     * and does nothing" is the dangerous misreading. Every emitter asks one
+     * predicate — {@code DataScopeSupport.isTenantPartitioned}, which answers
+     * {@code effectiveDataScope() != GLOBAL} and is therefore {@code true} for
+     * {@code UNIVERSE} ({@code exeris-tooling}
+     * {@code exeris-codegen-java/.../support/DataScopeSupport.java:48-50}) — so
+     * a {@code UNIVERSE} entity generates the full {@link #TENANT} shape:
+     * owner column, owner-pinned RLS policy, owner index, tenant migration
+     * tier. The untranscribed half is only the cross-tenant read-widening, i.e.
+     * the mapping onto the kernel {@code sharedScopeKey} /
+     * {@code SHARED_WORLD} carrier. Output is thus strictly narrower than
+     * declared and never wider, which is the deliberate choice: an
+     * "is {@code TENANT}" test would have routed {@code UNIVERSE} down the
+     * {@link #GLOBAL} path and published rows the author scoped to an owner.
+     * The processor emits a build warning naming exactly this on every entity
+     * that declares the tier ({@code ExerisDomainProcessor.java:817-826}). See
+     * the Open-Core status note on {@code @ExerisDomain.dataScope()}, and
+     * ADR-059.
      */
     UNIVERSE
 }

@@ -73,11 +73,34 @@ reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after
 upgrading. This is the standard posture (refuse a cross-shape baseline rather
 than assume compatibility), not a signal that anything is wrong.
 
-**`-io` reader parity is deliberately deferred.** The reader reads what the
-processor writes (ADR-042); the `exeris-tooling` processor does not extract
-`dataScope` yet, so the reader would manufacture drift. Parity lands lockstep
-with the processor. The reader's `unmodeledFacets()` guard is unaffected — it
-keys on annotation types, not attributes.
+**`-io` reader parity landed in the same release, after the processor.** The
+reader reads what the processor writes (ADR-042), so extraction could not be
+correct before the `exeris-tooling` slice existed; once it did, the reader
+gained `dataScope` with the processor's exact behaviour — `UNSPECIFIED` and any
+unrecognised constant read as *absent*, so both paths fall through
+`effectiveDataScope()`'s `tenantScoped` fallback rather than inventing a fourth
+tier. The reader's `unmodeledFacets()` guard is unaffected — it keys on
+annotation types, not attributes.
+
+### `@GraphEdge` can now be repeated outside the SDK's package
+
+**Impact:** none on existing sources — this only removes a compile error. The
+`@GraphEdges` container was package-private, so repeating `@GraphEdge` from any
+other package failed with "`GraphEdges.value()` is defined in an inaccessible
+class or interface" (the compiler requires a container to be at least as
+accessible as its repeatable annotation). The container is `public` as of
+0.10.0, keeping the same FQN — it moved to its own `GraphEdges.java`, which is
+a source-file reorganisation, not an API change.
+
+**What it does not change:** `@GraphEdge` is extracted by neither the processor
+nor the `-io` reader, so a repeated — or single — edge declaration still
+produces an empty edge list on `GraphMetadata`. If you worked around this by
+hand-writing a container or by collapsing edges onto one annotation, both forms
+are equally inert today; the workaround can go, but nothing starts generating.
+
+This is the same defect fixed for `@SagaSteps` in 0.9.0. `AnnotationContractTest`
+now asserts the rule for every `@Repeatable` in the SDK, so the class is closed
+rather than the instance.
 
 ---
 

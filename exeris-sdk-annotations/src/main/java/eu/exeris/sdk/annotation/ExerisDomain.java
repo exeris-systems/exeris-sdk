@@ -326,9 +326,22 @@ public @interface ExerisDomain {
      * is written against the kernel by hand. Kernel ADR-061 changes that by
      * making route authorization a declarable, path-shaped policy behind an
      * {@code Optional} slot on {@code HttpKernelProviders} — the first surface
-     * these attributes could actually generate into. Wiring them is a
+     * {@link #permissions()} could actually generate into. Wiring it is a
      * {@code exeris-tooling} slice against a preview-tier SPI, so it is a 1.x
      * item, not a pre-1.0 one; see {@code ROADMAP.md}.
+     *
+     * <p><strong>Roles specifically have no destination even after ADR-061.</strong>
+     * {@code RouteRequirement} declares no role kind — it decides through
+     * {@code PrincipalContext.hasScope} and nothing else — and ADR-063
+     * (owned by {@code exeris-spring-runtime}) deliberately keeps
+     * {@code hasRole(...)} out of the edge DSL rather than inventing a
+     * {@code ROLE_x}-to-scope convention, because that would put a second,
+     * silently-diverging authority model at the edge. Roles resolve at the
+     * <em>method</em> level, through {@code @RequiresRole} against a build-time
+     * {@code methodId} the kernel cannot derive from a URL. So a path-shaped
+     * route policy is a destination for {@code permissions} and not for this
+     * attribute; what {@code roles} would compile into, if anything, is
+     * undecided.
      *
      * @return array of role names
      */
@@ -339,7 +352,10 @@ public @interface ExerisDomain {
      *
      * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> declared but
      * not extracted, on the same terms as {@link #roles()} — see that attribute
-     * for why, and for the kernel contract it would map onto.
+     * for why. Of the two, this is the half with a destination: the kernel's
+     * {@code RouteRequirement} decides on named scopes, so a permission is what
+     * a generated URL-to-policy table could carry. That table is
+     * {@code exeris-tooling}'s to emit and is not built.
      *
      * @return array of permission names
      */

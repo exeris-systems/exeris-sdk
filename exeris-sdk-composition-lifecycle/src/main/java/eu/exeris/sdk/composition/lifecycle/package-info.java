@@ -20,12 +20,21 @@
  * <p>The zero-dependency contract is enforcer-proven: the module's build bans every
  * compile/runtime-scope dependency (test scope exempt).
  *
- * <h2>Call-site status</h2>
- * <p>Invoked by the SKU bootstrap inside {@code KernelBootstrap.boot(kernelMain)}, after
- * {@code KERNEL READY} (ADR-024, 2026-07-21 amendment). The generated SKU bootstrap that emits this
- * call site ships with the {@code exeris-tooling} bootstrap emitter (gateway-caps plan, Phase 1/2);
- * until then a hand-written SKU entrypoint invokes the conductor directly — the library contract is
- * identical in both cases.
+ * <h2>Call-site status — generated for a composed build</h2>
+ * <p>The hooks are invoked by the boot conductor, and the conductor's call site is
+ * <em>generated</em>: {@code exeris-tooling}'s {@code KernelApplicationGenerator} emits
+ * {@code try (CompositionConductor conductor = CompositionConductor.from(capManifest()).start())}
+ * inside {@code KernelBootstrap.boot(...)} — after {@code KERNEL READY}, never as a kernel
+ * {@code Subsystem} (ADR-024, 2026-07-21 amendment; {@code KernelApplicationGenerator.java:449-458},
+ * pinned end-to-end by {@code CapCompositionE2ETest.java:145-150}).
+ *
+ * <p><b>The one case with no generated call site is a cap-less build.</b> The emitter is gated on
+ * the project declaring at least one {@code @CapabilityModule}; without one, not a single conductor
+ * symbol is emitted — no import, no {@code capManifest()} seam, no try-with-resources
+ * ({@code KernelApplicationGenerator.java:307-311}). That is deliberate: a Tier-3 app has no
+ * composition to conduct. A Tier-3 app that later wants the lifecycle either declares a cap or
+ * invokes the conductor from a hand-written entrypoint — the library contract here is identical in
+ * both cases.
  *
  * @since 0.9.0
  */

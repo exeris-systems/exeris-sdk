@@ -7,12 +7,55 @@ import java.lang.annotation.*;
  * <p>This annotation provides comprehensive field configuration including:
  * <ul>
  *   <li>Display labels and descriptions</li>
- *   <li>UI component configuration via {@link UI}</li>
- *   <li>Validation rules via {@link Validation}</li>
+ *   <li>UI component configuration via a sibling {@link UI} annotation</li>
+ *   <li>Validation rules via a sibling {@link Validation} annotation</li>
  *   <li>Search, filter, and sort capabilities</li>
  *   <li>Visibility control across different views (list, detail, create, update)</li>
  *   <li>Display ordering</li>
  * </ul>
+ *
+ * <h2>Sibling form, not nested values</h2>
+ * <p>{@link UI} and {@link Validation} are declared as <strong>separate
+ * annotations applied to the same field</strong>, next to {@code @Field} — not as
+ * the {@link #ui()} / {@link #validation()} nested values on this annotation.
+ * Both readers resolve them that way and only that way: the build-time processor
+ * walks the field's own annotation mirrors ({@code ExerisDomainProcessor:1225},
+ * {@code findAnnotation} at {@code :1871-1878}) and the {@code -io} reader calls
+ * {@code getAnnotationByName("Validation")} on the field declaration
+ * ({@code SourceModelReader:951}). Neither ever inspects the nested values, so
+ * writing {@code @Field(validation = @Validation(...))} is legal Java that
+ * contributes nothing and warns about nothing. Every example below uses the
+ * sibling form.
+ *
+ * <h2>Open-Core status — partially live</h2>
+ * <p>Of the 29 attributes declared here, 12 reach a code generator, 2 stop at the
+ * AST, and 15 are read by nobody. Declaring an attribute from the last two groups
+ * records author intent and changes no generated artifact.
+ * <ul>
+ *   <li><strong>Live</strong> — extracted and consumed by a reachable generator:
+ *       {@link #label()}, {@link #description()}, {@link #required()},
+ *       {@link #unique()}, {@link #searchable()}, {@link #sortable()},
+ *       {@link #filterable()}, {@link #readOnly()}, {@link #dataType()},
+ *       {@link #computed()}, {@link #computedFrom()}, and {@link #inCreate()}
+ *       (Angular/TS side only — the generated Java handler does not filter by it).</li>
+ *   <li><strong>Extracted, no consumer</strong> — {@link #indexed()} and
+ *       {@link #inUpdate()} reach {@code exeris-metadata/<entity>.json} and stop
+ *       there. Generated indexes come from {@link #searchable()} and
+ *       {@link #unique()} only, so {@code indexed = true} creates no index; the
+ *       generated update DTO is not filtered by {@code inUpdate}.</li>
+ *   <li><strong>Not extracted</strong> — {@link #labelKey()},
+ *       {@link #descriptionKey()}, {@link #inList()}, {@link #inDetail()},
+ *       {@link #order()}, {@link #ui()}, {@link #validation()},
+ *       {@link #defaultValue()}, {@link #cssClass()}, {@link #group()},
+ *       {@link #sensitive()}, {@link #encrypted()}, {@link #maskPattern()},
+ *       {@link #writeOnly()} and {@link #compositeUnique()}. No processor reads
+ *       them into the AST and no generator consumes them. The four
+ *       security-flavoured entries in that list enforce nothing — see their
+ *       individual notes.</li>
+ * </ul>
+ * <p>Nothing warns when a reserved attribute is set: {@code -Aexeris.strict}
+ * audits only attributes that are extracted-but-unread, so it is structurally
+ * silent on the whole third group.
  *
  * <h2>Basic Usage:</h2>
  * <pre>{@code

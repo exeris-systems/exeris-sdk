@@ -10,14 +10,27 @@
  * For round-trip fidelity, any consumer constructing its own Jackson
  * {@code ObjectMapper} <strong>must</strong> configure:
  * <ul>
- *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — Jackson 3 defaults this
- *       to {@code true}, but our records use primitive booleans heavily with
- *       {@code @JsonInclude(NON_DEFAULT)} / {@code NON_NULL}, so absent fields
- *       arrive as {@code null}. Without this flag, deserialization throws on
- *       any record that has a default-valued boolean.</li>
+ *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — our records use primitive
+ *       booleans heavily with {@code @JsonInclude(NON_DEFAULT)} /
+ *       {@code NON_NULL}, so absent fields arrive as {@code null}. Without this
+ *       flag, deserialization throws on any record that has a default-valued
+ *       boolean. <strong>Which Jackson generation this bites:</strong> Jackson 3
+ *       ({@code tools.jackson}) defaults the feature to {@code true}, so a
+ *       Jackson-3 consumer <em>must</em> turn it off explicitly. Jackson 2
+ *       ({@code com.fasterxml.jackson}) already defaults it to {@code false},
+ *       so a Jackson-2 consumer gets the correct behaviour without configuring
+ *       anything — which is why today's real producer/consumer pair in
+ *       {@code exeris-tooling} ({@code ExerisDomainProcessor} writing,
+ *       {@code MetadataLoader} reading, both on the 2.x line) never mentions
+ *       the feature. Setting it explicitly is correct and harmless on both
+ *       lines; state it, do not assume the default.</li>
  * </ul>
  * The wire-format guard test {@code AstJsonRoundTripTest} configures the
- * mapper accordingly and is the canonical reference.
+ * mapper accordingly and is the canonical reference. It runs on Jackson 3,
+ * which this module pulls at <em>test</em> scope only — the published
+ * {@code source-model} jar ships no databind at all, so the mapper is always
+ * the consumer's own and the rule above is a consumer obligation, not
+ * something the SDK can enforce.
  *
  * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0, finalized 0.9.0)</h2>
  * <p>The annotation surface splits field-shape ({@code @Field}) from constraint

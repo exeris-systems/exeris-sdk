@@ -484,14 +484,4 @@ public @interface GraphEdge {
     }
 }
 
-/**
- * Container for multiple @GraphEdge annotations.
- */
-@Target(ElementType.FIELD)
-@Retention(RetentionPolicy.SOURCE)
-@Documented
-@interface GraphEdges {
-    GraphEdge[] value();
-}
-
 
