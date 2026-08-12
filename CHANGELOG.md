@@ -12,10 +12,33 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.9.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.10.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.10.0] — 2026-08-12
+
+The kernel-catch-up milestone, and the last one before the 1.0.0 freeze. Three
+things land together. The **data-scope tier** goes live (ADR-059):
+`@ExerisDomain.dataScope` + an AST-owned `DataScope { GLOBAL, TENANT, UNIVERSE }`
+supersede the `tenantScoped` boolean, which is deprecated for removal at 1.0.0 —
+taken now because a deprecation and its removal cannot share a release and 1.x is
+additive-only. The **record-growth stance** stops being prose and becomes three
+enforcing pieces (japicmp with a records-aware override, plus two snapshot guards
+that need no baseline), because every post-1.0 facet arrives as a trailing
+component and would otherwise be blocked until 2.0. And the **JDK baseline moves
+26 → 25 LTS** (ADR-069), following the kernel's own measurement that the 26 was
+never load-bearing: these jars sit on a consumer's compile classpath, so the
+LTS-only consumer the kernel had just admitted was being stopped here, at the most
+upstream repo in the ecosystem.
+
+Alongside them, an evidence-first survey of the annotation surface that traced
+attributes to the **emitted artifact** rather than to the AST — which is how it
+found what the 0.9.0 sweep structurally could not — and closed the
+`@Repeatable`-container defect as a class rather than as a second instance.
+
+Schema `"0.9.0"` → `"0.10.0"`. No wire break beyond the schema stamp; the
+`DomainMetadata` growth is trailing and by-name. Releases still ship as git tag +
+GitHub Release — Central publishing stays deferred until the kernel moves first.
 
 ### Added
 - **Data-scope tier — `@ExerisDomain.dataScope` + `DataScope { GLOBAL, TENANT,
@@ -483,6 +506,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.10.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.10.0
 [0.9.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.9.0
 [0.8.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.8.0
 [0.7.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.7.0

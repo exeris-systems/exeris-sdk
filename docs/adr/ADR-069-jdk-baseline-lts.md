@@ -36,7 +36,7 @@ The same probe ADR-066 ran, run here:
 - All six produced jars carry **class-file major 69**, verified by reading the class-file header bytes rather than trusting the flag.
 - The SDK's main sources use no API above the 21-era record / sealed-type set; a grep for `Thread.ofVirtual`, `ScopedValue`, `StableValue` and `Gatherers` across `*/src/main/java` returns nothing.
 
-**Stated limitation.** This probe cross-compiled with the JDK 26 `javac` at `--release 25`. Only a JRE 25 is installed on the authoring machine, so "the reactor is green *on* a JDK 25 toolchain" was **not** verified locally; CI proves it, which is why the CI matrix change is part of this decision rather than a follow-up.
+**Stated limitation, and its closure.** The local probe cross-compiled with the JDK 26 `javac` at `--release 25` — only a JRE 25 is installed on the authoring machine, so "the reactor is green *on* a JDK 25 toolchain" was **not** verified locally. That is why the CI matrix change is part of this decision rather than a follow-up. It has since been closed by the matrix itself: on `exeris-sdk#93` the `mvn verify (JDK 25)` row compiled the reactor at `release 25` on Temurin 25 and passed every gate, and the JDK 26 row passed alongside it.
 
 The one preview-adjacent site in the tree confirms the floor was never load-bearing from the other direction too: `DrainRunner` documents choosing a calling-thread + watchdog design *because* `StructuredTaskScope` is preview on the pinned toolchain and "this reactor carries no preview flags". The SDK has been preview-clean all along; it was simply targeting a higher major than anything required.
 
