@@ -10,6 +10,47 @@ the upgrade steps required.
 
 ---
 
+## 0.10.x → 0.11.x
+
+### `@Action.path` is now optional (and has never been consumed)
+
+**Why:** the attribute was mandatory — `String path();`, no default — so every
+author had to supply one, and no generator has ever read it. `ActionMetadata`
+carries no `path` component, so the value does not even reach the build-time
+JSON. The served route is derived:
+
+```
+{domainPath}/{id}/actions/{kebab-case-action-name}
+```
+
+An `@Action(name = "commandFormation", path = "/fleets/{id}/formation")` on a
+domain at `/fleets` is served at `POST /fleets/{id}/actions/command-formation`.
+The declared path is not a route and never was — so the annotation obliged
+every author to write a plausible, adjacent, wrong URL, and every reader to
+believe it. Found by dog-fooding (`Stellar-Tactics`, finding T44), whose first
+test to call a served action asserted both paths and measured the gap.
+
+**Impact:** none on existing code — adding a `default` widens what compiles.
+New actions may omit `path` entirely:
+
+```java
+// still compiles, still ignored
+@Action(name = "cancel", path = "/{id}/cancel", httpMethod = "POST")
+
+// preferred: say nothing rather than something untrue
+@Action(name = "cancel", httpMethod = "POST")
+```
+
+`exeris-tooling` registers `Action.path` in its inert-attribute registry, so
+`-Aexeris.strict` warns on builds that still set it.
+
+**Still open:** whether the attribute becomes an honoured override or is
+removed. Honouring it would mean an AST wire-format change and would break
+every existing route; removal runs the deprecation pipeline above. Until then
+the derived convention is the contract.
+
+---
+
 ## 0.9.x → 0.10.x
 
 ### `@ExerisDomain.tenantScoped` is deprecated — use `dataScope`
