@@ -491,12 +491,20 @@ public final class SourceModelReader {
                         + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
         String topic = stringAttr(annotation, "topic").orElse(null);
         String description = stringAttr(annotation, "description").orElse(null);
+        // EV2: the trigger triple. Note the asymmetry with the name derivation above — that
+        // one defaults an ABSENT trigger to CREATE because it only needs a suffix, whereas
+        // the component stays unset, since "not declared" and "fires on create" are different
+        // claims downstream. @DomainEvent.trigger has no annotation default, so an absent
+        // value here means unparseable or a source that does not compile.
         return DomainEventMetadata.builder(name)
                 .topic(topic)
                 .description(description)
                 .aggregateType(entitySimpleName)
                 .payloadFields(resolvePayloadFields(annotation, entityFieldNames))
                 .sensitiveFields(stringArrayAttr(annotation, "sensitiveFields").orElse(List.of()))
+                .trigger(eventTrigger(annotation).orElse(null))
+                .actionName(stringAttr(annotation, "action").filter(v -> !v.isBlank()).orElse(null))
+                .fieldName(stringAttr(annotation, "field").filter(v -> !v.isBlank()).orElse(null))
                 .build();
     }
 
@@ -876,6 +884,26 @@ public final class SourceModelReader {
                 .flatMap(name -> {
                     try {
                         return Optional.of(DataScope.valueOf(name));
+                    } catch (IllegalArgumentException unknownConstant) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    /**
+     * {@code @DomainEvent.trigger} → the AST-owned {@link DomainEventMetadata.Trigger},
+     * bridged by constant-name identity like {@link #dataScope} and {@link #relationType}.
+     * An unrecognised constant leaves the component unset rather than failing the parse: the
+     * two enums are independent types (ADR-059), so a value added on the annotation side
+     * alone must degrade to "not extracted", not to a broken read.
+     *
+     * @since 0.11.0
+     */
+    private Optional<DomainEventMetadata.Trigger> eventTrigger(AnnotationExpr annotation) {
+        return enumAttr(annotation, "trigger")
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(DomainEventMetadata.Trigger.valueOf(name));
                     } catch (IllegalArgumentException unknownConstant) {
                         return Optional.empty();
                     }

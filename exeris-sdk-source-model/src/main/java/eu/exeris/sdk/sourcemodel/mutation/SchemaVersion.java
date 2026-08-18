@@ -82,9 +82,22 @@ public final class SchemaVersion {
      *       {@code DomainMetadata.effectiveDataScope()}'s {@code tenantScoped}
      *       fallback — but the schema names the shape, so a {@code "0.9.0"}
      *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
+     *   <li>{@code "0.11.0"} — bumped for the kernel-0.11 design-time facets:
+     *       {@code FieldMetadata} gained {@code blob}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
+     *       {@code ActionMetadata} gained {@code schedule}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}), the AST
+     *       twins of {@code @Blob} and {@code @Schedule} (ADR-072). Both are
+     *       trailing, additive and by-name, and both are <em>reserved</em> —
+     *       nothing populates them yet — so a {@code "0.10.0"} baseline loses
+     *       no information in practice. The bump is taken anyway, because the
+     *       schema names the shape rather than its population, and the posture
+     *       is to refuse a cross-shape baseline rather than assume
+     *       compatibility: a {@code "0.10.0"} baseline reads as
+     *       {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
-    public static final String CURRENT = "0.10.0";
+    public static final String CURRENT = "0.11.0";
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.

@@ -1,5 +1,6 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
@@ -250,6 +251,121 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("NON_DEFAULT drops boxed zero, but NOT an ordinal-0 enum — measured, not assumed")
+    void nonDefaultDropsBoxedZeroNotOrdinalZeroEnums() {
+        // This pins the actual Jackson 3 semantics that several inclusion choices
+        // in this package are justified by, because one of those justifications
+        // was wrong and nothing checked it. The repo-wide caveat is correct as
+        // CLAUDE.md states it — NON_DEFAULT treats a boxed numeric zero as
+        // "empty" and drops it, which is what cost the FieldMetadata bounds a fix
+        // in 0.9.0. The extension of that to enums is not: an ordinal-0 constant
+        // is not "empty" to Jackson and survives NON_DEFAULT untouched. Measured
+        // here so the next inclusion decision reasons from the behaviour rather
+        // than from the folklore.
+        String json;
+        try {
+            json = mapper.writeValueAsString(new InclusionProbe(Probe.FIRST, 0L, "", false));
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).as("ordinal-0 enum survives NON_DEFAULT").contains("FIRST");
+        assertThat(json).as("boxed zero is dropped by NON_DEFAULT").doesNotContain("bound");
+        assertThat(json).as("empty string is dropped by NON_DEFAULT").doesNotContain("text");
+        assertThat(json).as("false is dropped by NON_DEFAULT").doesNotContain("flag");
+    }
+
+    private enum Probe { FIRST, SECOND }
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private record InclusionProbe(Probe kind, Long bound, String text, boolean flag) {}
+
+    @Test
+    @DisplayName("ScheduleMetadata round-trips every trigger kind, CRON included")
+    void scheduleMetadataRoundTripsForEveryKind() {
+        for (ScheduleMetadata.TriggerKind kind : ScheduleMetadata.TriggerKind.values()) {
+            assertRoundTrip(new ScheduleMetadata(kind, "0 3 * * *"), ScheduleMetadata.class);
+        }
+    }
+
+    @Test
+    @DisplayName("an explicit CRON survives the wire (ordinal-0 enum)")
+    void cronTriggerKindSurvivesTheWire() {
+        // CRON is ordinal 0. See nonDefaultDropsBoxedZeroNotOrdinalZeroEnums below
+        // for why that is *not* the hazard it is sometimes assumed to be — this
+        // case pins the outcome that matters here regardless of the inclusion
+        // posture: a schedule that round-trips must come back as the same trigger.
+        ScheduleMetadata original = ScheduleMetadata.cron("0 3 * * *");
+
+        String json;
+        ScheduleMetadata parsed;
+        try {
+            json = mapper.writeValueAsString(original);
+            parsed = mapper.readValue(json, ScheduleMetadata.class);
+        } catch (Exception e) {
+            throw new AssertionError("round-trip failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).contains("CRON");
+        assertThat(parsed.kind()).isEqualTo(ScheduleMetadata.TriggerKind.CRON);
+        assertThat(parsed.isRecurring()).isTrue();
+    }
+
+    @Test
+    @DisplayName("ActionMetadata round-trips a schedule facet (0.11.0)")
+    void scheduledActionMetadataRoundTrips() {
+        assertRoundTrip(ActionMetadata.builder("reconcile")
+                .description("Nightly reconciliation")
+                .methodName("reconcile")
+                .schedule(ScheduleMetadata.cron("0 3 * * *"))
+                .build(), ActionMetadata.class);
+
+        assertRoundTrip(ActionMetadata.builder("refreshQuotes")
+                .schedule(ScheduleMetadata.every("PT15M"))
+                .build(), ActionMetadata.class);
+    }
+
+    @Test
+    @DisplayName("BlobMetadata round-trips (full + minimal)")
+    void blobMetadataRoundTrips() {
+        // Full: explicit tenant-relative container + a narrowed media-type set.
+        assertRoundTrip(new BlobMetadata("statements", List.of("application/pdf", "image/png")),
+                BlobMetadata.class);
+        // Minimal: derived container (null on the wire), unrestricted types.
+        assertRoundTrip(BlobMetadata.unrestricted(), BlobMetadata.class);
+    }
+
+    @Test
+    @DisplayName("FieldMetadata round-trips a blob facet (0.11.0)")
+    void blobFieldMetadataRoundTrips() {
+        assertRoundTrip(FieldMetadata.builder("statement", "BlobRef")
+                .displayName("Statement PDF")
+                .blob(BlobMetadata.ofContentTypes(List.of("application/pdf")))
+                .build(), FieldMetadata.class);
+    }
+
+    @Test
+    @DisplayName("an absent schedule / blob facet stays absent on the wire")
+    void absentReservedFacetsStayAbsent() {
+        // The common case: neither facet declared. Both carriers are nullable and
+        // must not be materialised into empty objects by the reader — an empty
+        // ScheduleMetadata is not even constructible (kind and expression are
+        // required), so a reader that invented one would fail loudly rather than
+        // quietly, but the wire must not carry the key in the first place.
+        String actionJson;
+        String fieldJson;
+        try {
+            actionJson = mapper.writeValueAsString(ActionMetadata.simple("ship"));
+            fieldJson = mapper.writeValueAsString(FieldMetadata.simple("total", "BigDecimal"));
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+
+        assertThat(actionJson).doesNotContain("schedule");
+        assertThat(fieldJson).doesNotContain("blob");
+    }
+
+    @Test
     @DisplayName("ActionParamMetadata round-trips (record with NON_NULL inclusion)")
     void actionParamMetadataRoundTrips() {
         ActionParamMetadata original = ActionParamMetadata.builder("amount", "BigDecimal")
@@ -291,6 +407,55 @@ class AstJsonRoundTripTest {
         assertThat(minimalJson).contains("\"payloadFields\":[]");
         assertThat(minimalJson).contains("\"sensitiveFields\":[]");
         assertRoundTrip(minimal, DomainEventMetadata.class);
+    }
+
+    @Test
+    @DisplayName("EV2: the trigger triple round-trips, and an absent trigger stays absent "
+            + "rather than defaulting to CREATE")
+    void domainEventTriggerRoundTrips() throws Exception {
+        DomainEventMetadata triggered = DomainEventMetadata.builder("OrderPlaced")
+                .topic("orders.created")
+                .aggregateType("Order")
+                .trigger(DomainEventMetadata.Trigger.CREATE)
+                .build();
+        assertThat(triggered.hasTrigger()).isTrue();
+        assertRoundTrip(triggered, DomainEventMetadata.class);
+
+        DomainEventMetadata onAction = DomainEventMetadata.builder("OrderCancelledEvent")
+                .trigger(DomainEventMetadata.Trigger.ACTION)
+                .actionName("cancel")
+                .build();
+        assertRoundTrip(onAction, DomainEventMetadata.class);
+
+        DomainEventMetadata onFieldChange = DomainEventMetadata.builder("OrderStatusChangedEvent")
+                .trigger(DomainEventMetadata.Trigger.FIELD_CHANGED)
+                .fieldName("status")
+                .build();
+        assertRoundTrip(onFieldChange, DomainEventMetadata.class);
+
+        // The load-bearing negative. A pre-EV2 baseline carries no trigger, and it must read
+        // back as "unknown" rather than as CREATE — a generator keys a publish call off this,
+        // so a silent default would attach create-time publishing to every legacy event.
+        DomainEventMetadata preEv2 = new DomainEventMetadata(
+                "OrderCreated", "orders.created", "Order created", "Order");
+        assertThat(preEv2.trigger()).isNull();
+        assertThat(preEv2.hasTrigger()).isFalse();
+        assertThat(preEv2.actionName()).isNull();
+        assertThat(preEv2.fieldName()).isNull();
+        assertRoundTrip(preEv2, DomainEventMetadata.class);
+
+        // ...and the wire form omits the keys entirely (class-level @JsonInclude(NON_NULL)),
+        // so an older reader sees no new fields at all.
+        String preEv2Json = mapper.writeValueAsString(preEv2);
+        assertThat(preEv2Json).doesNotContain("trigger");
+        assertThat(preEv2Json).doesNotContain("actionName");
+        assertThat(preEv2Json).doesNotContain("fieldName");
+
+        // The EV1 6-arg constructor keeps working and also leaves the triple unset.
+        DomainEventMetadata ev1 = new DomainEventMetadata(
+                "OrderShipped", null, null, "Order", List.of("amount"), List.of());
+        assertThat(ev1.hasTrigger()).isFalse();
+        assertThat(ev1.payloadFields()).containsExactly("amount");
     }
 
     @Test

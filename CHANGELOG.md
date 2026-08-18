@@ -15,6 +15,139 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.10.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
+The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the
+1.0.0 freeze; this exists because that framing conflated two things. The ROADMAP
+dispositioned the blob and job facets "1.x, not before" on the argument that
+freezing an SDK annotation against a kernel package held at tier `preview`
+inverts the stability ordering — sound, and unchanged. But it forbids *freezing*,
+and read as "not pre-1.0" only because, with 0.10.0 believed to be the last
+milestone, the two were the same sentence. A 0.11.0 separates them: 0.x permits
+breaking changes in any release, so a surface landing here and explicitly
+excluded from the 1.0.0 cut is not frozen against anything
+([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md)).
+
+Schema `"0.10.0"` → `"0.11.0"`. No wire break beyond the schema stamp; both new
+components are trailing and by-name, and nothing populates either yet.
+
+### Added
+- **`DomainEventMetadata` carries the trigger triple** — `trigger` (an AST-owned
+  `Trigger` enum), `actionName`, `fieldName`. Until now the record could name an
+  event and frame its payload but not say **when it fires**, which is the input a
+  generator needs to place a publish call.
+
+  The gap was easy to miss because `@DomainEvent.trigger` *was* read — and then
+  discarded. Both producers used it only to derive the event **name** suffix
+  (`CREATE` → `OrderCreatedEvent`) and kept nothing. And because that suffix is
+  applied only when the user supplies no explicit `name`,
+  `@DomainEvent(name = "OrderPlaced", trigger = CREATE)` left no trace of the
+  trigger anywhere at all. `action` and `field` — required by `ACTION` and
+  `FIELD_CHANGED` — were read by neither producer.
+
+  `trigger` is **nullable on purpose**. `null` means "this baseline predates the
+  growth", which is a different claim from "fires on CREATE"; defaulting it in the
+  compact constructor would make the two indistinguishable and silently attach
+  create-time publishing to every pre-`0.11.0` event. `hasTrigger()` is the
+  intended read. This is deliberately *unlike* `DomainMetadata.effectiveDataScope()`
+  (ADR-059), which can default because it has a deprecated predecessor attribute to
+  fall through — there is no predecessor here.
+
+  The enum is **duplicated, not shared** — AST-owned, bridged to
+  `@DomainEvent.Trigger` by constant-name identity — per the `SagaStepMetadata.StepKind`
+  / `DataScope` precedent, keeping the annotations module dependency-free. An
+  unrecognised constant leaves the component unset rather than failing the read.
+
+  Unlike `@Blob` / `@Schedule` above, this one **is populated**: the `-io` reader
+  extracts all three. The processor half lands in `exeris-tooling` (its EV2 track,
+  where the emitted `*EventPublisher` is generated and then invoked by nobody).
+
+  Additive and binary-compatible — the pre-EV2 6-arg constructor is retained, and
+  `japicmp` reports additions only.
+
+- **`@Blob` — a field-level binary facet** (kernel ADR-056), with `BlobMetadata`
+  carried on `FieldMetadata.blob`. Closes the Entity-First gap the kernel named
+  when it shipped `…spi.storage.blob`: there was no way to declare "this entity
+  has an attachment", `@Field.dataType` being a free-form presentation hint and
+  the ui-kit's `.exeris-file` class styling.
+
+  It declares **no** `maxSizeBytes`, on two independent grounds. A size bound is
+  a constraint rule, and constraint rules have had one declaration site
+  (`@Validation`) and one carrier (`FieldMetadata`) since ADR-054 — a second one
+  here would reopen exactly what that ADR closed. And the kernel states no size
+  policy at all (ADR-056 makes transfer buffers caller-owned), so the attribute
+  would be inert against a platform with no opinion to be inert against, which
+  is worse than inert against an unbuilt consumer.
+
+- **`@Schedule` — an action-level trigger facet** (kernel ADR-057), with
+  `ScheduleMetadata` carried on `ActionMetadata.schedule`. Closes the second gap:
+  no way to declare "run this action on a schedule". Three mutually exclusive
+  attributes mirroring exactly the kinds `JobTrigger` covers — `cron` (standard
+  **five-field** syntax, no seconds and no vendor extensions), `every` (ISO-8601
+  duration), `at` (ISO-8601 instant). The kernel's fourth, event-driven, is
+  excluded there and therefore here; `@EventHandler` already expresses it.
+
+  The AST collapses the three attributes into one `TriggerKind` discriminator, so
+  a cron-*and*-interval combination — which the annotation forbids only in prose
+  — is unrepresentable downstream. Both new records are class-level `NON_NULL`,
+  the posture every small facet record in the package already uses.
+
+  Both surfaces ship **reserved** and **outside the 1.0.0 freeze**: no processor
+  extracts them, no generator consumes them, `-io` does not read them, and the
+  kernel holds both SPI packages at `preview`. Promotion is conditional on the
+  kernel moving each to `stable` *and* the `exeris-tooling` transcription
+  existing. Each javadoc also records the one combination its counterpart kernel
+  contract refuses — a `@Blob` on a `GLOBAL`-scoped entity has no isolation key
+  and is terminally denied, and a declared schedule has no submission event and
+  therefore no identity to capture (open, tracked in ADR-072).
+
+### Changed
+- **`@Action.path` is now optional** — `String path()` gained a `default ""`. The
+  attribute was mandatory and read by nobody: `ActionMetadata` carries no path
+  component, so the value never reached the build-time JSON, and the served route
+  is derived (`{domainPath}/{id}/actions/{kebab-case-action-name}`). It obliged
+  every author to write a plausible, adjacent, wrong URL beside each action, and
+  every reader to believe it. Found by dog-fooding (finding T44), whose first test
+  to call a served action asserted both paths and measured the gap. Adding a
+  default widens what compiles, so no existing code is affected. Whether the
+  attribute becomes an honoured override or is removed stays open; the derived
+  convention is the contract meanwhile.
+- **`SchemaVersion.CURRENT` `"0.10.0"` → `"0.11.0"`.** A `"0.10.0"` baseline reads
+  as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps — the same
+  one-milestone degradation the 0.10.0 bump caused. Taken even though nothing
+  populates the new components yet: the schema names the shape, not its
+  population.
+
+### Fixed
+- **A wire-format hazard that does not exist, asserted since 0.10.0.** ADR-059
+  obligation 3 states that under `@JsonInclude(NON_DEFAULT)` it is
+  `DataScope.GLOBAL` (ordinal 0) that drops, and that a dropped explicit `GLOBAL`
+  falls through `effectiveDataScope()` and reads back as `TENANT` — "a silent
+  tenancy flip rather than a lost hint". `ROADMAP.md` repeats it, and this
+  release's own drafting reasoned from it for `TriggerKind.CRON`.
+
+  Measured: it is false. `NON_DEFAULT` drops a boxed numeric zero — the caveat
+  `CLAUDE.md` states correctly, and the defect that cost the `FieldMetadata`
+  bounds a fix in 0.9.0 — but Jackson does not treat an ordinal-0 enum constant
+  as empty, and it survives untouched. The claim was never exercised because
+  `DomainMetadata` is `NON_NULL`, so nothing ever tested the premise.
+
+  `AstJsonRoundTripTest` now pins the actual semantics (boxed zero dropped,
+  ordinal-0 enum kept), and ADR-059 carries a dated correction. Nothing changes
+  in behaviour: the `NON_NULL` postures were the right choice anyway and the
+  tier-by-tier round-trip cases are worth keeping — only the stated reason was
+  wrong, in three documents at once.
+- **The annotation surface gate could not see an element losing its default.**
+  `AnnotationSurfaceContractTest` consulted the snapshot's `:default` /
+  `:required` flag only for elements it had never seen; for everything already
+  recorded it compared the type and nothing else. An existing element having its
+  default taken away therefore passed silently, though it breaks every usage that
+  omitted it exactly as an undefaulted addition does — so the rule the class
+  states as its whole growth story was enforceable in one direction only. A stale
+  flag is what made that possible, and there was already one instance (the
+  `@Action.path` widening above), so both halves land together: the missing rule,
+  and a report on a widening telling the author to refresh the line.
+
 ## [0.10.0] — 2026-08-12
 
 The kernel-catch-up milestone, and the last one before the 1.0.0 freeze. Three

@@ -246,6 +246,40 @@
  * {@code DomainMetadata}, that gap creates no ADR-042 conflict-detection drift
  * surface, and {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
  *
+ * <h2>Blob + schedule facets (0.11.0, reserved)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata#blob()}
+ * ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
+ * {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#schedule()}
+ * ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}) are the AST twins of
+ * {@code @Blob} and {@code @Schedule} — the design-time expression of the kernel
+ * v0.11 blob-storage and job-scheduling seams (ADR-072). Both are trailing,
+ * nullable, and absent from the wire unless declared.
+ *
+ * <p>{@code ScheduleMetadata} collapses the annotation's three mutually exclusive
+ * attributes ({@code cron} / {@code every} / {@code at}) into one
+ * {@code TriggerKind} discriminator plus the verbatim expression, so a consumer
+ * cannot read a cron <em>and</em> an interval — a combination the annotation only
+ * forbids in prose. Both new records are class-level {@code NON_NULL} — the
+ * posture every small facet record here already uses, with the
+ * {@code NON_DEFAULT} on the larger records being the exception.
+ *
+ * <p>While pinning that, the round-trip suite also pins <em>why</em>, because one
+ * standing justification for these choices turned out to be folklore. The
+ * repo-wide caveat is correct as stated: {@code NON_DEFAULT} treats a boxed
+ * numeric zero as "empty" and drops it, which is what cost the
+ * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds a fix in 0.9.0. The
+ * extension of that to enums is not — an ordinal-0 constant is not "empty" to
+ * Jackson and survives {@code NON_DEFAULT} untouched, contrary to what ADR-059
+ * obligation 3 asserted about {@code DataScope.GLOBAL}. Measured in
+ * {@code AstJsonRoundTripTest}, so the next inclusion decision reasons from the
+ * behaviour rather than from the claim.
+ *
+ * <p>Both are <strong>reserved</strong>: no processor populates them and no
+ * generator consumes them, the kernel holds both SPI packages at tier
+ * {@code preview}, and neither enters the 1.0.0 freeze. {@code SchemaVersion}
+ * moves to {@code "0.11.0"} regardless — the schema names the shape, not its
+ * population.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

@@ -52,6 +52,20 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
   system/security field markers, `@ExerisDomain.validationMode`) — frozen as
   declared; extraction/generation lands additively in 1.x.
+- **`@Blob` / `@Schedule` and their AST carriers are the one exception: NOT
+  frozen** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md)).
+  Every other reserved surface above is frozen as declared, because what it
+  waits on is downstream work against a settled premise. These two encode kernel
+  SPI packages the kernel itself holds at tier **`preview`** in its
+  `docs/stability-matrix.md` — a shape with a scheduled change still in flight.
+  Freezing an SDK annotation against that would make the SDK's 1.0 promise
+  stronger than the surface it describes, which is the wrong way round.
+
+  So `@Blob`, `@Schedule`, `FieldMetadata.blob` and `ActionMetadata.schedule`
+  may be changed, or dropped, in a 1.x minor. They are promoted into the frozen
+  surface when the kernel moves each package to `stable` **and** the
+  `exeris-tooling` transcription exists — at which point this bullet moves up
+  into the list above. Consumers should treat them as preview and pin exactly.
 
 ## 3. Consumer contract recap (unchanged at 1.0.0 — restated for the freeze)
 

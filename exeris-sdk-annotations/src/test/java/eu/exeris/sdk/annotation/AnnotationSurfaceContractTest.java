@@ -34,11 +34,17 @@ import static org.assertj.core.api.Assertions.fail;
  * <ol>
  *   <li><b>No element removed.</b> Existing annotated source stops compiling.</li>
  *   <li><b>No element retyped.</b> Same.</li>
- *   <li><b>A new element must declare a {@code default}.</b> This is the whole
- *       growth story: an element with a default leaves every existing usage
- *       compiling untouched, one without it breaks all of them at once. It is
- *       also the rule japicmp cannot express — it reports both cases as
- *       {@code METHOD_ABSTRACT_ADDED_TO_CLASS}.</li>
+ *   <li><b>A new element must declare a {@code default}, and an existing one
+ *       must not lose the default it had.</b> This is the whole growth story:
+ *       an element with a default leaves every existing usage compiling
+ *       untouched, one without it breaks all of them at once — and that is just
+ *       as true when the default is taken away as when it was never given. It
+ *       is also the rule japicmp cannot express: it reports both new cases as
+ *       {@code METHOD_ABSTRACT_ADDED_TO_CLASS}. The snapshot's {@code :default}
+ *       / {@code :required} flag is what carries the before-state, so a
+ *       widening (required → default) is reported too — not because it breaks
+ *       anything, but because a flag left stale makes the losing-a-default rule
+ *       silently unenforceable.</li>
  * </ol>
  *
  * <p>Deprecation is deliberately not a violation here: marking an element
@@ -79,6 +85,16 @@ class AnnotationSurfaceContractTest {
             } else if (!typeOf(now).equals(typeOf(before))) {
                 violations.add("%s changed type: %s -> %s. Retyping an element is a break."
                         .formatted(element, typeOf(before), typeOf(now)));
+            } else if (hasDefault(before) && !hasDefault(now)) {
+                violations.add(("%s lost its default. Every existing usage that omitted it stops "
+                        + "compiling — the same break as adding an undefaulted element, arriving "
+                        + "from the other direction. Restore the default, or take the break "
+                        + "deliberately at a major and re-baseline the snapshot.").formatted(element));
+            } else if (!hasDefault(before) && hasDefault(now)) {
+                violations.add(("%s gained a default. That is a widening and compatible, but the "
+                        + "snapshot still records it as required — and a flag left stale is what "
+                        + "makes the rule above silently unenforceable. Refresh the line:%n    %s=%s")
+                        .formatted(element, element, now));
             }
         }
 

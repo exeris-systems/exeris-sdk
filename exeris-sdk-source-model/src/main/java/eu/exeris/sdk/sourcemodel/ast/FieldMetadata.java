@@ -64,7 +64,13 @@ public record FieldMetadata(
         String descriptionKey,
         // Declarative derivation (0.7.0): present when the field carries a
         // @Derived expression; null for an ordinary stored field. See RFC-2026-06-18.
-        DerivedMetadata derived
+        DerivedMetadata derived,
+        // Binary-object facet (0.11.0): present when the field carries a @Blob
+        // declaration; null for an ordinary inline-valued field. Reserved surface —
+        // no processor populates it and no generator consumes it, and the kernel
+        // holds ...spi.storage.blob at tier preview, so it is excluded from the
+        // 1.0.0 freeze and a 1.x minor may still change it. See ADR-072.
+        BlobMetadata blob
 ) {
 
     public FieldMetadata {
@@ -102,6 +108,9 @@ public record FieldMetadata(
 
     @JsonIgnore
     public boolean hasDerived() { return derived != null; }
+
+    @JsonIgnore
+    public boolean hasBlob() { return blob != null; }
 
     @JsonIgnore
     public boolean isEnum() { return enumType != null && !enumType.isBlank(); }
@@ -153,6 +162,7 @@ public record FieldMetadata(
         private String displayNameKey;
         private String descriptionKey;
         private DerivedMetadata derived;
+        private BlobMetadata blob;
 
         private Builder(String name, String type) {
             this.name = name;
@@ -192,12 +202,13 @@ public record FieldMetadata(
         public Builder displayNameKey(String v) { this.displayNameKey = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder descriptionKey(String v) { this.descriptionKey = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder derived(DerivedMetadata v) { this.derived = v; return this; }
+        public Builder blob(BlobMetadata v) { this.blob = v; return this; }
 
         public FieldMetadata build() {
             return new FieldMetadata(name, type, columnName, displayName, description, required, unique,
                     indexed, searchable, sortable, filterable, audited, readOnly, hidden, defaultValue,
                     minLength, maxLength, min, max, pattern, format, dataType, enumType, computed, computedFrom,
-                    inCreate, inUpdate, displayNameKey, descriptionKey, derived);
+                    inCreate, inUpdate, displayNameKey, descriptionKey, derived, blob);
         }
     }
 }

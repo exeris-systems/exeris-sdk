@@ -8,20 +8,21 @@
 # Edit deliberately: when a record legitimately grows, append the new component
 # here in the same commit. Regenerate wholesale only if you mean to re-baseline.
 
-eu.exeris.sdk.sourcemodel.ast.ActionMetadata=name,displayName,description,httpMethod,resultType,async,idempotent,dangerous,requiresConfirmation,params,permissions,producesEvents,methodName,streaming,streamEventType,realTimeUpdates
+eu.exeris.sdk.sourcemodel.ast.ActionMetadata=name,displayName,description,httpMethod,resultType,async,idempotent,dangerous,requiresConfirmation,params,permissions,producesEvents,methodName,streaming,streamEventType,realTimeUpdates,schedule
 eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata=name,type,displayName,description,required,defaultValue,pattern,minLength,maxLength,min,max
 eu.exeris.sdk.sourcemodel.ast.BindingMetadata=source,ref,path,expression,language
+eu.exeris.sdk.sourcemodel.ast.BlobMetadata=container,contentTypes
 eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata=provides,requires,lifecycleOwner
 eu.exeris.sdk.sourcemodel.ast.ComponentNodeMetadata=type,customType,binding,props,children,field
 eu.exeris.sdk.sourcemodel.ast.DerivedMetadata=expression,language,dependsOn
-eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata=name,topic,description,aggregateType,payloadFields,sensitiveFields
+eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata=name,topic,description,aggregateType,payloadFields,sensitiveFields,trigger,actionName,fieldName
 eu.exeris.sdk.sourcemodel.ast.DomainMetadata=entityName,packageName,module,path,aggregate,description,apiVersion,tags,restApi,graphqlApi,realTimeApi,internalClient,tenantScoped,softDelete,audited,versioned,roles,permissions,sensitive,cacheable,cacheTtl,cacheRegion,fullTextSearch,searchConfig,tableName,fields,actions,events,relationships,projections,eventHandlers,uiMetadata,graphMetadata,sagaMetadata,eventSourced,internalApi,systemFields,rules,dataScope
 eu.exeris.sdk.sourcemodel.ast.EnumMetadata$EnumValueMetadata=name,displayName,description,ordinal
 eu.exeris.sdk.sourcemodel.ast.EnumMetadata=name,qualifiedName,packageName,description,values
 eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata=name,description,event,events,eventClassNames,topic,condition,order,priority,idempotent,async,timeout,transactionMode,triggerStep,expectedEvents,failureEvents
 eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata$ProjectionConfig=name,targetType,eventTypes,handler,async,topic
 eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata=enabled,aggregateType,eventStore,snapshotEvery,snapshotStrategy,retentionPolicy,compactEvents,archiveAfterDays,eventHandlers,projections,versionField,conflictResolution
-eu.exeris.sdk.sourcemodel.ast.FieldMetadata=name,type,columnName,displayName,description,required,unique,indexed,searchable,sortable,filterable,audited,readOnly,hidden,defaultValue,minLength,maxLength,min,max,pattern,format,dataType,enumType,computed,computedFrom,inCreate,inUpdate,displayNameKey,descriptionKey,derived
+eu.exeris.sdk.sourcemodel.ast.FieldMetadata=name,type,columnName,displayName,description,required,unique,indexed,searchable,sortable,filterable,audited,readOnly,hidden,defaultValue,minLength,maxLength,min,max,pattern,format,dataType,enumType,computed,computedFrom,inCreate,inUpdate,displayNameKey,descriptionKey,derived,blob
 eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata=name,targetLabel,relationType
 eu.exeris.sdk.sourcemodel.ast.GraphMetadata=label,properties,edges,queries
 eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata=name,type,indexed
@@ -41,6 +42,7 @@ eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$FieldMapping=source,target,transf
 eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$InputMapping=expression,fieldMappings
 eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$OutputMapping=expression,fieldMappings
 eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata=name,description,order,service,command,compensation,timeout,maxRetries,retryBackoff,parallel,required,condition,skipOnConditionFalse,dependsOn,producesEvents,inputMapping,outputMapping,errorHandler,kind
+eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata=kind,expression
 eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata=primaryKeyField,createdAtField,createdByField,updatedAtField,updatedByField,tenantIdField,versionField,softDeleteField,softDeleteTimestampField,softDeletedByField
 eu.exeris.sdk.sourcemodel.ast.UIMetadata$AutocompleteConfig=targetEntity,displayField,valueField,searchEndpoint,minChars,maxResults,allowCreate,createAction
 eu.exeris.sdk.sourcemodel.ast.UIMetadata$SelectConfig=optionsSource,optionsEndpoint,staticOptions,multiple,clearable,searchable,groupBy

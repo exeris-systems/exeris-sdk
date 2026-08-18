@@ -205,22 +205,27 @@ public @interface Action {
 
     /**
      * URL path for the endpoint.
-     * <p>Path can include placeholders:
-     * <ul>
-     *   <li>{@code {id}} - Entity ID</li>
-     *   <li>{@code {otherId}} - Other path variables</li>
-     * </ul>
      *
-     * <p><strong>Examples:</strong>
-     * <ul>
-     *   <li>{@code "/{id}/approve"}</li>
-     *   <li>{@code "/{id}/send-email"}</li>
-     *   <li>{@code "/bulk-approve"} (for bulk actions)</li>
-     * </ul>
+     * <p><strong>Not consumed by any generator, and optional since 0.11.0.</strong> The served route
+     * is <em>derived</em> from the domain path and the action name:
      *
-     * @return URL path
+     * <pre>{@code {domainPath}/{id}/actions/{kebab-case-action-name}}</pre>
+     *
+     * <p>So an {@code @Action(name = "commandFormation")} on a domain at {@code /fleets} is served at
+     * {@code POST /fleets/{id}/actions/command-formation} regardless of what this attribute says.
+     * {@code ActionMetadata} carries no path component, so the value does not even reach the
+     * build-time JSON; setting it has no effect, and {@code -Aexeris.strict} reports it.
+     *
+     * <p>It was mandatory (no default) until 0.11.0, which required every author to write a
+     * plausible, adjacent, wrong URL beside each action — and readers to believe it. The default is
+     * the fix for that; the derived convention is deliberate and stays. Whether the attribute becomes
+     * an honoured override or is removed outright is open (removal runs the {@code MIGRATION.md}
+     * deprecation pipeline).
+     *
+     * @return URL path; empty (the default) means "use the derived route", which is what happens
+     *         either way today
      */
-    String path();
+    String path() default "";
 
     /**
      * Required roles to execute this action.
