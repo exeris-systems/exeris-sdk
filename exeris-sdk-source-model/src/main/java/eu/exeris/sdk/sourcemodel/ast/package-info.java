@@ -259,13 +259,20 @@
  * attributes ({@code cron} / {@code every} / {@code at}) into one
  * {@code TriggerKind} discriminator plus the verbatim expression, so a consumer
  * cannot read a cron <em>and</em> an interval — a combination the annotation only
- * forbids in prose. It is class-level {@code NON_NULL}, and that is load-bearing
- * rather than stylistic: {@code TriggerKind.CRON} is ordinal 0, so under the
- * {@code NON_DEFAULT} used on the larger records an explicit {@code CRON} would
- * be dropped on serialization and read back {@code null}. Unlike the
- * {@code DataScope.GLOBAL} case (ADR-059) there is no {@code effective*()}
- * accessor to recover it, so the schedule would simply cease to exist between
- * write and read.
+ * forbids in prose. Both new records are class-level {@code NON_NULL} — the
+ * posture every small facet record here already uses, with the
+ * {@code NON_DEFAULT} on the larger records being the exception.
+ *
+ * <p>While pinning that, the round-trip suite also pins <em>why</em>, because one
+ * standing justification for these choices turned out to be folklore. The
+ * repo-wide caveat is correct as stated: {@code NON_DEFAULT} treats a boxed
+ * numeric zero as "empty" and drops it, which is what cost the
+ * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds a fix in 0.9.0. The
+ * extension of that to enums is not — an ordinal-0 constant is not "empty" to
+ * Jackson and survives {@code NON_DEFAULT} untouched, contrary to what ADR-059
+ * obligation 3 asserted about {@code DataScope.GLOBAL}. Measured in
+ * {@code AstJsonRoundTripTest}, so the next inclusion decision reasons from the
+ * behaviour rather than from the claim.
  *
  * <p>Both are <strong>reserved</strong>: no processor populates them and no
  * generator consumes them, the kernel holds both SPI packages at tier

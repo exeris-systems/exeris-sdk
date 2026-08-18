@@ -56,13 +56,8 @@ components are trailing and by-name, and nothing populates either yet.
 
   The AST collapses the three attributes into one `TriggerKind` discriminator, so
   a cron-*and*-interval combination — which the annotation forbids only in prose
-  — is unrepresentable downstream. `ScheduleMetadata` is class-level `NON_NULL`
-  rather than `NON_DEFAULT`, and that is load-bearing: `TriggerKind.CRON` is
-  ordinal 0, so under `NON_DEFAULT` an explicit `CRON` is dropped on
-  serialization and reads back `null`. Unlike the `GLOBAL` case in ADR-059 there
-  is no `effective*()` accessor to recover it — the schedule would cease to exist
-  between write and read. The round-trip suite pins that so the choice is not
-  vacuous.
+  — is unrepresentable downstream. Both new records are class-level `NON_NULL`,
+  the posture every small facet record in the package already uses.
 
   Both surfaces ship **reserved** and **outside the 1.0.0 freeze**: no processor
   extracts them, no generator consumes them, `-io` does not read them, and the
@@ -91,6 +86,24 @@ components are trailing and by-name, and nothing populates either yet.
   population.
 
 ### Fixed
+- **A wire-format hazard that does not exist, asserted since 0.10.0.** ADR-059
+  obligation 3 states that under `@JsonInclude(NON_DEFAULT)` it is
+  `DataScope.GLOBAL` (ordinal 0) that drops, and that a dropped explicit `GLOBAL`
+  falls through `effectiveDataScope()` and reads back as `TENANT` — "a silent
+  tenancy flip rather than a lost hint". `ROADMAP.md` repeats it, and this
+  release's own drafting reasoned from it for `TriggerKind.CRON`.
+
+  Measured: it is false. `NON_DEFAULT` drops a boxed numeric zero — the caveat
+  `CLAUDE.md` states correctly, and the defect that cost the `FieldMetadata`
+  bounds a fix in 0.9.0 — but Jackson does not treat an ordinal-0 enum constant
+  as empty, and it survives untouched. The claim was never exercised because
+  `DomainMetadata` is `NON_NULL`, so nothing ever tested the premise.
+
+  `AstJsonRoundTripTest` now pins the actual semantics (boxed zero dropped,
+  ordinal-0 enum kept), and ADR-059 carries a dated correction. Nothing changes
+  in behaviour: the `NON_NULL` postures were the right choice anyway and the
+  tier-by-tier round-trip cases are worth keeping — only the stated reason was
+  wrong, in three documents at once.
 - **The annotation surface gate could not see an element losing its default.**
   `AnnotationSurfaceContractTest` consulted the snapshot's `:default` /
   `:required` flag only for elements it had never seen; for everything already

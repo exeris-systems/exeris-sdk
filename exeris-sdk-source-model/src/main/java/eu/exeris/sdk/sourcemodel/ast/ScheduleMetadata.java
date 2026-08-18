@@ -20,12 +20,15 @@ import java.util.Objects;
  * tooling's. {@code source-model} stores the expression and interprets nothing
  * (zero runtime coupling).
  *
- * <p>This record is class-level {@code NON_NULL} rather than the {@code NON_DEFAULT}
- * used on the larger AST records, and that is load-bearing: {@link TriggerKind#CRON}
- * is ordinal 0, so under {@code NON_DEFAULT} an explicit {@code CRON} would be
- * dropped on serialization and read back as {@code null}. Unlike the {@code GLOBAL}
- * case in ADR-059 there is no fallback accessor to catch it — the schedule would
- * simply cease to exist between write and read.
+ * <p>This record is class-level {@code NON_NULL}, the posture every small facet
+ * record in this package uses ({@link DerivedMetadata},
+ * {@link ActionParamMetadata}, the {@code SagaStepMetadata} nested records); the
+ * {@code NON_DEFAULT} on the larger records is the exception, not the rule. It is
+ * <em>not</em> chosen to dodge an ordinal-zero hazard: {@code AstJsonRoundTripTest}
+ * measures that {@code NON_DEFAULT} drops a boxed numeric zero but leaves an
+ * ordinal-0 enum constant alone, so {@link TriggerKind#CRON} would survive either
+ * posture. What {@code NON_NULL} buys here is that both components are required and
+ * always present on the wire, which is what a facet consumer can then rely on.
  *
  * <p><strong>Reserved surface (ADR-070).</strong> No {@code exeris-tooling}
  * processor populates this record and no generator consumes it; the kernel holds

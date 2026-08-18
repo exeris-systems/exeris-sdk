@@ -1,5 +1,6 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
@@ -250,6 +251,36 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("NON_DEFAULT drops boxed zero, but NOT an ordinal-0 enum — measured, not assumed")
+    void nonDefaultDropsBoxedZeroNotOrdinalZeroEnums() {
+        // This pins the actual Jackson 3 semantics that several inclusion choices
+        // in this package are justified by, because one of those justifications
+        // was wrong and nothing checked it. The repo-wide caveat is correct as
+        // CLAUDE.md states it — NON_DEFAULT treats a boxed numeric zero as
+        // "empty" and drops it, which is what cost the FieldMetadata bounds a fix
+        // in 0.9.0. The extension of that to enums is not: an ordinal-0 constant
+        // is not "empty" to Jackson and survives NON_DEFAULT untouched. Measured
+        // here so the next inclusion decision reasons from the behaviour rather
+        // than from the folklore.
+        String json;
+        try {
+            json = mapper.writeValueAsString(new InclusionProbe(Probe.FIRST, 0L, "", false));
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).as("ordinal-0 enum survives NON_DEFAULT").contains("FIRST");
+        assertThat(json).as("boxed zero is dropped by NON_DEFAULT").doesNotContain("bound");
+        assertThat(json).as("empty string is dropped by NON_DEFAULT").doesNotContain("text");
+        assertThat(json).as("false is dropped by NON_DEFAULT").doesNotContain("flag");
+    }
+
+    private enum Probe { FIRST, SECOND }
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private record InclusionProbe(Probe kind, Long bound, String text, boolean flag) {}
+
+    @Test
     @DisplayName("ScheduleMetadata round-trips every trigger kind, CRON included")
     void scheduleMetadataRoundTripsForEveryKind() {
         for (ScheduleMetadata.TriggerKind kind : ScheduleMetadata.TriggerKind.values()) {
@@ -258,14 +289,12 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("an explicit CRON survives the wire — the ordinal-0 trap, armed")
-    void cronTriggerKindIsNotDroppedAsBoxedZero() {
-        // CRON is ordinal 0. Under class-level NON_DEFAULT it would be treated as
-        // "empty" and dropped on serialization, and unlike DomainMetadata.dataScope
-        // there is no effective*() fallback to recover it — the schedule would
-        // simply cease to exist between write and read. ScheduleMetadata is
-        // NON_NULL for exactly this reason (ADR-070 obligation 5); this case is
-        // what makes that choice non-vacuous, and it fails if anyone flips it.
+    @DisplayName("an explicit CRON survives the wire (ordinal-0 enum)")
+    void cronTriggerKindSurvivesTheWire() {
+        // CRON is ordinal 0. See nonDefaultDropsBoxedZeroNotOrdinalZeroEnums below
+        // for why that is *not* the hazard it is sometimes assumed to be — this
+        // case pins the outcome that matters here regardless of the inclusion
+        // posture: a schedule that round-trips must come back as the same trigger.
         ScheduleMetadata original = ScheduleMetadata.cron("0 3 * * *");
 
         String json;
