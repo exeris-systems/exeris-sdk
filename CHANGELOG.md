@@ -15,6 +15,8 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.10.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
 ## [0.10.0] — 2026-08-12
 
 The kernel-catch-up milestone, and the last one before the 1.0.0 freeze. Three
