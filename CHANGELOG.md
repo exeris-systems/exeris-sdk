@@ -32,6 +32,39 @@ Schema `"0.10.0"` → `"0.11.0"`. No wire break beyond the schema stamp; both ne
 components are trailing and by-name, and nothing populates either yet.
 
 ### Added
+- **`DomainEventMetadata` carries the trigger triple** — `trigger` (an AST-owned
+  `Trigger` enum), `actionName`, `fieldName`. Until now the record could name an
+  event and frame its payload but not say **when it fires**, which is the input a
+  generator needs to place a publish call.
+
+  The gap was easy to miss because `@DomainEvent.trigger` *was* read — and then
+  discarded. Both producers used it only to derive the event **name** suffix
+  (`CREATE` → `OrderCreatedEvent`) and kept nothing. And because that suffix is
+  applied only when the user supplies no explicit `name`,
+  `@DomainEvent(name = "OrderPlaced", trigger = CREATE)` left no trace of the
+  trigger anywhere at all. `action` and `field` — required by `ACTION` and
+  `FIELD_CHANGED` — were read by neither producer.
+
+  `trigger` is **nullable on purpose**. `null` means "this baseline predates the
+  growth", which is a different claim from "fires on CREATE"; defaulting it in the
+  compact constructor would make the two indistinguishable and silently attach
+  create-time publishing to every pre-`0.11.0` event. `hasTrigger()` is the
+  intended read. This is deliberately *unlike* `DomainMetadata.effectiveDataScope()`
+  (ADR-059), which can default because it has a deprecated predecessor attribute to
+  fall through — there is no predecessor here.
+
+  The enum is **duplicated, not shared** — AST-owned, bridged to
+  `@DomainEvent.Trigger` by constant-name identity — per the `SagaStepMetadata.StepKind`
+  / `DataScope` precedent, keeping the annotations module dependency-free. An
+  unrecognised constant leaves the component unset rather than failing the read.
+
+  Unlike `@Blob` / `@Schedule` above, this one **is populated**: the `-io` reader
+  extracts all three. The processor half lands in `exeris-tooling` (its EV2 track,
+  where the emitted `*EventPublisher` is generated and then invoked by nobody).
+
+  Additive and binary-compatible — the pre-EV2 6-arg constructor is retained, and
+  `japicmp` reports additions only.
+
 - **`@Blob` — a field-level binary facet** (kernel ADR-056), with `BlobMetadata`
   carried on `FieldMetadata.blob`. Closes the Entity-First gap the kernel named
   when it shipped `…spi.storage.blob`: there was no way to declare "this entity

@@ -1102,6 +1102,72 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsTheTriggerEvenWhenTheEventNameIsExplicit() {
+            // The case the pre-0.11.0 reader lost completely: with an explicit name, the
+            // trigger contributed no name suffix either, so it left no trace anywhere.
+            DomainMetadata domain = reader.read(ORDER).orElseThrow();
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderPlaced");
+                assertThat(e.trigger()).isEqualTo(DomainEventMetadata.Trigger.CREATE);
+                assertThat(e.hasTrigger()).isTrue();
+            });
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderUpdatedEvent");
+                assertThat(e.trigger()).isEqualTo(DomainEventMetadata.Trigger.UPDATE);
+            });
+        }
+
+        @Test
+        void readsActionAndFieldNamesForTheTriggersThatRequireThem() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Order")
+                    @DomainEvent(name = "OrderCancelled", trigger = Trigger.ACTION, action = "cancel")
+                    @DomainEvent(name = "StatusChanged", trigger = Trigger.FIELD_CHANGED, field = "status")
+                    public class Order {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("OrderCancelled");
+                assertThat(e.trigger()).isEqualTo(DomainEventMetadata.Trigger.ACTION);
+                assertThat(e.actionName()).isEqualTo("cancel");
+                assertThat(e.fieldName()).isNull();
+            });
+            assertThat(domain.events()).anySatisfy(e -> {
+                assertThat(e.name()).isEqualTo("StatusChanged");
+                assertThat(e.trigger()).isEqualTo(DomainEventMetadata.Trigger.FIELD_CHANGED);
+                assertThat(e.fieldName()).isEqualTo("status");
+                assertThat(e.actionName()).isNull();
+            });
+        }
+
+        @Test
+        void anUnknownTriggerConstantLeavesTheComponentUnsetRatherThanFailingTheParse() {
+            // The two enums are independent types (ADR-059 precedent), so a constant added
+            // on the annotation side alone must degrade to "not extracted", not to a broken
+            // read. The name derivation falls through to the generic "Event" suffix.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.DomainEvent;
+                    import eu.exeris.sdk.annotation.DomainEvent.Trigger;
+                    @ExerisDomain(name = "Thing")
+                    @DomainEvent(trigger = Trigger.BULK_CREATE)
+                    public class Thing {}
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.events()).singleElement().satisfies(e -> {
+                assertThat(e.name()).isEqualTo("ThingEvent");
+                assertThat(e.trigger()).isNull();
+                assertThat(e.hasTrigger()).isFalse();
+            });
+        }
+
+        @Test
         void defaultsTriggerToCreateWhenAbsent() {
             // no trigger attribute at all -> processor defaults to CREATE -> "CreatedEvent"
             String src = """
@@ -1113,8 +1179,14 @@ class SourceModelIoTest {
                     public class Thing {}
                     """;
             DomainMetadata domain = reader.read(src).orElseThrow();
-            assertThat(domain.events()).singleElement()
-                    .satisfies(e -> assertThat(e.name()).isEqualTo("ThingCreatedEvent"));
+            assertThat(domain.events()).singleElement().satisfies(e -> {
+                assertThat(e.name()).isEqualTo("ThingCreatedEvent");
+                // ...but the COMPONENT stays unset. The name derivation defaults an absent
+                // trigger to CREATE because it only needs a suffix; the component must not,
+                // because "not declared" and "fires on create" are different claims to a
+                // generator deciding where to place a publish call.
+                assertThat(e.trigger()).isNull();
+            });
         }
 
         @Test
