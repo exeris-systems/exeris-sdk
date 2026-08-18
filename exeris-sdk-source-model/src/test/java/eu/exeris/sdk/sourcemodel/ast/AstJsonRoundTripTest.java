@@ -250,6 +250,93 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("ScheduleMetadata round-trips every trigger kind, CRON included")
+    void scheduleMetadataRoundTripsForEveryKind() {
+        for (ScheduleMetadata.TriggerKind kind : ScheduleMetadata.TriggerKind.values()) {
+            assertRoundTrip(new ScheduleMetadata(kind, "0 3 * * *"), ScheduleMetadata.class);
+        }
+    }
+
+    @Test
+    @DisplayName("an explicit CRON survives the wire — the ordinal-0 trap, armed")
+    void cronTriggerKindIsNotDroppedAsBoxedZero() {
+        // CRON is ordinal 0. Under class-level NON_DEFAULT it would be treated as
+        // "empty" and dropped on serialization, and unlike DomainMetadata.dataScope
+        // there is no effective*() fallback to recover it — the schedule would
+        // simply cease to exist between write and read. ScheduleMetadata is
+        // NON_NULL for exactly this reason (ADR-070 obligation 5); this case is
+        // what makes that choice non-vacuous, and it fails if anyone flips it.
+        ScheduleMetadata original = ScheduleMetadata.cron("0 3 * * *");
+
+        String json;
+        ScheduleMetadata parsed;
+        try {
+            json = mapper.writeValueAsString(original);
+            parsed = mapper.readValue(json, ScheduleMetadata.class);
+        } catch (Exception e) {
+            throw new AssertionError("round-trip failed: " + e.getMessage(), e);
+        }
+
+        assertThat(json).contains("CRON");
+        assertThat(parsed.kind()).isEqualTo(ScheduleMetadata.TriggerKind.CRON);
+        assertThat(parsed.isRecurring()).isTrue();
+    }
+
+    @Test
+    @DisplayName("ActionMetadata round-trips a schedule facet (0.11.0)")
+    void scheduledActionMetadataRoundTrips() {
+        assertRoundTrip(ActionMetadata.builder("reconcile")
+                .description("Nightly reconciliation")
+                .methodName("reconcile")
+                .schedule(ScheduleMetadata.cron("0 3 * * *"))
+                .build(), ActionMetadata.class);
+
+        assertRoundTrip(ActionMetadata.builder("refreshQuotes")
+                .schedule(ScheduleMetadata.every("PT15M"))
+                .build(), ActionMetadata.class);
+    }
+
+    @Test
+    @DisplayName("BlobMetadata round-trips (full + minimal)")
+    void blobMetadataRoundTrips() {
+        // Full: explicit tenant-relative container + a narrowed media-type set.
+        assertRoundTrip(new BlobMetadata("statements", List.of("application/pdf", "image/png")),
+                BlobMetadata.class);
+        // Minimal: derived container (null on the wire), unrestricted types.
+        assertRoundTrip(BlobMetadata.unrestricted(), BlobMetadata.class);
+    }
+
+    @Test
+    @DisplayName("FieldMetadata round-trips a blob facet (0.11.0)")
+    void blobFieldMetadataRoundTrips() {
+        assertRoundTrip(FieldMetadata.builder("statement", "BlobRef")
+                .displayName("Statement PDF")
+                .blob(BlobMetadata.ofContentTypes(List.of("application/pdf")))
+                .build(), FieldMetadata.class);
+    }
+
+    @Test
+    @DisplayName("an absent schedule / blob facet stays absent on the wire")
+    void absentReservedFacetsStayAbsent() {
+        // The common case: neither facet declared. Both carriers are nullable and
+        // must not be materialised into empty objects by the reader — an empty
+        // ScheduleMetadata is not even constructible (kind and expression are
+        // required), so a reader that invented one would fail loudly rather than
+        // quietly, but the wire must not carry the key in the first place.
+        String actionJson;
+        String fieldJson;
+        try {
+            actionJson = mapper.writeValueAsString(ActionMetadata.simple("ship"));
+            fieldJson = mapper.writeValueAsString(FieldMetadata.simple("total", "BigDecimal"));
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+
+        assertThat(actionJson).doesNotContain("schedule");
+        assertThat(fieldJson).doesNotContain("blob");
+    }
+
+    @Test
     @DisplayName("ActionParamMetadata round-trips (record with NON_NULL inclusion)")
     void actionParamMetadataRoundTrips() {
         ActionParamMetadata original = ActionParamMetadata.builder("amount", "BigDecimal")

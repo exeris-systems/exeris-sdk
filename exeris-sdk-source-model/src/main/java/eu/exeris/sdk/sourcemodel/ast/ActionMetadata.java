@@ -83,7 +83,26 @@ public record ActionMetadata(
          *
          * @since 0.8.0
          */
-        boolean realTimeUpdates
+        boolean realTimeUpdates,
+
+        /**
+         * The schedule on which this action also fires without a client call —
+         * the AST twin of {@code @Schedule} on the action method. Optional:
+         * {@code null} when the action is call-only, which is the common case.
+         *
+         * <p><strong>Open-Core status — reserved, extraction pending
+         * tooling:</strong> the kernel side exists ({@code JobScheduler} /
+         * {@code JobTrigger}, kernel ADR-057, shipped on the kernel 0.11 line
+         * with {@code AbstractJobSchedulerTck}), but no {@code exeris-tooling}
+         * processor extracts {@code @Schedule} and no generator submits a job
+         * from this component, so on the build-time path it is always
+         * {@code null}. The kernel holds {@code …spi.scheduling} at tier
+         * {@code preview}, so the component is excluded from the 1.0.0 freeze
+         * and a 1.x minor may still change it (ADR-070).
+         *
+         * @since 0.11.0
+         */
+        ScheduleMetadata schedule
 ) {
 
     public ActionMetadata {
@@ -96,7 +115,7 @@ public record ActionMetadata(
     }
 
     public static ActionMetadata simple(String name) {
-        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false);
+        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null);
     }
 
     public static Builder builder(String name) {
@@ -111,6 +130,8 @@ public record ActionMetadata(
     public boolean hasProducedEvents() { return !producesEvents.isEmpty(); }
     @JsonIgnore
     public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
+    @JsonIgnore
+    public boolean isScheduled() { return schedule != null; }
 
     @JsonIgnore
     public String effectiveDisplayName() {
@@ -144,6 +165,7 @@ public record ActionMetadata(
         private boolean streaming = false;
         private String streamEventType;
         private boolean realTimeUpdates = false;
+        private ScheduleMetadata schedule;
 
         private Builder(String name) { this.name = name; }
 
@@ -163,11 +185,12 @@ public record ActionMetadata(
         public Builder streaming(boolean v) { this.streaming = v; return this; }
         public Builder streamEventType(String v) { this.streamEventType = v; return this; }
         public Builder realTimeUpdates(boolean v) { this.realTimeUpdates = v; return this; }
+        public Builder schedule(ScheduleMetadata v) { this.schedule = v; return this; }
 
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
                     async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName,
-                    streaming, streamEventType, realTimeUpdates);
+                    streaming, streamEventType, realTimeUpdates, schedule);
         }
     }
 }

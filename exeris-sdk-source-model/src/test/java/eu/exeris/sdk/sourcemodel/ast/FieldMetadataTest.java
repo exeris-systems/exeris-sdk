@@ -15,7 +15,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new FieldMetadata(null, "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
@@ -23,7 +23,7 @@ class FieldMetadataTest {
     void compactConstructorRejectsNullType() {
         assertThatThrownBy(() -> new FieldMetadata("amount", null, null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null))
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 
@@ -31,7 +31,7 @@ class FieldMetadataTest {
     void compactConstructorDefaultsNullComputedFromToEmptyList() {
         FieldMetadata f = new FieldMetadata("a", "String", null, null, null,
                 false, false, false, false, false, false, false, false, false, null,
-                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null);
+                null, null, null, null, null, null, null, null, false, null, true, true, null, null, null, null);
         assertThat(f.computedFrom()).isNotNull().isEmpty();
     }
 
@@ -216,5 +216,17 @@ class FieldMetadataTest {
         assertThat(FieldMetadata.builder("a", "String").displayNameKey(null).build().displayNameKey()).isNull();
         assertThat(FieldMetadata.builder("a", "String").descriptionKey("").build().descriptionKey()).isNull();
         assertThat(FieldMetadata.builder("a", "String").descriptionKey(null).build().descriptionKey()).isNull();
+    }
+
+    @Test
+    void blobFacetIsAbsentUnlessDeclared() {
+        assertThat(FieldMetadata.simple("total", "BigDecimal").hasBlob()).isFalse();
+        assertThat(FieldMetadata.simple("total", "BigDecimal").blob()).isNull();
+
+        FieldMetadata f = FieldMetadata.builder("statement", "BlobRef")
+                .blob(BlobMetadata.ofContentTypes(java.util.List.of("application/pdf")))
+                .build();
+        assertThat(f.hasBlob()).isTrue();
+        assertThat(f.blob().contentTypes()).containsExactly("application/pdf");
     }
 }

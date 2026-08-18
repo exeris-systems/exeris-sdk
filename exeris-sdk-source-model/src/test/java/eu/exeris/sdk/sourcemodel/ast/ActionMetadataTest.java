@@ -14,14 +14,14 @@ class ActionMetadataTest {
     @Test
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new ActionMetadata(null, null, null, "POST", null,
-                false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false))
+                false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
     void compactConstructorDefaultsNullHttpMethodToPost() {
         ActionMetadata a = new ActionMetadata("approve", null, null, null, null,
-                false, false, false, false, null, null, null, null, false, null, false);
+                false, false, false, false, null, null, null, null, false, null, false, null);
         assertThat(a.httpMethod()).isEqualTo("POST");
         assertThat(a.params()).isEmpty();
         assertThat(a.permissions()).isEmpty();
@@ -31,7 +31,7 @@ class ActionMetadataTest {
     @Test
     void compactConstructorNormalizesBlankStreamEventTypeToNull() {
         ActionMetadata a = new ActionMetadata("generate-report", null, null, "POST", null,
-                false, false, false, false, null, null, null, null, true, "   ", false);
+                false, false, false, false, null, null, null, null, true, "   ", false, null);
         assertThat(a.streamEventType()).isNull();
         assertThat(a.hasStreamEventType()).isFalse();
     }
@@ -199,5 +199,17 @@ class ActionMetadataTest {
         assertThat(p.maxLength()).isEqualTo(255);
         assertThat(p.min()).isEqualTo(0L);
         assertThat(p.max()).isEqualTo(1L);
+    }
+
+    @Test
+    void scheduleFacetIsAbsentUnlessDeclared() {
+        assertThat(ActionMetadata.simple("ship").isScheduled()).isFalse();
+        assertThat(ActionMetadata.simple("ship").schedule()).isNull();
+
+        ActionMetadata a = ActionMetadata.builder("reconcile")
+                .schedule(ScheduleMetadata.cron("0 3 * * *"))
+                .build();
+        assertThat(a.isScheduled()).isTrue();
+        assertThat(a.schedule().kind()).isEqualTo(ScheduleMetadata.TriggerKind.CRON);
     }
 }
