@@ -106,10 +106,28 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
 Seeded from the 0.9.0 deprecation sweep; each item either lands before the
 freeze or is explicitly re-dispositioned here.
 
-- [ ] **`@ExerisDomain(name = …)` reconciliation** — the `-io` reader and its
-  tests read a `name` attribute the annotation does not declare (JavaParser
-  reads source text unvalidated). Drop it from the reader/tests or add the
-  attribute deliberately.
+- [x] **`@ExerisDomain(name = …)` reconciliation** — **dropped, not adopted.**
+  The `-io` reader read a `name` attribute `@ExerisDomain` does not declare
+  (JavaParser reads source text unvalidated, so nothing ever failed), and its
+  javadoc called it "the canonical entity name *the processor uses*, which may
+  differ from the Java class name". The processor does no such thing: it takes
+  `element.getSimpleName()` and has no override at all. So the reader could
+  return a different identity than the processor for the same source — the one
+  disagreement ADR-042 reader↔processor parity cannot tolerate.
+
+  Adding the attribute was the other option and was rejected: it is new public
+  API immediately before the freeze, inert until `exeris-tooling` honours it,
+  and it argues against Entity-First, where the class *is* the identity.
+
+  Scope was wider than the item implied — 52 usages, including all five
+  budgetHQ corpus files, which are documented as ported from real entities and
+  would not have compiled against the actual annotation. Four usages declared a
+  name differing from the class; one (`entityNameComesFromAnnotationNotClassName`)
+  existed only to pin the fiction and is gone, while three used the divergence
+  as a discriminator to prove some *other* fallback resolves to the class name.
+  Those keep their assertions but lose the discriminator, because after this
+  change there is no second candidate to distinguish from — their comments say
+  so rather than claiming a distinction that no longer exists.
 - [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, encoding the
   record-growth stance in §3: `CONSTRUCTOR_REMOVED` is downgraded to a
   MINOR-level compatible change, because that is the signal a trailing record

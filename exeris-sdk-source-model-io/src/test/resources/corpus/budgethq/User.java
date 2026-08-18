@@ -17,7 +17,7 @@ import eu.exeris.sdk.annotation.Validation;
 import java.time.Instant;
 import java.util.UUID;
 
-@ExerisDomain(name = "User", module = "identity", audited = true, sensitive = true,
+@ExerisDomain(module = "identity", audited = true, sensitive = true,
               description = "Identity-service account aggregate")
 public class User {
 

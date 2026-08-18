@@ -50,8 +50,8 @@ import java.util.TreeSet;
  * — the in-editor counterpart to the build-time annotation processor.
  *
  * <p>0.3.0 scope: locates the first {@code @ExerisDomain}-annotated type and
- * extracts its entity name ({@code @ExerisDomain(name=...)}, falling back to the
- * class name), package, fields, and {@code @Relationship}s. Fields mirror the
+ * extracts its entity name (the class simple name — see {@code toDomain}),
+ * package, fields, and {@code @Relationship}s. Fields mirror the
  * processor's two-path contract: a field <b>with</b> {@code @Field} reads the full
  * attribute surface the processor reads (label, description, required, unique,
  * indexed, searchable, sortable, filterable, readOnly, inCreate, inUpdate,
@@ -266,7 +266,12 @@ public final class SourceModelReader {
     }
 
     private DomainMetadata toDomain(CompilationUnit cu, ClassOrInterfaceDeclaration type) {
-        String entityName = exerisDomainName(type).orElse(type.getNameAsString());
+        // The entity name IS the class simple name. @ExerisDomain declares no `name`
+        // attribute, and the processor derives the name from the class element alone
+        // (ExerisDomainProcessor: `element.getSimpleName()`), so there is nothing else
+        // it could be without this reader disagreeing with the processor about the
+        // identity of the same source — the one thing ADR-042 parity cannot tolerate.
+        String entityName = type.getNameAsString();
         DomainMetadata.Builder builder = DomainMetadata.builder(entityName, packageName(cu))
                 .fields(fields(type))
                 .relationships(relationships(type))
@@ -431,9 +436,8 @@ public final class SourceModelReader {
     /**
      * Domain events declared on the entity, mirroring
      * {@code ExerisDomainProcessor.extractEventsMetadata}. Reads three source
-     * shapes, all keyed off the entity's <em>class</em> simple name (not the
-     * {@code @ExerisDomain(name)}), exactly as the processor uses
-     * {@code element.getSimpleName()}:
+     * shapes, all keyed off the entity's <em>class</em> simple name, exactly as
+     * the processor uses {@code element.getSimpleName()}:
      * <ul>
      *   <li>repeated/single {@code @DomainEvent} directly on the type — the natural
      *       source form of the {@code @Repeatable} annotation (javac folds these into
@@ -940,18 +944,6 @@ public final class SourceModelReader {
                 .filter(pair -> pair.getNameAsString().equals(attribute))
                 .map(MemberValuePair::getValue)
                 .findFirst();
-    }
-
-    /**
-     * The {@code name} attribute of {@code @ExerisDomain(name = "...")} when
-     * present and non-blank — the canonical entity name the processor uses, which
-     * may differ from the Java class name. Empty otherwise (caller falls back to
-     * the class name).
-     */
-    private Optional<String> exerisDomainName(ClassOrInterfaceDeclaration type) {
-        return type.getAnnotationByName("ExerisDomain")
-                .flatMap(ann -> stringAttr(ann, "name"))
-                .filter(name -> !name.isBlank());
     }
 
     /**

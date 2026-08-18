@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-@ExerisDomain(name = "Investment", module = "investments", tenantScoped = true)
+@ExerisDomain(module = "investments", tenantScoped = true)
 @UI(listView = true, detailView = true, createForm = true, editForm = false)
 public class Investment {
 

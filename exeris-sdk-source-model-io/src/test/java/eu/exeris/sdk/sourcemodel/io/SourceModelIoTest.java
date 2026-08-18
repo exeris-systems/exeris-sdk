@@ -43,7 +43,7 @@ class SourceModelIoTest {
             import eu.exeris.sdk.annotation.ExerisDomain;
             import eu.exeris.sdk.annotation.Field;
 
-            @ExerisDomain(name = "Account")
+            @ExerisDomain
             public class Account {
 
                 // human-readable label shown in the UI
@@ -91,19 +91,12 @@ class SourceModelIoTest {
         }
 
         @Test
-        void entityNameComesFromAnnotationNotClassName() {
-            // canonical pattern: @ExerisDomain(name=...) differs from class name
-            String src = """
-                    package x;
-                    import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "BillingAccount")
-                    public class Account {}
-                    """;
-            assertThat(reader.read(src).orElseThrow().entityName()).isEqualTo("BillingAccount");
-        }
-
-        @Test
-        void entityNameFallsBackToClassNameWhenAnnotationOmitsName() {
+        void entityNameIsTheClassSimpleName() {
+            // There is no second candidate, and that is the point. This used to be a
+            // pair of tests — one asserting @ExerisDomain(name=...) won, one asserting
+            // the class name was the fallback — but the annotation declares no `name`
+            // attribute and the processor derives the name from the class element
+            // alone, so the first pinned a behaviour no build could produce.
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -118,7 +111,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", module = "billing", tenantScoped = true,
+                    @ExerisDomain(module = "billing", tenantScoped = true,
                                   softDelete = true, restApi = false)
                     public class Invoice {}
                     """;
@@ -139,7 +132,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", module = "billing")
+                    @ExerisDomain(module = "billing")
                     public class Invoice {}
                     """;
             DomainMetadata d = reader.read(src).orElseThrow();
@@ -152,7 +145,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", module = "billing",
+                    @ExerisDomain(module = "billing",
                                   dataScope = ExerisDomain.DataScope.TENANT)
                     public class Invoice {}
                     """;
@@ -174,8 +167,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Almanac",
-                                  dataScope = ExerisDomain.DataScope.UNIVERSE)
+                    @ExerisDomain(dataScope = ExerisDomain.DataScope.UNIVERSE)
                     public class Almanac {}
                     """;
             assertThat(reader.read(src).orElseThrow().dataScope())
@@ -189,7 +181,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", tenantScoped = true,
+                    @ExerisDomain(tenantScoped = true,
                                   dataScope = ExerisDomain.DataScope.UNSPECIFIED)
                     public class Invoice {}
                     """;
@@ -209,7 +201,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", dataScope = ExerisDomain.DataScope.GALAXY)
+                    @ExerisDomain(dataScope = ExerisDomain.DataScope.GALAXY)
                     public class Invoice {}
                     """;
             DomainMetadata d = reader.read(src).orElseThrow();
@@ -224,7 +216,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Invoice", tenantScoped = true)
+                    @ExerisDomain(tenantScoped = true)
                     public class Invoice {}
                     """;
             DomainMetadata d = reader.read(src).orElseThrow();
@@ -526,7 +518,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Point")
+                    @ExerisDomain
                     public class Point { private int a, b; }
                     """;
             String removed = writer.removeField(src, "a");
@@ -615,7 +607,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Action;
-                    @ExerisDomain(name = "Invoice")
+                    @ExerisDomain
                     public class Invoice {
                         @Action(name = "approve", path = "/a")
                         public void doApprove() {}
@@ -656,7 +648,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.Relationship.RelationshipType;
                 import java.util.List;
 
-                @ExerisDomain(name = "Order")
+                @ExerisDomain
                 public class Order {
                     @Relationship(relationshipType = RelationshipType.MANY_TO_ONE)
                     private Customer customer;
@@ -743,7 +735,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.ActionParam;
                 import eu.exeris.sdk.annotation.Field;
 
-                @ExerisDomain(name = "Invoice")
+                @ExerisDomain
                 public class Invoice {
                     @Field private String number;
 
@@ -805,7 +797,7 @@ class SourceModelIoTest {
                     package app.fleet;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Action;
-                    @ExerisDomain(name = "Fleet")
+                    @ExerisDomain
                     public class Fleet {
                         @Action(name = "commandFormation", path = "/command-formation")
                         public void setFormation() { }
@@ -861,7 +853,7 @@ class SourceModelIoTest {
                     package app.reporting;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Action;
-                    @ExerisDomain(name = "Report")
+                    @ExerisDomain
                     public class Report {
                         @Action(name = "generate", path = "/generate",
                                 streaming = true, streamEventType = "ReportProgress")
@@ -909,7 +901,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.UI;
                 import eu.exeris.sdk.annotation.Field;
 
-                @ExerisDomain(name = "Product")
+                @ExerisDomain
                 @UI(listView = true, exportable = true, editForm = false)
                 public class Product {
                     @Field private String sku;
@@ -936,7 +928,7 @@ class SourceModelIoTest {
             String noUi = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Bare")
+                    @ExerisDomain
                     public class Bare {}
                     """;
             assertThat(reader.read(noUi).orElseThrow().uiMetadata()).isNull();
@@ -949,7 +941,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.UI;
-                    @ExerisDomain(name = "Bare")
+                    @ExerisDomain
                     @UI
                     public class Bare {}
                     """;
@@ -975,7 +967,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.UI;
-                    @ExerisDomain(name = "Order", ui = @UI(listView = true, exportable = true))
+                    @ExerisDomain(ui = @UI(listView = true, exportable = true))
                     public class Order {}
                     """;
             assertThat(reader.read(nested).orElseThrow().uiMetadata()).isNull();
@@ -988,7 +980,7 @@ class SourceModelIoTest {
 
         @Test
         void emptyForFullyModeledEntity() {
-            // ACCOUNT uses only @ExerisDomain(name), @Field (+ a non-facet @Deprecated)
+            // ACCOUNT uses only @ExerisDomain, @Field (+ a non-facet @Deprecated)
             assertThat(reader.unmodeledFacets(ACCOUNT)).isEmpty();
         }
 
@@ -1012,7 +1004,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
 
-                    @ExerisDomain(name = "Order", tenantScoped = true, roles = {"ADMIN"})
+                    @ExerisDomain(tenantScoped = true, roles = {"ADMIN"})
                     @EventSourced @Graph @Saga
                     @InternalApi(rateLimit = 100)
                     @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
@@ -1032,7 +1024,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Bare", tenantScoped = true, softDelete = true)
+                    @ExerisDomain(tenantScoped = true, softDelete = true)
                     public class Bare {}
                     """;
             assertThat(reader.unmodeledFacets(src)).isEmpty();
@@ -1043,7 +1035,7 @@ class SourceModelIoTest {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
-                    @ExerisDomain(name = "Bare")
+                    @ExerisDomain
                     public class Bare {}
                     """;
             assertThat(reader.unmodeledFacets(src)).isEmpty();
@@ -1066,7 +1058,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                 import eu.exeris.sdk.annotation.Field;
 
-                @ExerisDomain(name = "OrderEntity")
+                @ExerisDomain
                 @DomainEvent(name = "OrderPlaced", trigger = Trigger.CREATE,
                         topic = "orders.created", description = "Customer placed an order")
                 @DomainEvent(trigger = Trigger.UPDATE, topic = "orders.updated")
@@ -1085,7 +1077,7 @@ class SourceModelIoTest {
                 assertThat(e.name()).isEqualTo("OrderPlaced");
                 assertThat(e.topic()).isEqualTo("orders.created");
                 assertThat(e.description()).isEqualTo("Customer placed an order");
-                // aggregateType mirrors the processor: the *class* simple name, not @ExerisDomain(name)
+                // aggregateType mirrors the processor: the class simple name
                 assertThat(e.aggregateType()).isEqualTo("Order");
             });
         }
@@ -1124,7 +1116,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Order")
+                    @ExerisDomain
                     @DomainEvent(name = "OrderCancelled", trigger = Trigger.ACTION, action = "cancel")
                     @DomainEvent(name = "StatusChanged", trigger = Trigger.FIELD_CHANGED, field = "status")
                     public class Order {}
@@ -1155,7 +1147,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Thing")
+                    @ExerisDomain
                     @DomainEvent(trigger = Trigger.BULK_CREATE)
                     public class Thing {}
                     """;
@@ -1174,7 +1166,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.DomainEvent;
-                    @ExerisDomain(name = "Thing")
+                    @ExerisDomain
                     @DomainEvent(topic = "things.created")
                     public class Thing {}
                     """;
@@ -1197,7 +1189,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Thing")
+                    @ExerisDomain
                     @DomainEvent(trigger = Trigger.SNAPSHOT, topic = "things.snap")
                     public class Thing {}
                     """;
@@ -1214,7 +1206,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Order")
+                    @ExerisDomain
                     @DomainEvents({
                         @DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"),
                         @DomainEvent(name = "Deleted", trigger = Trigger.DELETE, topic = "o.deleted")
@@ -1235,7 +1227,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.DomainEvents;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Order")
+                    @ExerisDomain
                     @DomainEvents(@DomainEvent(name = "Created", trigger = Trigger.CREATE, topic = "o.created"))
                     public class Order {}
                     """;
@@ -1252,7 +1244,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.DomainEvent;
                     import eu.exeris.sdk.annotation.DomainEvent.Trigger;
-                    @ExerisDomain(name = "Order")
+                    @ExerisDomain
                     public class Order {
                         @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
                         public static class OrderCreated {}
@@ -1282,7 +1274,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.DomainEvent.Trigger;
                 import eu.exeris.sdk.annotation.Field;
 
-                @ExerisDomain(name = "Order")
+                @ExerisDomain
                 @DomainEvent(name = "OrderCreated", trigger = Trigger.CREATE, topic = "orders.created")
                 @DomainEvent(name = "OrderPicked", trigger = Trigger.ACTION, topic = "orders.picked",
                         includeFields = {"amount", "orderNumber"}, sensitiveFields = "customerEmail")
@@ -1365,7 +1357,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Graph;
-                    @ExerisDomain(name = "Person")
+                    @ExerisDomain
                     @Graph(nodeClass = "PersonNode")
                     public class Person {}
                     """;
@@ -1381,7 +1373,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Graph;
-                    @ExerisDomain(name = "Person")
+                    @ExerisDomain
                     @Graph
                     public class Person {}
                     """;
@@ -1400,7 +1392,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.EventSourced;
-                    @ExerisDomain(name = "Order")
+                    @ExerisDomain
                     @EventSourced(streamPrefix = "orders", snapshotThreshold = 25)
                     public class Order {}
                     """;
@@ -1418,12 +1410,12 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.EventSourced;
-                    @ExerisDomain(name = "OrderEntity")
+                    @ExerisDomain
                     @EventSourced
                     public class Order {}
                     """;
             assertThat(reader.read(src).orElseThrow().eventSourced()).satisfies(es -> {
-                // empty streamPrefix -> class simple name (not @ExerisDomain name)
+                // empty streamPrefix -> class simple name
                 assertThat(es.aggregateType()).isEqualTo("Order");
                 assertThat(es.snapshotEvery()).isEqualTo(50);
             });
@@ -1436,7 +1428,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Saga;
                     import eu.exeris.sdk.annotation.SagaStep;
-                    @ExerisDomain(name = "Fulfillment")
+                    @ExerisDomain
                     @Saga(name = "OrderFulfillment", description = "End-to-end fulfillment",
                             timeout = "PT10M", maxRetries = 7)
                     public class Fulfillment {
@@ -1474,7 +1466,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Saga;
                     import eu.exeris.sdk.annotation.SagaStep;
-                    @ExerisDomain(name = "Thing")
+                    @ExerisDomain
                     @Saga
                     public class Settlement {
                         @SagaStep(service = "s", command = "c")
@@ -1482,7 +1474,7 @@ class SourceModelIoTest {
                     }
                     """;
             assertThat(reader.read(src).orElseThrow().sagaMetadata()).satisfies(s -> {
-                assertThat(s.name()).isEqualTo("Settlement"); // class simple name, not @ExerisDomain name
+                assertThat(s.name()).isEqualTo("Settlement"); // class simple name
                 // present-only: absent timeout/maxRetries keep the SagaMetadata.Builder
                 // defaults — and the processor (also present-only on the same builder)
                 // produces exactly these, so it is parity, not a silent divergence.
@@ -1501,7 +1493,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.InternalApi;
-                    @ExerisDomain(name = "Ledger")
+                    @ExerisDomain
                     @InternalApi(rateLimit = 100)
                     public class Ledger {}
                     """;
@@ -1536,7 +1528,7 @@ class SourceModelIoTest {
                 import eu.exeris.sdk.annotation.Field;
                 import eu.exeris.sdk.annotation.Validation;
 
-                @ExerisDomain(name = "Product")
+                @ExerisDomain
                 public class Product {
                     @Field(label = "SKU", description = "Stock code", unique = true, indexed = true,
                             searchable = true, sortable = true, filterable = true, readOnly = true,
@@ -1616,7 +1608,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.Validation;
-                    @ExerisDomain(name = "T")
+                    @ExerisDomain
                     public class T {
                         @Field @Validation(min = -10, max = -1) private int delta;
                     }
@@ -1634,7 +1626,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.Validation;
-                    @ExerisDomain(name = "T")
+                    @ExerisDomain
                     public class T {
                         @Field @Validation(required = true) private String a;
                         @Field(required = false) @Validation(required = true) private String b;
@@ -1654,7 +1646,7 @@ class SourceModelIoTest {
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Field;
                     import eu.exeris.sdk.annotation.Validation;
-                    @ExerisDomain(name = "T")
+                    @ExerisDomain
                     public class T {
                         @Field @Validation(validateOn = "CREATE") private String onCreate;
                         @Field @Validation(validateOn = "UPDATE") private String onUpdate;
@@ -1686,7 +1678,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Validation;
-                    @ExerisDomain(name = "T")
+                    @ExerisDomain
                     public class T {
                         @Validation(min = 5, required = true) private String loose;
                     }
@@ -1709,7 +1701,7 @@ class SourceModelIoTest {
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.Field;
-                    @ExerisDomain(name = "Invoice")
+                    @ExerisDomain
                     public class Invoice {
                         @Field(label = "Amount", dataType = "currency") private java.math.BigDecimal amount;
                         @Field(label = "Reference") private String reference;

@@ -29,7 +29,7 @@ class SourceModelMutationApplierTest {
 
     private static final String SOURCE = """
             package com.acme;
-            @ExerisDomain(name = "Order")
+            @ExerisDomain
             public class Order {
                 @Field private String amount;
             }
