@@ -162,7 +162,7 @@ class SourceModelReaderValidationParityTest {
                 import eu.exeris.sdk.annotation.ExerisDomain;
                 import eu.exeris.sdk.annotation.Field;
                 import eu.exeris.sdk.annotation.Validation;
-                @ExerisDomain(name = "T")
+                @ExerisDomain
                 public class T {
                     @Field(label = "Code")
                     @Validation(min = 1, max = 9999, minLength = 2, maxLength = 40, pattern = "[a-z]+")

@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-@ExerisDomain(name = "BankAccount", module = "sync", tenantScoped = true,
+@ExerisDomain(module = "sync", tenantScoped = true,
               description = "One row per bank account discovered under a bank connection")
 public class BankAccount {
 

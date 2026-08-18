@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-@ExerisDomain(name = "BankTransaction", module = "sync", tenantScoped = true)
+@ExerisDomain(module = "sync", tenantScoped = true)
 @DomainEvent(trigger = DomainEvent.Trigger.CREATE, topic = "sync.bank-transactions")
 public class BankTransaction {
 

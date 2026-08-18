@@ -119,6 +119,25 @@ components are trailing and by-name, and nothing populates either yet.
   population.
 
 ### Fixed
+- **The `-io` reader read an `@ExerisDomain` attribute that does not exist.**
+  `SourceModelReader` treated `@ExerisDomain(name = "...")` as the entity
+  identity, and its javadoc called it "the canonical entity name *the processor
+  uses*, which may differ from the Java class name". `@ExerisDomain` declares 35
+  attributes and `name` is not among them, and the processor derives the name
+  from `element.getSimpleName()` with no override anywhere. JavaParser reads
+  source text unvalidated, so nothing ever failed.
+
+  The consequence was not cosmetic: for the same source the reader could return
+  a different entity identity than the processor, which is exactly the
+  reader↔processor disagreement ADR-042 parity exists to prevent. The attribute
+  is dropped rather than added — adding it would be new public API immediately
+  before the freeze, inert until `exeris-tooling` honoured it, and it argues
+  against Entity-First, where the class *is* the identity.
+
+  52 usages removed, including all five budgetHQ corpus files — documented as
+  ported from real entities, and annotated with source that would not have
+  compiled against the real annotation. Reads are unaffected: every corpus name
+  already equalled its class name, and the reader had a class-name fallback.
 - **A wire-format hazard that does not exist, asserted since 0.10.0.** ADR-059
   obligation 3 states that under `@JsonInclude(NON_DEFAULT)` it is
   `DataScope.GLOBAL` (ordinal 0) that drops, and that a dropped explicit `GLOBAL`

@@ -14,7 +14,7 @@ import eu.exeris.sdk.annotation.Validation;
 import java.time.Instant;
 import java.util.UUID;
 
-@ExerisDomain(name = "BankConnection", module = "sync", tenantScoped = true)
+@ExerisDomain(module = "sync", tenantScoped = true)
 public class BankConnection {
 
     private UUID id;
