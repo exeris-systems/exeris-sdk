@@ -51,6 +51,18 @@ public final class SourceModelMutationApplier {
     private final SourceModelWriter writer = new SourceModelWriter();
 
     /**
+     * Creates an applier over a fresh {@link SourceModelConflictDetector} and
+     * {@link SourceModelWriter}. Holds no caller-visible state beyond those two, so
+     * one instance may be shared or created per call.
+     *
+     * <p>Declared rather than left implicit: 1.0.0 freezes the public surface, and
+     * an undeclared constructor is still part of it. Stating it makes instantiation
+     * a documented affordance instead of a language default nobody chose.
+     */
+    public SourceModelMutationApplier() {
+    }
+
+    /**
      * Apply {@code op} to {@code currentSource} if it does not conflict with a
      * user edit relative to {@code baselineJson}. No concurrency check.
      *

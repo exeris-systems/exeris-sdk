@@ -118,6 +118,14 @@ components are trailing and by-name, and nothing populates either yet.
   populates the new components yet: the schema names the shape, not its
   population.
 
+### Changed
+- **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare
+  their constructors.** Both previously declared none and therefore carried an
+  implicit public no-arg constructor — a member nobody wrote that 1.0.0 would
+  freeze regardless, while their siblings `SourceModelReader` and
+  `SourceModelWriter` declare theirs. Behaviour-neutral; found by the pre-freeze
+  public API surface review.
+
 ### Fixed
 - **The `-io` reader read an `@ExerisDomain` attribute that does not exist.**
   `SourceModelReader` treated `@ExerisDomain(name = "...")` as the entity

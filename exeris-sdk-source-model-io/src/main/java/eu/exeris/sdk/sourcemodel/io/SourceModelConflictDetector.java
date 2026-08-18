@@ -77,6 +77,17 @@ import java.util.Optional;
 public final class SourceModelConflictDetector {
 
     /**
+     * Creates a detector. Stateless and cheap — every operation is pure over the
+     * values passed to it, so one instance may be shared or created per call.
+     *
+     * <p>Declared rather than left implicit: 1.0.0 freezes the public surface, and
+     * an undeclared constructor is still part of it. Stating it makes instantiation
+     * a documented affordance instead of a language default nobody chose.
+     */
+    public SourceModelConflictDetector() {
+    }
+
+    /**
      * Reads the baseline JSON (the domain fields and the {@link BaselineTrust}
      * siblings, each blind to the other via {@code ignoreUnknown}). Configured
      * with the AST-wide {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} contract.

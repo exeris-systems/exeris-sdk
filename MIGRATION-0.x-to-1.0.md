@@ -94,6 +94,13 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   distinction (trailing-additive = allowed; reorder, rename, retype, or remove
   = break). A gate configured on defaults will reject exactly the growth this
   paragraph permits — see the ROADMAP 1.0.0 GA item.
+- **There is no `internal/` package, and everything public is contract.** Said
+  plainly because the phrase "everything not in `internal/` is contract" invites
+  the assumption that some escape hatch exists. None does, and none is planned:
+  every module here is a deliberate API surface, so there is no implementation
+  detail for one to hold. Practical consequence for a consumer: if it is
+  `public` in a publishable module, 1.0.0 freezes it — with the single stated
+  exception in §2 (`@Blob` / `@Schedule` and their AST carriers).
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.
