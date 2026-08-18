@@ -60,6 +60,10 @@ public final class SourceModelMutationApplier {
      * a documented affordance instead of a language default nobody chose.
      */
     public SourceModelMutationApplier() {
+        // Intentionally empty: both collaborators are field initialisers above, so
+        // there is nothing left to do here. Declared rather than left implicit
+        // because 1.0.0 freezes the public surface and an undeclared constructor is
+        // still part of it.
     }
 
     /**

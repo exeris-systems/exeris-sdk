@@ -102,6 +102,12 @@ components are trailing and by-name, and nothing populates either yet.
   therefore no identity to capture (open, tracked in ADR-072).
 
 ### Changed
+- **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare
+  their constructors.** Both previously declared none and therefore carried an
+  implicit public no-arg constructor — a member nobody wrote that 1.0.0 would
+  freeze regardless, while their siblings `SourceModelReader` and
+  `SourceModelWriter` declare theirs. Behaviour-neutral; found by the pre-freeze
+  public API surface review.
 - **`@Action.path` is now optional** — `String path()` gained a `default ""`. The
   attribute was mandatory and read by nobody: `ActionMetadata` carries no path
   component, so the value never reached the build-time JSON, and the served route
@@ -117,14 +123,6 @@ components are trailing and by-name, and nothing populates either yet.
   one-milestone degradation the 0.10.0 bump caused. Taken even though nothing
   populates the new components yet: the schema names the shape, not its
   population.
-
-### Changed
-- **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare
-  their constructors.** Both previously declared none and therefore carried an
-  implicit public no-arg constructor — a member nobody wrote that 1.0.0 would
-  freeze regardless, while their siblings `SourceModelReader` and
-  `SourceModelWriter` declare theirs. Behaviour-neutral; found by the pre-freeze
-  public API surface review.
 
 ### Fixed
 - **The `-io` reader read an `@ExerisDomain` attribute that does not exist.**
