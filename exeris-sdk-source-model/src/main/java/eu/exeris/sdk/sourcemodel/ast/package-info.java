@@ -246,6 +246,33 @@
  * {@code DomainMetadata}, that gap creates no ADR-042 conflict-detection drift
  * surface, and {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
  *
+ * <h2>Blob + schedule facets (0.11.0, reserved)</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata#blob()}
+ * ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
+ * {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#schedule()}
+ * ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}) are the AST twins of
+ * {@code @Blob} and {@code @Schedule} — the design-time expression of the kernel
+ * v0.11 blob-storage and job-scheduling seams (ADR-070). Both are trailing,
+ * nullable, and absent from the wire unless declared.
+ *
+ * <p>{@code ScheduleMetadata} collapses the annotation's three mutually exclusive
+ * attributes ({@code cron} / {@code every} / {@code at}) into one
+ * {@code TriggerKind} discriminator plus the verbatim expression, so a consumer
+ * cannot read a cron <em>and</em> an interval — a combination the annotation only
+ * forbids in prose. It is class-level {@code NON_NULL}, and that is load-bearing
+ * rather than stylistic: {@code TriggerKind.CRON} is ordinal 0, so under the
+ * {@code NON_DEFAULT} used on the larger records an explicit {@code CRON} would
+ * be dropped on serialization and read back {@code null}. Unlike the
+ * {@code DataScope.GLOBAL} case (ADR-059) there is no {@code effective*()}
+ * accessor to recover it, so the schedule would simply cease to exist between
+ * write and read.
+ *
+ * <p>Both are <strong>reserved</strong>: no processor populates them and no
+ * generator consumes them, the kernel holds both SPI packages at tier
+ * {@code preview}, and neither enters the 1.0.0 freeze. {@code SchemaVersion}
+ * moves to {@code "0.11.0"} regardless — the schema names the shape, not its
+ * population.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

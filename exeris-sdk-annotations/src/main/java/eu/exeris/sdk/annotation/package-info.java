@@ -215,6 +215,9 @@
  *       {@link eu.exeris.sdk.annotation.EventSourced @EventSourced},
  *       {@link eu.exeris.sdk.annotation.Projection @Projection},
  *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam};
+ *       the kernel-0.11 facets
+ *       {@link eu.exeris.sdk.annotation.Blob @Blob},
+ *       {@link eu.exeris.sdk.annotation.Schedule @Schedule};
  *       the layout annotations
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
@@ -271,6 +274,13 @@
  *       constraint rules — {@code min}, {@code max}, {@code minLength},
  *       {@code maxLength}, {@code pattern}, and the flag constraints.</li>
  * </ul>
+ * <p>The rule binds new annotations too, not only these two. {@code @Blob}
+ * declares a binary-object facet and deliberately carries no {@code maxSizeBytes}
+ * for exactly this reason: a size bound is a constraint rule, and adding one
+ * there would reopen the second declaration site ADR-054 closed. If a blob size
+ * bound is ever wanted, it belongs on {@code @Validation} and in
+ * {@code FieldMetadata}, like every other bound.
+ *
  * <p>The AST carrier for both is a single record, {@code FieldMetadata}; there is
  * no parallel validation record (ADR-054 removed it in 0.9.0). Database
  * NOT NULL / not-blank semantics are <em>derived</em> from
@@ -315,6 +325,29 @@
  * nothing, preserving zero runtime coupling. No processor extraction and no
  * generator consumes them, so declaring them today has no generated effect.
  * Direction in RFC-2026-06-18 (ACCEPTED).
+ *
+ * <h2>Kernel-0.11 facets ({@code @Blob} / {@code @Schedule}) — RESERVED</h2>
+ * <p>{@link eu.exeris.sdk.annotation.Blob} declares that a field holds a binary
+ * object (an attachment) rather than an inline value, and
+ * {@link eu.exeris.sdk.annotation.Schedule} declares that an
+ * {@link eu.exeris.sdk.annotation.Action} also fires on a trigger rather than
+ * only when called. They close the two Entity-First gaps kernel v0.11 named when
+ * it shipped {@code …spi.storage.blob} (kernel ADR-056) and
+ * {@code …spi.scheduling} (kernel ADR-057).
+ *
+ * <p>Unlike the other RESERVED entries above, the reservation here is not waiting
+ * on a platform that does not exist — both kernel packages shipped with their
+ * TCKs. It is waiting on the {@code exeris-tooling} transcription, and on the
+ * kernel promoting each package out of tier {@code preview}. Until both happen,
+ * <strong>neither surface enters the 1.0.0 freeze</strong> and a 1.x minor may
+ * still change them; see {@code docs/adr/ADR-070}.
+ *
+ * <p>Each annotation also records the one combination its counterpart platform
+ * contract refuses outright — a {@code @Blob} field on a {@code GLOBAL}-scoped
+ * entity has no isolation key and is terminally denied, and a declared schedule
+ * has no submission event and therefore no identity to capture. Both are for
+ * {@code exeris-tooling} to reject at build time; they are stated in the javadoc
+ * so the combination is not written in the first place.
  *
  * <h2>Architecture principles</h2>
  * <ul>

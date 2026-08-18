@@ -17,6 +17,91 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the
+1.0.0 freeze; this exists because that framing conflated two things. The ROADMAP
+dispositioned the blob and job facets "1.x, not before" on the argument that
+freezing an SDK annotation against a kernel package held at tier `preview`
+inverts the stability ordering — sound, and unchanged. But it forbids *freezing*,
+and read as "not pre-1.0" only because, with 0.10.0 believed to be the last
+milestone, the two were the same sentence. A 0.11.0 separates them: 0.x permits
+breaking changes in any release, so a surface landing here and explicitly
+excluded from the 1.0.0 cut is not frozen against anything
+([ADR-070](docs/adr/ADR-070-kernel-0.11-preview-spi-reserved-surface.md)).
+
+Schema `"0.10.0"` → `"0.11.0"`. No wire break beyond the schema stamp; both new
+components are trailing and by-name, and nothing populates either yet.
+
+### Added
+- **`@Blob` — a field-level binary facet** (kernel ADR-056), with `BlobMetadata`
+  carried on `FieldMetadata.blob`. Closes the Entity-First gap the kernel named
+  when it shipped `…spi.storage.blob`: there was no way to declare "this entity
+  has an attachment", `@Field.dataType` being a free-form presentation hint and
+  the ui-kit's `.exeris-file` class styling.
+
+  It declares **no** `maxSizeBytes`, on two independent grounds. A size bound is
+  a constraint rule, and constraint rules have had one declaration site
+  (`@Validation`) and one carrier (`FieldMetadata`) since ADR-054 — a second one
+  here would reopen exactly what that ADR closed. And the kernel states no size
+  policy at all (ADR-056 makes transfer buffers caller-owned), so the attribute
+  would be inert against a platform with no opinion to be inert against, which
+  is worse than inert against an unbuilt consumer.
+
+- **`@Schedule` — an action-level trigger facet** (kernel ADR-057), with
+  `ScheduleMetadata` carried on `ActionMetadata.schedule`. Closes the second gap:
+  no way to declare "run this action on a schedule". Three mutually exclusive
+  attributes mirroring exactly the kinds `JobTrigger` covers — `cron` (standard
+  **five-field** syntax, no seconds and no vendor extensions), `every` (ISO-8601
+  duration), `at` (ISO-8601 instant). The kernel's fourth, event-driven, is
+  excluded there and therefore here; `@EventHandler` already expresses it.
+
+  The AST collapses the three attributes into one `TriggerKind` discriminator, so
+  a cron-*and*-interval combination — which the annotation forbids only in prose
+  — is unrepresentable downstream. `ScheduleMetadata` is class-level `NON_NULL`
+  rather than `NON_DEFAULT`, and that is load-bearing: `TriggerKind.CRON` is
+  ordinal 0, so under `NON_DEFAULT` an explicit `CRON` is dropped on
+  serialization and reads back `null`. Unlike the `GLOBAL` case in ADR-059 there
+  is no `effective*()` accessor to recover it — the schedule would cease to exist
+  between write and read. The round-trip suite pins that so the choice is not
+  vacuous.
+
+  Both surfaces ship **reserved** and **outside the 1.0.0 freeze**: no processor
+  extracts them, no generator consumes them, `-io` does not read them, and the
+  kernel holds both SPI packages at `preview`. Promotion is conditional on the
+  kernel moving each to `stable` *and* the `exeris-tooling` transcription
+  existing. Each javadoc also records the one combination its counterpart kernel
+  contract refuses — a `@Blob` on a `GLOBAL`-scoped entity has no isolation key
+  and is terminally denied, and a declared schedule has no submission event and
+  therefore no identity to capture (open, tracked in ADR-070).
+
+### Changed
+- **`@Action.path` is now optional** — `String path()` gained a `default ""`. The
+  attribute was mandatory and read by nobody: `ActionMetadata` carries no path
+  component, so the value never reached the build-time JSON, and the served route
+  is derived (`{domainPath}/{id}/actions/{kebab-case-action-name}`). It obliged
+  every author to write a plausible, adjacent, wrong URL beside each action, and
+  every reader to believe it. Found by dog-fooding (finding T44), whose first test
+  to call a served action asserted both paths and measured the gap. Adding a
+  default widens what compiles, so no existing code is affected. Whether the
+  attribute becomes an honoured override or is removed stays open; the derived
+  convention is the contract meanwhile.
+- **`SchemaVersion.CURRENT` `"0.10.0"` → `"0.11.0"`.** A `"0.10.0"` baseline reads
+  as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps — the same
+  one-milestone degradation the 0.10.0 bump caused. Taken even though nothing
+  populates the new components yet: the schema names the shape, not its
+  population.
+
+### Fixed
+- **The annotation surface gate could not see an element losing its default.**
+  `AnnotationSurfaceContractTest` consulted the snapshot's `:default` /
+  `:required` flag only for elements it had never seen; for everything already
+  recorded it compared the type and nothing else. An existing element having its
+  default taken away therefore passed silently, though it breaks every usage that
+  omitted it exactly as an undefaulted addition does — so the rule the class
+  states as its whole growth story was enforceable in one direction only. A stale
+  flag is what made that possible, and there was already one instance (the
+  `@Action.path` widening above), so both halves land together: the missing rule,
+  and a report on a widening telling the author to refresh the line.
+
 ## [0.10.0] — 2026-08-12
 
 The kernel-catch-up milestone, and the last one before the 1.0.0 freeze. Three

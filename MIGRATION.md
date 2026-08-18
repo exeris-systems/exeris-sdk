@@ -51,6 +51,69 @@ the derived convention is the contract.
 
 ---
 
+### `SchemaVersion` moves `"0.10.0"` → `"0.11.0"`
+
+**Why:** the AST grew two trailing components — `FieldMetadata.blob` and
+`ActionMetadata.schedule` (see below).
+
+**Impact:** every `exeris-metadata/<entity>.json` baseline stamped `"0.10.0"`
+now reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)`, so `applyMutation` in the LSP
+and any other baseline-trust consumer degrades until codegen re-stamps. Re-run
+codegen once after upgrading. This is the same one-milestone degradation the
+0.10.0 bump caused and is expected, not a defect.
+
+Note the bump is taken even though **nothing populates either new component
+yet**. The schema names the shape, not its population, and the standing posture
+is to refuse a cross-shape baseline rather than assume compatibility.
+
+### New reserved surface: `@Blob` and `@Schedule`
+
+**Why:** kernel v0.11 shipped `…spi.storage.blob` (kernel ADR-056) and
+`…spi.scheduling` (kernel ADR-057), each naming an Entity-First gap — no way to
+declare "this entity has an attachment" or "run this action on a schedule". See
+[ADR-070](docs/adr/ADR-070-kernel-0.11-preview-spi-reserved-surface.md).
+
+```java
+@Field(displayName = "Statement PDF")
+@Blob(contentTypes = {"application/pdf"})
+private BlobRef statement;
+
+@Action(name = "reconcile")
+@Schedule(cron = "0 3 * * *")          // standard five-field cron
+public void reconcile() { ... }
+```
+
+**Impact:** none on existing code — both are new, additive, `@Retention(SOURCE)`
+annotations, and their AST carriers are trailing and nullable.
+
+**Read this before using either.** Both ship **reserved**: no `exeris-tooling`
+processor extracts them, no generator consumes them, and the
+`exeris-sdk-source-model-io` reader does not read them (a source using either
+will correctly report an unmodeled facet). Declaring them today has no generated
+effect. Because the kernel holds both SPI packages at tier `preview`, **neither
+surface enters the 1.0.0 freeze** — a 1.x minor may still change or drop them.
+They are promoted when the kernel package leaves `preview` *and* the tooling
+transcription exists.
+
+Two combinations the platform will refuse once the transcription lands, worth
+knowing before writing them:
+
+- **`@Blob` on a `dataScope = GLOBAL` entity is unstorable.** Global scope leaves
+  `StorageContext.isolationKey` empty, and a blob store must terminally deny in
+  that state rather than fall back to an unscoped location (kernel ADR-056
+  obligation 5). Use `TENANT` scope, or do not model the attachment as a blob.
+- **A `@Schedule`d action has no identity.** The kernel captures
+  `PrincipalContext` at job *submission* and fails a job closed if none was
+  captured (kernel ADR-057 obligation 5); a declared trigger has no submission
+  event. How a scheduled action authenticates is open — tracked in ADR-070.
+
+Also note what `@Blob` deliberately does **not** declare: a `maxSizeBytes`. A
+size bound is a constraint rule, and constraint rules have one declaration site
+(`@Validation`) and one AST carrier (`FieldMetadata`) — ADR-054. If you need a
+bound, it belongs there.
+
+---
+
 ## 0.9.x → 0.10.x
 
 ### `@ExerisDomain.tenantScoped` is deprecated — use `dataScope`
