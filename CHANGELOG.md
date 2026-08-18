@@ -26,7 +26,7 @@ and read as "not pre-1.0" only because, with 0.10.0 believed to be the last
 milestone, the two were the same sentence. A 0.11.0 separates them: 0.x permits
 breaking changes in any release, so a surface landing here and explicitly
 excluded from the 1.0.0 cut is not frozen against anything
-([ADR-072](docs/adr/ADR-072-kernel-0.11-preview-spi-reserved-surface.md)).
+([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md)).
 
 Schema `"0.10.0"` → `"0.11.0"`. No wire break beyond the schema stamp; both new
 components are trailing and by-name, and nothing populates either yet.

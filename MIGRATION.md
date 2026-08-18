@@ -71,7 +71,7 @@ is to refuse a cross-shape baseline rather than assume compatibility.
 **Why:** kernel v0.11 shipped `…spi.storage.blob` (kernel ADR-056) and
 `…spi.scheduling` (kernel ADR-057), each naming an Entity-First gap — no way to
 declare "this entity has an attachment" or "run this action on a schedule". See
-[ADR-072](docs/adr/ADR-072-kernel-0.11-preview-spi-reserved-surface.md).
+[ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md).
 
 ```java
 @Field(displayName = "Statement PDF")

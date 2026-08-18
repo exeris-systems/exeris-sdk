@@ -53,7 +53,7 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   system/security field markers, `@ExerisDomain.validationMode`) — frozen as
   declared; extraction/generation lands additively in 1.x.
 - **`@Blob` / `@Schedule` and their AST carriers are the one exception: NOT
-  frozen** ([ADR-072](docs/adr/ADR-072-kernel-0.11-preview-spi-reserved-surface.md)).
+  frozen** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md)).
   Every other reserved surface above is frozen as declared, because what it
   waits on is downstream work against a settled premise. These two encode kernel
   SPI packages the kernel itself holds at tier **`preview`** in its

@@ -157,7 +157,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > were the same sentence. Inserting a 0.11.0 separates them: 0.x permits
 > breaking changes in any release, so a surface that lands here and is
 > explicitly excluded from the 1.0.0 cut is not frozen against anything.
-> Recorded in [ADR-072](docs/adr/ADR-072-kernel-0.11-preview-spi-reserved-surface.md).
+> Recorded in [ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md).
 
 - [x] **`@Action.path` is optional** — the attribute was mandatory (`String path();`,
   no default) and read by nobody: `ActionMetadata` carries no path component, so
