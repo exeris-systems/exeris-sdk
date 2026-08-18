@@ -22,7 +22,7 @@ import java.util.List;
  * deliberately carries no size bound — constraint values have one carrier,
  * {@link FieldMetadata} (ADR-054), and the kernel states no size policy to carry.
  *
- * <p><strong>Reserved surface (ADR-070).</strong> No {@code exeris-tooling}
+ * <p><strong>Reserved surface (ADR-072).</strong> No {@code exeris-tooling}
  * processor populates this record and no generator consumes it; the kernel holds
  * {@code …spi.storage.blob} at tier {@code preview}, so the shape is excluded from
  * the 1.0.0 freeze and a 1.x minor may still change it.

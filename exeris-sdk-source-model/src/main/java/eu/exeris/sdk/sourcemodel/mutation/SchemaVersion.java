@@ -87,7 +87,7 @@ public final class SchemaVersion {
      *       ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
      *       {@code ActionMetadata} gained {@code schedule}
      *       ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}), the AST
-     *       twins of {@code @Blob} and {@code @Schedule} (ADR-070). Both are
+     *       twins of {@code @Blob} and {@code @Schedule} (ADR-072). Both are
      *       trailing, additive and by-name, and both are <em>reserved</em> —
      *       nothing populates them yet — so a {@code "0.10.0"} baseline loses
      *       no information in practice. The bump is taken anyway, because the

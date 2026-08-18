@@ -44,6 +44,24 @@ import java.util.List;
  * absent key and {@code []} read back to {@link List#of()} through the compact
  * constructor, so the EV1 metadata can grow further without a wire break.
  *
+ * <p><strong>EV2: the trigger triple.</strong> {@code trigger} / {@code actionName} /
+ * {@code fieldName} say <em>when</em> the event fires. Until 0.11.0 the record carried no
+ * trigger at all: the processor read {@code @DomainEvent.trigger} only to derive the event
+ * <em>name</em> suffix ({@code CREATE} → {@code OrderCreatedEvent}) and then discarded it, so
+ * a generator could not know where to place a publish call. Worse, the suffix is only applied
+ * when the user did not supply an explicit {@code name}, so
+ * {@code @DomainEvent(name = "OrderPlaced", trigger = CREATE)} left no trace of the trigger
+ * anywhere. {@code action} and {@code field} — required by {@code ACTION} and
+ * {@code FIELD_CHANGED} respectively — were not read at all.
+ *
+ * <p><strong>{@code trigger} is nullable, deliberately.</strong> {@code null} means "this
+ * baseline predates EV2 extraction", which is a different claim from "fires on CREATE".
+ * Defaulting it in the compact constructor would make the two indistinguishable and would
+ * silently attach create-time publishing to every pre-0.11.0 event. Use {@link #hasTrigger()}
+ * and treat absence as "emit no publish call". Note that this differs from
+ * {@code DomainMetadata.effectiveDataScope()} (ADR-059), which <em>can</em> default because it
+ * has a deprecated predecessor attribute to fall back through; there is no predecessor here.
+ *
  * <p><strong>Out of EV1 scope.</strong> {@code @DomainEvent.includeComputed} and
  * {@code includePreviousValues} do not contribute to {@code payloadFields} yet —
  * there is no computed-field source in the persisted field list. See the
@@ -61,8 +79,41 @@ public record DomainEventMetadata(
         @JsonProperty("aggregateType") String aggregateType,
         // ── EV1: resolved payload framing (field names, not FieldMetadata copies) ──
         @JsonProperty("payloadFields") List<String> payloadFields,
-        @JsonProperty("sensitiveFields") List<String> sensitiveFields
+        @JsonProperty("sensitiveFields") List<String> sensitiveFields,
+        // ── EV2: WHEN the event fires. Nullable — see the class javadoc. ──
+        @JsonProperty("trigger") Trigger trigger,
+        @JsonProperty("actionName") String actionName,
+        @JsonProperty("fieldName") String fieldName
 ) {
+
+    /**
+     * When a domain event fires. AST-owned and independent of
+     * {@code @DomainEvent.Trigger}, bridged by constant-name identity at extraction —
+     * the {@code SagaStepMetadata.StepKind} / {@code DataScope} precedent (ADR-059),
+     * which keeps the annotations module free of a source-model dependency.
+     *
+     * @since 0.11.0
+     */
+    public enum Trigger {
+        /** Published after the aggregate is created. */
+        CREATE,
+        /** Published after the aggregate is updated. */
+        UPDATE,
+        /** Published after the aggregate is deleted. */
+        DELETE,
+        /** Published when a named {@code @Action} runs; see {@link #actionName()}. */
+        ACTION,
+        /** Published when a named field changes; see {@link #fieldName()}. */
+        FIELD_CHANGED,
+        /** Published on a state-machine transition. */
+        STATE_TRANSITION,
+        /** Published by a scheduler. */
+        SCHEDULED,
+        /** Published by an explicit application call. */
+        MANUAL,
+        /** Published on aggregate snapshot. */
+        SNAPSHOT
+    }
 
     /**
      * Normalizes null lists to empty lists (stable wire form whether built via
@@ -72,6 +123,10 @@ public record DomainEventMetadata(
     public DomainEventMetadata {
         payloadFields = (payloadFields == null) ? List.of() : List.copyOf(payloadFields);
         sensitiveFields = (sensitiveFields == null) ? List.of() : List.copyOf(sensitiveFields);
+        // trigger is deliberately NOT defaulted here. See the class javadoc: a null
+        // trigger means "this baseline predates trigger extraction", which is not the
+        // same claim as "fires on CREATE", and a generator must be able to tell them
+        // apart before it emits a publish call.
     }
 
     /**
@@ -80,15 +135,29 @@ public record DomainEventMetadata(
      * constructor (or {@link #builder(String)}) carries the resolved payload.
      */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType) {
-        this(name, topic, description, aggregateType, List.of(), List.of());
+        this(name, topic, description, aggregateType, List.of(), List.of(), null, null, null);
+    }
+
+    /**
+     * Pre-EV2 6-arg constructor — keeps the EV1 call sites compiling and leaves the
+     * trigger triple unset (i.e. "not extracted", per the class javadoc).
+     *
+     * @since 0.11.0
+     */
+    public DomainEventMetadata(String name, String topic, String description, String aggregateType,
+                               List<String> payloadFields, List<String> sensitiveFields) {
+        this(name, topic, description, aggregateType, payloadFields, sensitiveFields,
+                null, null, null);
     }
 
     public static DomainEventMetadata simple(String name) {
-        return new DomainEventMetadata(name, null, null, null, List.of(), List.of());
+        return new DomainEventMetadata(name, null, null, null, List.of(), List.of(),
+                null, null, null);
     }
 
     public static DomainEventMetadata withTopic(String name, String topic) {
-        return new DomainEventMetadata(name, topic, null, null, List.of(), List.of());
+        return new DomainEventMetadata(name, topic, null, null, List.of(), List.of(),
+                null, null, null);
     }
 
     /** @since 0.8.0 (EV1) */
@@ -106,6 +175,16 @@ public record DomainEventMetadata(
         return !sensitiveFields.isEmpty();
     }
 
+    /**
+     * True when this event says <em>when</em> it fires. False means the baseline predates
+     * EV2 trigger extraction — <b>not</b> that the event fires on create.
+     *
+     * @since 0.11.0
+     */
+    public boolean hasTrigger() {
+        return trigger != null;
+    }
+
     /** Mirrors the relevant {@code @DomainEvent} attribute defaults (empty lists). */
     public static final class Builder {
         private final String name;
@@ -114,6 +193,9 @@ public record DomainEventMetadata(
         private String aggregateType;
         private List<String> payloadFields = List.of();
         private List<String> sensitiveFields = List.of();
+        private Trigger trigger;
+        private String actionName;
+        private String fieldName;
 
         private Builder(String name) {
             this.name = name;
@@ -124,10 +206,17 @@ public record DomainEventMetadata(
         public Builder aggregateType(String v) { this.aggregateType = v; return this; }
         public Builder payloadFields(List<String> v) { this.payloadFields = v; return this; }
         public Builder sensitiveFields(List<String> v) { this.sensitiveFields = v; return this; }
+        /** @since 0.11.0 */
+        public Builder trigger(Trigger v) { this.trigger = v; return this; }
+        /** @since 0.11.0 */
+        public Builder actionName(String v) { this.actionName = v; return this; }
+        /** @since 0.11.0 */
+        public Builder fieldName(String v) { this.fieldName = v; return this; }
 
         public DomainEventMetadata build() {
             return new DomainEventMetadata(
-                    name, topic, description, aggregateType, payloadFields, sensitiveFields);
+                    name, topic, description, aggregateType, payloadFields, sensitiveFields,
+                    trigger, actionName, fieldName);
         }
     }
 }

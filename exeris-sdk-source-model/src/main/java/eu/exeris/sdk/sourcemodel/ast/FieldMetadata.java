@@ -69,7 +69,7 @@ public record FieldMetadata(
         // declaration; null for an ordinary inline-valued field. Reserved surface —
         // no processor populates it and no generator consumes it, and the kernel
         // holds ...spi.storage.blob at tier preview, so it is excluded from the
-        // 1.0.0 freeze and a 1.x minor may still change it. See ADR-070.
+        // 1.0.0 freeze and a 1.x minor may still change it. See ADR-072.
         BlobMetadata blob
 ) {
 

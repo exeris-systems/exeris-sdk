@@ -30,11 +30,11 @@ import java.util.Objects;
  * posture. What {@code NON_NULL} buys here is that both components are required and
  * always present on the wire, which is what a facet consumer can then rely on.
  *
- * <p><strong>Reserved surface (ADR-070).</strong> No {@code exeris-tooling}
+ * <p><strong>Reserved surface (ADR-072).</strong> No {@code exeris-tooling}
  * processor populates this record and no generator consumes it; the kernel holds
  * {@code …spi.scheduling} at tier {@code preview}, so the shape is excluded from the
  * 1.0.0 freeze and a 1.x minor may still change it. Which identity a scheduled
- * action runs as is an open question tracked in ADR-070 — a declared trigger has no
+ * action runs as is an open question tracked in ADR-072 — a declared trigger has no
  * submission event, and the kernel captures identity at submission.
  *
  * @since 0.11.0

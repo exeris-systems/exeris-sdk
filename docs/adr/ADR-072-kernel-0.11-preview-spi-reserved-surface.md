@@ -1,4 +1,4 @@
-# ADR-070: The kernel 0.11 preview SPI gets a design-time surface in 0.11.0 — reserved, and outside the 1.0.0 freeze
+# ADR-072: The kernel 0.11 preview SPI gets a design-time surface in 0.11.0 — reserved, and outside the 1.0.0 freeze
 
 | Attribute       | Value                                                                                                     |
 |:----------------|:----------------------------------------------------------------------------------------------------------|
@@ -9,6 +9,8 @@
 | **Owning Repo** | `exeris-sdk`                                                                                              |
 | **Driven By**   | [`ROADMAP.md`](../../ROADMAP.md) §"Kernel 0.11 SPI — dispositioned, deliberately not pre-1.0" — this ADR amends that disposition |
 | **Compliance**  | AST wire-format contract; record-growth stance ([`MIGRATION-0.x-to-1.0.md`](../../MIGRATION-0.x-to-1.0.md) §3); Field/Validation canonical scoping ([ADR-054](ADR-054-field-validation-min-max-pattern-cut.md)); inert-attribute honesty rule |
+
+> **Registry note.** Drafted as `ADR-070` against a stale local checkout of [`exeris-docs`](https://github.com/exeris-systems/exeris-docs); upstream, `070` belongs to `exeris-tooling` (generated composition root) and `071` to the kernel (operational-limits configuration path), so this is `072`. The house rule is to reserve the number in `exeris-docs/adr-index.md` **before** writing the content, and that ordering was inverted here — the index row is owed. Fetch before taking a number; the ecosystem shares one namespace and a local index goes stale silently.
 
 ## Context and Problem Statement
 

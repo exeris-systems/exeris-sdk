@@ -54,7 +54,7 @@ import java.lang.annotation.Target;
  * {@code preview}, so this surface is <strong>excluded from the 1.0.0 freeze</strong>
  * and a 1.x minor may still change it; it is promoted when the kernel package leaves
  * {@code preview} <em>and</em> the tooling transcription exists. See
- * {@code docs/adr/ADR-070} and {@code ROADMAP.md}.
+ * {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
  * <p><strong>One combination the platform will refuse:</strong> a {@code @Blob} field
  * on an entity declared {@code @ExerisDomain(dataScope = GLOBAL)}. Global scope leaves

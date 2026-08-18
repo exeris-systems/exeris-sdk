@@ -58,7 +58,7 @@ import java.lang.annotation.Target;
  * {@code …spi.scheduling} at tier {@code preview}, so this surface is
  * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still change
  * it; it is promoted when the kernel package leaves {@code preview} <em>and</em> the
- * tooling transcription exists. See {@code docs/adr/ADR-070} and {@code ROADMAP.md}.
+ * tooling transcription exists. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
  * <p><strong>One question this surface deliberately does not answer:</strong> which
  * identity a scheduled action runs as. The kernel captures {@code PrincipalContext}
@@ -68,7 +68,7 @@ import java.lang.annotation.Target;
  * principal to capture. Naming a run-as identity here would put an authorization
  * decision inside a design-time annotation, which is the worse of the two available
  * answers; the other is a kernel-side notion of a service principal for declared
- * jobs. It is open, it is tracked in ADR-070, and it is one of the reasons this
+ * jobs. It is open, it is tracked in ADR-072, and it is one of the reasons this
  * surface ships reserved rather than live.
  *
  * @since 0.11.0

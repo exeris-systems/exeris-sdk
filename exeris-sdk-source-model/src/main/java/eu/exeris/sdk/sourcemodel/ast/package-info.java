@@ -252,7 +252,7 @@
  * {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#schedule()}
  * ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}) are the AST twins of
  * {@code @Blob} and {@code @Schedule} — the design-time expression of the kernel
- * v0.11 blob-storage and job-scheduling seams (ADR-070). Both are trailing,
+ * v0.11 blob-storage and job-scheduling seams (ADR-072). Both are trailing,
  * nullable, and absent from the wire unless declared.
  *
  * <p>{@code ScheduleMetadata} collapses the annotation's three mutually exclusive

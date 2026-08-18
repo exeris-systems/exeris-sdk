@@ -71,7 +71,7 @@ is to refuse a cross-shape baseline rather than assume compatibility.
 **Why:** kernel v0.11 shipped `…spi.storage.blob` (kernel ADR-056) and
 `…spi.scheduling` (kernel ADR-057), each naming an Entity-First gap — no way to
 declare "this entity has an attachment" or "run this action on a schedule". See
-[ADR-070](docs/adr/ADR-070-kernel-0.11-preview-spi-reserved-surface.md).
+[ADR-072](docs/adr/ADR-072-kernel-0.11-preview-spi-reserved-surface.md).
 
 ```java
 @Field(displayName = "Statement PDF")
@@ -105,7 +105,7 @@ knowing before writing them:
 - **A `@Schedule`d action has no identity.** The kernel captures
   `PrincipalContext` at job *submission* and fails a job closed if none was
   captured (kernel ADR-057 obligation 5); a declared trigger has no submission
-  event. How a scheduled action authenticates is open — tracked in ADR-070.
+  event. How a scheduled action authenticates is open — tracked in ADR-072.
 
 Also note what `@Blob` deliberately does **not** declare: a `maxSizeBytes`. A
 size bound is a constraint rule, and constraint rules have one declaration site

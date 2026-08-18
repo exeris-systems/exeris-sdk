@@ -98,7 +98,7 @@ public record ActionMetadata(
          * from this component, so on the build-time path it is always
          * {@code null}. The kernel holds {@code …spi.scheduling} at tier
          * {@code preview}, so the component is excluded from the 1.0.0 freeze
-         * and a 1.x minor may still change it (ADR-070).
+         * and a 1.x minor may still change it (ADR-072).
          *
          * @since 0.11.0
          */

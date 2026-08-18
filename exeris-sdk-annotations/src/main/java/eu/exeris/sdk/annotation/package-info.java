@@ -340,7 +340,7 @@
  * TCKs. It is waiting on the {@code exeris-tooling} transcription, and on the
  * kernel promoting each package out of tier {@code preview}. Until both happen,
  * <strong>neither surface enters the 1.0.0 freeze</strong> and a 1.x minor may
- * still change them; see {@code docs/adr/ADR-070}.
+ * still change them; see {@code docs/adr/ADR-072}.
  *
  * <p>Each annotation also records the one combination its counterpart platform
  * contract refuses outright — a {@code @Blob} field on a {@code GLOBAL}-scoped

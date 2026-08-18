@@ -410,6 +410,55 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("EV2: the trigger triple round-trips, and an absent trigger stays absent "
+            + "rather than defaulting to CREATE")
+    void domainEventTriggerRoundTrips() throws Exception {
+        DomainEventMetadata triggered = DomainEventMetadata.builder("OrderPlaced")
+                .topic("orders.created")
+                .aggregateType("Order")
+                .trigger(DomainEventMetadata.Trigger.CREATE)
+                .build();
+        assertThat(triggered.hasTrigger()).isTrue();
+        assertRoundTrip(triggered, DomainEventMetadata.class);
+
+        DomainEventMetadata onAction = DomainEventMetadata.builder("OrderCancelledEvent")
+                .trigger(DomainEventMetadata.Trigger.ACTION)
+                .actionName("cancel")
+                .build();
+        assertRoundTrip(onAction, DomainEventMetadata.class);
+
+        DomainEventMetadata onFieldChange = DomainEventMetadata.builder("OrderStatusChangedEvent")
+                .trigger(DomainEventMetadata.Trigger.FIELD_CHANGED)
+                .fieldName("status")
+                .build();
+        assertRoundTrip(onFieldChange, DomainEventMetadata.class);
+
+        // The load-bearing negative. A pre-EV2 baseline carries no trigger, and it must read
+        // back as "unknown" rather than as CREATE — a generator keys a publish call off this,
+        // so a silent default would attach create-time publishing to every legacy event.
+        DomainEventMetadata preEv2 = new DomainEventMetadata(
+                "OrderCreated", "orders.created", "Order created", "Order");
+        assertThat(preEv2.trigger()).isNull();
+        assertThat(preEv2.hasTrigger()).isFalse();
+        assertThat(preEv2.actionName()).isNull();
+        assertThat(preEv2.fieldName()).isNull();
+        assertRoundTrip(preEv2, DomainEventMetadata.class);
+
+        // ...and the wire form omits the keys entirely (class-level @JsonInclude(NON_NULL)),
+        // so an older reader sees no new fields at all.
+        String preEv2Json = mapper.writeValueAsString(preEv2);
+        assertThat(preEv2Json).doesNotContain("trigger");
+        assertThat(preEv2Json).doesNotContain("actionName");
+        assertThat(preEv2Json).doesNotContain("fieldName");
+
+        // The EV1 6-arg constructor keeps working and also leaves the triple unset.
+        DomainEventMetadata ev1 = new DomainEventMetadata(
+                "OrderShipped", null, null, "Order", List.of("amount"), List.of());
+        assertThat(ev1.hasTrigger()).isFalse();
+        assertThat(ev1.payloadFields()).containsExactly("amount");
+    }
+
+    @Test
     @DisplayName("EventHandlerMetadata round-trips (projection + saga shapes)")
     void eventHandlerMetadataRoundTrips() {
         // Projection-style handler: event selection + condition + ordering.
