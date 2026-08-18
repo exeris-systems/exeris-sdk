@@ -180,11 +180,32 @@ freeze or is explicitly re-dispositioned here.
   `@InternalApi`'s five attributes are inert (documented SDK↔AST drift);
   graph sub-annotations (`@GraphEdge` / `@GraphProperty` / `@GraphQuery`) and
   `@QueryParam` are unextracted with no AST twin.
-- [ ] **Tooling lockstep debt at the freeze** — `@Relationship.relationshipType`
-  extraction bug (processor reads key `"type"`); the reserved-surface
-  extraction flips (`@SagaTransition`, `@Derived`/`@Rule`, `@EventHandler`,
-  `@Projection`) each need their coordinated processor + `-io` reader flip
-  (ADR-042) as they come live.
+- [~] **Tooling lockstep debt at the freeze** — re-dispositioned: **nothing here
+  is SDK work, now or at the freeze.** Both halves were checked against
+  `exeris-tooling` `main` rather than assumed.
+  - `@Relationship.relationshipType` extraction bug — **fixed downstream.** The
+    processor read annotation key `"type"` (the AST's name for it) while the
+    annotation declares `relationshipType`, so every relationship carried the
+    builder default `MANY_TO_ONE` and a `ONE_TO_MANY`/`MANY_TO_MANY` side was
+    emitting an FK column, its index, its constraint and a finder that belong on
+    the other side. `ExerisDomainProcessor` now reads the declared key. The SDK
+    surface was correct throughout — annotation, `-io` reader and `-io` writer
+    all used `relationshipType`.
+  - The reserved-surface flips (`@SagaTransition`, `@Derived`/`@Rule`,
+    `@EventHandler`, `@Projection`) — **still pending, correctly.** The
+    processor extracts none of them today, so no `-io` reader flip is owed: per
+    ADR-042 the reader reads what the processor writes, and reading ahead of it
+    would manufacture drift. Each pairs with its processor slice as it comes
+    live, which is the lockstep, not a debt.
+
+  One item of this shape *is* still live and is deliberately not an SDK issue:
+  `@ActionParam.label` is read by the processor under `"displayName"`, a key the
+  annotation does not declare, so `ActionParamMetadata.displayName` is `null` on
+  every processor run and `effectiveDisplayName()`'s fallback to `name` masks it
+  completely. Same shape as `relationshipType`, same file, and the `-io` reader
+  maps `label` correctly — so it is a live processor/reader divergence owned by
+  `exeris-tooling`. Tracked in `ROADMAP.md`; the SDK surface is correct as
+  declared and there is nothing to change here.
 - [ ] **`exeris-sdk-tck`** — contract test suite shippable to downstream
   consumers (ROADMAP 1.0.0 GA item; scope TBD).
 
