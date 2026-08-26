@@ -112,6 +112,25 @@ size bound is a constraint rule, and constraint rules have one declaration site
 (`@Validation`) and one AST carrier (`FieldMetadata`) — ADR-054. If you need a
 bound, it belongs there.
 
+### `DomainMetadata.isInternal()` reads `internal`, not `hidden` (bugfix)
+
+The predicate keyed off `InternalApiMetadata.hidden()`, a component **neither**
+extraction path populates. Both the `exeris-tooling` processor
+(`extractInternalApiMetadata`) and the `-io` reader (`SourceModelReader`) map
+the mere presence of `@InternalApi` to `internal = true` and leave every other
+component at its default — the annotation and the AST record describe different
+concepts, so presence is the only signal that crosses. The result was that
+`isInternal()` returned `false` for every `@InternalApi` entity on the
+build-time path, and `false` even for `InternalApiMetadata.internal(…)`, the
+factory named after it.
+
+It now reads `internal()`. If you were reading it, you were reading a constant
+`false` unless you hand-built the metadata; if you hand-built it with
+`hidden(true)` and relied on the old reading, switch to `internal(true)` — or
+set both, since they are independent facets (`hidden` is "absent from generated
+docs", `internal` is "service-to-service only"). `hidden()` / `readOnly()` are
+unchanged and still readable directly.
+
 ---
 
 ## 0.9.x → 0.10.x

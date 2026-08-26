@@ -73,8 +73,11 @@ public record ActionMetadata(
          * processor does extract, this component is never populated from
          * annotated source. The processor declines it by name — "deliberately
          * NOT extracted here … extracting it would only create an inert
-         * {@code ActionMetadata} attribute" ({@code exeris-tooling}
-         * {@code exeris-processor/.../ExerisDomainProcessor.java:1377-1381}) —
+         * {@code ActionMetadata} attribute" — the {@code NOTE:} comment in
+         * {@code ExerisDomainProcessor}'s {@code @Action} extraction
+         * ({@code exeris-tooling}, {@code exeris-processor/.../ExerisDomainProcessor.java};
+         * anchored on the comment rather than a line number, which has already
+         * moved once) —
          * and no generator reads it back. On the build-time path it is
          * therefore always {@code false}; only hand-built metadata can set it,
          * and setting it changes no generated artifact. The extraction lands in

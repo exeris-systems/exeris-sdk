@@ -172,6 +172,22 @@ components are trailing and by-name, and nothing populates either yet.
   flag is what made that possible, and there was already one instance (the
   `@Action.path` widening above), so both halves land together: the missing rule,
   and a report on a widening telling the author to refresh the line.
+- **`DomainMetadata.isInternal()` was `false` by construction.** It read
+  `InternalApiMetadata.hidden()`, a component neither extraction path ever
+  populates: the processor (`extractInternalApiMetadata`) and the `-io` reader
+  (`SourceModelReader.internalApi`) both map the *presence* of `@InternalApi` to
+  `internal = true` and leave the other six components at their defaults, because
+  the SDK annotation (a service-to-service call policy — `consumers`,
+  `rateLimit`, `requireMtls`, `timeout`, `documented`) and the AST record (entity
+  visibility and access control) share a name and nothing else. So the predicate
+  returned `false` for every `@InternalApi` entity on the build-time path, and
+  `false` even for `InternalApiMetadata.internal(…)`, the factory named after it —
+  while the test pinning it read as intent (`isInternalRequiresHiddenInternalApi`).
+
+  Now reads `internal()`. Found by the pre-freeze surface review, and fixed there
+  rather than frozen: `exeris-tooling` references neither `isInternal()` nor
+  `internalApi()`, so nothing downstream moves.
+
 
 ## [0.10.0] — 2026-08-12
 
