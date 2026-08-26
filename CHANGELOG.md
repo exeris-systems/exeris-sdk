@@ -169,6 +169,26 @@ components are trailing and by-name, and nothing populates either yet.
   population.
 
 ### Fixed
+- **35 annotations claimed `@since 1.0.0` while shipping in 0.1.0.** Scaffold
+  boilerplate from the very first commit, harmless while the repo is pre-1.0 and
+  false the day 1.0.0 ships, when it starts reading as "added in 1.0.0" for
+  surface that predates every release.
+
+  Each file was rewritten to the version its own history gives, not to a blanket
+  value. 34 came from `1fef6c5`, whose subject is *"init: exeris-sdk
+  v0.1.0-SNAPSHOT skeleton (#1)"* → `0.1.0`; one,
+  `annotation/system/package-info.java`, came from `ac4bc63` dated 2026-07-22,
+  the 0.9.0 release → `0.9.0`. The batch was already self-contradicting:
+  `ExerisDomain` came out of that same scaffold commit and has carried an
+  accurate `@since 0.1.0` the whole time.
+
+  `@version 1.0.0` moved with it, kept rather than dropped because this module
+  already uses `@version` as "version at introduction" — its 0.4.0 files still
+  read `0.4.0` at 0.11.0 — and inventing a second convention mid-cleanup is
+  worse than following the one in place. The other six modules were checked and
+  carry zero such stamps, so the defect was confined to where the pre-freeze
+  surface review found it.
+
 - **The `-io` reader read an `@ExerisDomain` attribute that does not exist.**
   `SourceModelReader` treated `@ExerisDomain(name = "...")` as the entity
   identity, and its javadoc called it "the canonical entity name *the processor

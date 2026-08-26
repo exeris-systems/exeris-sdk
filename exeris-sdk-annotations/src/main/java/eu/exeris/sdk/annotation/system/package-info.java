@@ -30,7 +30,7 @@
  * field-scanning lands; until then they ship as a reserved surface.
  *
  * @author Exeris SDK Team
- * @version 1.0.0
- * @since 1.0.0
+ * @version 0.9.0
+ * @since 0.9.0
  */
 package eu.exeris.sdk.annotation.system;

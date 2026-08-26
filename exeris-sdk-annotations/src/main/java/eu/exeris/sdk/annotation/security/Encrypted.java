@@ -71,8 +71,8 @@ import java.lang.annotation.*;
  * </ul>
  *
  * @author Exeris SDK Team
- * @version 1.0.0
- * @since 1.0.0
+ * @version 0.1.0
+ * @since 0.1.0
  * @see RowLevelSecurity
  */
 @Target(ElementType.FIELD)

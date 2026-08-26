@@ -161,7 +161,11 @@ freeze or is explicitly re-dispositioned here.
     last released jar and no `eu.exeris` artifact is published anywhere yet.
     An absent baseline is configured to fail, not to pass quietly, so the skip
     is explicit in the workflow rather than implicit in the plugin. Drop the
-    flag when the Central wiring lands.
+    flag when the Central wiring lands — which is **not a pre-freeze SDK item**
+    and cannot be made one: the SDK does not move to Central before the kernel
+    and `exeris-tooling` do, so until then no published baseline exists for the
+    gate to compare against. Dropping the flag is the whole task and it belongs
+    to whichever change turns Central on.
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it
@@ -228,15 +232,29 @@ freeze or is explicitly re-dispositioned here.
     it binds parameters of a `@GraphQuery` method, and its twin belongs to the
     change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same
     lockstep shape as the entry below, not SDK work now.
-- [ ] **`@since 1.0.0` on annotations that shipped in 0.1.0** — found by the
-  surface review, deliberately not fixed in it. **35 of 55** files under
-  `exeris-sdk-annotations` carry a scaffold-boilerplate `@since 1.0.0` (often
-  with `@version 1.0.0`) while having existed since the 0.1.0 line; the 20 that
-  were added later carry accurate stamps (0.4.0 / 0.7.0 / 0.8.0 / 0.9.0 /
-  0.10.0 / 0.11.0). The tag is harmless while the repo is pre-1.0 and becomes
-  actively false the day 1.0.0 ships, since it then reads as "added in 1.0.0".
-  Mechanical to fix, but each file needs its real first-shipped version from git
-  history rather than a blanket rewrite — hence a separate change.
+- [x] **`@since 1.0.0` on annotations that shipped in 0.1.0** — **fixed.** All
+  35 files rewritten, each to the version its own history says, not to a
+  blanket value:
+  - **34 → `0.1.0`.** Every one was added by `1fef6c5`, whose subject is
+    literally *"init: exeris-sdk v0.1.0-SNAPSHOT skeleton (#1)"*. The strongest
+    check is a sibling: `ExerisDomain` came from that same commit and has
+    carried an accurate `@since 0.1.0` all along, so the batch was already
+    self-contradicting.
+  - **1 → `0.9.0`.** `annotation/system/package-info.java` was added by
+    `ac4bc63` on 2026-07-22 — the 0.9.0 release date, in the 0.9.0
+    deprecation-sweep commit.
+
+  `@version 1.0.0` moved with it on the same 35 files. It is kept rather than
+  dropped because this module already uses `@version` as "version at
+  introduction" (its 0.4.0 files still read `0.4.0` at 0.11.0), and inventing a
+  second convention mid-cleanup would be worse than following the one that is
+  there. Nothing else in the reactor was affected: the other six modules were
+  checked and carry **zero** files stamped `@since 1.0.0`.
+
+  **No guard added, deliberately.** The failure mode was one-time scaffold
+  boilerplate claiming a version that did not exist yet. Once 1.0.0 ships,
+  `@since 1.0.0` becomes a legitimate stamp for anything new, so a check for
+  that string decays into noise on the exact release it would first matter.
 - [~] **Tooling lockstep debt at the freeze** — re-dispositioned: **nothing here
   is SDK work, now or at the freeze.** Both halves were checked against
   `exeris-tooling` `main` rather than assumed.
