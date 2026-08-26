@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.exeris</groupId>
+        <artifactId>exeris-sdk-parent</artifactId>
+        <version>0.11.0-SNAPSHOT</version>
+        <relativePath>../exeris-sdk-parent</relativePath>
+    </parent>
+
+    <artifactId>exeris-sdk-tck</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Exeris SDK :: TCK</name>
+    <description>
+        Technology Compatibility Kit for the build-time metadata hand-off. Abstract JUnit 5 bases a
+        producer of exeris-metadata/&lt;entity&gt;.json, a reader of it, and a consumer of the AST wire
+        format extend to prove they satisfy the contract the SDK publishes — turning the ADR-042
+        "the reader reads what the processor writes" parity discipline into an executable gate.
+        Depend on it with test scope.
+    </description>
+
+    <properties>
+        <!-- No 0.10.0 artifact exists for a module introduced in 0.11.0, so there is nothing to
+             compare against. Flip to false at the next cut, when a baseline exists — the surface
+             here freezes at 1.0.0 like every other publishable module. -->
+        <japicmp.skip>true</japicmp.skip>
+    </properties>
+
+    <dependencies>
+        <!-- The contract under test: the AST records and the schema-version constant. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-source-model</artifactId>
+        </dependency>
+
+        <!-- COMPILE scope on purpose, unlike every other module here. A TCK is written in the test
+             framework its binders run, and binders depend on this jar with test scope, so JUnit and
+             AssertJ land on a test classpath where they already are. Making them `provided` would
+             only move the same coordinates into every binder's pom by hand. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <!-- Explicit: the BOM manages these at test scope, which is right for every other
+                 module and wrong for exactly this one. -->
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Reads a producer's raw JSON output. The TCK owns the canonical mapper posture
+             (TckMappers.canonical) precisely so a producer is not judged by a misconfigured
+             reader — but note AbstractMapperPostureTck deliberately takes NO Jackson type in its
+             binding API: a consumer proves their own mapper, not this one. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar-no-fork</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 85% instruction + line gate, as everywhere else. It is not a formality here: the
+                 self-tests drive every contract method against a conforming and a non-conforming
+                 fake, so an uncovered contract method means a case no one has proven non-vacuous. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.instruction.coverage.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.coverage.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- The load-bearing guard for this module. A TCK that dragged JavaParser onto a
+                 binder's classpath would silently assume the exeris-sdk-source-model-io reader is
+                 the implementation under test — which is exactly the thing a TCK must not assume.
+                 ADR-037 keeps JavaParser in -io; here it keeps the kit implementation-agnostic. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-javaparser-implementation-agnostic</id>
+                        <phase>verify</phase>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>com.github.javaparser</exclude>
+                                        <exclude>eu.exeris:exeris-sdk-source-model-io</exclude>
+                                    </excludes>
+                                    <message>exeris-sdk-tck must stay implementation-agnostic: neither JavaParser nor exeris-sdk-source-model-io may appear on its dependency tree. A binder supplies the implementation through the abstract binding methods — the kit must not be able to reach one directly.</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>semver-gate</id>
+                        <phase>verify</phase>
+                        <goals><goal>cmp</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

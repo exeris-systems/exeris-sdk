@@ -263,8 +263,18 @@ freeze or is explicitly re-dispositioned here.
   maps `label` correctly — so it is a live processor/reader divergence owned by
   `exeris-tooling`. Tracked in `ROADMAP.md`; the SDK surface is correct as
   declared and there is nothing to change here.
-- [ ] **`exeris-sdk-tck`** — contract test suite shippable to downstream
-  consumers (ROADMAP 1.0.0 GA item; scope TBD).
+- [x] **`exeris-sdk-tck`** — **landed in 0.11.0.** The "scope TBD" resolved to
+  the build-time metadata hand-off rather than to the capability lifecycle: four
+  abstract suites (producer, reader, parity, consumer mapper posture) that a
+  binder extends. The parity suite turns ADR-042's reader↔processor discipline
+  into an executable gate, which is the half of the SDK's contract that has
+  actually been broken — three times, each time silently, because both sides
+  kept emitting well-formed metadata.
+
+  For consumers the module is additive and optional: test scope, nothing on a
+  runtime classpath, and the surface it publishes freezes at 1.0.0 like any
+  other publishable module. `japicmp` is skipped there until a baseline artifact
+  exists, since none was released before the module did.
 
 ## 5. TBD at the 1.0.0 release PR
 

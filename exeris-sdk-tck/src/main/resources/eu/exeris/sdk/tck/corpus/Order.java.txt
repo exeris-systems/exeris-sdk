@@ -1,0 +1,44 @@
+package eu.exeris.sdk.tck.corpus;
+
+import eu.exeris.sdk.annotation.Action;
+import eu.exeris.sdk.annotation.ExerisDomain;
+import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.Validation;
+
+/**
+ * Corpus entity 1 of 2. Compiled as a unit with {@code Customer}, which points at it.
+ *
+ * <p>Every annotation attribute used here is one the SDK annotation actually declares. That is not
+ * a stylistic note: a corpus that compiles only because the reader under test ignores what it does
+ * not recognise proves nothing, and the SDK has shipped exactly that bug — a reader reading
+ * {@code @ExerisDomain(name = …)}, an attribute the annotation has never declared.
+ */
+@ExerisDomain(
+        module = "sales",
+        path = "/orders",
+        description = "A customer order.",
+        tenantScoped = true
+)
+public class Order {
+
+    @Field(label = "Reference", required = true)
+    @Validation(minLength = 3, maxLength = 32, pattern = "^ORD-[0-9]+$")
+    private String reference;
+
+    /**
+     * {@code min = 0} is the case the 0.9.0 boxed-zero fix exists for: a zero bound is a real
+     * non-negativity floor, and under a class-level {@code @JsonInclude(NON_DEFAULT)} Jackson 3
+     * treats boxed zero as empty and drops it. A producer that loses this field's lower bound
+     * emits a baseline that says "unbounded" where the source says "not negative".
+     */
+    @Field(label = "Total (cents)", required = true)
+    @Validation(min = 0, max = 1000000)
+    private Long totalCents;
+
+    @Field(label = "Note")
+    private String note;
+
+    @Action(name = "submit", httpMethod = "POST")
+    public void submit() {
+    }
+}
