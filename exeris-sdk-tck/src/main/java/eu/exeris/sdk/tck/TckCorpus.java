@@ -20,6 +20,10 @@ import java.util.Map;
  * <p>The two entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship
  * to {@code Order}. A binder driving javac must present both sources together.
  *
+ * <p>Because a producer binding <em>compiles</em> these, they may use no attribute that is
+ * deprecated for removal — a fixture declaring its tier through {@code @ExerisDomain.tenantScoped}
+ * would stop compiling at 1.0.0, which is the release this kit exists to guard.
+ *
  * <p>Sources carry a {@code .java.txt} extension inside the jar so they are never mistaken for
  * compilable module content — they are input data, and the annotations they use are
  * {@code @Retention(SOURCE)} markers that would otherwise invite an accidental build path.

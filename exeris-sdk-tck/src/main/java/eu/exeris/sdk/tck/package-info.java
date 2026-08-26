@@ -34,6 +34,11 @@
  * {@code exeris-sdk-source-model-io} off this module's dependency tree, because a kit that could
  * reach the SDK's own reader would quietly be testing that instead of the binding.
  *
+ * <p><strong>The corpus is compiled code.</strong> A producer binding drives javac over it, so
+ * {@code CorpusCompilesTest} does too — under {@code -Werror -Xlint:deprecation}, which enforces
+ * both that every mandatory attribute is supplied and that nothing deprecated for removal is used.
+ * The corpus failed that guard the moment it existed, on both counts.
+ *
  * <p><strong>No case that cannot fail.</strong> Every case is driven, in this module's own tests,
  * against a conforming binding and one broken in exactly the way the case describes — the second
  * must fail. The rule is not ceremony: it removed three of the four cases originally written for

@@ -8,16 +8,19 @@ import eu.exeris.sdk.annotation.Validation;
 /**
  * Corpus entity 1 of 2. Compiled as a unit with {@code Customer}, which points at it.
  *
- * <p>Every annotation attribute used here is one the SDK annotation actually declares. That is not
- * a stylistic note: a corpus that compiles only because the reader under test ignores what it does
- * not recognise proves nothing, and the SDK has shipped exactly that bug — a reader reading
- * {@code @ExerisDomain(name = …)}, an attribute the annotation has never declared.
+ * <p>Every annotation attribute used here is one the SDK annotation actually declares, and none is
+ * scheduled for removal. Neither half is a stylistic note. A corpus that compiles only because the
+ * reader under test ignores what it does not recognise proves nothing, and the SDK has shipped
+ * exactly that bug — a reader reading {@code @ExerisDomain(name = …)}, an attribute the annotation
+ * has never declared. And a corpus is not merely read: a producer binding compiles it. Declaring
+ * the tier through {@code tenantScoped} would have left this fixture failing to compile at 1.0.0,
+ * when that boolean is removed — the kit breaking at exactly the freeze it exists to guard.
  */
 @ExerisDomain(
         module = "sales",
         path = "/orders",
         description = "A customer order.",
-        tenantScoped = true
+        dataScope = ExerisDomain.DataScope.TENANT
 )
 public class Order {
 
@@ -38,7 +41,7 @@ public class Order {
     @Field(label = "Note")
     private String note;
 
-    @Action(name = "submit", httpMethod = "POST")
+    @Action(name = "submit", label = "Submit", httpMethod = "POST")
     public void submit() {
     }
 }

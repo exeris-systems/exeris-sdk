@@ -132,6 +132,18 @@ components are trailing and by-name, and nothing populates either yet.
   stock mapper). Each asserts something true that no binding could get wrong, and
   as TCK cases they would have shipped as coverage that covered nothing.
 
+  The corpus is compiled code that travels as a resource — a producer binding
+  drives javac over it, and nothing in this repository otherwise would.
+  `CorpusCompilesTest` closes that, under `-Werror -Xlint:deprecation`, which
+  enforces both that every mandatory attribute is supplied and that nothing
+  deprecated for removal is used. It failed on both counts the moment it was
+  written: the corpus omitted `@Action.label`, `@Relationship.targetEntity` and
+  `@Relationship.displayField`, so no binder could have compiled it, and it
+  declared its tenancy tier through `@ExerisDomain.tenantScoped` — removed at
+  1.0.0, which would have left the kit failing to compile at exactly the release
+  it exists to guard. Reviewing the annotations for attributes that *exist* does
+  not catch either; compiling does.
+
 
 ### Changed
 - **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare

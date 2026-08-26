@@ -49,6 +49,15 @@ class MyParityTckTest extends AbstractMetadataParityTck {
 The corpus is shipped inside the jar (`TckCorpus`), not left to the binder — a binder-supplied
 corpus measures the binder's imagination. Each entity carries a case with a defect behind it.
 
+It is also **compiled** code that happens to travel as a resource: a producer binding drives javac
+over it, and nothing in this repository would otherwise. `CorpusCompilesTest` compiles it under
+`-Werror -Xlint:deprecation`, which enforces two rules at once — every mandatory attribute is
+supplied, and no attribute deprecated for removal is used. Both had already been broken when the
+guard was written: the corpus was missing `@Action.label`, `@Relationship.targetEntity` and
+`@Relationship.displayField`, so it could not have compiled for any binder, and it declared its
+tenancy tier through `@ExerisDomain.tenantScoped` — removed at 1.0.0, so the kit would have stopped
+compiling at exactly the release it exists to guard.
+
 ## Facets
 
 A facet you have not built yet is declared, and its cases skip:

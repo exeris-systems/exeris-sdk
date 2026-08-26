@@ -1,6 +1,7 @@
 package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -73,7 +74,7 @@ final class ReferenceBinding {
                 .module("sales")
                 .path("/orders")
                 .description("A customer order.")
-                .tenantScoped(true)
+                .dataScope(DataScope.TENANT)
                 .fields(List.of(
                         FieldMetadata.builder("reference", "String")
                                 .displayName("Reference")
@@ -100,7 +101,7 @@ final class ReferenceBinding {
                 .module("sales")
                 .path("/customers")
                 .description("A person or organisation that places orders.")
-                .tenantScoped(true)
+                .dataScope(DataScope.TENANT)
                 .fields(List.of(
                         FieldMetadata.builder("email", "String")
                                 .displayName("E-mail")

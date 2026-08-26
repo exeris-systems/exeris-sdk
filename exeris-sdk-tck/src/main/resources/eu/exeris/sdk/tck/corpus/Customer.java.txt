@@ -19,7 +19,7 @@ import eu.exeris.sdk.annotation.Validation;
         module = "sales",
         path = "/customers",
         description = "A person or organisation that places orders.",
-        tenantScoped = true
+        dataScope = ExerisDomain.DataScope.TENANT
 )
 public class Customer {
 
@@ -31,6 +31,10 @@ public class Customer {
     @Validation(minLength = 1, maxLength = 120)
     private String displayName;
 
-    @Relationship(relationshipType = RelationshipType.ONE_TO_MANY, mappedBy = "customer")
+    @Relationship(
+            targetEntity = Order.class,
+            displayField = "reference",
+            relationshipType = RelationshipType.ONE_TO_MANY,
+            mappedBy = "customer")
     private java.util.List<Order> orders;
 }

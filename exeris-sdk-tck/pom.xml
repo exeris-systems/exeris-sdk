@@ -36,6 +36,14 @@
             <artifactId>exeris-sdk-source-model</artifactId>
         </dependency>
 
+        <!-- Test-only: CorpusCompilesTest drives javac over the shipped corpus. The kit itself
+             must not depend on the annotations — a binder brings its own. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-annotations</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- COMPILE scope on purpose, unlike every other module here. A TCK is written in the test
              framework its binders run, and binders depend on this jar with test scope, so JUnit and
              AssertJ land on a test classpath where they already are. Making them `provided` would
