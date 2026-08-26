@@ -6,7 +6,7 @@
     <parent>
         <groupId>eu.exeris</groupId>
         <artifactId>exeris-sdk-parent</artifactId>
-        <version>0.11.0-SNAPSHOT</version>
+        <version>0.11.0</version>
         <relativePath>../exeris-sdk-parent</relativePath>
     </parent>
 
@@ -24,8 +24,11 @@
 
     <properties>
         <!-- No 0.10.0 artifact exists for a module introduced in 0.11.0, so there is nothing to
-             compare against. Flip to false at the next cut, when a baseline exists — the surface
-             here freezes at 1.0.0 like every other publishable module. -->
+             compare against. Flip to false once japicmp.baseline.version names a release that
+             CONTAINS this module — i.e. when the baseline advances to 0.11.0, not merely at the
+             next cut: this release is the one that introduces the module, and it is compared
+             against 0.10.0. The surface here freezes at 1.0.0 like every other publishable
+             module. -->
         <japicmp.skip>true</japicmp.skip>
     </properties>
 

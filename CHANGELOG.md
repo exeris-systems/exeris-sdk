@@ -12,10 +12,10 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.10.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.11.0] — 2026-08-26
 
 The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the
 1.0.0 freeze; this exists because that framing conflated two things. The ROADMAP
@@ -780,6 +780,7 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.11.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.11.0
 [0.10.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.10.0
 [0.9.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.9.0
 [0.8.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.8.0
