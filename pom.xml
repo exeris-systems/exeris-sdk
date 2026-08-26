@@ -74,6 +74,7 @@
         <module>exeris-sdk-composition-spec</module>
         <module>exeris-sdk-composition-lifecycle</module>
         <module>exeris-sdk-composition-runtime</module>
+        <module>exeris-sdk-tck</module>
     </modules>
 
     <properties>

@@ -1,0 +1,40 @@
+package eu.exeris.sdk.tck.corpus;
+
+import eu.exeris.sdk.annotation.ExerisDomain;
+import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.Relationship;
+import eu.exeris.sdk.annotation.Relationship.RelationshipType;
+import eu.exeris.sdk.annotation.Validation;
+
+/**
+ * Corpus entity 2 of 2. Compiled as a unit with {@code Order}.
+ *
+ * <p>The {@code @Relationship} here is not decoration. Its cardinality attribute is named
+ * {@code relationshipType}, and a producer that reads it under a different key silently hands back
+ * the builder default — which is how a {@code ONE_TO_MANY} side came to emit the foreign key,
+ * index, constraint and finder that belong on the other side. The defect was invisible because
+ * both sides still produced a well-formed baseline.
+ */
+@ExerisDomain(
+        module = "sales",
+        path = "/customers",
+        description = "A person or organisation that places orders.",
+        dataScope = ExerisDomain.DataScope.TENANT
+)
+public class Customer {
+
+    @Field(label = "E-mail", required = true, unique = true)
+    @Validation(email = true, maxLength = 254)
+    private String email;
+
+    @Field(label = "Display name", required = true)
+    @Validation(minLength = 1, maxLength = 120)
+    private String displayName;
+
+    @Relationship(
+            targetEntity = Order.class,
+            displayField = "reference",
+            relationshipType = RelationshipType.ONE_TO_MANY,
+            mappedBy = "customer")
+    private java.util.List<Order> orders;
+}

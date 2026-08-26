@@ -11,10 +11,23 @@
  * {@code ObjectMapper} <strong>must</strong> configure:
  * <ul>
  *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — our records use primitive
- *       booleans heavily with {@code @JsonInclude(NON_DEFAULT)} /
- *       {@code NON_NULL}, so absent fields arrive as {@code null}. Without this
- *       flag, deserialization throws on any record that has a default-valued
- *       boolean. <strong>Which Jackson generation this bites:</strong> Jackson 3
+ *       booleans heavily, and without this flag deserialization throws on any
+ *       explicit {@code null} standing where one of them is declared.
+ *       <strong>Corrected 2026-08-26:</strong> this text used to say that
+ *       {@code @JsonInclude(NON_DEFAULT)} / {@code NON_NULL} makes "absent
+ *       fields arrive as {@code null}", and that the throw follows from a
+ *       default-valued boolean being omitted. Measured, it does not: an
+ *       <em>absent</em> property binds the primitive's own default and raises
+ *       nothing, on a stock Jackson 3 mapper. What throws is an
+ *       <em>explicit</em> {@code null} on the wire. The obligation is real and
+ *       unchanged — a baseline is a file the reader did not necessarily write,
+ *       and a third-party producer, a hand edit, or a re-serialization under
+ *       {@code ALWAYS} inclusion each put explicit nulls in it — but its
+ *       trigger is not the inclusion posture of our own writer. The case is
+ *       pinned in {@code exeris-sdk-tck}
+ *       ({@code AbstractMapperPostureTck}), whose self-test is what measured
+ *       it: the suite's other three candidate cases could not be made to fail
+ *       against a deliberately misconfigured mapper and were dropped. <strong>Which Jackson generation this bites:</strong> Jackson 3
  *       ({@code tools.jackson}) defaults the feature to {@code true}, so a
  *       Jackson-3 consumer <em>must</em> turn it off explicitly. Jackson 2
  *       ({@code com.fasterxml.jackson}) already defaults it to {@code false},

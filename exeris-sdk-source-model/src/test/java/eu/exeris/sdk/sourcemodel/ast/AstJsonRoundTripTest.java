@@ -10,6 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Wire-format guard: every AST record this SDK exposes must survive a JSON
@@ -24,10 +25,18 @@ class AstJsonRoundTripTest {
 
     /**
      * Jackson 3 defaults {@code FAIL_ON_NULL_FOR_PRIMITIVES=true}; Jackson 2
-     * defaulted it to {@code false}. AST records use primitive booleans heavily
-     * with {@code @JsonInclude(NON_DEFAULT)} / {@code NON_NULL}, so absent
-     * fields land as {@code null} on the wire. Downstream consumers MUST
-     * configure their mapper the same way or read paths break.
+     * defaulted it to {@code false}. AST records use primitive booleans
+     * heavily, so on a Jackson 3 mapper an explicit {@code null} standing where
+     * one of them is declared throws. Downstream consumers MUST configure their
+     * mapper the same way or read paths break.
+     *
+     * <p><strong>Corrected 2026-08-26:</strong> this said "absent fields land
+     * as {@code null} on the wire", which is measurably not so — an absent
+     * property binds the primitive's own default and raises nothing. The
+     * requirement stands; its trigger is an explicit null, which this SDK's own
+     * writer never emits and a third-party producer, a hand edit, or an
+     * {@code ALWAYS}-inclusion re-serialization all do. Pinned below by
+     * {@link #absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag()}.
      */
     private final ObjectMapper mapper = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
@@ -279,6 +288,36 @@ class AstJsonRoundTripTest {
 
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private record InclusionProbe(Probe kind, Long bound, String text, boolean flag) {}
+
+    @Test
+    @DisplayName("absent primitive defaults quietly; only an explicit null needs the flag — measured")
+    void absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag() {
+        // Pins what FAIL_ON_NULL_FOR_PRIMITIVES actually governs. The consumer contract has always
+        // required the flag and always will; what was wrong, in five files at once, was the reason
+        // given for it — that NON_DEFAULT omitting a false-valued boolean is what makes a read
+        // throw. It is not. Nothing checked it because this SDK's writer never emits a null, so the
+        // stated mechanism was never on any wire it produced.
+        ObjectMapper stock = JsonMapper.builder().build();
+
+        DomainMetadata absent = stock.readValue(
+                "{\"entityName\":\"Order\",\"packageName\":\"com.acme\"}", DomainMetadata.class);
+        assertThat(absent.restApi())
+                .as("an absent primitive binds its own default, on a mapper with no configuration")
+                .isFalse();
+
+        assertThatThrownBy(() -> stock.readValue(
+                "{\"entityName\":\"Order\",\"packageName\":\"com.acme\",\"restApi\":null}",
+                DomainMetadata.class))
+                .as("an explicit null is what the flag exists for")
+                .isInstanceOf(RuntimeException.class);
+
+        DomainMetadata withFlag = mapper.readValue(
+                "{\"entityName\":\"Order\",\"packageName\":\"com.acme\",\"restApi\":null}",
+                DomainMetadata.class);
+        assertThat(withFlag.restApi())
+                .as("and with the flag set, that same null reads back as the type default")
+                .isFalse();
+    }
 
     @Test
     @DisplayName("ScheduleMetadata round-trips every trigger kind, CRON included")

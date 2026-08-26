@@ -100,6 +100,50 @@ components are trailing and by-name, and nothing populates either yet.
   contract refuses — a `@Blob` on a `GLOBAL`-scoped entity has no isolation key
   and is terminally denied, and a declared schedule has no submission event and
   therefore no identity to capture (open, tracked in ADR-072).
+- **`exeris-sdk-tck` — a Technology Compatibility Kit for the build-time metadata
+  hand-off.** Four abstract JUnit suites a binder extends: producer, reader,
+  parity, and consumer mapper posture.
+
+  The parity suite is why the module exists. ADR-042's "the reader reads what the
+  processor writes" has been a discipline enforced by whoever remembered it, and
+  the record of that is three shipped defects of one shape — `@ExerisDomain(name)`,
+  `@Relationship.relationshipType`, `@ActionParam.label` — each one side reading an
+  attribute under a key the other did not use, each caught by hand long after. They
+  are hard to catch because **nothing fails**: both sides emit well-formed metadata,
+  no exception, no diagnostic, and the divergence is visible only by comparing the
+  two outputs.
+
+  The corpus ships inside the jar rather than being left to the binder, since a
+  binder-supplied corpus measures the binder's imagination. Unbuilt surface is
+  declared through `Facet` so its cases skip — reading ahead of a producer
+  manufactures exactly the drift the gate exists to catch — with identity and
+  fields non-optional, closing the trapdoor where a binding declaring everything
+  unsupported reports a suite of skips as green. An enforcer rule keeps JavaParser
+  and `-io` off the dependency tree: a kit that could reach the SDK's own reader
+  would quietly be testing that instead of the binding.
+
+  Every case is proven non-vacuous against a conforming binding and one broken in
+  exactly the way the case describes, committed as self-tests rather than done once
+  and described — the kernel TCK's rule, adopted whole. It paid for itself before
+  the module shipped: three of the four cases first written for the mapper-posture
+  suite could not be made to fail and were deleted (unknown properties are handled
+  by `@JsonIgnoreProperties` on the record; a per-component `NON_NULL` beats a
+  mapper-wide inclusion; `@JsonTypeInfo` resolves the polymorphic subtype on a
+  stock mapper). Each asserts something true that no binding could get wrong, and
+  as TCK cases they would have shipped as coverage that covered nothing.
+
+  The corpus is compiled code that travels as a resource — a producer binding
+  drives javac over it, and nothing in this repository otherwise would.
+  `CorpusCompilesTest` closes that, under `-Werror -Xlint:deprecation`, which
+  enforces both that every mandatory attribute is supplied and that nothing
+  deprecated for removal is used. It failed on both counts the moment it was
+  written: the corpus omitted `@Action.label`, `@Relationship.targetEntity` and
+  `@Relationship.displayField`, so no binder could have compiled it, and it
+  declared its tenancy tier through `@ExerisDomain.tenantScoped` — removed at
+  1.0.0, which would have left the kit failing to compile at exactly the release
+  it exists to guard. Reviewing the annotations for attributes that *exist* does
+  not catch either; compiling does.
+
 
 ### Changed
 - **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare
@@ -187,6 +231,42 @@ components are trailing and by-name, and nothing populates either yet.
   Now reads `internal()`. Found by the pre-freeze surface review, and fixed there
   rather than frozen: `exeris-tooling` references neither `isInternal()` nor
   `internalApi()`, so nothing downstream moves.
+
+- **"Absent fields arrive as `null`" — measured, they do not.** The consumer
+  contract has said since the wire format was written that consumers must set
+  `FAIL_ON_NULL_FOR_PRIMITIVES = false` *because* `@JsonInclude(NON_DEFAULT)`
+  makes absent fields arrive as `null`, and that deserialization "throws on any
+  record that has a default-valued boolean". On a stock Jackson 3 mapper an
+  **absent** property binds the primitive's own default and raises nothing. What
+  throws is an **explicit** `null` on the wire.
+
+  The obligation itself is real and unchanged — a baseline is a file the reader
+  did not necessarily write, and a third-party producer, a hand edit, or a
+  re-serialization under `ALWAYS` inclusion each put explicit nulls in one — but
+  it does not follow from our own writer's inclusion posture, which is what the
+  text claimed.
+
+  **Corrected in five files, found in three passes.** The first pass took the
+  `ast` package-info and `CLAUDE.md`; review caught a third copy in the new
+  `TckMappers`, written fresh in the same change that disproved it; review caught
+  a fourth in `MIGRATION.md` — the one a downstream consumer actually reads to
+  satisfy the obligation. Only then was the repo swept rather than the flagged
+  line fixed, which turned up `AstJsonRoundTripTest` (the file `CLAUDE.md` names
+  as the canonical reference), `RequiresMetadata`, `CapManifest` in the
+  composition spec, and the `.claude` review guardrail that would have
+  regenerated the claim on the next contract review. Each is dated; `CapManifest`
+  was measured against its own record rather than assumed to match.
+
+  Pinned by `AstJsonRoundTripTest.absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag`,
+  which asserts all three outcomes on a stock mapper: absent binds the default,
+  explicit null throws, and with the flag set that same null reads back as the
+  default. Prose corrections drift; this one now has a test under it.
+
+  Found by writing the TCK's non-vacuity proof: the case built on the stated
+  premise could not be made to fail against a deliberately misconfigured mapper,
+  which is the same way the ordinal-zero claim fell earlier this release. The
+  premise had never been exercised, because the SDK's own writer never emits an
+  explicit null.
 
 
 ## [0.10.0] — 2026-08-12
