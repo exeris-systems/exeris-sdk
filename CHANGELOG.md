@@ -102,6 +102,12 @@ components are trailing and by-name, and nothing populates either yet.
   therefore no identity to capture (open, tracked in ADR-072).
 
 ### Changed
+- **`SourceModelConflictDetector` and `SourceModelMutationApplier` now declare
+  their constructors.** Both previously declared none and therefore carried an
+  implicit public no-arg constructor — a member nobody wrote that 1.0.0 would
+  freeze regardless, while their siblings `SourceModelReader` and
+  `SourceModelWriter` declare theirs. Behaviour-neutral; found by the pre-freeze
+  public API surface review.
 - **`@Action.path` is now optional** — `String path()` gained a `default ""`. The
   attribute was mandatory and read by nobody: `ActionMetadata` carries no path
   component, so the value never reached the build-time JSON, and the served route
@@ -166,6 +172,22 @@ components are trailing and by-name, and nothing populates either yet.
   flag is what made that possible, and there was already one instance (the
   `@Action.path` widening above), so both halves land together: the missing rule,
   and a report on a widening telling the author to refresh the line.
+- **`DomainMetadata.isInternal()` was `false` by construction.** It read
+  `InternalApiMetadata.hidden()`, a component neither extraction path ever
+  populates: the processor (`extractInternalApiMetadata`) and the `-io` reader
+  (`SourceModelReader.internalApi`) both map the *presence* of `@InternalApi` to
+  `internal = true` and leave the other six components at their defaults, because
+  the SDK annotation (a service-to-service call policy — `consumers`,
+  `rateLimit`, `requireMtls`, `timeout`, `documented`) and the AST record (entity
+  visibility and access control) share a name and nothing else. So the predicate
+  returned `false` for every `@InternalApi` entity on the build-time path, and
+  `false` even for `InternalApiMetadata.internal(…)`, the factory named after it —
+  while the test pinning it read as intent (`isInternalRequiresHiddenInternalApi`).
+
+  Now reads `internal()`. Found by the pre-freeze surface review, and fixed there
+  rather than frozen: `exeris-tooling` references neither `isInternal()` nor
+  `internalApi()`, so nothing downstream moves.
+
 
 ## [0.10.0] — 2026-08-12
 

@@ -216,8 +216,27 @@ public record DomainMetadata(
         return graphMetadata != null;
     }
 
+    /**
+     * Whether the entity is marked internal — service-to-service only, not part
+     * of the public API surface.
+     *
+     * <p>Keys off {@link InternalApiMetadata#internal()}, which is the component
+     * both extraction paths populate: the {@code exeris-tooling} processor
+     * ({@code ExerisDomainProcessor.extractInternalApiMetadata}) and the
+     * {@code -io} reader ({@code SourceModelReader.internalApi}) both map the
+     * mere presence of {@code @InternalApi} to {@code internal = true} and leave
+     * every other component at its default, because the SDK annotation and this
+     * AST record describe different concepts (a known, documented drift). Reading
+     * {@link InternalApiMetadata#hidden()} instead — as this method did through
+     * 0.10.0 — made it {@code false} for every entity on the build-time path, and
+     * {@code false} even for {@link InternalApiMetadata#internal(String)}, the
+     * factory named after it.
+     *
+     * @return {@code true} when {@code @InternalApi} metadata is present and marks
+     *         the entity internal
+     */
     public boolean isInternal() {
-        return internalApi != null && internalApi.hidden();
+        return internalApi != null && internalApi.internal();
     }
 
     /**

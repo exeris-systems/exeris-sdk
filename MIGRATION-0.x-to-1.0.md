@@ -94,6 +94,13 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   distinction (trailing-additive = allowed; reorder, rename, retype, or remove
   = break). A gate configured on defaults will reject exactly the growth this
   paragraph permits — see the ROADMAP 1.0.0 GA item.
+- **There is no `internal/` package, and everything public is contract.** Said
+  plainly because the phrase "everything not in `internal/` is contract" invites
+  the assumption that some escape hatch exists. None does, and none is planned:
+  every module here is a deliberate API surface, so there is no implementation
+  detail for one to hold. Practical consequence for a consumer: if it is
+  `public` in a publishable module, 1.0.0 freezes it — with the single stated
+  exception in §2 (`@Blob` / `@Schedule` and their AST carriers).
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.
@@ -166,13 +173,70 @@ freeze or is explicitly re-dispositioned here.
   constructor signal a reorder would show up in. `RecordComponentOrderTest`
   pins component order against a snapshot and closes it. The two are a pair;
   removing either leaves the stance unenforced.
-- [ ] **Public API surface review** — everything not in `internal/` is
-  contract. Known inputs from the sweep: `ActionMetadata` /
-  `InternalApiMetadata` carry components the processor never populates
-  (reserved AST surface — confirm each is wanted in the frozen contract);
-  `@InternalApi`'s five attributes are inert (documented SDK↔AST drift);
-  graph sub-annotations (`@GraphEdge` / `@GraphProperty` / `@GraphQuery`) and
-  `@QueryParam` are unextracted with no AST twin.
+- [x] **Public API surface review** — **done**; 103 public top-level types, the
+  full result is in `ROADMAP.md` under 1.0.0 GA. The premise as seeded
+  ("everything not in `internal/` is contract") describes a partition that does
+  not exist — there is no `internal/` package anywhere in the repo, and there
+  should not be. Each of the three seeded inputs, checked against the sources on
+  both sides of the build-time hand-off rather than assumed:
+  - **Never-populated AST components — three, each with a different
+    disposition.** `ActionMetadata.realTimeUpdates` is **reserved and frozen as
+    declared**: the processor declines it by name ("deliberately NOT extracted
+    here … extracting it would only create an inert `ActionMetadata` attribute")
+    and the extraction lands with its consumer. `ActionMetadata.schedule` is
+    **excluded from the freeze** per ADR-072, alongside `FieldMetadata.blob`.
+    `InternalApiMetadata` is the one that needed a decision: **six of its seven
+    components are never populated by either path.** The processor
+    (`extractInternalApiMetadata`) and the `-io` reader
+    (`SourceModelReader.java:794`) both map the *presence* of `@InternalApi` to
+    `internal = true` and leave `hidden` / `readOnly` / `reason` / `since` /
+    `disabledActions` / `allowedRoles` at their defaults — deliberately, and
+    documented on both sides. Frozen as declared: the record is written on the
+    wire today, so unlike `ValidationMetadata` (removed outright in 0.9.0, ADR-054)
+    there is a live producer, and narrowing it to the one populated component
+    would be a wire-format break bought for nothing.
+  - **`@InternalApi`'s five attributes are inert — and the name is a collision,
+    not a drift.** `@InternalApi` declares a service-to-service *call policy*
+    (`consumers`, `rateLimit`, `requireMtls`, `timeout`, `documented`);
+    `InternalApiMetadata` carries entity *visibility and access control*
+    (`hidden`, `readOnly`, `internal`, `reason`, `since`, `disabledActions`,
+    `allowedRoles`). The overlap is **zero** — two unrelated features that
+    collided on a name during the 0.1.0 scaffolding, which is why only presence
+    crosses the hand-off. Both frozen as declared; the collision is a naming
+    wart, and renaming either side at the freeze would break the `exeris-tooling`
+    import for a cosmetic gain. `@InternalApi` is also `@Target({METHOD, TYPE})`
+    while only the type-level case has an AST home — a method-level
+    `@InternalApi`, which is what the annotation's own usage example shows, has
+    no representation at all, since `ActionMetadata` carries no `internalApi`
+    component. That gap is real and stays open by choice: closing it means
+    designing the action-level shape, which is a feature, not a freeze chore.
+  - **What the review *found* here, and fixed:** `DomainMetadata.isInternal()`
+    read `internalApi.hidden()` — a component neither extraction path ever sets.
+    It therefore returned `false` for every `@InternalApi` entity on the
+    build-time path, and `false` even for `InternalApiMetadata.internal(…)`, the
+    factory named after it. It now reads `internal()`. A predicate that is
+    `false` by construction is not a contract worth freezing. Consumer note in
+    `MIGRATION.md` under 0.10.x → 0.11.x.
+  - **Graph sub-annotations — the seeded premise was stale.** `@GraphEdge` /
+    `@GraphProperty` / `@GraphQuery` **do** have AST twins now
+    (`GraphEdgeMetadata` / `GraphPropertyMetadata` / `GraphQueryMetadata`, all
+    carried by `GraphMetadata`). Neither the processor nor the `-io` reader reads
+    the member annotations, so `GraphMetadata` arrives with `properties = null`
+    and empty `edges` / `queries` — but symmetrically, on both sides, which makes
+    it an ADR-042 parity pair rather than a divergence, and the reader says so
+    (`SourceModelReader.java:704`). `@QueryParam` is the one with no AST twin:
+    it binds parameters of a `@GraphQuery` method, and its twin belongs to the
+    change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same
+    lockstep shape as the entry below, not SDK work now.
+- [ ] **`@since 1.0.0` on annotations that shipped in 0.1.0** — found by the
+  surface review, deliberately not fixed in it. **35 of 55** files under
+  `exeris-sdk-annotations` carry a scaffold-boilerplate `@since 1.0.0` (often
+  with `@version 1.0.0`) while having existed since the 0.1.0 line; the 20 that
+  were added later carry accurate stamps (0.4.0 / 0.7.0 / 0.8.0 / 0.9.0 /
+  0.10.0 / 0.11.0). The tag is harmless while the repo is pre-1.0 and becomes
+  actively false the day 1.0.0 ships, since it then reads as "added in 1.0.0".
+  Mechanical to fix, but each file needs its real first-shipped version from git
+  history rather than a blanket rewrite — hence a separate change.
 - [~] **Tooling lockstep debt at the freeze** — re-dispositioned: **nothing here
   is SDK work, now or at the freeze.** Both halves were checked against
   `exeris-tooling` `main` rather than assumed.

@@ -176,11 +176,19 @@ class DomainMetadataTest {
         }
 
         @Test
-        void isInternalRequiresHiddenInternalApi() {
+        void isInternalReadsTheInternalComponent() {
             assertThat(base().build().isInternal()).isFalse();
-            // Non-hidden InternalApi present but not hidden → still false.
+            // Present but marking a different facet → false. `hidden` is "absent from
+            // generated docs" and `readOnly` is "mutations disabled"; neither is
+            // "internal", and each has its own component.
             assertThat(base().internalApi(InternalApiMetadata.readOnly("audit")).build().isInternal()).isFalse();
-            assertThat(base().internalApi(InternalApiMetadata.hidden("legacy")).build().isInternal()).isTrue();
+            assertThat(base().internalApi(InternalApiMetadata.hidden("legacy")).build().isInternal()).isFalse();
+            assertThat(base().internalApi(InternalApiMetadata.internal("svc")).build().isInternal()).isTrue();
+            // The shape both extraction paths actually emit: presence-only, every
+            // other component left at its default. This is the case that was false
+            // through 0.10.0, which made the predicate dead on every real build.
+            assertThat(base().internalApi(InternalApiMetadata.builder().internal(true).build())
+                    .build().isInternal()).isTrue();
         }
     }
 
