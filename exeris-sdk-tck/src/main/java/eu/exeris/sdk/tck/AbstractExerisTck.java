@@ -14,6 +14,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Binders extend one of the concrete suites, not this class.
  */
+/*
+ * S5960 ("assertions should not be used in production code") is suppressed across this package,
+ * and it is the one rule a TCK must disagree with. The rule targets assertions left in shipped
+ * code, where they are debugging residue that fires — or silently does not, under -da — in front
+ * of a user. Here the assertions ARE the shipped artifact: a binder depends on this jar at test
+ * scope precisely to run them, and a TCK with its assertions removed is an empty interface.
+ *
+ * The alternative is to satisfy the rule structurally by moving these classes to src/test/java and
+ * publishing a test-jar, which is what exeris-kernel-tck does. That was considered and not taken:
+ * this kit's surface freezes at 1.0.0 like every other publishable module here, and it is japicmp
+ * that guards a frozen surface — which compares main artifacts. Trading that guard for a clean
+ * report on a rule that does not apply is the wrong side of the exchange.
+ */
+@SuppressWarnings("java:S5960")
 public abstract class AbstractExerisTck {
 
     /**

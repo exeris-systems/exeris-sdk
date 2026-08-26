@@ -23,7 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * configured mapper, stamped so its age can be judged, and carrying the values the source declared
  * rather than the defaults a lost attribute leaves behind.
  */
+/*
+ * S5960 suppressed: in a TCK the assertions are the shipped artifact, not residue. Full rationale
+ * on {@code AbstractExerisTck}.
+ */
+@SuppressWarnings("java:S5960")
 public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
+
+    private static final String SCHEMA_VERSION = "schemaVersion";
 
     /**
      * Produces the metadata JSON for one entity.
@@ -55,20 +62,20 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     void schemaVersionIsStamped() {
         requireSupported(Facet.BASELINE_TRUST);
         JsonNode root = tree(TckCorpus.ORDER);
-        assertThat(root.has("schemaVersion"))
+        assertThat(root.has(SCHEMA_VERSION))
                 .withFailMessage(
                         "No schemaVersion in the produced JSON. Without it a reader cannot tell an "
                                 + "older baseline from a current one and must refuse it as untrusted "
                                 + "(NO_BASELINE, ADR-042 obligation 5) — every applyMutation against "
                                 + "this producer's output would fail closed.")
                 .isTrue();
-        assertThat(root.get("schemaVersion").asString())
+        assertThat(root.get(SCHEMA_VERSION).asString())
                 .withFailMessage(
                         "schemaVersion is '%s' but this kit was built against '%s'. Note the value is "
                                 + "SchemaVersion.CURRENT, deliberately decoupled from the Maven "
                                 + "artifact version — a producer that stamps its own artifact version "
                                 + "will drift the moment a release ships with no AST change.",
-                        root.get("schemaVersion").asString(), SchemaVersion.CURRENT)
+                        root.get(SCHEMA_VERSION).asString(), SchemaVersion.CURRENT)
                 .isEqualTo(SchemaVersion.CURRENT);
     }
 

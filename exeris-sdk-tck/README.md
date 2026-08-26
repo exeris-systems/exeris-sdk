@@ -73,6 +73,18 @@ drift the parity gate exists to catch, so an unbuilt facet must not be asserted 
 skipped enforces it. Without that, a binding declaring everything unsupported would run a suite of
 skips and report green, which reads as conformance and is worse than a failure.
 
+## Why this is a main jar, not a test-jar
+
+`exeris-kernel-tck` ships its abstract bases from `src/test/java` and publishes a `test-jar`. This
+one does not, and the difference is deliberate: the kit's surface freezes at 1.0.0 like every other
+publishable module here, and japicmp — which guards a frozen surface — compares main artifacts.
+
+The cost is that static analysis reads `src/main/java` as production code and flags the assertions
+as residue (`java:S5960`). In a TCK the assertions *are* the artifact: a binder depends on this jar
+to run them, and a TCK with its assertions stripped is an empty interface. The rule is suppressed
+per class with that rationale rather than satisfied by moving the code, which would trade the
+semver guard for a clean report on a rule that does not apply.
+
 ## Two rules the kit holds itself to
 
 **Implementation-agnostic.** A binder supplies the implementation; the kit never reaches for one. An

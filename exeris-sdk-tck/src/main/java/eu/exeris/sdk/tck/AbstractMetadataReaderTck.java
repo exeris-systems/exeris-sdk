@@ -31,6 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * landing on a carrier no generator reads, a zero bound dropped as if it were absent, a
  * relationship cardinality read under the wrong key so every edge came back as the builder default.
  */
+/*
+ * S5960 suppressed: in a TCK the assertions are the shipped artifact, not residue. Full rationale
+ * on {@code AbstractExerisTck}.
+ */
+@SuppressWarnings("java:S5960")
 public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
 
     /**

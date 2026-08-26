@@ -43,7 +43,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * reading ahead of a producer manufactures exactly the drift this suite exists to catch, so an
  * unbuilt facet is a skip, not a failure.
  */
+/*
+ * S5960 suppressed: in a TCK the assertions are the shipped artifact, not residue. Full rationale
+ * on {@code AbstractExerisTck}.
+ */
+@SuppressWarnings("java:S5960")
 public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
+
+    private static final String FIELDS = "fields/";
+    private static final String RELATIONSHIPS = "relationships/";
+    private static final String ACTIONS = "actions/";
 
     /**
      * @param entitySource Java source text of a single {@code @ExerisDomain} class
@@ -79,20 +88,21 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             Map<String, FieldMetadata> left = byKey(produced.fields(), FieldMetadata::name);
             Map<String, FieldMetadata> right = byKey(wasRead.fields(), FieldMetadata::name);
             compareKeySets(gaps, "fields", left, right);
-            for (String field : left.keySet()) {
-                FieldMetadata p = left.get(field);
-                FieldMetadata r = right.get(field);
+            for (Map.Entry<String, FieldMetadata> entry : left.entrySet()) {
+                FieldMetadata p = entry.getValue();
+                FieldMetadata r = right.get(entry.getKey());
                 if (r == null) {
                     continue;
                 }
-                compare(gaps, "fields/" + field + "/type", p.type(), r.type());
-                compare(gaps, "fields/" + field + "/required", p.required(), r.required());
+                String path = FIELDS + entry.getKey();
+                compare(gaps, path + "/type", p.type(), r.type());
+                compare(gaps, path + "/required", p.required(), r.required());
                 if (bounds) {
-                    compare(gaps, "fields/" + field + "/minLength", p.minLength(), r.minLength());
-                    compare(gaps, "fields/" + field + "/maxLength", p.maxLength(), r.maxLength());
-                    compare(gaps, "fields/" + field + "/min", p.min(), r.min());
-                    compare(gaps, "fields/" + field + "/max", p.max(), r.max());
-                    compare(gaps, "fields/" + field + "/pattern", p.pattern(), r.pattern());
+                    compare(gaps, path + "/minLength", p.minLength(), r.minLength());
+                    compare(gaps, path + "/maxLength", p.maxLength(), r.maxLength());
+                    compare(gaps, path + "/min", p.min(), r.min());
+                    compare(gaps, path + "/max", p.max(), r.max());
+                    compare(gaps, path + "/pattern", p.pattern(), r.pattern());
                 }
             }
             return gaps;
@@ -108,15 +118,16 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             Map<String, RelationshipMetadata> left = byKey(produced.relationships(), AbstractMetadataParityTck::edgeKey);
             Map<String, RelationshipMetadata> right = byKey(wasRead.relationships(), AbstractMetadataParityTck::edgeKey);
             compareKeySets(gaps, "relationships", left, right);
-            for (String edge : left.keySet()) {
-                RelationshipMetadata p = left.get(edge);
-                RelationshipMetadata r = right.get(edge);
+            for (Map.Entry<String, RelationshipMetadata> entry : left.entrySet()) {
+                RelationshipMetadata p = entry.getValue();
+                RelationshipMetadata r = right.get(entry.getKey());
                 if (r == null) {
                     continue;
                 }
-                compare(gaps, "relationships/" + edge + "/type", p.type(), r.type());
-                compare(gaps, "relationships/" + edge + "/targetEntity", p.targetEntity(), r.targetEntity());
-                compare(gaps, "relationships/" + edge + "/mappedBy", p.mappedBy(), r.mappedBy());
+                String path = RELATIONSHIPS + entry.getKey();
+                compare(gaps, path + "/type", p.type(), r.type());
+                compare(gaps, path + "/targetEntity", p.targetEntity(), r.targetEntity());
+                compare(gaps, path + "/mappedBy", p.mappedBy(), r.mappedBy());
             }
             return gaps;
         });
@@ -131,13 +142,13 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             Map<String, ActionMetadata> left = byKey(produced.actions(), ActionMetadata::name);
             Map<String, ActionMetadata> right = byKey(wasRead.actions(), ActionMetadata::name);
             compareKeySets(gaps, "actions", left, right);
-            for (String action : left.keySet()) {
-                ActionMetadata p = left.get(action);
-                ActionMetadata r = right.get(action);
+            for (Map.Entry<String, ActionMetadata> entry : left.entrySet()) {
+                ActionMetadata p = entry.getValue();
+                ActionMetadata r = right.get(entry.getKey());
                 if (r == null) {
                     continue;
                 }
-                compare(gaps, "actions/" + action + "/httpMethod", p.httpMethod(), r.httpMethod());
+                compare(gaps, ACTIONS + entry.getKey() + "/httpMethod", p.httpMethod(), r.httpMethod());
             }
             return gaps;
         });

@@ -36,6 +36,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * a case asserting it would pass for every binding ever written. That reads as coverage and is
  * not. What remains is the one obligation that genuinely sits on the consumer's side.
  */
+/*
+ * S5960 suppressed: in a TCK the assertions are the shipped artifact, not residue. Full rationale
+ * on {@code AbstractExerisTck}.
+ */
+@SuppressWarnings("java:S5960")
 public abstract class AbstractMapperPostureTck extends AbstractExerisTck {
 
     /**
