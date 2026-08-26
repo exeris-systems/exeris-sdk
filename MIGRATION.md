@@ -741,10 +741,21 @@ ObjectMapper mapper = JsonMapper.builder()
         .build();
 ```
 
-Jackson 3 defaults this to `true`; AST records use primitive booleans with
-`@JsonInclude(NON_DEFAULT)` / `NON_NULL`, so absent fields arrive as `null`
-on the wire. Without the flag, deserialization throws on any record that has
-a default-valued boolean.
+Jackson 3 defaults this to `true`, and AST records use primitive booleans
+heavily. Without the flag, deserialization throws on any explicit `null`
+standing where one of them is declared.
+
+> **Corrected 2026-08-26.** This paragraph used to add that
+> `@JsonInclude(NON_DEFAULT)` / `NON_NULL` makes "absent fields arrive as
+> `null` on the wire", and that the throw follows from "a record that has a
+> default-valued boolean". Measured, neither holds: an **absent** property
+> binds the primitive's own default and raises nothing. What throws is an
+> **explicit** `null`. The requirement is unchanged and still applies to you —
+> a baseline is a file you did not necessarily write, and a third-party
+> producer, a hand edit, or a re-serialization under `ALWAYS` inclusion each
+> put explicit nulls in one — but it does not follow from the SDK writer's
+> inclusion posture, which never emits a null at all. That is why the premise
+> went unexercised for so long.
 
 See `eu.exeris.sdk.sourcemodel.ast` package-info and the
 `AstJsonRoundTripTest` wire-format guard for the canonical reference.

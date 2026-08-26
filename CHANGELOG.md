@@ -244,7 +244,23 @@ components are trailing and by-name, and nothing populates either yet.
   did not necessarily write, and a third-party producer, a hand edit, or a
   re-serialization under `ALWAYS` inclusion each put explicit nulls in one — but
   it does not follow from our own writer's inclusion posture, which is what the
-  text claimed. Corrected in the `ast` package-info and `CLAUDE.md`, both dated.
+  text claimed.
+
+  **Corrected in five files, found in three passes.** The first pass took the
+  `ast` package-info and `CLAUDE.md`; review caught a third copy in the new
+  `TckMappers`, written fresh in the same change that disproved it; review caught
+  a fourth in `MIGRATION.md` — the one a downstream consumer actually reads to
+  satisfy the obligation. Only then was the repo swept rather than the flagged
+  line fixed, which turned up `AstJsonRoundTripTest` (the file `CLAUDE.md` names
+  as the canonical reference), `RequiresMetadata`, `CapManifest` in the
+  composition spec, and the `.claude` review guardrail that would have
+  regenerated the claim on the next contract review. Each is dated; `CapManifest`
+  was measured against its own record rather than assumed to match.
+
+  Pinned by `AstJsonRoundTripTest.absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag`,
+  which asserts all three outcomes on a stock mapper: absent binds the default,
+  explicit null throws, and with the flag set that same null reads back as the
+  default. Prose corrections drift; this one now has a test under it.
 
   Found by writing the TCK's non-vacuity proof: the case built on the stated
   premise could not be made to fail against a deliberately misconfigured mapper,

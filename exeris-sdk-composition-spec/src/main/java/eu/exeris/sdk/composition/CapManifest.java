@@ -23,9 +23,13 @@ import java.util.List;
  * wire-format does:
  * <ul>
  *   <li>{@code FAIL_ON_UNKNOWN_PROPERTIES = false} — tolerate the producer-only fields above;</li>
- *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — a missing {@code schemaVersion} /
+ *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — an explicitly null {@code schemaVersion} /
  *       {@code validated} must deserialize to {@code 0} / {@code false} (and be rejected by the
- *       asserter's handshake) rather than throwing mid-parse.</li>
+ *       asserter's handshake) rather than throwing mid-parse. <strong>Corrected 2026-08-26:</strong>
+ *       this said "a missing" rather than "an explicitly null". Measured against this record on a
+ *       stock Jackson 3 mapper, a missing {@code schemaVersion} reads back as {@code 0} and raises
+ *       nothing; an explicit null throws. The requirement is unchanged — a manifest is a file the
+ *       asserter did not write — but its trigger is the null, not the omission.</li>
  * </ul>
  *
  * <h2>Unversioned provides are legal</h2>

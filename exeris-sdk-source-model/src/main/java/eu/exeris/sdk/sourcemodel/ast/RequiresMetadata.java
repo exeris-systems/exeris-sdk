@@ -16,9 +16,10 @@ import java.util.Objects;
  * dependency the cap degrades gracefully without.
  *
  * <p>Uses {@code @JsonInclude(NON_DEFAULT)} so the primitive {@code optional}
- * drops from the wire when {@code false}; consumers must set
- * {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} (the AST-wide contract) so the absent
- * field reads back as {@code false}.
+ * drops from the wire when {@code false}. That drop is harmless on its own — an
+ * absent property reads back as {@code false} on any mapper. The AST-wide
+ * {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} contract is for the other case: an
+ * explicit {@code null} in a baseline this SDK did not write.
  *
  * @author Exeris SDK Team
  * @since 0.4.0
