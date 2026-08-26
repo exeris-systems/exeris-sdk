@@ -32,8 +32,8 @@
  * ADR-059.) They ship as a reserved surface until a consumer lands.
  *
  * @author Exeris SDK Team
- * @version 1.0.0
- * @since 1.0.0
+ * @version 0.1.0
+ * @since 0.1.0
  */
 package eu.exeris.sdk.annotation.security;
 
