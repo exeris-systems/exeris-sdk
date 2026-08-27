@@ -166,6 +166,9 @@ module has been installed once.
 **Distribution:** `.github/workflows/release-assets.yml` attaches the catalog to the GitHub
 Release on a `v*` tag, and refuses if the catalog's `sdkVersion` disagrees with the tag.
 That channel needs no publishing infrastructure, so it does not wait for the Central move.
+It uploads to an *existing* release and never creates one — which is how releases are cut
+here (`gh release create` publishes tag and release together). A tag pushed alone with
+`git push --tags` fails the job; re-run it via `workflow_dispatch` once the release exists.
 
 ## ADR-003 — Entity-First
 

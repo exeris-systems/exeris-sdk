@@ -70,6 +70,13 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Attaching a catalog of $COUNT annotations at version $STAMPED to $TAG"
 
+      # Uploads to an EXISTING release; this job never creates one. That matches how
+      # this repo cuts a release — `gh release create` publishes the tag and the release
+      # object together, so the release is already there when the tag-push webhook reaches
+      # a runner. A tag pushed on its own with `git push --tags` has no release to attach
+      # to and fails here rather than silently dropping the asset, which is the right way
+      # round: the asset is the delivery channel, so a release without it is the failure
+      # worth being loud about. Re-run via workflow_dispatch once the release exists.
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ github.token }}

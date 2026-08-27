@@ -49,9 +49,6 @@ for per-version upgrade steps.
   entries would have carried a name and a type and nothing else. All nested — the surface a
   package walk sees was already documented, which is why it went unnoticed.
   `AnnotationCatalogContractTest` now fails on a missing `purpose`.
-
-### Fixed
-
 - **`SchemaVersion.CURRENT` was a compile-time constant, so consumers inlined it and kept
   comparing against the version they were built against.** `public static final String CURRENT =
   "0.11.0"` is a constant variable (JLS 4.12.4); `javac` bakes it into every downstream compile
