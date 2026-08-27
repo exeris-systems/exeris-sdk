@@ -35,13 +35,52 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Reads the generated annotation catalog back in AnnotationCatalogContractTest.
+             Test scope only: it is absent from the published jar's dependency tree, which
+             the enforcer rule below continues to prove. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- The annotation catalog is generated from THIS module's own sources, by a
+                 processor on the javac processor path. That path is not this project's
+                 dependency tree: the published jar stays dependency-free, and the enforcer
+                 rule below still proves it. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>eu.exeris</groupId>
+                                    <artifactId>exeris-sdk-annotation-catalog</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-Aexeris.catalog.sdkVersion=${project.version}</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <!-- The catalog describes the published surface. Running the
+                                 processor again over the tests would reopen the same output
+                                 file and fail, and a catalog that included test fixtures
+                                 would be describing something nobody ships. -->
+                            <proc>none</proc>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

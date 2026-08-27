@@ -167,6 +167,26 @@
  * <p>The nested members are RESERVED surface kept for a possible future reader.
  * Until one exists, treat them as traps and always write siblings.
  *
+ * <h2>Member-value-only annotations declare {@code @Target({})}</h2>
+ * <p>A different nested shape, and this one is deliberate. Types such as
+ * {@link eu.exeris.sdk.annotation.SagaStep.InputMapping @SagaStep.InputMapping},
+ * {@link eu.exeris.sdk.annotation.DomainEvent.Header @DomainEvent.Header} and
+ * {@link eu.exeris.sdk.annotation.Saga.SagaTrigger @Saga.SagaTrigger} are written
+ * only <em>inside</em> another annotation's attribute, never applied to a program
+ * element of their own. {@code @Target({})} is the declaration of exactly that:
+ * an empty target set means the type cannot be applied to any construct and can
+ * appear only as a member value.
+ * <p>They also declare {@code @Retention(RetentionPolicy.SOURCE)}, like every
+ * other annotation here. Sixteen of them declared neither until 0.12.0, on the
+ * reasoning that a nested type is reachable only through its parent and inherits
+ * its retention at the use site. The premise held and the conclusion did not:
+ * nothing <em>made</em> them member-value-only, because a type with no
+ * {@code @Target} may be applied anywhere, and one with no {@code @Retention}
+ * defaults to {@code CLASS} rather than {@code SOURCE}. The two meta-annotations
+ * turn what was a convention into something the compiler refuses to break.
+ * <p>{@code AnnotationContractTest} now walks nested types too — it did not
+ * before, which is why the gap survived as long as it did.
+ *
  * <h2>Annotation index by status</h2>
  * <p>Annotation-level status. Attribute-level status is on each annotation's own
  * javadoc, and the full per-attribute matrix is in {@code docs/guide/}.

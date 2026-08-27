@@ -1,0 +1,76 @@
+name: release assets
+
+# Attaches the generated annotation catalog to the GitHub Release for a tag.
+#
+# This exists because the asset is the whole delivery channel. The SDK does not
+# publish to Maven Central yet — that is sequenced behind the kernel — so a
+# downstream consumer that wants the catalog has no coordinate to resolve and no
+# jar to unpack. A release asset needs no publishing infrastructure at all, which
+# is what makes the catalog reachable now rather than after the Central move.
+#
+# It runs on the tag rather than as a manual step on purpose: the catalog went
+# unshipped for as long as it did because nothing failed when it was not.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to attach the catalog to (e.g. v0.12.0)'
+        required: true
+
+permissions:
+  contents: write   # uploading a release asset writes to the release
+
+jobs:
+  annotation-catalog:
+    name: attach annotation-catalog.json
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      # 25 is the release-bearing row (ADR-069) — the same toolchain a published
+      # artifact comes from, so the catalog ships from the build that produced it.
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # The catalog is written by the annotation processor during the annotations
+      # module's own compilation, so `package` on that module is enough — no need
+      # to run the whole reactor or its gates to produce it.
+      - name: Build the annotations module
+        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations -am package -DskipTests -Djapicmp.skip=true
+
+      - name: Locate the catalog and check it describes this tag
+        id: catalog
+        run: |
+          set -euo pipefail
+          CATALOG=exeris-sdk-annotations/target/classes/META-INF/exeris/annotation-catalog.json
+          test -s "$CATALOG" || { echo "::error::$CATALOG was not generated"; exit 1; }
+
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          STAMPED=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['sdkVersion'])" "$CATALOG")
+          # A catalog stamped with a different version than the tag it is attached to
+          # would tell its consumer the wrong thing about which contract it describes,
+          # which is precisely the mistake the sdkVersion field exists to prevent.
+          if [ "$STAMPED" != "${TAG#v}" ]; then
+            echo "::error::catalog says sdkVersion=$STAMPED but the tag is $TAG"
+            exit 1
+          fi
+          COUNT=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['annotationCount'])" "$CATALOG")
+          echo "path=$CATALOG" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Attaching a catalog of $COUNT annotations at version $STAMPED to $TAG"
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.catalog.outputs.tag }}" "${{ steps.catalog.outputs.path }}" --clobber

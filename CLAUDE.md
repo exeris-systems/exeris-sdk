@@ -66,6 +66,7 @@ npm run test:coverage   # Vitest + the 85% per-file gate
 | `exeris-sdk-composition-spec` | **yes** (jar) | `cap-manifest.json` schema + the one canonical content binding (ADR-024 obligation 8b); zero runtime deps |
 | `exeris-sdk-composition-lifecycle` | **yes** (jar) | Cap-facing `CapabilityLifecycleHooks` interface — the four-phase lifecycle contract (ADR-024 obligation 8a); zero deps (enforcer-proven), so cap authors compile against annotations + this jar only |
 | `exeris-sdk-composition-runtime` | **yes** (jar) | SKU-boot stamp asserter + boot conductor (ADR-024 obligations 8a/8a′); ships into the SKU jar; deps = spec + lifecycle + `jackson-databind` |
+| `exeris-sdk-annotation-catalog` | **no** (build-time tool) | The annotation processor that emits `annotation-catalog.json`; runs on `exeris-sdk-annotations`' processor path and ships its output, not itself. `maven.deploy.skip` |
 | `exeris-sdk-ui-kit` | npm, not Maven | Excluded from the reactor in `pom.xml` |
 
 When adding a new Maven module that's intended for publish, mirror the `attach-sources` + `attach-javadocs` executions from `exeris-sdk-annotations/pom.xml` — without them, Maven Central rejects the artifact.
@@ -119,6 +120,52 @@ The mutation surface in `eu.exeris.sdk.sourcemodel.mutation` (`MutationOp` / `Mu
 ### `jackson-annotations` stays on the 2.x line on purpose (databind 3.x ≠ annotations version)
 
 The BOM has `jackson.version = 3.2.0` (databind / datatype) but `jackson.annotations.version = 2.22`. Jackson 3.x deliberately keeps annotations on the legacy 2.x line — the `3.0-rc*` annotations track was abandoned upstream. The exact pairing is **dictated by `jackson-bom`**: `jackson-bom 3.2.0` declares `jackson.version.annotations=2.22`, so databind `3.2.0` pairs with annotations `2.22` (and `2.22` still ships `JsonSerializeAs`, the floor the AST relies on — added back at `2.21`). When bumping `jackson.version`, read the matching `jackson-bom`'s `jackson.version.annotations` and move `jackson.annotations.version` to match — but **never "unify" the two onto one number**; they are intentionally on different (3.x / 2.x) tracks. (History: `3.1.2/2.21` → `3.2.0/2.22` in 2026-06 for upstream security fixes, adopted ecosystem-wide.)
+
+## The annotation catalog
+
+`exeris-sdk-annotations` ships `META-INF/exeris/annotation-catalog.json` — every `@interface`
+the module declares, with its `@Target`, `@Retention`, per-attribute type / default /
+required-ness / admissible enum values, deprecations with their canonical replacement, and
+the javadoc prose. It is written during that module's own compilation by
+`AnnotationCatalogProcessor` in `exeris-sdk-annotation-catalog`, on the javac
+**annotation processor path** — which is not the annotations module's dependency tree, so
+the published jar stays dependency-free.
+
+Three things about it are load-bearing:
+
+- **It is generated from sources, not reflection.** Reflection recovers names, types,
+  defaults, `@Target`, `@Retention` and `@Deprecated`, and then stops. It cannot recover the
+  prose (a class file carries no javadoc, at any retention — the `SOURCE` retention is a
+  true fact standing next to the reason rather than being it), and it cannot recover a
+  deprecation's canonical replacement, which lives in `@deprecated` prose because
+  `@Deprecated` has only `since` and `forRemoval`.
+- **It covers nested declaration sites.** 20 of the 71 `@interface` declarations are nested
+  inside another annotation, and a classpath package walk does not see them. A catalog that
+  is 51/71 complete is worse than none, because its consumer cannot tell.
+- **No timestamp.** The output is a pure function of the sources and `${project.version}`,
+  so two builds of one commit produce identical bytes.
+
+It costs jar size: 453 KB of JSON, 89 KB deflated, taking the annotations jar from
+128 KB to 216 KB. Acceptable here specifically because these annotations are
+`@Retention(SOURCE)` and belong on a consumer's **compile** classpath at `provided`
+scope — the jar never reaches a runtime image, so the bytes are paid once at build time.
+
+Two guards, deliberately using different mechanisms so they cannot share a bug:
+`AnnotationCatalogProcessorTest` (catalog module) drives the processor over a synthetic
+annotation and reads back what it wrote; `AnnotationCatalogContractTest` (annotations
+module) compares the catalog against **reflection over the compiled classes** and fails on
+any disagreement, on a missing `purpose`, or on a deprecation with no replacement. The
+expected set is derived, never written down — a hard-coded count is wrong one release later.
+
+**Build wrinkle:** `annotationProcessorPaths` is not a dependency edge, so Maven neither
+orders the reactor by it nor resolves it from the reactor in a partial build. The full
+`mvn verify` works (declaration order in `<modules>` puts the generator first); a
+`mvn -pl exeris-sdk-annotations -am ...` fails to resolve the processor until the catalog
+module has been installed once.
+
+**Distribution:** `.github/workflows/release-assets.yml` attaches the catalog to the GitHub
+Release on a `v*` tag, and refuses if the catalog's `sdkVersion` disagrees with the tag.
+That channel needs no publishing infrastructure, so it does not wait for the Central move.
 
 ## ADR-003 — Entity-First
 

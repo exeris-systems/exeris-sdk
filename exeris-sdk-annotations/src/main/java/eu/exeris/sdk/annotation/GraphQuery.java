@@ -760,11 +760,49 @@ public @interface GraphQuery {
     // NESTED ANNOTATIONS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * One argument of the GraphQL field this query is exposed as.
+     *
+     * <p>{@code type} is written in GraphQL's own type syntax rather than as a Java type —
+     * the two vocabularies do not coincide, and this one is the schema's.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface GraphqlArg {
+        /**
+         * Argument name as it appears in the schema.
+         *
+         * @return the argument name
+         */
         String name();
+
+        /**
+         * GraphQL type of the argument — e.g. {@code String}, {@code Int}, {@code ID} —
+         * not a Java type.
+         *
+         * @return the GraphQL type
+         */
         String type();
+
+        /**
+         * Value used when the caller omits the argument.
+         *
+         * @return the default value
+         */
         String defaultValue() default "";
+
+        /**
+         * Whether the caller must supply the argument.
+         *
+         * @return true when the argument is required
+         */
         boolean required() default false;
+
+        /**
+         * Human-readable description carried into the generated schema.
+         *
+         * @return the argument description
+         */
         String description() default "";
     }
 }

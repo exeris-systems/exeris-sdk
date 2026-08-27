@@ -68,6 +68,11 @@
         <module>exeris-sdk-bom</module>
         <module>exeris-sdk-parent</module>
 
+        <!-- Build-time generator, ordered before its consumer: exeris-sdk-annotations
+             reaches it through <annotationProcessorPaths>, which Maven does not treat
+             as a dependency edge for reactor ordering. Declaration order is what puts
+             it first. -->
+        <module>exeris-sdk-annotation-catalog</module>
         <module>exeris-sdk-annotations</module>
         <module>exeris-sdk-source-model</module>
         <module>exeris-sdk-source-model-io</module>

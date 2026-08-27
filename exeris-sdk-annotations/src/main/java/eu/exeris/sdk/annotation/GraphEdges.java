@@ -35,5 +35,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface GraphEdges {
+    /**
+     * The repeated declarations. Written by the compiler when {@link GraphEdge} appears
+     * more than once on a field; there is rarely a reason to write this container by hand.
+     *
+     * @return the repeated edge declarations
+     */
     GraphEdge[] value();
 }

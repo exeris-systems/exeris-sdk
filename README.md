@@ -13,6 +13,7 @@ by the tooling (`exeris-tooling`) and the platform (`exeris-platform`).
 | [`exeris-sdk-annotations`](exeris-sdk-annotations) | Pure annotation library: `@ExerisDomain`, `@Action`, `@Field`, `@Relationship`, `@Saga`, `@DomainEvent`, security & system field annotations. |
 | [`exeris-sdk-source-model`](exeris-sdk-source-model) | Canonical AST/metadata types describing an Exeris domain. Single source of truth shared by the annotation processor, codegen, and Studio. |
 | [`exeris-sdk-source-model-io`](exeris-sdk-source-model-io) | JavaParser-based parser and writer: round-trips `.java` ↔ `DomainMetadata` for codegen, LSP, and Studio mutations. |
+| [`exeris-sdk-annotation-catalog`](exeris-sdk-annotation-catalog) | Build-time processor that emits `annotation-catalog.json` into the annotations jar — the machine-readable description of the annotation surface. Not published. |
 | [`exeris-sdk-composition-spec`](exeris-sdk-composition-spec) | Canonical `cap-manifest.json` schema and content-binding algorithm, shared by the tooling emitter and the SKU-boot asserter (ADR-024). |
 | [`exeris-sdk-composition-lifecycle`](exeris-sdk-composition-lifecycle) | Cap-facing `CapabilityLifecycleHooks` interface — the four-phase `initialize`/`ready`/`drain`/`terminate` contract, zero dependencies by design (ADR-024). |
 | [`exeris-sdk-composition-runtime`](exeris-sdk-composition-runtime) | Boot-time composition validation-stamp assertion + the boot conductor driving the cap lifecycle, shipped into each SKU artifact and invoked by the SKU bootstrap (ADR-024). |

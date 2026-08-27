@@ -8,20 +8,12 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.io.File;
 import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Contract test for the SDK annotation surface.
@@ -105,9 +97,10 @@ class AnnotationContractTest {
         // fixed in 0.9.0; @GraphEdges, fixed in 0.10.0) and every other one is
         // nested inside a public @interface, hence implicitly public.
         //
-        // Read from @Repeatable rather than from the package walk on purpose:
-        // the walk skips nested types, and a nested container is exactly the
-        // shape this assertion must still cover.
+        // Read from @Repeatable rather than from the package walk on purpose: this
+        // asks which containers are actually reachable from a repeatable annotation,
+        // which is the question a use site asks, and it stays correct however the
+        // walk is scoped.
         List<Class<? extends Annotation>> annotations = discoverAnnotations("eu.exeris.sdk.annotation");
 
         List<String> repeatables = new ArrayList<>();
@@ -173,52 +166,10 @@ class AnnotationContractTest {
     }
 
     /**
-     * Discovers every annotation type ({@link Class#isAnnotation()}) under
-     * the given package <em>and all of its sub-packages</em> by enumerating
-     * every classpath root that contains it and walking each root recursively.
-     * <p>
-     * Multi-root enumeration matters under Maven: the test classloader exposes
-     * both {@code target/classes} (where the annotations live) and
-     * {@code target/test-classes} (where this test lives) as separate locations
-     * for the same package; only the first would be visible to
-     * {@code getResource} alone. Recursion means a new sub-package needs no
-     * test edit — it is picked up and held to the same SOURCE + {@code @Target}
-     * contract automatically.
+     * Delegates to the shared walk — see {@link DeclaredAnnotations}, which the catalog
+     * contract test reads too, so that "every annotation" means one thing in this module.
      */
-    @SuppressWarnings("unchecked")
     private List<Class<? extends Annotation>> discoverAnnotations(String pkg) throws Exception {
-        String pkgPath = pkg.replace('.', '/');
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        var urls = cl.getResources(pkgPath);
-        if (!urls.hasMoreElements()) {
-            fail("Package not found on classpath: %s", pkg);
-        }
-        List<Class<? extends Annotation>> out = new ArrayList<>();
-        while (urls.hasMoreElements()) {
-            URL root = urls.nextElement();
-            Path dir = Paths.get(URLDecoder.decode(root.getPath(), StandardCharsets.UTF_8));
-            if (!Files.isDirectory(dir)) continue;
-            try (Stream<Path> files = Files.walk(dir)) {
-                for (Path p : (Iterable<Path>) files::iterator) {
-                    if (!Files.isRegularFile(p)) continue;
-                    String fname = p.getFileName().toString();
-                    if (!fname.endsWith(".class") || fname.equals("package-info.class")) continue;
-                    // Skip nested types ($ in the JVM-compiled name) — they
-                    // are only reachable as attribute types of their parent
-                    // annotation and inherit its SOURCE retention at use site.
-                    if (fname.contains("$")) continue;
-                    // Rebuild the FQN from the path relative to the package root,
-                    // so files in sub-packages (system/, security/, …) resolve.
-                    String rel = dir.relativize(p).toString()
-                            .replace(File.separatorChar, '.');
-                    String fqn = pkg + "." + rel.substring(0, rel.length() - ".class".length());
-                    Class<?> c = Class.forName(fqn, false, cl);
-                    if (c.isAnnotation()) {
-                        out.add((Class<? extends Annotation>) c);
-                    }
-                }
-            }
-        }
-        return out;
+        return DeclaredAnnotations.under(pkg);
     }
 }
