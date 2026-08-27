@@ -10,6 +10,49 @@ the upgrade steps required.
 
 ---
 
+## 0.11.x → 0.12.x
+
+### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
+
+**Recompile once against 0.12.0, then this stops being your problem.**
+
+The field was `public static final String CURRENT = "0.11.0";` — a *constant
+variable* (JLS 4.12.4), which `javac` inlines into every compile site that
+mentions it (JLS 13.1). So a consumer that compiled against `source-model`
+0.10.0 and later resolved 0.11.0 kept `"0.10.0"` baked into its own class
+files. Swapping the jar did not change what that code compares against.
+
+The failure is confusing rather than loud, because the two halves of one build
+disagree: `SchemaVersion.isCurrent(stamp)` executes inside the *new* jar and
+answers correctly, while a caller's own `SchemaVersion.CURRENT.equals(stamp)`
+answers from the *old* inlined literal. A baseline the build has just stamped
+therefore reads back as `NO_BASELINE(SCHEMA_VERSION_SKEW)`. It reproduces
+perfectly and disappears under a clean build, which is what makes it costly:
+found in `exeris-platform`, where an SDK bump was green under `mvn clean test`
+and dropped three tests to `NO_BASELINE` without `clean`.
+
+`CURRENT` is now initialized from a private method, so no `ConstantValue`
+attribute is emitted and nothing inlines it. The type, name, modifiers and
+value are unchanged, and `isCurrent` behaves as before — nothing to change in
+your code. Stale *pre-0.12.0* compilation output still carries whatever literal
+it baked in; one recompile clears it for good.
+
+**Do not confuse this with the deliberate cross-shape refusal.** A genuine
+`"0.10.0"` stamp read by a 0.11.0 build *is* `SCHEMA_VERSION_SKEW`, and is
+meant to be reported — the posture is to refuse a cross-shape baseline rather
+than assume compatibility. The bug above is the case where the two versions
+were never actually different, only the class files were.
+
+**Guarded, not just fixed.** `BaselineTrustContractTest` compiles a probe that
+uses `SchemaVersion.CURRENT` where a constant expression is required (an
+annotation element value) and asserts it **fails**, plus a twin with a real
+constant that must succeed so the first assertion cannot pass on an unrelated
+compile error. The property is invisible to reflection and to japicmp — the
+semver gate compared 0.11.0 against this change and reported nothing at all —
+so measuring the compiler is the only way to hold it.
+
+---
+
 ## 0.10.x → 0.11.x
 
 ### `@Action.path` is now optional (and has never been consumed)

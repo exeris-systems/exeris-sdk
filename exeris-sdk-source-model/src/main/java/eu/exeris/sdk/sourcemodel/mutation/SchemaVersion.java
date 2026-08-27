@@ -97,7 +97,36 @@ public final class SchemaVersion {
      *       {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
-    public static final String CURRENT = "0.11.0";
+    public static final String CURRENT = currentVersion();
+
+    /**
+     * Holds the literal so that {@link #CURRENT} is <strong>not a constant
+     * variable</strong> (JLS 4.12.4) and therefore carries no {@code
+     * ConstantValue} attribute for {@code javac} to inline at a consumer's
+     * compile sites (JLS 13.1).
+     *
+     * <p>This is not style. With a literal initializer, every downstream class
+     * that mentions {@code SchemaVersion.CURRENT} bakes the value it saw at
+     * <em>its own</em> compile time into its own class file, and swapping the
+     * {@code source-model} jar underneath it does not change what that class
+     * compares against. The two halves of the same build then disagree:
+     * {@link #isCurrent(String)} answers from the new jar while a caller's
+     * inlined {@code CURRENT.equals(stamp)} answers from the old one, and a
+     * baseline the build has just stamped reads back as
+     * {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}.
+     *
+     * <p>Found downstream in {@code exeris-platform}, where an SDK bump was
+     * green under {@code mvn clean test} and dropped three tests to
+     * {@code NO_BASELINE} without {@code clean} — stale test classes still
+     * carrying the inlined {@code "0.10.0"}. That is a build-hygiene trap with
+     * a confusing name on it, and it is this constant's to remove rather than
+     * every consumer's to know about. It is separate from, and was easy to
+     * mistake for, the deliberate cross-shape refusal documented on
+     * {@link #CURRENT} — that one is a real skew and is meant to be reported.
+     */
+    private static String currentVersion() {
+        return "0.11.0";
+    }
 
     /**
      * Whether a baseline's stamped schema version is the one this build reads.
