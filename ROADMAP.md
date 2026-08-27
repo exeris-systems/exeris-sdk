@@ -228,6 +228,111 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] **Route authorization (kernel ADR-061)** — the kernel replaced its hardcoded `/secure` convention with a declarable, path-shaped policy behind an `Optional` slot on `HttpKernelProviders`. This one is not a net-new SDK surface: `@ExerisDomain.roles` / `permissions` **already exist and are inert** — no processor reads them into the AST, no generator consumes them, and until now there was nothing to compile them down to, so they documented intent while enforcing nothing. ADR-061 is the first contract they could generate into. Honesty notes added on both attributes (0.10.0, the streaming-note pattern). Note what the ADR rules out: the kernel cannot reconstruct a `methodId` at runtime — it is a `@Retention(SOURCE)` artefact — so the URL→policy table is explicitly `exeris-tooling`'s to emit, from these attributes. SDK work when it comes is extraction + AST carrier, not a new annotation; **1.x, not before** (preview-tier SPI, same ordering argument as blob/job)
 - [x] **Flow step identity (kernel ADR-062)** — resume now binds to a step's *name* rather than its position: `FlowDefinition` rejects duplicate step names, a parked snapshot records the name it stopped at, and a wake whose plan disagrees fails closed. `@SagaStep.name` has always been documented "unique within saga", so the surface needs no change — but the sentence stopped being a convention and became an enforced contract, and *renaming* a step is now a breaking change for in-flight sagas rather than a refactor. **Landed (0.10.0):** javadoc refreshed to say so, including the kernel's drain-before-reorder procedure. Deliberately **not** adding cross-step uniqueness validation to `SagaStepMetadata` — it is a per-step record and the constraint is a property of the list; the kernel validates it where definitions are built, which is the right place for a design-time carrier to defer to
 
+## 0.12.0 — the SDK's own contract, made machine-readable
+
+> Goal: stop being a repo whose contract can only be read by a human. Ship a
+> generated catalog of the annotation surface, and re-check the two reserved
+> facets against kernel 0.12.
+>
+> **Why this milestone exists.** 0.11.0 shipped and moved the one downstream ask
+> that has never had upstream progress by exactly nothing. `exeris-ai-bridge`'s
+> whole `sdk:*` family — five tools — reads a catalog that no artifact produces,
+> so its 0.6.0 is blocked on this repo rather than on work in that one. Verified
+> 2026-08-27 against the published artifacts rather than against the changelog:
+> every 0.11.0 jar (`annotations`, `source-model`, `source-model-io`,
+> `composition-spec`) carries class files plus `META-INF/maven` and nothing else,
+> and the `v0.10.0` and `v0.11.0` GitHub Releases carry **zero assets** — so
+> there is no channel by which a downstream `prepack` could vendor anything, and
+> nothing on the other end of it. Released alongside kernel 0.12.
+
+- [ ] **`annotation-catalog.json`, generated upstream and attached to the
+  release** — annotation names, `@Target`, `@Retention`, per-attribute
+  name / type / default / required-ness, deprecation status with its canonical
+  replacement, and the prose purpose of each. **The obvious mechanism is the
+  wrong one**, and the downstream ask proposes it: "`AnnotationContractTest`
+  already discovers every annotation by classpath reflection, so the emitter is
+  that mechanism plus a serializer." Reflection recovers names, types, defaults,
+  `@Target`, `@Retention` and `@Deprecated(forRemoval, since)` — and then stops
+  short of the two things that make a catalog worth serving. **(a) The prose.**
+  Not because the annotations are `@Retention(SOURCE)` — a class file carries no
+  javadoc for anything at any retention, so the retention is a true fact standing
+  next to the reason rather than being it. What is lost is each attribute's
+  purpose text, which is most of what `sdk:describe_annotation` exists for, and
+  the *canonical replacement* for a deprecation, which lives in `@deprecated`
+  prose (`@Validation.required` → `@Field.required`) and not in the `@Deprecated`
+  annotation, whose two elements are `forRemoval` and `since`. **(b) Nested
+  declaration sites.** The package walk skips nested types and says so in its own
+  comment. Counted from the 0.11.0 sources: **71 `@interface` declarations — 51
+  top-level, 20 nested.** The 20 a reflection emitter would silently omit are
+  ones authors actually write — `@DomainEvent.Header`, `@SagaStep.InputMapping` /
+  `.OutputMapping` / `.CommandHeader` / `.MetricTag`, `@GraphEdge.PropertyMapping`
+  / `.StaticProperty` / `.ComputedProperty`, `@Saga.SagaTrigger`,
+  `@EventSourced.StreamMetadata`, `@Graph.GraphqlQuery` — and a catalog that is
+  51/71 complete is worse than no catalog, because its consumer cannot tell which
+  half it got. So the emitter reads the **declaration model plus doc comments**:
+  a `jdk.javadoc.doclet` on an extra `maven-javadoc-plugin` execution, which is
+  JDK-provided (no dependency added to the most upstream repo in the ecosystem)
+  and whose `javax.lang.model` walk descends into nested types by construction.
+  JavaParser is the alternative and is the wrong one twice over — ADR-037
+  confines it to `-io`, and reaching for it here would have the annotations
+  module parsed by a module that sits below it
+- [ ] **Distribution is the actual gate, and it does not wait for Central** —
+  two channels: `META-INF/exeris/annotation-catalog.json` inside the annotations
+  jar, so anyone who resolves the artifact has it; **and a GitHub Release
+  asset**, which is what unblocks the downstream today because it needs no
+  publishing infrastructure whatsoever. The SDK's Central move stays sequenced
+  behind the kernel and `exeris-tooling`, and this deliverable must not inherit
+  that gate — the zero-asset releases above are the whole of why the ask is still
+  open. The catalog stamps the SDK version it was generated from, so a consumer
+  pinning a different one can say so instead of answering from the wrong contract
+- [ ] **Non-vacuity: the catalog is gated, not merely emitted** — a guard
+  asserting it covers every `@interface` the *source* declares, with the expected
+  set derived rather than written down, verified against a deliberately added
+  annotation. The 71 / 51 / 20 counts above are evidence for the design choice,
+  not constants to hard-code — the drift between 0.10.0 (49 top-level) and
+  0.11.0 (51) is precisely the argument the downstream makes for generating this
+  upstream at all
+- [ ] **JSON Schema for the AST records** (`DomainMetadata` + siblings) — the
+  second half of the same ask, listed separately on the downstream's own
+  accounting: the annotation catalog is "the whole of 0.6.0's content", while the
+  AST schema serves one tool of the five. It must carry the two non-obvious
+  Jackson 3 constraints as part of the contract rather than as folklore —
+  `FAIL_ON_NULL_FOR_PRIMITIVES=false`, and per-component `NON_NULL` where a
+  boxed-zero bound must survive the wire
+
+### Kernel 0.12 — verified, and nothing moves
+
+> Checked rather than assumed, on the standing rule that a kernel release is
+> read for what it *contains*. Kernel 0.12 changes no SDK disposition.
+
+- [x] **Both reserved facets stay reserved** — `…spi.storage.blob` and
+  `…spi.scheduling` are still **`preview`** in the kernel's
+  `docs/stability-matrix.md` (both since 0.11.0, ADR-056 / ADR-057). ADR-072's
+  promotion condition is *stable* **and** an `exeris-tooling` transcription;
+  neither half moved, so `@Blob` / `@Schedule` and their carriers
+  (`FieldMetadata.blob`, `ActionMetadata.schedule`) stay outside the 1.0.0 freeze
+  exactly as declared
+- [x] **ADR-074 (a request names its own peer) has no SDK surface** —
+  `HttpRequest.authority`, `HttpConfig.defaultAuthority`,
+  `KernelWebClient.withAuthority`, `stable` from kernel 0.12.0. It is *outbound*
+  client addressing, and every HTTP-shaped attribute this SDK declares
+  (`@ExerisDomain.restApi`, `@Action.httpMethod`, the derived
+  `{domainPath}/{id}/actions/{action}` route) describes the *inbound* generated
+  endpoint. There is no Entity-First declaration site for "which peer does this
+  application dial", and inventing one would put deployment topology into a
+  design-time annotation — the same objection that rules out a run-as identity
+  attribute on `@Schedule`. The kernel's own fix note touches the S3 blob driver,
+  but only its client wiring; ADR-056's isolation contract, which is what `@Blob`
+  reserves against, is untouched
+- [x] **ADR-073 (schema-history ledger) is `kernel/persistence`** and names no
+  SDK or tooling consumer. Note it is unrelated to this repo's `SchemaVersion`,
+  which versions the AST wire format, not a database
+- [ ] **Central sequencing, unchanged for now** — kernel 0.12 builds the Maven
+  Central publication path and states it has "produced nothing yet". The SDK's
+  Central move, and with it the japicmp orphan pass in the GA list below, are
+  sequenced behind the kernel *publishing*, not behind the kernel *wiring*
+
+
 ## 1.0.0 GA — frozen contract
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.

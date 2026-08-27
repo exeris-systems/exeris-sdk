@@ -15,6 +15,25 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
+### Fixed
+
+- **`SchemaVersion.CURRENT` was a compile-time constant, so consumers inlined it and kept
+  comparing against the version they were built against.** `public static final String CURRENT =
+  "0.11.0"` is a constant variable (JLS 4.12.4); `javac` bakes it into every downstream compile
+  site (JLS 13.1), and swapping the `source-model` jar underneath does not change what that code
+  compares against. The two halves of one build then disagree — `isCurrent(stamp)` runs inside the
+  new jar and answers correctly, a caller's own `CURRENT.equals(stamp)` answers from the old
+  literal — and a baseline the build has just stamped reads back as
+  `NO_BASELINE(SCHEMA_VERSION_SKEW)`. Found downstream in `exeris-platform`, where an SDK bump was
+  green under `mvn clean test` and dropped three tests without `clean`. `CURRENT` is now
+  initialized from a private method, so no `ConstantValue` attribute is emitted; type, name,
+  modifiers and value are unchanged. Guarded by a compile probe in `BaselineTrustContractTest`
+  that uses `CURRENT` where a constant expression is required and asserts the compile **fails**,
+  with a real-constant twin proving the probe is not vacuous — the property is invisible to
+  reflection, and japicmp compared 0.11.0 against this change and reported nothing.
+
 ## [0.11.0] — 2026-08-26
 
 The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the
