@@ -299,6 +299,8 @@ public @interface EventHandler {
     /**
      * Retry policy for failed event processing.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface RetryPolicy {
         /** Maximum number of retry attempts
          * @return max attempts */

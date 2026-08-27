@@ -437,6 +437,8 @@ public @interface GraphEdge {
     /**
      * Maps entity field to graph edge property.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface PropertyMapping {
         /**
          * Entity field name.
@@ -460,6 +462,8 @@ public @interface GraphEdge {
     /**
      * Static property with fixed value on graph edge.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface StaticProperty {
         /** Property name
          * @return the name */
@@ -473,6 +477,8 @@ public @interface GraphEdge {
     /**
      * Computed property using SpEL expression.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface ComputedProperty {
         /** Property name
          * @return the name */

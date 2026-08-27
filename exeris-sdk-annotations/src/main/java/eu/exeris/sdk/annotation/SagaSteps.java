@@ -40,5 +40,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface SagaSteps {
+    /**
+     * The repeated declarations. Written by the compiler when {@link SagaStep} appears
+     * more than once on a method; there is rarely a reason to write this container by hand.
+     *
+     * @return the repeated step declarations
+     */
     SagaStep[] value();
 }

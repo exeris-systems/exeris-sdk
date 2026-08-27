@@ -699,6 +699,8 @@ public @interface EventSourced {
     /**
      * Retry policy for failed event operations.
      */
+    @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
+    @Target({})
     @interface RetryPolicy {
         /** Maximum number of retry attempts
          * @return max attempts */
@@ -732,6 +734,8 @@ public @interface EventSourced {
     /**
      * Custom metadata for event streams.
      */
+    @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
+    @Target({})
     @interface StreamMetadata {
         /** Metadata key
          * @return the key */

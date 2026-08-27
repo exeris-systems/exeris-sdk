@@ -837,6 +837,8 @@ public @interface DomainEvent {
     /**
      * Message header definition.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface Header {
         /**
          * Header name.

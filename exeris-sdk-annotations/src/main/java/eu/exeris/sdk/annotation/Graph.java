@@ -605,6 +605,8 @@ public @interface Graph {
     /**
      * GraphQL query definition for graph data.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface GraphqlQuery {
         /**
          * Query field name.
@@ -693,6 +695,8 @@ public @interface Graph {
     /**
      * GraphQL query argument definition.
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface QueryArg {
         /** Argument name
          * @return the name */

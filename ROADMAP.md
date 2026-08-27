@@ -245,7 +245,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > there is no channel by which a downstream `prepack` could vendor anything, and
 > nothing on the other end of it. Released alongside kernel 0.12.
 
-- [ ] **`annotation-catalog.json`, generated upstream and attached to the
+- [x] **`annotation-catalog.json`, generated upstream and attached to the
   release** — annotation names, `@Target`, `@Retention`, per-attribute
   name / type / default / required-ness, deprecation status with its canonical
   replacement, and the prose purpose of each. **The obvious mechanism is the
@@ -276,7 +276,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   JavaParser is the alternative and is the wrong one twice over — ADR-037
   confines it to `-io`, and reaching for it here would have the annotations
   module parsed by a module that sits below it
-- [ ] **Distribution is the actual gate, and it does not wait for Central** —
+- [x] **Distribution is the actual gate, and it does not wait for Central** —
   two channels: `META-INF/exeris/annotation-catalog.json` inside the annotations
   jar, so anyone who resolves the artifact has it; **and a GitHub Release
   asset**, which is what unblocks the downstream today because it needs no
@@ -285,7 +285,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   that gate — the zero-asset releases above are the whole of why the ask is still
   open. The catalog stamps the SDK version it was generated from, so a consumer
   pinning a different one can say so instead of answering from the wrong contract
-- [ ] **Non-vacuity: the catalog is gated, not merely emitted** — a guard
+- [x] **Non-vacuity: the catalog is gated, not merely emitted** — a guard
   asserting it covers every `@interface` the *source* declares, with the expected
   set derived rather than written down, verified against a deliberately added
   annotation. The 71 / 51 / 20 counts above are evidence for the design choice,
@@ -299,6 +299,32 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   Jackson 3 constraints as part of the contract rather than as folklore —
   `FAIL_ON_NULL_FOR_PRIMITIVES=false`, and per-component `NON_NULL` where a
   boxed-zero bound must survive the wire
+
+### Landed — and what building it found
+
+> The catalog is a `jdk.javadoc.doclet`-class problem solved with an annotation
+> processor instead: `javax.lang.model` plus `com.sun.source.util.DocTrees` gives
+> the declaration model *and* the parsed doc comments from inside the annotations
+> module's own compilation, with no new dependency and no second pass over the
+> sources. The doclet route in the bullet above would have worked; this one is
+> smaller and runs where the build already is.
+
+- [x] **Sixteen nested annotations were outside the contract this module states**
+  — `@Retention` absent (so `CLASS` by default, not `SOURCE`) and `@Target` absent
+  (so applicable anywhere). They now declare `@Retention(SOURCE)` and
+  `@Target({})`, the empty target set that makes a type usable *only* as another
+  annotation's member value — which is what they had always been by convention
+  and never by declaration. Found because the catalog reports retention and
+  targets per entry, and 16 of 71 came back null. `AnnotationContractTest` could
+  not have caught it: its walk skipped nested types, with a comment giving the
+  reason as "they inherit SOURCE retention at the use site" — true of the use
+  sites that existed, and not a property of the declarations. The walk now
+  descends, verified against a deliberately un-retained nested type
+- [x] **Every declaration site carries prose** — 7 nested annotations and 26
+  attributes had no javadoc at all, so a catalog entry for them would have been a
+  name and a type. All of them nested, which is why nobody noticed: the surface a
+  package walk sees was already documented. `AnnotationCatalogContractTest` fails
+  on a missing `purpose` rather than shipping a blank one
 
 ### Kernel 0.12 — verified, and nothing moves
 

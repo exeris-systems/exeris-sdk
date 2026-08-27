@@ -17,8 +17,38 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Added
+
+- **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
+  attached to the GitHub Release.** Every `@interface` the module declares — 71 of them, 51
+  top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  required-ness / admissible enum values, deprecations with their canonical replacement, and
+  the javadoc prose. Written during the annotations module's own compilation by the new
+  build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,
+  which is not the annotations module's dependency tree — the published jar stays
+  dependency-free. Generated from sources rather than by reflection for two reasons a
+  reflection emitter cannot work around: a class file carries no javadoc at any retention,
+  and a deprecation's replacement lives in `@deprecated` prose because `@Deprecated` has only
+  `since` and `forRemoval`. No timestamp, so two builds of one commit produce identical bytes.
+  `.github/workflows/release-assets.yml` attaches it on a `v*` tag and refuses when the
+  catalog's `sdkVersion` disagrees with the tag. This unblocks `exeris-ai-bridge`'s `sdk:*`
+  family, whose whole content had no producer.
+
 ### Fixed
 
+- **Sixteen nested annotations declared neither `@Retention` nor `@Target`**, so they defaulted
+  to `CLASS` retention and were applicable anywhere — outside the invariant this module's own
+  contract test states, which could not see them because its walk skipped nested types. The
+  walk's comment gave the reason as "they inherit SOURCE retention at the use site": true of
+  the use sites that existed, and not a property of the declarations. They now declare
+  `@Retention(SOURCE)` and `@Target({})` — the empty target set that permits use *only* as
+  another annotation's member value, which is what they had always been by convention. Found
+  by reading the generated catalog, and the walk now descends into nested types, verified
+  against a deliberately un-retained one.
+- **Seven nested annotations and 26 of their attributes had no javadoc**, so their catalog
+  entries would have carried a name and a type and nothing else. All nested — the surface a
+  package walk sees was already documented, which is why it went unnoticed.
+  `AnnotationCatalogContractTest` now fails on a missing `purpose`.
 - **`SchemaVersion.CURRENT` was a compile-time constant, so consumers inlined it and kept
   comparing against the version they were built against.** `public static final String CURRENT =
   "0.11.0"` is a constant variable (JLS 4.12.4); `javac` bakes it into every downstream compile

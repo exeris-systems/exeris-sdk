@@ -783,25 +783,116 @@ public @interface SagaStep {
     // NESTED ANNOTATIONS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * One header on the command a step dispatches.
+     *
+     * <p>Supply either a literal {@code value} or a SpEL {@code expression} evaluated
+     * against saga state; they are alternatives, and leaving both unset leaves the header
+     * empty.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface CommandHeader {
+        /**
+         * Header name.
+         *
+         * @return the header name
+         */
         String name();
+
+        /**
+         * Literal header value. Leave unset when {@code expression} supplies it.
+         *
+         * @return the literal value
+         */
         String value() default "";
+
+        /**
+         * SpEL expression, evaluated against saga state, producing the value.
+         * Leave unset when {@code value} supplies it.
+         *
+         * @return the value expression
+         */
         String expression() default "";
     }
 
+    /**
+     * One field of the dispatched command, populated from saga state.
+     *
+     * <p>Carried by {@link SagaStep#inputMappings()}. Both attributes are mandatory: a
+     * mapping that names no target field, or produces no value, describes nothing.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface InputMapping {
+        /**
+         * Field on the command to populate.
+         *
+         * @return the command field name
+         */
         String commandField();
+
+        /**
+         * SpEL expression, evaluated against saga state, producing the field's value.
+         *
+         * @return the state expression
+         */
         String stateExpression();
     }
 
+    /**
+     * One field of saga state, populated from the step's response.
+     *
+     * <p>The mirror of {@link InputMapping}, applied after the step completes, so a later
+     * step reads what this one returned.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface OutputMapping {
+        /**
+         * Field on the saga state to populate.
+         *
+         * @return the state field name
+         */
         String stateField();
+
+        /**
+         * SpEL expression, evaluated against the step response, producing the field's value.
+         *
+         * @return the response expression
+         */
         String responseExpression();
     }
 
+    /**
+     * One tag on the metrics a step emits.
+     *
+     * <p>Read only while {@link SagaStep#emitMetrics()} is on. Supply either a literal
+     * {@code value} or a SpEL {@code expression} evaluated against saga state.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface MetricTag {
+        /**
+         * Tag name.
+         *
+         * @return the tag name
+         */
         String name();
+
+        /**
+         * Literal tag value. Leave unset when {@code expression} supplies it.
+         *
+         * @return the literal value
+         */
         String value() default "";
+
+        /**
+         * SpEL expression, evaluated against saga state, producing the value.
+         * Leave unset when {@code value} supplies it.
+         *
+         * @return the value expression
+         */
         String expression() default "";
     }
 }

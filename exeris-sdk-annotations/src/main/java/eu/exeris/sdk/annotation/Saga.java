@@ -911,6 +911,16 @@ public @interface Saga {
     // NESTED ANNOTATIONS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * What starts a saga instance.
+     *
+     * <p>Names the command or event that begins the flow — by class when the type is on the
+     * classpath, by name or pattern when it is not. {@link Saga#trigger()} defaults to
+     * {@code @SagaTrigger} with every attribute at its own default, i.e. a
+     * {@link TriggerType#COMMAND} trigger naming no source.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface SagaTrigger {
         /** Trigger type */
         TriggerType type() default TriggerType.COMMAND;
@@ -969,15 +979,78 @@ public @interface Saga {
         }
     }
 
+    /**
+     * Retry behaviour for a saga, shaped as exponential backoff with jitter.
+     *
+     * <p>Durations are ISO-8601 ({@code PT1S}, {@code PT1M}). The two throwable lists
+     * narrow what is retried: {@code retryOn} restricts retries to the types it names when
+     * it is non-empty, {@code noRetryOn} excludes the types it names.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
     @interface SagaRetryPolicy {
+        /**
+         * How many attempts in total, counting the first.
+         *
+         * @return the attempt ceiling
+         */
         int maxAttempts() default 3;
+
+        /**
+         * Delay before the first retry, as an ISO-8601 duration.
+         *
+         * @return the initial delay
+         */
         String initialDelay() default "PT1S";
+
+        /**
+         * Ceiling the backoff grows to, as an ISO-8601 duration.
+         *
+         * @return the maximum delay
+         */
         String maxDelay() default "PT1M";
+
+        /**
+         * Factor the delay is multiplied by after each failed attempt.
+         *
+         * @return the backoff multiplier
+         */
         double multiplier() default 2.0;
+
+        /**
+         * Random fraction of the delay added or subtracted, so that retries from many
+         * instances do not synchronize.
+         *
+         * @return the jitter fraction
+         */
         double jitter() default 0.1;
+
+        /**
+         * When non-empty, only these throwable types are retried.
+         *
+         * @return the retryable types
+         */
         Class<? extends Throwable>[] retryOn() default {};
+
+        /**
+         * Throwable types excluded from retry.
+         *
+         * @return the non-retryable types
+         */
         Class<? extends Throwable>[] noRetryOn() default {};
+
+        /**
+         * Whether a timeout counts as retryable.
+         *
+         * @return true to retry a timed-out attempt
+         */
         boolean retryOnTimeout() default true;
+
+        /**
+         * Whether a network error counts as retryable.
+         *
+         * @return true to retry after a network error
+         */
         boolean retryOnNetworkError() default true;
     }
 }
