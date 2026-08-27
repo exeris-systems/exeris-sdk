@@ -15,6 +15,8 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
 ## [0.11.0] — 2026-08-26
 
 The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the

@@ -6,7 +6,7 @@
     <parent>
         <groupId>eu.exeris</groupId>
         <artifactId>exeris-sdk-parent</artifactId>
-        <version>0.11.0</version>
+        <version>0.12.0-SNAPSHOT</version>
         <relativePath>../exeris-sdk-parent</relativePath>
     </parent>
 
@@ -23,13 +23,13 @@
     </description>
 
     <properties>
-        <!-- No 0.10.0 artifact exists for a module introduced in 0.11.0, so there is nothing to
-             compare against. Flip to false once japicmp.baseline.version names a release that
-             CONTAINS this module — i.e. when the baseline advances to 0.11.0, not merely at the
-             next cut: this release is the one that introduces the module, and it is compared
-             against 0.10.0. The surface here freezes at 1.0.0 like every other publishable
-             module. -->
-        <japicmp.skip>true</japicmp.skip>
+        <!-- Gated from 0.12.0 on. The skip existed for one reason — a module introduced in
+             0.11.0 had no 0.10.0 artifact to compare against — and the baseline has since
+             advanced to 0.11.0, which contains it. No records live here (the TCK ships abstract
+             JUnit bases, an enum and two helpers), so the module stays on strict japicmp
+             defaults rather than taking the records-aware CONSTRUCTOR_REMOVED override that
+             source-model needs: an added constructor overload on one of these classes is real
+             API, exactly as it is in the two record-free composition modules. -->
     </properties>
 
     <dependencies>
