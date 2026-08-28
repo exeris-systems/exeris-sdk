@@ -107,7 +107,15 @@ public record DomainMetadata(
         // Data-scope tier (0.10.0): the mutually-exclusive successor of the
         // deprecated tenantScoped boolean. Absent ⇒ fall back to tenantScoped
         // via effectiveDataScope(). See RFC-2026-06-24 / ADR-059.
-        @JsonProperty("dataScope") DataScope dataScope
+        @JsonProperty("dataScope") DataScope dataScope,
+
+        // Route access (0.12.0): the identity half of the kernel's route-authorization
+        // decision (kernel ADR-061), covering the routes generated for this entity.
+        // Absent ⇒ the author declared nothing and the generated policy's default
+        // decides — there is no UNSPECIFIED constant, by design. Reserved: no processor
+        // writes it and no generator reads it, and the kernel holds route authorization
+        // at tier preview, so it is outside the 1.0.0 freeze. See ADR-072.
+        @JsonProperty("routeAccess") RouteAccess routeAccess
 ) {
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -318,6 +326,7 @@ public record DomainMetadata(
         private InternalApiMetadata internalApi = null;
         private SystemFieldsMetadata systemFields = null;
         private DataScope dataScope = null;
+        private RouteAccess routeAccess = null;
 
         private Builder(String entityName, String packageName) {
             this.entityName = entityName;
@@ -361,6 +370,7 @@ public record DomainMetadata(
         public Builder internalApi(InternalApiMetadata v) { this.internalApi = v; return this; }
         public Builder systemFields(SystemFieldsMetadata v) { this.systemFields = v; return this; }
         public Builder dataScope(DataScope v) { this.dataScope = v; return this; }
+        public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
         public DomainMetadata build() {
             return new DomainMetadata(
@@ -373,7 +383,7 @@ public record DomainMetadata(
                     tableName,
                     fields, actions, events, relationships, projections, eventHandlers,
                     uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields,
-                    rules, dataScope
+                    rules, dataScope, routeAccess
             );
         }
     }

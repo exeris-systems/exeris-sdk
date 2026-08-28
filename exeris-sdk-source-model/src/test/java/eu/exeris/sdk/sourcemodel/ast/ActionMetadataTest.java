@@ -14,14 +14,14 @@ class ActionMetadataTest {
     @Test
     void compactConstructorRejectsNullName() {
         assertThatThrownBy(() -> new ActionMetadata(null, null, null, "POST", null,
-                false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null))
+                false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null, null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
     void compactConstructorDefaultsNullHttpMethodToPost() {
         ActionMetadata a = new ActionMetadata("approve", null, null, null, null,
-                false, false, false, false, null, null, null, null, false, null, false, null);
+                false, false, false, false, null, null, null, null, false, null, false, null, null);
         assertThat(a.httpMethod()).isEqualTo("POST");
         assertThat(a.params()).isEmpty();
         assertThat(a.permissions()).isEmpty();
@@ -31,7 +31,7 @@ class ActionMetadataTest {
     @Test
     void compactConstructorNormalizesBlankStreamEventTypeToNull() {
         ActionMetadata a = new ActionMetadata("generate-report", null, null, "POST", null,
-                false, false, false, false, null, null, null, null, true, "   ", false, null);
+                false, false, false, false, null, null, null, null, true, "   ", false, null, null);
         assertThat(a.streamEventType()).isNull();
         assertThat(a.hasStreamEventType()).isFalse();
     }
@@ -211,5 +211,19 @@ class ActionMetadataTest {
                 .build();
         assertThat(a.isScheduled()).isTrue();
         assertThat(a.schedule().kind()).isEqualTo(ScheduleMetadata.TriggerKind.CRON);
+    }
+
+    @Test
+    void isPublicRouteIsTrueOnlyForAnExplicitPublicDeclaration() {
+        assertThat(ActionMetadata.builder("login").routeAccess(RouteAccess.PUBLIC).build()
+                .isPublicRoute()).isTrue();
+        assertThat(ActionMetadata.builder("approve").routeAccess(RouteAccess.AUTHENTICATED).build()
+                .isPublicRoute()).isFalse();
+        // Undeclared is not public. The convenience method must not collapse the
+        // third state into the permissive one — that is the ambiguity @RouteAccess
+        // was added to remove, and a null-tolerant "not authenticated ⇒ public"
+        // reading would reintroduce it at the carrier.
+        assertThat(ActionMetadata.simple("ship").isPublicRoute()).isFalse();
+        assertThat(ActionMetadata.simple("ship").routeAccess()).isNull();
     }
 }

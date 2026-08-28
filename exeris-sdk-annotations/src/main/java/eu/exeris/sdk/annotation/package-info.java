@@ -235,9 +235,10 @@
  *       {@link eu.exeris.sdk.annotation.EventSourced @EventSourced},
  *       {@link eu.exeris.sdk.annotation.Projection @Projection},
  *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam};
- *       the kernel-0.11 facets
+ *       the kernel-preview facets
  *       {@link eu.exeris.sdk.annotation.Blob @Blob},
- *       {@link eu.exeris.sdk.annotation.Schedule @Schedule};
+ *       {@link eu.exeris.sdk.annotation.Schedule @Schedule},
+ *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess};
  *       the layout annotations
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
@@ -368,6 +369,42 @@
  * has no submission event and therefore no identity to capture. Both are for
  * {@code exeris-tooling} to reject at build time; they are stated in the javadoc
  * so the combination is not written in the first place.
+ *
+ * <h2>Route authorization ({@code @RouteAccess}) — RESERVED</h2>
+ * <p>{@link eu.exeris.sdk.annotation.RouteAccess} declares whether a generated
+ * route admits unauthenticated callers. It closes the Entity-First gap kernel
+ * v0.11 opened when it replaced a hardcoded {@code /secure} path convention with a
+ * declarable route policy ({@code HttpRoutePolicy} / {@code RouteRequirement},
+ * kernel ADR-061): the kernel became able to enforce a per-route decision, and
+ * nothing in this package could state one.
+ *
+ * <p><strong>It is not the same gap as {@code roles} / {@code permissions}.</strong>
+ * Those attributes exist on {@link eu.exeris.sdk.annotation.ExerisDomain} and
+ * {@link eu.exeris.sdk.annotation.Action} and are inert pending extraction — a
+ * downstream job. The gap {@code @RouteAccess} closes is at the declaration site
+ * itself: an empty {@code roles} / {@code permissions} already means "nothing
+ * declared", and {@code @Action.roles} has documented empty as "accessible to all
+ * authenticated users" since 0.1.0, so neither could be overloaded to mean
+ * "public" without colliding with a published meaning. No amount of extraction
+ * would have produced a statement the surface cannot make.
+ *
+ * <p><strong>No {@code UNSPECIFIED} constant, on either side.</strong> An element
+ * with no {@code @RouteAccess} has declared nothing; one that carries it has
+ * decided. The AST twin {@code sourcemodel.ast.RouteAccess} is nullable for the
+ * same reason. Re-introducing a sentinel would rebuild, one level down, exactly
+ * the ambiguity the annotation was added to remove.
+ *
+ * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
+ * side shipped with {@code AbstractHttpRoutePolicyTck}, the remaining gap is the
+ * {@code exeris-tooling} slice that emits a URL-to-policy table, and the kernel
+ * holds route authorization at tier {@code preview}. So this surface does
+ * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
+ *
+ * <p>It also records the one combination the platform refuses:
+ * {@code @RouteAccess(PUBLIC)} beside a non-empty {@code permissions}. A permit-all
+ * route runs its handler with no principal bound, so a scope check on it can never
+ * be satisfied — contradictory rather than redundant, and a build-time rejection
+ * for {@code exeris-tooling}.
  *
  * <h2>Architecture principles</h2>
  * <ul>

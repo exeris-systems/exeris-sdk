@@ -384,6 +384,61 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("routeAccess round-trips on both carriers, and PUBLIC survives NON_DEFAULT (0.12.0)")
+    void routeAccessRoundTrips() {
+        assertRoundTrip(ActionMetadata.builder("login")
+                .httpMethod("POST")
+                .routeAccess(RouteAccess.PUBLIC)
+                .build(), ActionMetadata.class);
+
+        assertRoundTrip(ActionMetadata.builder("approve")
+                .routeAccess(RouteAccess.AUTHENTICATED)
+                .build(), ActionMetadata.class);
+
+        assertRoundTrip(DomainMetadata.builder("Order", "com.example.order")
+                .module("orders")
+                .path("/orders")
+                .routeAccess(RouteAccess.AUTHENTICATED)
+                .build(), DomainMetadata.class);
+
+        // The measurement that matters, not the assumption. ActionMetadata is
+        // class-level NON_DEFAULT and PUBLIC is ordinal 0 — the combination ADR-059
+        // once claimed drops the value and ADR-072 measured does not. Asserting the
+        // key is on the wire pins that for this carrier: if a future Jackson change
+        // starts treating an ordinal-0 enum as empty, a declared PUBLIC route would
+        // silently read back as "not declared", which for this facet means an
+        // endpoint the author opened reading as one they never spoke about.
+        String json;
+        try {
+            json = mapper.writeValueAsString(ActionMetadata.builder("login")
+                    .routeAccess(RouteAccess.PUBLIC)
+                    .build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        assertThat(json).contains("\"routeAccess\":\"PUBLIC\"");
+    }
+
+    @Test
+    @DisplayName("an absent routeAccess stays absent on the wire — the third state is structural")
+    void absentRouteAccessStaysAbsent() {
+        // The whole reason @RouteAccess has no UNSPECIFIED constant: "not declared"
+        // is expressed by the field not being there. A carrier that materialised a
+        // default here would rebuild the ambiguity the annotation exists to remove.
+        String actionJson;
+        String domainJson;
+        try {
+            actionJson = mapper.writeValueAsString(ActionMetadata.simple("ship"));
+            domainJson = mapper.writeValueAsString(
+                    DomainMetadata.builder("Order", "p").module("m").path("/o").build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        assertThat(actionJson).doesNotContain("routeAccess");
+        assertThat(domainJson).doesNotContain("routeAccess");
+    }
+
+    @Test
     @DisplayName("an absent schedule / blob facet stays absent on the wire")
     void absentReservedFacetsStayAbsent() {
         // The common case: neither facet declared. Both carriers are nullable and
