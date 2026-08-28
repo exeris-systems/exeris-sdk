@@ -134,6 +134,13 @@ public final class SchemaVersion {
      * mistake for, the deliberate cross-shape refusal documented on
      * {@link #CURRENT} — that one is a real skew and is meant to be reported.
      */
+    // java:S3400 ("methods should not return constants") asks for exactly the shape this
+    // method exists to prevent: folding the literal back into CURRENT's initializer makes it
+    // a constant variable again (JLS 4.12.4) and re-inlines it at every downstream compile
+    // site (JLS 13.1), which is the bug above. The indirection is the fix, not an oversight —
+    // BaselineTrustContractTest.currentIsNotAConstantVariable pins it by compiling a source
+    // that uses CURRENT where only a constant expression is legal, and asserting it fails.
+    @SuppressWarnings("java:S3400")
     private static String currentVersion() {
         return "0.12.0";
     }
