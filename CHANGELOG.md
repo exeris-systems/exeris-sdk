@@ -34,8 +34,33 @@ for per-version upgrade steps.
   catalog's `sdkVersion` disagrees with the tag. This unblocks `exeris-ai-bridge`'s `sdk:*`
   family, whose whole content had no producer.
 
+- **`@RouteAccess` — the SDK can state that a generated route is public.** `@Target({TYPE,
+  METHOD})`, one mandatory `value()` of `Level { PUBLIC, AUTHENTICATED }`, carried by the new
+  `DomainMetadata.routeAccess` / `ActionMetadata.routeAccess`. It closes the Entity-First gap
+  kernel ADR-061 opened: the kernel gained a declarable per-route policy
+  (`HttpRoutePolicy` / `RouteRequirement`), and nothing here could state one. This is **not**
+  the `roles` / `permissions` extraction gap — those four attributes all use empty to mean
+  "nothing declared", and `@Action.roles` has documented empty as "accessible to all
+  authenticated users" since 0.1.0, so no extractor could have distinguished *unspecified*
+  from *public*. There is deliberately no `UNSPECIFIED` constant: an element with no
+  `@RouteAccess` declared nothing, and the AST component is nullable to match. Two constants
+  rather than four — `permissions` keeps the scope half, and `RouteRequirement` declares no
+  role kind at all. **Reserved**, on ADR-072's three-part test and therefore outside the 1.0.0
+  freeze: no processor extracts it, no generator emits a policy table from it, and the kernel
+  holds route authorization at tier `preview`.
+- **`SchemaVersion.CURRENT` is `"0.12.0"`** for the two new trailing components. Additive and
+  by-name; a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established posture of
+  refusing a cross-shape baseline rather than assuming compatibility.
+
 ### Fixed
 
+- **The annotation-surface gate rejected a mandatory element on a *new* annotation.**
+  `AnnotationSurfaceContractTest` read "new element, no default" as a break for every
+  annotation, but the rule protects existing usages and a brand-new annotation has none — the
+  baseline's own `@Action#name` and `#label` are required. The gate now treats a declaring
+  type absent from the snapshot as new, and still reports the element so it must be recorded
+  before the next change to it is gated. Verified non-vacuous against an undefaulted probe
+  element added to `@Blob`.
 - **Sixteen nested annotations declared neither `@Retention` nor `@Target`**, so they defaulted
   to `CLASS` retention and were applicable anywhere — outside the invariant this module's own
   contract test states, which could not see them because its walk skipped nested types. The

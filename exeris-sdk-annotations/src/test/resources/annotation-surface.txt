@@ -636,6 +636,7 @@ eu.exeris.sdk.annotation.Relationship#required=boolean:default
 eu.exeris.sdk.annotation.Relationship#searchFields=java.lang.String[]:default
 eu.exeris.sdk.annotation.Relationship#searchable=boolean:default
 eu.exeris.sdk.annotation.Relationship#targetEntity=java.lang.Class:required
+eu.exeris.sdk.annotation.RouteAccess#value=eu.exeris.sdk.annotation.RouteAccess.Level:required
 eu.exeris.sdk.annotation.Rule#expression=java.lang.String:required
 eu.exeris.sdk.annotation.Rule#language=java.lang.String:default
 eu.exeris.sdk.annotation.Rule#message=java.lang.String:default

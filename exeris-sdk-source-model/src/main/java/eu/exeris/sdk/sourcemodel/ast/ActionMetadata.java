@@ -105,7 +105,32 @@ public record ActionMetadata(
          *
          * @since 0.11.0
          */
-        ScheduleMetadata schedule
+        ScheduleMetadata schedule,
+
+        /**
+         * What this action's generated route demands of its caller — the identity
+         * half of the kernel's route-authorization decision (kernel ADR-061), and
+         * the AST twin of {@code @RouteAccess} on the action method.
+         *
+         * <p>{@code null} means the author declared nothing, and the generated
+         * policy's default decides; there is deliberately no {@code UNSPECIFIED}
+         * constant (see {@link RouteAccess}). A value here overrides the
+         * entity-level {@link DomainMetadata#routeAccess()} for this action alone —
+         * nearest declaration wins.
+         *
+         * <p><strong>Open-Core status — reserved, extraction pending
+         * tooling:</strong> the kernel side exists ({@code HttpRoutePolicy} /
+         * {@code RouteRequirement}, kernel ADR-061, shipped on the kernel 0.11 line
+         * with {@code AbstractHttpRoutePolicyTck}), but no {@code exeris-tooling}
+         * processor extracts {@code @RouteAccess} and no generator emits a
+         * URL-to-policy table from this component, so on the build-time path it is
+         * always {@code null}. The kernel holds route authorization at tier
+         * {@code preview}, so the component is excluded from the 1.0.0 freeze and a
+         * 1.x minor may still change it (ADR-072).
+         *
+         * @since 0.12.0
+         */
+        RouteAccess routeAccess
 ) {
 
     public ActionMetadata {
@@ -118,7 +143,7 @@ public record ActionMetadata(
     }
 
     public static ActionMetadata simple(String name) {
-        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null);
+        return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null, null);
     }
 
     public static Builder builder(String name) {
@@ -135,6 +160,8 @@ public record ActionMetadata(
     public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
     @JsonIgnore
     public boolean isScheduled() { return schedule != null; }
+    @JsonIgnore
+    public boolean isPublicRoute() { return routeAccess == RouteAccess.PUBLIC; }
 
     @JsonIgnore
     public String effectiveDisplayName() {
@@ -169,6 +196,7 @@ public record ActionMetadata(
         private String streamEventType;
         private boolean realTimeUpdates = false;
         private ScheduleMetadata schedule;
+        private RouteAccess routeAccess;
 
         private Builder(String name) { this.name = name; }
 
@@ -189,11 +217,12 @@ public record ActionMetadata(
         public Builder streamEventType(String v) { this.streamEventType = v; return this; }
         public Builder realTimeUpdates(boolean v) { this.realTimeUpdates = v; return this; }
         public Builder schedule(ScheduleMetadata v) { this.schedule = v; return this; }
+        public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
                     async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName,
-                    streaming, streamEventType, realTimeUpdates, schedule);
+                    streaming, streamEventType, realTimeUpdates, schedule, routeAccess);
         }
     }
 }

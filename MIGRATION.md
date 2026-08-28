@@ -12,6 +12,35 @@ the upgrade steps required.
 
 ## 0.11.x → 0.12.x
 
+### `SchemaVersion.CURRENT` is `"0.12.0"` — baselines stamped `"0.11.0"` read as skew
+
+Additive change, no code edit. `DomainMetadata` and `ActionMetadata` each gained
+a trailing nullable `routeAccess` component (`@RouteAccess`, reserved — see
+below), so the AST wire shape has a version of its own and the stamp moves with
+it. A baseline stamped by 0.11.0 now reads as
+`NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps it. That is the
+deliberate posture — refuse a cross-shape baseline rather than assume
+compatibility — and it is the same one-milestone degradation the 0.10.0 and
+0.11.0 bumps caused. Note this is *not* the inlining bug below: that one made
+the two halves of a single build disagree; this one is the mechanism working.
+
+### `@RouteAccess` is new, reserved, and outside the 1.0.0 freeze
+
+Nothing to migrate — it is additive and nothing extracts it yet. Two things to
+know before you write it:
+
+- Declaring it has **no generated effect today**. No processor reads it, no
+  generator emits a route policy from it, and the `-io` reader does not read it.
+  It records author intent for the `exeris-tooling` slice that will.
+- It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
+  as amended), because the kernel holds route authorization at tier `preview`.
+  A 1.x minor may change or drop it. Pin exactly if you adopt it early.
+
+Do not reach for `roles = {}` or `permissions = {}` to mean "public" — empty
+already means "nothing declared" on all four attributes, and `@Action.roles` has
+documented empty as "accessible to all authenticated users" since 0.1.0. That
+collision is the reason this annotation exists.
+
 ### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
 
 **Recompile once against 0.12.0, then this stops being your problem.**

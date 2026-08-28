@@ -105,6 +105,29 @@ The full rationale is in two package-info files; keep them in sync when changing
 
 The long-deferred "wider `min` / `max` / `pattern` overlap" cut **landed in 0.9.0 (ADR-054)**, informed by the budgetHQ corpus (19/19 constraint usages on `@Validation`): the overlap was fictional at the annotation level (`@Field` never declared those attributes), and `ValidationMetadata` — never populated by any processor/reader nor consumed by any generator, with no published artifact for anyone to depend on — was **removed outright in 0.9.0** (0.x permits the break; a deprecation window with zero possible consumers is vacuous). Do not reintroduce constraint attributes on `@Field` or a parallel AST validation carrier.
 
+## Route access: "unspecified" and "public" are different, and only one is declarable
+
+`@RouteAccess(PUBLIC | AUTHENTICATED)` (0.12.0, reserved) is the **sole** way to say a
+generated route admits unauthenticated callers. Two rules follow, and both are easy to
+break by reflex:
+
+- **Never overload `roles = {}` / `permissions = {}` to mean "public."** Empty means
+  "nothing declared" on all four attributes (`@ExerisDomain` and `@Action`), and
+  `@Action.roles` has documented empty as "accessible to all authenticated users" since
+  0.1.0. The collision is exactly why `@RouteAccess` exists; re-creating it silently
+  reopens routes.
+- **Never add an `UNSPECIFIED` constant**, to `@RouteAccess.Level` or to
+  `sourcemodel.ast.RouteAccess`. The third state is structural: no annotation ⇒ not
+  declared, and the AST components (`DomainMetadata.routeAccess`,
+  `ActionMetadata.routeAccess`) are nullable to match. `value()` is mandatory for the same
+  reason. This is the `DataScope` rule one level up — see that enum's javadoc.
+
+Two constants, not four: `permissions` keeps the scope half (the kernel's edge decides on
+scopes and `RouteRequirement` declares no role kind at all), so `@RouteAccess` states only
+whether identity is required. And `PUBLIC` beside a non-empty `permissions` is a
+contradiction the platform refuses — a permit-all route binds no principal, so the scope
+check can never pass. Rationale: ADR-072 (amended), obligations 9–15.
+
 ## AST records & the Jackson 3 wire-format contract
 
 The `eu.exeris.sdk.sourcemodel.ast.*` records are the build-time hand-off format (`exeris-metadata/<entity>.json`) between processor and codegen. Three non-obvious constraints govern them:

@@ -95,6 +95,16 @@ public final class SchemaVersion {
      *       is to refuse a cross-shape baseline rather than assume
      *       compatibility: a {@code "0.10.0"} baseline reads as
      *       {@code SCHEMA_VERSION_SKEW}.</li>
+     *   <li>{@code "0.12.0"} — bumped for the route-authorization facet:
+     *       {@code DomainMetadata} and {@code ActionMetadata} each gained
+     *       {@code routeAccess}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.RouteAccess}), the AST twin of
+     *       {@code @RouteAccess} (kernel ADR-061; ADR-072 as amended). Trailing,
+     *       additive, by-name and <em>reserved</em> on the same terms as the
+     *       0.11.0 pair, so a {@code "0.11.0"} baseline loses no information in
+     *       practice — and the bump is taken anyway, for the same reason it was
+     *       taken then. A {@code "0.11.0"} baseline reads as
+     *       {@code SCHEMA_VERSION_SKEW}.</li>
      * </ul>
      */
     public static final String CURRENT = currentVersion();
@@ -125,7 +135,7 @@ public final class SchemaVersion {
      * {@link #CURRENT} — that one is a real skew and is meant to be reported.
      */
     private static String currentVersion() {
-        return "0.11.0";
+        return "0.12.0";
     }
 
     /**

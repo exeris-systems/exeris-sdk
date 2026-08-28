@@ -14,9 +14,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -46,6 +48,15 @@ import static org.assertj.core.api.Assertions.fail;
  *       anything, but because a flag left stale makes the losing-a-default rule
  *       silently unenforceable.</li>
  * </ol>
+ *
+ * <p><b>Rule 3 binds elements added to an annotation that already shipped.</b> An
+ * annotation that is itself new has no existing usage to break, so a mandatory
+ * element on it is legal — and often right: {@code @RouteAccess} exists to make a
+ * statement, and a default would reintroduce the silent case it was added to
+ * remove, the same reason {@code @Action#name} and {@code #label} are required in
+ * the baseline. The test reads "the declaring type appears nowhere in the snapshot"
+ * as "the type is new"; such an element is still reported, because it must be
+ * recorded before the next change to it can be gated.
  *
  * <p>Deprecation is deliberately not a violation here: marking an element
  * {@code @Deprecated(forRemoval = true)} is how the SDK opens a removal window
@@ -98,18 +109,29 @@ class AnnotationSurfaceContractTest {
             }
         }
 
+        Set<String> recordedTypes = new HashSet<>();
+        for (String element : recorded.keySet()) {
+            recordedTypes.add(declaringTypeOf(element));
+        }
+
         for (Map.Entry<String, String> e : new TreeMap<>(actual).entrySet()) {
             String element = e.getKey();
             if (recorded.containsKey(element)) continue;
-            if (!hasDefault(e.getValue())) {
+            boolean declaringTypeIsNew = !recordedTypes.contains(declaringTypeOf(element));
+            if (!hasDefault(e.getValue()) && !declaringTypeIsNew) {
                 violations.add(("%s is new and declares no default, so every existing usage of "
                         + "%s stops compiling. Give it a default, or take the break "
                         + "deliberately at a major and re-baseline the snapshot.")
                         .formatted(element, simpleNameOf(element)));
             } else {
-                violations.add(("%s is new and correctly defaulted, but is missing from the "
-                        + "snapshot. Record it so the next change to it is gated:%n    %s=%s")
-                        .formatted(element, element, e.getValue()));
+                violations.add(("%s is new and %s, but is missing from the snapshot. "
+                        + "Record it so the next change to it is gated:%n    %s=%s")
+                        .formatted(element,
+                                declaringTypeIsNew
+                                        ? "belongs to an annotation that is itself new, so no "
+                                          + "existing usage can break on a missing default"
+                                        : "correctly defaulted",
+                                element, e.getValue()));
             }
         }
 
@@ -117,6 +139,11 @@ class AnnotationSurfaceContractTest {
             fail("Annotation surface contract violated (%d):%n%n%s",
                     violations.size(), String.join("%n%n".formatted(), violations));
         }
+    }
+
+    /** {@code a.b.C#el} → {@code a.b.C}. */
+    private static String declaringTypeOf(String element) {
+        return element.substring(0, element.indexOf('#'));
     }
 
     /** {@code a.b.C#el} → {@code @C} — for a message, not for keying. */
