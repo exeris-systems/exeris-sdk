@@ -511,6 +511,10 @@ public @interface SagaStep {
      * Fail fast on parallel step failure.
      * <p>Cancel other parallel steps immediately.
      *
+     * <p><strong>Inert while {@link #parallel()} is</strong>, on the same terms as
+     * {@link #waitForAll()}: it describes cancelling siblings that a linear chain never starts
+     * concurrently, and it is neither extracted nor carried on {@code SagaStepMetadata}.
+     *
      * @return true for fail fast
      */
     boolean failFast() default false;

@@ -105,6 +105,9 @@ for per-version upgrade steps.
   The bar is Maven Central: nothing in the publish path checks completeness, the javadoc jar
   builds either way, and the artifact is permanent.
 
+
+### Fixed
+
 - **`@SagaStep.order` / `parallel` and `@Saga`'s compensation pair now say what the platform
   actually does with them.** Raised from `exeris-tooling` as an `INERT_ATTRIBUTES` candidate for
   `order`; measurement says otherwise, and the notes record what was measured.
@@ -124,8 +127,6 @@ for per-version upgrade steps.
   here: both exist on the annotation and an author can set them, but neither producer reads them,
   so `SagaMetadata` holds builder defaults on every build path. Noted on the attributes and on
   their AST components.
-
-### Fixed
 
 - **The javadoc warning count was being read off a truncated log.** `maven-javadoc-plugin`
   caps at 100 warnings per module, so `annotations` and `source-model` both reported exactly
