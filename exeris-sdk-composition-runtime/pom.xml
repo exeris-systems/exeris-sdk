@@ -44,7 +44,9 @@
             <artifactId>exeris-sdk-composition-lifecycle</artifactId>
         </dependency>
 
-        <!-- JSON parse of cap-manifest.json at boot. Managed at 3.2.0 by the SDK BOM. -->
+        <!-- JSON parse of cap-manifest.json at boot. Version comes from the SDK BOM, which is
+             the single place it is set; naming a number here is how this comment went stale
+             across the 3.2.0 -> 3.2.2 bump, so it names the source instead. -->
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
