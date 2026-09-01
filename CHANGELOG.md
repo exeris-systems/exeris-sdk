@@ -123,6 +123,35 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **The `.exeris-*` component classes now reach Tailwind v4 consumers, and the reason they did not
+  was one line, not the file's shape.** B3 shipped a styled class for every renderable
+  `ComponentType`, but only into `index.css`, which a v4 build refused. The account recorded a
+  release earlier — that v4 rejects the `@tailwind base/components/utilities` directives *and*
+  the `@apply exeris-btn` composition — was half wrong, and the half that was wrong is the one
+  that mattered. Measured against the compiler: **v4 tolerates the `@tailwind` directives** (they
+  are no-ops there) and understands `@layer components`, `@apply` of real utilities,
+  `duration-[var(--exeris-transition-fast)]`, and the `dark:` / `sm:` / `focus:` variants. The
+  single construct it refuses is `@apply` of a *custom* class — four lines, all in the button
+  variants.
+
+  Those four are now one selector list (`.exeris-btn, .exeris-btn-primary, … { … }`): no v4-only
+  syntax, no second copy of the base declarations, and no change for v3. That last part is
+  measured, not asserted — the v3-compiled effective declarations for all five button classes,
+  pseudo-class suffixes and `@media` contexts included, are byte-identical before and after.
+
+- **`index.css` is compiled by both majors in CI.** `tests/component-classes-v4-compile.test.js`
+  puts the stylesheet through v4 *and* v3 and asserts each emits every `.exeris-*` class the file
+  declares, that every renderable `ComponentType` gets **unconditional** declarations rather than
+  only a `:checked` / `::before` rule, that an undeclared class emits nothing, and that each
+  button variant still carries the shared base. Running it on v3 as well is the point: the change
+  was made for v4 and the risk lands on v3. Verified non-vacuous against three mutations —
+  restoring `@apply exeris-btn` (the compile fails with the original blocker), dropping a variant
+  from the selector list (both majors fail), and renaming a control's own rule while leaving its
+  `:checked` rule in place (the looser "a rule mentions it" check would have passed).
+
+  The `ComponentType` → class map moved to `tests/support/component-types.js` so the text guard
+  and the compile guard read one copy, and the Tailwind plumbing to `tests/support/tailwind.js`.
+
 - **Tailwind v4 consumers got a frozen theme: `.dark` did nothing, and no test could see it.**
   The kit ships its token namespace twice — `tailwind.preset.js` for v3, `src/styles/theme.css`
   (`@theme`) for v4 — and the v4 half had only ever been *read*, never compiled. Compiling it
@@ -141,9 +170,12 @@ for per-version upgrade steps.
     inherits — so a mapping declared only on `:root` is already resolved by the time a nested
     `.dark` re-points its channels. Confirmed in a headless browser: before, `bg-exeris-primary`
     inside `.dark` computed `rgb(79, 70, 229)`; after, `rgb(99, 102, 241)` at any nesting depth.
-  - The `--exeris-*` declarations are mirrored into `theme.css`, because a v4 build cannot consume
-    `index.css` — it opens with `@tailwind` directives and its component layer uses
-    `@apply exeris-btn`, which v4 rejects. `theme.test.js` now guards that copy value-for-value (checked against both a drifted value and a dropped token).
+  - The `--exeris-*` declarations are mirrored into `theme.css`, because a v4 build could not
+    consume `index.css`. `theme.test.js` now guards that copy value-for-value (checked against
+    both a drifted value and a dropped token). *(Corrected in the entry above: the reason first
+    recorded here — that v4 rejects the `@tailwind` directives as well as the `@apply`
+    composition — was half wrong. v4 tolerates the directives. The mirroring is still right, for
+    the narrower reason that a v4 consumer may import only the theme entry.)*
 
   A consumer's own **scoped** override still needs a one-line repeat on v4 (`:root` overrides do
   not); that is a v4 `@theme` property, and it is documented in the README and in `theme.css`

@@ -2,56 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { COMPONENT_TYPE_CLASS } from './support/component-types.js';
 
 /**
  * B3 — generated forms must not be unstyled for most field types. Every
- * `ComponentType` (eu.exeris.sdk.sourcemodel.ast.UIMetadata.ComponentType) a
- * generator can emit needs a styled `.exeris-*` class to bind to. This map is
- * the contract codegen-ts targets; the test asserts each class is actually
- * defined in index.css so a rename/deletion can't silently leave a control bare.
+ * `ComponentType` a generator can emit needs a styled `.exeris-*` class to bind
+ * to; `COMPONENT_TYPE_CLASS` (in `tests/support/component-types.js`) is that
+ * contract. This test asserts each class is actually declared in `index.css`, so
+ * a rename or deletion cannot silently leave a control bare.
  *
- * Keep COMPONENT_TYPE_CLASS in sync with the Java enum — a new ComponentType
- * should arrive here with its class (or null when it renders no control).
+ * Its companion, `component-classes-v4-compile.test.js`, asserts the stronger
+ * thing: that a real Tailwind build — v3 *and* v4 — emits a rule for each.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const indexCss = readFileSync(join(root, 'src/styles/index.css'), 'utf8');
 
-// null = no dedicated class (AUTO is resolved by codegen; HIDDEN renders nothing;
-// CUSTOM defers to an application-supplied component named by UIFieldMetadata.customComponent).
-const COMPONENT_TYPE_CLASS = {
-  AUTO: null,
-  HIDDEN: null,
-  CUSTOM: null,
-  TEXT_INPUT: 'exeris-input',
-  NUMBER_INPUT: 'exeris-input',
-  DATE_PICKER: 'exeris-input',
-  DATETIME_PICKER: 'exeris-input',
-  TIME_PICKER: 'exeris-input',
-  PASSWORD: 'exeris-input',
-  EMAIL: 'exeris-input',
-  PHONE: 'exeris-input',
-  URL: 'exeris-input',
-  CURRENCY: 'exeris-input',
-  AUTOCOMPLETE: 'exeris-input',
-  TEXT_AREA: 'exeris-textarea',
-  SELECT: 'exeris-select',
-  MULTI_SELECT: 'exeris-select',
-  CHECKBOX: 'exeris-checkbox',
-  RADIO_GROUP: 'exeris-radio',
-  TOGGLE: 'exeris-toggle',
-  SLIDER: 'exeris-range',
-  FILE_UPLOAD: 'exeris-file',
-  IMAGE_UPLOAD: 'exeris-file',
-  RICH_TEXT_EDITOR: 'exeris-editor',
-  CODE_EDITOR: 'exeris-editor',
-  COLOR_PICKER: 'exeris-color',
-  RATING: 'exeris-rating',
-  CHIPS: 'exeris-chips',
-};
-
 function classIsDefined(name) {
-  // matches `.name {` in the components layer (the only place exeris-* classes are declared)
-  return new RegExp(`\\.${name}\\s*\\{`).test(indexCss);
+  // `.name {` or `.name,` — the button base is declared as a selector list, so a
+  // brace is not the only thing that can follow a declared class.
+  return new RegExp(`\\.${name}(?![\\w-])\\s*[,{]`).test(indexCss);
 }
 
 describe('form-control component classes (B3)', () => {

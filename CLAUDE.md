@@ -82,10 +82,17 @@ resolves to the same `--exeris-*` property the v3 preset uses — all derived fr
 `source(none)` keeps the compile hermetic; without it Tailwind harvests class names out of this
 package's own prose and a utility appears to work because a comment mentioned it.
 
-`index.css` stays v3-only and is not part of this: it opens with `@tailwind` directives and its
-component layer composes with `@apply exeris-btn`, both of which v4 rejects. That is why the
-`--exeris-*` declarations are repeated in `theme.css` (mirror-guarded by `theme.test.js`) and why
-the `.exeris-*` component classes still have no v4 story — the open half of B3.
+`index.css` compiles on both majors as of B3's close. The claim recorded here at the time — that
+v4 rejects its `@tailwind` directives *and* its `@apply` composition — was half wrong, and the
+half that was wrong is the one that mattered: **v4 tolerates `@tailwind base/components/utilities`
+as no-ops**, and the only construct it refuses is `@apply` of a *custom* class. That was four
+lines in the button variants; they are a selector list now, which needs no v4-only syntax.
+`component-classes-v4-compile.test.js` compiles the file with v3 *and* v4 and asserts both emit
+every class — the v3 half because the change was made for v4 and the risk lands on v3.
+
+The `--exeris-*` declarations are still repeated in `theme.css` (mirror-guarded by
+`theme.test.js`), for a narrower reason than before: a v4 consumer may import only the theme
+entry, and then there is no other source of them.
 
 #### It versions independently, and it gets its own 1.0 — not the SDK's
 
