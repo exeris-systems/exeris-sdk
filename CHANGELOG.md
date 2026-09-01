@@ -106,6 +106,21 @@ for per-version upgrade steps.
   builds either way, and the artifact is permanent.
 
 
+### Security
+
+- **`jackson-databind` 3.2.0 → 3.2.2.** 3.2.0 carries the `@JsonView`-bypass advisory for
+  `@JsonUnwrapped` container properties on deserialization (Dependabot #12), fixed upstream in
+  3.2.1. Taken to 3.2.2 rather than the minimum because `exeris-kernel-bom` is already there and
+  this version is coordinated across repos. `jackson.annotations.version` stays at `2.22` —
+  checked against `jackson-bom` 3.2.2 rather than assumed, per the rule in `CLAUDE.md`.
+  Note `exeris-platform-bom` is still on 3.2.0 and carries the same advisory.
+- **`postcss` 8.5.15 → 8.5.26 in `exeris-sdk-ui-kit`'s lockfile.** Clears two advisories,
+  both path traversal via an attacker-controlled `sourceMappingURL` (Dependabot #13 high, #14
+  moderate; fixed in 8.5.18 and 8.5.23 respectively). Development-only and transitive — Tailwind
+  and Vite both pull it under `^8.x`, so the lockfile moves and `package.json` does not. The lock
+  diff is postcss and its own `nanoid`, nothing else; `npm ci`, `npm run build` and the Vitest
+  suite all pass on it.
+
 ### Fixed
 
 - **`@SagaStep.order` / `parallel` and `@Saga`'s compensation pair now say what the platform
