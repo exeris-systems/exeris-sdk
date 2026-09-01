@@ -30,7 +30,7 @@ Two practical consequences:
 
 - **`exeris-sdk-source-model`** — `jacoco-maven-plugin` ≥ 0.8.14 (earlier versions reject Java 26 class file v70; the baseline is v69 as of ADR-069, so this is no longer load-bearing — but downgrading buys nothing). Bound to `verify` with a **0.85 BUNDLE-level** threshold on both `INSTRUCTION` and `LINE` counters. Configured in `exeris-sdk-source-model/pom.xml`; thresholds are properties (`jacoco.instruction.coverage.minimum`, `jacoco.line.coverage.minimum`) so a per-build override is possible without editing the pom (e.g. for a one-off debug `-Djacoco.instruction.coverage.minimum=0`). The pluginManagement entry + agent/report executions live in the root `pom.xml` and `exeris-sdk-parent/pom.xml`.
 - **`exeris-sdk-annotations`** — the gate is **deliberately not applied** to this module. The annotation `@interface` declarations have no method bodies, so JaCoCo reports 0 covered instructions (with thousands of synthetic accessor instructions in the denominator) and the metric is meaningless. Instead the module has `AnnotationContractTest`, which discovers every annotation by classpath reflection and asserts (a) `@Retention(SOURCE)` and (b) presence of `@Target` across both the root package and the `system` / `security` subpackages. This is the actual invariant that downstream consumers depend on; if you add a new annotation, the test picks it up automatically.
-- **`exeris-sdk-ui-kit`** — Vitest with the v8 coverage provider, **85% per-file** thresholds on lines / statements / functions / branches, scoped to `src/**/*.ts` + `tailwind.preset.js`. **Do not read that as the quality gate for this package.** Measured: `src/index.ts` is one statement and `tailwind.preset.js` is zero, so the threshold cannot fail for either — it reports that the module was imported. Its value is prospective, for the first source file that carries logic. What actually guards this package is the pair of **derived drift tests**: `theme.test.js` (v3 preset vs v4 `@theme` vs `index.css`) and `default-theme-drift.test.js` (`defaultTheme` vs `index.css`, both directions). Both derive their expectations from one side and check the other, so a token added anywhere has to be added everywhere; neither restates a list. Adding a design token means both sides, or a recorded reason in the test's exemption set.
+- **`exeris-sdk-ui-kit`** — Vitest with the v8 coverage provider, **85% per-file** thresholds on lines / statements / functions / branches, scoped to `src/**/*.ts` + `tailwind.preset.js`. **Do not read that as the quality gate for this package.** Measured: `src/index.ts` is one statement and `tailwind.preset.js` is zero, so the threshold cannot fail for either — it reports that the module was imported. Its value is prospective, for the first source file that carries logic. What actually guards this package is the pair of **derived drift tests**: `theme.test.js` (v3 preset vs v4 `@theme` vs `index.css`) and `default-theme-drift.test.js` (`defaultTheme` vs `index.css`, both directions). Both derive their expectations from one side and check the other, so a token added anywhere has to be added everywhere; neither restates a list. Adding a design token means both sides, or a recorded reason in the test's exemption set. A third guard, `tailwind-v4-compile.test.js`, runs a real Tailwind v4 over `theme.css` — see below for why text-level parity was not enough.
 
 When a test for `eu.exeris.sdk.sourcemodel.ast` adds new uncovered branches, prefer expanding `AstJsonRoundTripTest` (for wire-format concerns) or the focused `<Type>MetadataTest` class (for builder / convenience-method concerns) over introducing a parallel test class.
 
@@ -53,6 +53,39 @@ This was `26` until 0.10.0, on the stated rationale that the kernel required it.
 cd exeris-sdk-ui-kit && npm install && npm run build
 npm run test:coverage   # Vitest + the 85% per-file gate
 ```
+
+#### `theme.css` is compiled by a real Tailwind v4, not just read
+
+The kit ships its token namespace twice: `tailwind.preset.js` for v3 consumers and
+`src/styles/theme.css` (`@theme`) for v4 ones. Until 0.1.x the v4 half was only ever *read* —
+`theme.test.js` checked that each declaration was present. Present is not the same as correct,
+and the two things that slipped through were both invisible at the text level:
+
+- **The v4 values were literals.** The v3 preset never hard-codes: every entry is
+  `var(--exeris-…)`, so a v3 consumer's `bg-exeris-primary` follows whatever `--exeris-primary`
+  currently is. `theme.css` inlined `rgb(79 70 229)` instead, so v4 had no working dark mode
+  at all — the kit's `.dark` lives in `index.css`, which a v4 build cannot consume, and a
+  consumer's own `.dark` could not move a literal. Measured in a browser against real compiled output, before and after.
+  The old parity assertion — v4 literal equals the light-theme channels in `index.css` — was not
+  merely blind to this, it was the bug written down as an invariant.
+- **A `@theme` mapping is substituted where it is declared.** Re-pointing `--exeris-primary` in
+  a nested `.dark` does not move `--color-exeris-primary`, because that resolved on `:root`
+  already. `.dark` therefore re-declares the mapped colours it changes. A consumer's own scoped
+  override needs the same repeat; overrides on `:root` do not. This is a v4 `@theme` property —
+  a generated utility can only reference the theme variable by name.
+
+`tests/tailwind-v4-compile.test.js` compiles `theme.css` through `@tailwindcss/postcss` (v4, a
+devDep that coexists with the v3 one because it nests its own copy) and asserts against the
+output: every preset utility is generated, invented names produce nothing, and each utility
+resolves to the same `--exeris-*` property the v3 preset uses — all derived from
+`tailwind.preset.js`, which stays the single source of truth. `@source inline(…)` plus
+`source(none)` keeps the compile hermetic; without it Tailwind harvests class names out of this
+package's own prose and a utility appears to work because a comment mentioned it.
+
+`index.css` stays v3-only and is not part of this: it opens with `@tailwind` directives and its
+component layer composes with `@apply exeris-btn`, both of which v4 rejects. That is why the
+`--exeris-*` declarations are repeated in `theme.css` (mirror-guarded by `theme.test.js`) and why
+the `.exeris-*` component classes still have no v4 story — the open half of B3.
 
 #### It versions independently, and it gets its own 1.0 — not the SDK's
 

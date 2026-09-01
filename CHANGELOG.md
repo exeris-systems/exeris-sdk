@@ -123,6 +123,40 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Tailwind v4 consumers got a frozen theme: `.dark` did nothing, and no test could see it.**
+  The kit ships its token namespace twice — `tailwind.preset.js` for v3, `src/styles/theme.css`
+  (`@theme`) for v4 — and the v4 half had only ever been *read*, never compiled. Compiling it
+  showed the two halves are not equivalent: the v3 preset indirects every entry through a
+  `--exeris-*` custom property, so a v3 consumer's `bg-exeris-primary` follows a runtime override,
+  while `theme.css` inlined the light-theme literals. So v4 had no working dark mode at all: the kit's `.dark`
+  lives in `index.css`, which a v4 build cannot consume, and a consumer writing their own `.dark` could not
+  move a literal either.
+  The text-level parity guard was blind to it by construction — its assertion, "the v4 literal
+  equals the light channels in `index.css`", was the defect written down as an invariant.
+  Fixed on three counts, each measured rather than reasoned about:
+  - `@theme` values now read `var(--exeris-…)` / `rgb(var(--exeris-…))`, indirecting exactly where
+    the v3 preset does and staying literal exactly where it does (the font stack, the animations).
+  - `.dark` re-declares the three mapped colours whose channels it changes. A `@theme` value's
+    `var()`s are substituted where the property is *declared*, and the substituted value is what
+    inherits — so a mapping declared only on `:root` is already resolved by the time a nested
+    `.dark` re-points its channels. Confirmed in a headless browser: before, `bg-exeris-primary`
+    inside `.dark` computed `rgb(79, 70, 229)`; after, `rgb(99, 102, 241)` at any nesting depth.
+  - The `--exeris-*` declarations are mirrored into `theme.css`, because a v4 build cannot consume
+    `index.css` — it opens with `@tailwind` directives and its component layer uses
+    `@apply exeris-btn`, which v4 rejects. `theme.test.js` now guards that copy value-for-value (checked against both a drifted value and a dropped token).
+
+  A consumer's own **scoped** override still needs a one-line repeat on v4 (`:root` overrides do
+  not); that is a v4 `@theme` property, and it is documented in the README and in `theme.css`
+  rather than papered over. Also newly documented: on v4 the `.exeris-*` component classes are
+  unreachable, not merely unthemed — the open half of B3.
+- **`theme.css` is compiled by a real Tailwind v4 in CI.** The recorded B1 follow-up, and what
+  surfaced the above. `@tailwindcss/postcss` (v4) coexists with the v3 devDep by nesting its own
+  engine, so no alias or second package was needed. `tests/tailwind-v4-compile.test.js` asserts
+  against compiler output that every preset utility is generated, that invented names produce
+  nothing, and that each utility resolves to the same `--exeris-*` property v3 uses — all derived
+  from `tailwind.preset.js`. `source(none)` keeps the compile hermetic; without it Tailwind
+  harvests candidates from this package's own prose and a utility passes because a comment named
+  it. Verified non-vacuous against four mutations — restoring the literal `theme.css`, dropping one recomputed colour from `.dark`, renaming a `@theme` variable, and making a deliberately-literal entry indirect — each caught by the assertion it was aimed at.
 - **`@exeris/ui-kit` versions independently and gets its own 1.0 — written down, and enforced.**
   It was already true in practice (`0.1.0` against a `0.12.0` Java line, mirroring
   `@exeris/codegen-ts` at `0.2.0` against `exeris-tooling` `0.8.0`) and stated nowhere, which at

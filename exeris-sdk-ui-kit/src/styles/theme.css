@@ -12,47 +12,174 @@
  *   @import "tailwindcss";
  *   @import "@exeris-systems/ui-kit/theme";
  *
- * v3 consumers keep using `tailwind.preset.js` instead (see README). The token
- * values here mirror the v3 preset and the `--exeris-*` custom properties in
- * `index.css`; the parity guard `tests/theme.test.js` keeps the two in sync.
+ * v3 consumers keep using `tailwind.preset.js` instead (see README).
+ *
+ * ## Why the `@theme` values are `var(--exeris-*)` and not literals
+ *
+ * The v3 preset never hard-codes a value: every entry is `var(--exeris-…)` (or
+ * `rgb(var(--exeris-…))` for colours), so a v3 consumer's utilities resolve
+ * against the custom properties below at *use* time. That indirection is the
+ * whole theming surface — it is what lets `.dark` (and a host, a tenant, a CMS)
+ * re-point a token at runtime and have `bg-exeris-primary` follow.
+ *
+ * This file used to inline the light-theme literals instead, which compiled but
+ * was not equivalent: a v4 consumer's `bg-exeris-primary` froze to
+ * `rgb(79 70 229)`, and no `.dark` — the kit's, which lives in the v4-unusable
+ * `index.css`, or one the consumer wrote — could move it. The `@theme` mapping now
+ * indirects the same way v3 does, and the compile guard
+ * (`tests/tailwind-v4-compile.test.js`) asserts it against real compiler output.
+ *
+ * ## Why `.dark` repeats the `@theme` colours
+ *
+ * A custom property's `var()`s are substituted where that property is
+ * *declared*, and the substituted value is what inherits. Measured in Chrome:
+ * with `--color-exeris-primary: rgb(var(--exeris-primary))` declared only on
+ * `:root`, an element inside a nested `.dark` that re-points
+ * `--exeris-primary` still computes the light colour — the mapping was already
+ * resolved upstream. The v3 preset has no such problem: it emits
+ * `rgb(var(--exeris-primary) / …)` into the utility rule itself, so the
+ * substitution happens on the element wearing the class.
+ *
+ * So `.dark` below re-declares the three mapped colours whose channels it
+ * changes, which recomputes them on that element and restores v3's behaviour at
+ * any nesting depth.
+ *
+ * The same applies to *your* scoped overrides: re-pointing `--exeris-success`
+ * on a container changes what the component layer paints, but for
+ * `bg-exeris-success` to follow, that container must also carry
+ * `--color-exeris-success: rgb(var(--exeris-success))`. Overrides on the same
+ * element as the `@theme` block (`:root`) need no such repeat. This is a v4
+ * `@theme` property, not a choice — a generated utility can only reference the
+ * theme variable by name.
+ *
+ * ## Why the `--exeris-*` properties are declared here too
+ *
+ * They are declared in `index.css`, but `index.css` is v3-only — it opens with
+ * `@tailwind base/components/utilities` and its component layer composes with
+ * `@apply exeris-btn`, both of which a v4 build rejects. A v4 consumer
+ * therefore cannot import it, so the token declarations a v4 build needs live
+ * here. The duplication is deliberate and guarded: `tests/theme.test.js`
+ * asserts this `:root` / `.dark` pair matches `index.css` value for value.
  */
+
+/* Design tokens — the runtime theming surface (mirrors index.css). */
+:root {
+  /* Colors - Light Theme */
+  --exeris-primary: 79 70 229;        /* indigo-600 */
+  --exeris-primary-hover: 67 56 202;  /* indigo-700 */
+  --exeris-secondary: 100 116 139;    /* slate-500 */
+  --exeris-success: 34 197 94;        /* green-500 */
+  --exeris-warning: 245 158 11;       /* amber-500 */
+  --exeris-danger: 239 68 68;         /* red-500 */
+  --exeris-info: 59 130 246;          /* blue-500 */
+
+  /* Backgrounds */
+  --exeris-bg-primary: 255 255 255;
+  --exeris-bg-secondary: 249 250 251; /* gray-50 */
+  --exeris-bg-tertiary: 243 244 246;  /* gray-100 */
+
+  /* Text */
+  --exeris-text-primary: 17 24 39;    /* gray-900 */
+  --exeris-text-secondary: 107 114 128; /* gray-500 */
+  --exeris-text-muted: 156 163 175;   /* gray-400 */
+
+  /* Borders */
+  --exeris-border: 229 231 235;       /* gray-200 */
+  --exeris-border-focus: 99 102 241;  /* indigo-500 */
+
+  /* Shadows */
+  --exeris-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --exeris-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --exeris-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --exeris-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Spacing */
+  --exeris-spacing-xs: 0.25rem;
+  --exeris-spacing-sm: 0.5rem;
+  --exeris-spacing-md: 1rem;
+  --exeris-spacing-lg: 1.5rem;
+  --exeris-spacing-xl: 2rem;
+
+  /* Border Radius */
+  --exeris-radius-sm: 0.25rem;
+  --exeris-radius-md: 0.375rem;
+  --exeris-radius-lg: 0.5rem;
+  --exeris-radius-xl: 0.75rem;
+  --exeris-radius-full: 9999px;
+
+  /* Transitions */
+  --exeris-transition-fast: 150ms;
+  --exeris-transition-normal: 200ms;
+  --exeris-transition-slow: 300ms;
+}
+
+/* Dark theme — re-points the subset of tokens that change (mirrors index.css),
+   and recomputes the `@theme` colours that read them. See "Why `.dark` repeats
+   the `@theme` colours" in the header. */
+.dark {
+  --exeris-primary: 99 102 241;       /* indigo-500 */
+  --exeris-primary-hover: 129 140 248; /* indigo-400 */
+  --exeris-secondary: 148 163 184;    /* slate-400 */
+
+  --exeris-bg-primary: 17 24 39;      /* gray-900 */
+  --exeris-bg-secondary: 31 41 55;    /* gray-800 */
+  --exeris-bg-tertiary: 55 65 81;     /* gray-700 */
+
+  --exeris-text-primary: 249 250 251; /* gray-50 */
+  --exeris-text-secondary: 156 163 175; /* gray-400 */
+  --exeris-text-muted: 107 114 128;   /* gray-500 */
+
+  --exeris-border: 75 85 99;          /* gray-600 */
+  --exeris-border-focus: 129 140 248; /* indigo-400 */
+
+  /* The three `@theme` colours whose channels changed above, recomputed on this
+     element so `bg-exeris-primary` &c. follow at any nesting depth. */
+  --color-exeris-primary: rgb(var(--exeris-primary));
+  --color-exeris-primary-hover: rgb(var(--exeris-primary-hover));
+  --color-exeris-secondary: rgb(var(--exeris-secondary));
+}
+
+/* Tailwind v4 token namespace. Every entry indirects through a `--exeris-*`
+   property above, exactly as the v3 preset does, so runtime overrides reach the
+   generated utilities. `--font-exeris` and the animations are literal on both
+   majors — the v3 preset does not indirect those either. */
 @theme {
-  /* Colors (channels mirror index.css --exeris-* tokens) */
-  --color-exeris-primary: rgb(79 70 229);
-  --color-exeris-primary-hover: rgb(67 56 202);
-  --color-exeris-secondary: rgb(100 116 139);
-  --color-exeris-success: rgb(34 197 94);
-  --color-exeris-warning: rgb(245 158 11);
-  --color-exeris-danger: rgb(239 68 68);
-  --color-exeris-info: rgb(59 130 246);
+  /* Colors (channels, so v4's `/50` opacity modifier color-mixes the live value) */
+  --color-exeris-primary: rgb(var(--exeris-primary));
+  --color-exeris-primary-hover: rgb(var(--exeris-primary-hover));
+  --color-exeris-secondary: rgb(var(--exeris-secondary));
+  --color-exeris-success: rgb(var(--exeris-success));
+  --color-exeris-warning: rgb(var(--exeris-warning));
+  --color-exeris-danger: rgb(var(--exeris-danger));
+  --color-exeris-info: rgb(var(--exeris-info));
 
   /* Font */
   --font-exeris: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Spacing */
-  --spacing-exeris-xs: 0.25rem;
-  --spacing-exeris-sm: 0.5rem;
-  --spacing-exeris-md: 1rem;
-  --spacing-exeris-lg: 1.5rem;
-  --spacing-exeris-xl: 2rem;
+  --spacing-exeris-xs: var(--exeris-spacing-xs);
+  --spacing-exeris-sm: var(--exeris-spacing-sm);
+  --spacing-exeris-md: var(--exeris-spacing-md);
+  --spacing-exeris-lg: var(--exeris-spacing-lg);
+  --spacing-exeris-xl: var(--exeris-spacing-xl);
 
   /* Border radius */
-  --radius-exeris-sm: 0.25rem;
-  --radius-exeris-md: 0.375rem;
-  --radius-exeris-lg: 0.5rem;
-  --radius-exeris-xl: 0.75rem;
+  --radius-exeris-sm: var(--exeris-radius-sm);
+  --radius-exeris-md: var(--exeris-radius-md);
+  --radius-exeris-lg: var(--exeris-radius-lg);
+  --radius-exeris-xl: var(--exeris-radius-xl);
 
   /* Shadows */
-  --shadow-exeris-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-exeris: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-exeris-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-exeris-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-exeris-sm: var(--exeris-shadow-sm);
+  --shadow-exeris: var(--exeris-shadow);
+  --shadow-exeris-md: var(--exeris-shadow-md);
+  --shadow-exeris-lg: var(--exeris-shadow-lg);
 
   /* Transition durations (v3 preset transitionDuration → duration-exeris-* utilities) */
-  --transition-duration-exeris-fast: 150ms;
-  --transition-duration-exeris-normal: 200ms;
-  --transition-duration-exeris-slow: 300ms;
+  --transition-duration-exeris-fast: var(--exeris-transition-fast);
+  --transition-duration-exeris-normal: var(--exeris-transition-normal);
+  --transition-duration-exeris-slow: var(--exeris-transition-slow);
 
   /* Animations */
   --animate-exeris-spin: spin 1s linear infinite;
