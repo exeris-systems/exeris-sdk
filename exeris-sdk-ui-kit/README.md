@@ -9,6 +9,17 @@
 - 🧩 **Tailwind Preset** - Drop-in preset for Tailwind CSS projects
 - 📦 **Zero Runtime** - Pure CSS, no JavaScript runtime
 
+## Versioning
+
+This package versions **independently of the Exeris SDK's Java artifacts**. The SDK's 1.0.0
+freeze does not cover it, and its version number is its own.
+
+Its 1.0 will freeze **names, not values**: every `--exeris-*` custom property, every `.exeris-*`
+class, and every Tailwind key that produces a utility are the contract — they appear in generated
+components and in your own markup, so renaming one is a breaking change and happens at a major.
+The values behind them (colours, spacing, radii, shadows) are the theming surface you are meant
+to override, and they may change in a minor.
+
 ## Installation
 
 ```bash

@@ -47,12 +47,38 @@ This was `26` until 0.10.0, on the stated rationale that the kernel required it.
 
 ### ui-kit is npm-only
 
-`exeris-sdk-ui-kit/` is **not in the Maven reactor** (despite the README listing it as a module). It's a standalone npm package (Tailwind preset + CSS), published interim to **GitHub Packages as `@exeris-systems/ui-kit`** (`.github/workflows/publish-ui-kit.yml`, tag `ui-kit-v*`); publishing to public npm as `@exeris/ui-kit` is a 1.0.0 GA item. Build it separately:
+`exeris-sdk-ui-kit/` is **not in the Maven reactor** (despite the README listing it as a module). It's a standalone npm package (Tailwind preset + CSS), published interim to **GitHub Packages as `@exeris-systems/ui-kit`** (`.github/workflows/publish-ui-kit.yml`, tag `ui-kit-v*`); publishing to public npm as `@exeris/ui-kit` is a 1.0.0 GA item — the *publication* is, not the version: see the versioning note below. Build it separately:
 
 ```bash
 cd exeris-sdk-ui-kit && npm install && npm run build
 npm run test:coverage   # Vitest + the 85% per-file gate
 ```
+
+#### It versions independently, and it gets its own 1.0 — not the SDK's
+
+**The SDK's 1.0.0 freeze does not cover this package.** It is at `0.1.0` while the Java line is
+at `0.12.0`, and that is deliberate rather than lag. The same shape already exists one repo over:
+`@exeris/codegen-ts` is at `0.2.0` against an `exeris-tooling` Maven line at `0.8.0`.
+
+The reason is that the two contracts fail differently. The Java surface freezes because
+**downstream code compiles against it** — a break is a compile error in someone's build, found by
+the build. This package's surface is CSS class names and design tokens; a break is a visual
+regression, found by looking. Tying a design system's cadence to a compilation contract's would
+slow the half that Studio and a headless CMS are going to push hardest.
+
+**What its own 1.0 will freeze is the namespace, not the values:**
+
+| layer | example | at 1.0 |
+|---|---|---|
+| token names | `--exeris-primary`, `bg-exeris-*` | **frozen** — generated components and hand-written markup both reference them |
+| class vocabulary | `.exeris-input` and the rest of the `ComponentType` map | **frozen** — `component-classes.test.js` calls it "the contract codegen-ts targets", and it is anchored to `UIMetadata.ComponentType`, which freezes with the SDK |
+| values | `rgb(79, 70, 229)`, radii, shadows | **free** — this is the theming surface a CMS overrides; freezing it would freeze the wrong thing |
+
+`tests/public-surface.txt` is the enforced half: 124 recorded names, snapshot-gated the way
+`annotation-surface.txt` gates the Java side. Adding one is additive and reported so it gets
+recorded; removing or renaming one fails. It exists because the three derived drift tests all
+compare two artifacts against **each other** — rename a token in the CSS, the preset and the
+`@theme` entry together and every one of them stays green while every consumer breaks.
 
 ## Maven module layout — what's publishable
 

@@ -123,6 +123,20 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **`@exeris/ui-kit` versions independently and gets its own 1.0 — written down, and enforced.**
+  It was already true in practice (`0.1.0` against a `0.12.0` Java line, mirroring
+  `@exeris/codegen-ts` at `0.2.0` against `exeris-tooling` `0.8.0`) and stated nowhere, which at
+  GA would read as "SDK 1.0 covers everything under the SDK umbrella". Now in `CLAUDE.md`,
+  `MIGRATION-0.x-to-1.0.md` §2b, `ROADMAP.md`'s GA item and the package README. Its 1.0 freezes
+  the **namespace and not the values**: token names, `.exeris-*` classes and Tailwind utility
+  keys are the contract; colours, spacing and shadows are the theming surface a CMS overrides.
+- **`tests/public-surface.txt` pins the 124 names that contract covers.** The three derived drift
+  tests each compare two of this package's artifacts against *each other*, so a **coordinated**
+  rename — the same token changed in `index.css`, the preset and the `@theme` entry — kept them
+  all green while breaking every consumer. Snapshot-gated the way `annotation-surface.txt` gates
+  the Java surface: additions reported so they get recorded, removals and renames fail. Verified
+  against exactly that coordinated rename.
+
 - **The ui-kit's real gate was one hard-coded assertion; it is now derived from the CSS.**
   `defaultTheme` is what generated components fall back to when a host overrides nothing, and
   exactly one of its values — `primary` — was checked against `index.css`. Every other colour,

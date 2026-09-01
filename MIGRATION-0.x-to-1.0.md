@@ -72,6 +72,35 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   this bullet moves up into the list above. Consumers should treat them as
   preview and pin exactly.
 
+## 2b. `@exeris/ui-kit` is outside this freeze, and has its own
+
+The 1.0.0 contract in this document is the **Java** surface: annotations, AST records, the
+parser/writer, the composition modules. The npm package `exeris-sdk-ui-kit` is not part of it and
+does not freeze with it.
+
+It is at `0.1.0` today against a `0.12.0` Java line, and the precedent is already in the
+ecosystem: `@exeris/codegen-ts` runs at `0.2.0` against `exeris-tooling`'s `0.8.0`. The two kinds
+of contract fail differently — a Java break is a compile error in a consumer's build, a CSS break
+is a visual regression — and binding a design system's release cadence to a compilation
+contract's would hold back the half Studio and a headless CMS drive hardest.
+
+**What the GA list requires of it is publication, not a version.** `@exeris/ui-kit` reaching the
+public registry is the GA item; the number on it is that package's own business.
+
+**Its own 1.0, when it comes, freezes names and not values:**
+
+- **Frozen:** every `--exeris-*` custom property, every `.exeris-*` class in the
+  `ComponentType` map, and every Tailwind key that produces a utility. These appear in generated
+  components and in hand-written application markup; renaming one is a break for both.
+- **Free:** the values behind those names. Colours, spacing, radii and shadows are the theming
+  surface a CMS is meant to override — freezing them would freeze the wrong thing, and the drift
+  tests already hold them *consistent* across the package's three artifacts without holding them
+  *constant*.
+
+Enforced by `tests/public-surface.txt`, a recorded list of the 124 names, gated the way
+`annotation-surface.txt` gates the Java surface: additions are reported so they get recorded,
+removals and renames fail.
+
 ## 3. Consumer contract recap (unchanged at 1.0.0 — restated for the freeze)
 
 - **Jackson mapper posture** for reading SDK-emitted JSON:
