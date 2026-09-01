@@ -372,9 +372,9 @@ public final class AstSchemaProcessor extends AbstractProcessor {
     /**
      * Component prose, from the record's {@code @param} tags — the only route that works.
      *
-     * <p><b>Measured, because four plausible routes fail silently.</b> Most components in
-     * this package are documented with a comment written above them inside the record
-     * header. Javadoc-the-tool renders those; annotation processing cannot reach them.
+     * <p><b>Measured, because four plausible routes fail silently.</b> A component can also
+     * be documented with a comment written above it inside the record header. Javadoc-the-tool
+     * renders those; annotation processing cannot reach them.
      * {@code Elements.getDocComment(RecordComponentElement)} returns {@code null};
      * {@code DocTrees.getDocCommentTree(Element)} returns {@code null}; {@code
      * DocTrees.getPath} on the component returns {@code null}, so there is no path for the
@@ -383,12 +383,12 @@ public final class AstSchemaProcessor extends AbstractProcessor {
      * record's own (resolvable) path returns {@code null} as well. The accessor and backing
      * field are both javac-derived and carry no source position, so neither helps.
      *
-     * <p>{@code @param} on the record does resolve, and is the canonical Java way to
-     * document a record component. It is also, today, used by <em>no</em> record in this
-     * package — so property-level {@code description} is near-empty and the document says so
-     * at its root rather than letting a consumer infer that the properties are meaningless.
-     * Converting the existing header prose is a separate decision: much of it is
-     * multi-paragraph and a {@code @param} tag is a phrase.
+     * <p>{@code @param} on the record does resolve, and is the canonical Java way to document
+     * a record component. It is now the only form this package uses — the fifteen header
+     * comments that existed were converted, and {@code AstComponentProseConventionTest} fails
+     * if one comes back. Most components carry no prose at all, which is why property-level
+     * {@code description} is sparse; the document says so at its root rather than letting a
+     * consumer infer that the properties are meaningless.
      */
     private void putComponentDoc(ObjectNode node, RecordComponentElement component, DocCommentTree recordDoc) {
         if (recordDoc == null) {
@@ -482,10 +482,10 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         node.put(KEY_PROPERTIES, properties);
         node.put("describedProperties", describedProperties);
         node.put("note",
-                "Property prose comes from @param tags on the record. Comments written above a "
-                        + "component inside the record header render in javadoc but are unreachable from "
-                        + "annotation processing, so they do not appear here. A low describedProperties "
-                        + "count is an accurate schema, not a truncated one.");
+                "Property prose comes from @param tags on the record — the only form that reaches "
+                        + "this document, and the convention the AST package now follows. A component "
+                        + "with no @param has no prose to carry, so a low describedProperties count is "
+                        + "an accurate schema rather than a truncated one.");
         return node;
     }
 
