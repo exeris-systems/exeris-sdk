@@ -81,6 +81,7 @@ preset:transitionDuration.exeris-slow
 theme:colors.danger
 theme:colors.info
 theme:colors.primary
+theme:colors.primary-hover
 theme:colors.secondary
 theme:colors.success
 theme:colors.warning

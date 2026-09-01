@@ -130,7 +130,7 @@ for per-version upgrade steps.
   `MIGRATION-0.x-to-1.0.md` §2b, `ROADMAP.md`'s GA item and the package README. Its 1.0 freezes
   the **namespace and not the values**: token names, `.exeris-*` classes and Tailwind utility
   keys are the contract; colours, spacing and shadows are the theming surface a CMS overrides.
-- **`tests/public-surface.txt` pins the 125 names that contract covers.** The three derived drift
+- **`tests/public-surface.txt` pins the 126 names that contract covers.** The three derived drift
   tests each compare two of this package's artifacts against *each other*, so a **coordinated**
   rename — the same token changed in `index.css`, the preset and the `@theme` entry — kept them
   all green while breaking every consumer. Snapshot-gated the way `annotation-surface.txt` gates

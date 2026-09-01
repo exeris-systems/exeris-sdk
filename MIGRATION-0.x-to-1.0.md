@@ -97,7 +97,7 @@ public registry is the GA item; the number on it is that package's own business.
   tests already hold them *consistent* across the package's three artifacts without holding them
   *constant*.
 
-Enforced by `tests/public-surface.txt`, a recorded list of the 125 names, gated the way
+Enforced by `tests/public-surface.txt`, a recorded list of the 126 names, gated the way
 `annotation-surface.txt` gates the Java surface: additions are reported so they get recorded,
 removals and renames fail.
 
