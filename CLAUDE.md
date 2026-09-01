@@ -74,7 +74,7 @@ slow the half that Studio and a headless CMS are going to push hardest.
 | class vocabulary | `.exeris-input` and the rest of the `ComponentType` map | **frozen** — `component-classes.test.js` calls it "the contract codegen-ts targets", and it is anchored to `UIMetadata.ComponentType`, which freezes with the SDK |
 | values | `rgb(79, 70, 229)`, radii, shadows | **free** — this is the theming surface a CMS overrides; freezing it would freeze the wrong thing |
 
-`tests/public-surface.txt` is the enforced half: 124 recorded names, snapshot-gated the way
+`tests/public-surface.txt` is the enforced half: 125 recorded names, snapshot-gated the way
 `annotation-surface.txt` gates the Java side. Adding one is additive and reported so it gets
 recorded; removing or renaming one fails. It exists because the three derived drift tests all
 compare two artifacts against **each other** — rename a token in the CSS, the preset and the

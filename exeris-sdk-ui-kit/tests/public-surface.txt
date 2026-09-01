@@ -46,7 +46,8 @@ class:exeris-spinner
 class:exeris-table
 class:exeris-textarea
 class:exeris-toggle
-class:exeris-truncate-
+class:exeris-truncate-2
+class:exeris-truncate-3
 preset:animation.exeris-fade-in
 preset:animation.exeris-pulse
 preset:animation.exeris-slide-up

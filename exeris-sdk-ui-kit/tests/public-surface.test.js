@@ -40,10 +40,13 @@ const indexCss = readFileSync(join(root, 'src/styles/index.css'), 'utf8');
 function surface() {
   const names = new Set();
 
-  for (const [, token] of indexCss.matchAll(/(--exeris-[a-z-]+):/g)) {
+  // [a-z0-9-] and not [a-z-]: .exeris-truncate-2 and .exeris-truncate-3 are real, distinct
+  // class names, and a digit-free character class collapsed both into one truncated entry —
+  // two consumer-facing names this snapshot claimed to pin while pinning neither.
+  for (const [, token] of indexCss.matchAll(/(--exeris-[a-z0-9-]+):/g)) {
     names.add(`token:${token}`);
   }
-  for (const [, cls] of indexCss.matchAll(/\.(exeris-[a-z-]+)/g)) {
+  for (const [, cls] of indexCss.matchAll(/\.(exeris-[a-z0-9-]+)/g)) {
     names.add(`class:${cls}`);
   }
 
