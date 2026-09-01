@@ -780,6 +780,9 @@ public @interface Saga {
     // ENUMS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * The order in which a failed saga's compensations run.
+     */
     enum CompensationOrder {
         /** Execute compensation in reverse order of execution */
         REVERSE,
@@ -794,6 +797,9 @@ public @interface Saga {
         CUSTOM
     }
 
+    /**
+     * How compensation is driven once a step fails.
+     */
     enum CompensationStrategy {
         /** All compensations must succeed or saga remains in failed state */
         ALL_OR_NOTHING,
@@ -808,6 +814,9 @@ public @interface Saga {
         MANUAL
     }
 
+    /**
+     * Where saga state is kept between steps.
+     */
     enum SagaPersistence {
         /** PostgreSQL/MySQL database */
         DATABASE,
@@ -825,21 +834,39 @@ public @interface Saga {
         CUSTOM
     }
 
+    /**
+     * How saga state is encoded when persisted.
+     */
     enum StateFormat {
+        /** Human-readable JSON. */
         JSON,
+        /** A compact binary encoding. */
         BINARY,
+        /** Protocol Buffers. */
         PROTOBUF,
+        /** MessagePack. */
         MSGPACK
     }
 
+    /**
+     * How persisted saga state is compressed.
+     */
     enum Compression {
+        /** Stored uncompressed. */
         NONE,
+        /** gzip — widely supported, moderate ratio. */
         GZIP,
+        /** LZ4 — fastest, lowest ratio. */
         LZ4,
+        /** Snappy — fast, moderate ratio. */
         SNAPPY,
+        /** Zstandard — best ratio at comparable speed. */
         ZSTD
     }
 
+    /**
+     * How a step's command reaches the service that runs it.
+     */
     enum CommandDispatch {
         /** Apache Kafka */
         KAFKA,
@@ -860,6 +887,9 @@ public @interface Saga {
         AZURE_SERVICE_BUS
     }
 
+    /**
+     * When a consumed message is acknowledged.
+     */
     enum AckMode {
         /** Automatic acknowledgment */
         AUTO,
@@ -871,12 +901,21 @@ public @interface Saga {
         AFTER_PROCESS
     }
 
+    /**
+     * Where the keys guarding against duplicate work are kept.
+     */
     enum IdempotencyStorage {
+        /** In the application's own database. */
         DATABASE,
+        /** In Redis. */
         REDIS,
+        /** In process memory; lost on restart. */
         IN_MEMORY
     }
 
+    /**
+     * What happens when the saga's work queue is full.
+     */
     enum OverflowBehavior {
         /** Queue excess requests */
         QUEUE,
@@ -891,19 +930,35 @@ public @interface Saga {
         IGNORE
     }
 
+    /**
+     * How urgent an alert raised by this saga is.
+     */
     enum AlertSeverity {
+        /** Worth recording; no action expected. */
         INFO,
+        /** Worth looking at when convenient. */
         WARNING,
+        /** Something failed and needs attention. */
         ERROR,
+        /** Needs attention now. */
         CRITICAL
     }
 
+    /**
+     * How much detail the generated code logs for this surface.
+     */
     enum LogLevel {
+        /** Finest detail; every step and its payload. */
         TRACE,
+        /** Diagnostic detail useful while developing. */
         DEBUG,
+        /** Normal progress worth recording. */
         INFO,
+        /** Something unexpected that did not stop the work. */
         WARN,
+        /** A failure. */
         ERROR,
+        /** No logging at all. */
         OFF
     }
 
@@ -922,39 +977,87 @@ public @interface Saga {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface SagaTrigger {
-        /** Trigger type */
+        /**
+         * What kind of occurrence starts the saga.
+         *
+         * @return the trigger kind
+         */
         TriggerType type() default TriggerType.COMMAND;
 
-        /** Trigger source class (command or event) */
+        /**
+         * The command or event type that starts the saga, when it is on the classpath.
+         *
+         * @return the source type, or {@code void.class} when named instead
+         */
         Class<?> source() default void.class;
 
-        /** Trigger source name (when class is not available) */
+        /**
+         * The source named as a string, for a type this module cannot reference.
+         *
+         * @return the source name, empty when {@link #source()} is used
+         */
         String sourceName() default "";
 
-        /** Trigger source name pattern (regex) */
+        /**
+         * A regular expression matching several source names at once.
+         *
+         * @return the pattern, empty when a single source is named
+         */
         String sourcePattern() default "";
 
-        /** Topic to listen on */
+        /**
+         * The messaging topic the trigger listens on.
+         *
+         * @return the topic, empty when the trigger is not topic-driven
+         */
         String topic() default "";
 
-        /** Consumer group for topic */
+        /**
+         * The consumer group the subscription joins, which is what shares the topic
+         * across instances instead of duplicating work.
+         *
+         * @return the consumer group, empty for the default
+         */
         String consumerGroup() default "";
 
-        /** Filter expression (SpEL) */
+        /**
+         * An expression gating whether a received message actually starts a saga.
+         *
+         * @return the filter expression, empty when every message triggers
+         */
         String filter() default "";
 
-        /** Start position for event triggers */
+        /**
+         * Where in the source stream the trigger begins reading.
+         *
+         * @return the start position
+         */
         StartPosition startPosition() default StartPosition.LATEST;
 
-        /** Schedule expression (for SCHEDULE type) */
+        /**
+         * The schedule that starts the saga, when {@link #type()} is the scheduled kind.
+         *
+         * @return the schedule expression, empty otherwise
+         */
         String schedule() default "";
 
-        /** HTTP path (for HTTP type) */
+        /**
+         * The path a request must hit to start the saga, when {@link #type()} is the HTTP kind.
+         *
+         * @return the path, empty otherwise
+         */
         String httpPath() default "";
 
-        /** HTTP method (for HTTP type) */
+        /**
+         * The HTTP method that request must use, when {@link #type()} is the HTTP kind.
+         *
+         * @return the method name
+         */
         String httpMethod() default "POST";
 
+        /**
+         * What kind of occurrence starts the saga.
+         */
         enum TriggerType {
             /** Started by command */
             COMMAND,
@@ -972,9 +1075,15 @@ public @interface Saga {
             MANUAL
         }
 
+        /**
+         * Where in the source stream the trigger begins reading.
+         */
         enum StartPosition {
+            /** From the beginning of the stream. */
             EARLIEST,
+            /** From messages arriving after the trigger is registered. */
             LATEST,
+            /** From a position named elsewhere on the trigger. */
             SPECIFIC
         }
     }

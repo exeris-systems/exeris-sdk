@@ -747,6 +747,9 @@ public @interface SagaStep {
         AWAIT_TIMER
     }
 
+    /**
+     * Which service instance a step's command is routed to.
+     */
     enum InstanceSelection {
         /** Any available instance */
         ANY,
@@ -770,12 +773,21 @@ public @interface SagaStep {
         LOCAL
     }
 
+    /**
+     * How much detail the generated code logs for this surface.
+     */
     enum LogLevel {
+        /** Finest detail; every step and its payload. */
         TRACE,
+        /** Diagnostic detail useful while developing. */
         DEBUG,
+        /** Normal progress worth recording. */
         INFO,
+        /** Something unexpected that did not stop the work. */
         WARN,
+        /** A failure. */
         ERROR,
+        /** No logging at all. */
         OFF
     }
 
