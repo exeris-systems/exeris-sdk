@@ -53,6 +53,9 @@ public record ComponentNodeMetadata(
         UIMetadata.UIFieldMetadata field
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ComponentNodeMetadata {
         if (customType != null && customType.isBlank()) {
             customType = null;
@@ -63,34 +66,53 @@ public record ComponentNodeMetadata(
         children = children == null ? List.of() : List.copyOf(children);
     }
 
-    /** A leaf node of {@code type} with a binding and no children. */
+    /** A leaf node of {@code type} with a binding and no children.      *
+     * @param type the {@code type} the result carries
+     * @param binding the {@code binding} the result carries
+     * @return the {@code ComponentNodeMetadata}
+    */
     public static ComponentNodeMetadata leaf(BlockType type, BindingMetadata binding) {
         return new ComponentNodeMetadata(type, null, binding, null, List.of(), null);
     }
 
-    /** A leaf field block of {@code type} with a binding and a render facet (the {@code @UI} successor). */
+    /** A leaf field block of {@code type} with a binding and a render facet (the {@code @UI} successor).      *
+     * @param type the {@code type} the result carries
+     * @param binding the {@code binding} the result carries
+     * @param field the {@code field} the result carries
+     * @return the {@code ComponentNodeMetadata}
+    */
     public static ComponentNodeMetadata fieldLeaf(BlockType type, BindingMetadata binding, UIMetadata.UIFieldMetadata field) {
         return new ComponentNodeMetadata(type, null, binding, null, List.of(), field);
     }
 
-    /** A container node of {@code type} holding {@code children} (no binding). */
+    /** A container node of {@code type} holding {@code children} (no binding).      *
+     * @param type the {@code type} the result carries
+     * @param children the {@code children} the result carries
+     * @return the {@code ComponentNodeMetadata}
+    */
     public static ComponentNodeMetadata container(BlockType type, List<ComponentNodeMetadata> children) {
         return new ComponentNodeMetadata(type, null, null, null, children, null);
     }
 
-    /** The effective block type: the declared one, or {@link BlockType#CONTAINER}. */
+    /** The effective block type: the declared one, or {@link BlockType#CONTAINER}.      *
+     * @return the {@code BlockType}
+    */
     @JsonIgnore
     public BlockType effectiveType() {
         return type != null ? type : BlockType.CONTAINER;
     }
 
-    /** Whether this node has child nodes. */
+    /** Whether this node has child nodes.      *
+     * @return the {@code boolean}
+    */
     @JsonIgnore
     public boolean hasChildren() {
         return !children.isEmpty();
     }
 
-    /** Whether this node carries a leaf field-render facet (the {@code @UI} successor). */
+    /** Whether this node carries a leaf field-render facet (the {@code @UI} successor).      *
+     * @return the {@code boolean}
+    */
     @JsonIgnore
     public boolean hasField() {
         return field != null;

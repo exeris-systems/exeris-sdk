@@ -144,7 +144,12 @@ public record DomainEventMetadata(
      * Pre-EV1 4-tuple constructor — keeps existing call sites compiling and
      * defaults both EV1 payload lists to empty. The grown 6-arg canonical
      * constructor (or {@link #builder(String)}) carries the resolved payload.
-     */
+          *
+     * @param name the {@code name} the result carries
+     * @param topic the {@code topic} the result carries
+     * @param description the {@code description} the result carries
+     * @param aggregateType the {@code aggregateType} the result carries
+    */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType) {
         this(name, topic, description, aggregateType, List.of(), List.of(), null, null, null);
     }
@@ -154,34 +159,64 @@ public record DomainEventMetadata(
      * trigger triple unset (i.e. "not extracted", per the class javadoc).
      *
      * @since 0.11.0
-     */
+          *
+     * @param name the {@code name} the result carries
+     * @param topic the {@code topic} the result carries
+     * @param description the {@code description} the result carries
+     * @param aggregateType the {@code aggregateType} the result carries
+     * @param payloadFields the {@code payloadFields} the result carries
+     * @param sensitiveFields the {@code sensitiveFields} the result carries
+    */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType,
                                List<String> payloadFields, List<String> sensitiveFields) {
         this(name, topic, description, aggregateType, payloadFields, sensitiveFields,
                 null, null, null);
     }
 
+    /**
+     * Creates a minimal {@code DomainEventMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @return the {@code DomainEventMetadata}
+     */
     public static DomainEventMetadata simple(String name) {
         return new DomainEventMetadata(name, null, null, null, List.of(), List.of(),
                 null, null, null);
     }
 
+    /**
+     * Creates a {@code DomainEventMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param topic the {@code topic} the result carries
+     * @return the {@code DomainEventMetadata}
+     */
     public static DomainEventMetadata withTopic(String name, String topic) {
         return new DomainEventMetadata(name, topic, null, null, List.of(), List.of(),
                 null, null, null);
     }
 
-    /** @since 0.8.0 (EV1) */
+    /**
+     * The event's trigger facet.
+     *
+     * @since 0.8.0 (EV1)      *
+     * @param name the {@code name} the result carries
+     * @return the {@code Builder}
+    */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
-    /** True when the event declares a resolved payload field subset. */
+    /** True when the event declares a resolved payload field subset.      *
+     * @return the {@code boolean}
+    */
     public boolean hasPayloadFields() {
         return !payloadFields.isEmpty();
     }
 
-    /** True when the event declares sensitive fields to redact. */
+    /** True when the event declares sensitive fields to redact.      *
+     * @return the {@code boolean}
+    */
     public boolean hasSensitiveFields() {
         return !sensitiveFields.isEmpty();
     }
@@ -191,7 +226,9 @@ public record DomainEventMetadata(
      * EV2 trigger extraction — <b>not</b> that the event fires on create.
      *
      * @since 0.11.0
-     */
+          *
+     * @return the {@code boolean}
+    */
     public boolean hasTrigger() {
         return trigger != null;
     }
@@ -217,13 +254,18 @@ public record DomainEventMetadata(
         public Builder aggregateType(String v) { this.aggregateType = v; return this; }
         public Builder payloadFields(List<String> v) { this.payloadFields = v; return this; }
         public Builder sensitiveFields(List<String> v) { this.sensitiveFields = v; return this; }
-        /** @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
         public Builder trigger(Trigger v) { this.trigger = v; return this; }
-        /** @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
         public Builder actionName(String v) { this.actionName = v; return this; }
-        /** @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
         public Builder fieldName(String v) { this.fieldName = v; return this; }
 
+        /**
+         * Builds the {@code DomainEventMetadata} from this builder's current state.
+         *
+         * @return the built {@code DomainEventMetadata}
+         */
         public DomainEventMetadata build() {
             return new DomainEventMetadata(
                     name, topic, description, aggregateType, payloadFields, sensitiveFields,

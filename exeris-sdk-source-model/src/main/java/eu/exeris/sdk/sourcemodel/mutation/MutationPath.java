@@ -25,14 +25,22 @@ import java.util.Objects;
  *
  * @author Exeris SDK Team
  * @since 0.5.0
- */
+  *
+ * @param entity the entity the path starts at
+ * @param kind what kind of member the path targets
+ * @param member the member's name; {@code null} when the path targets the entity itself
+*/
 public record MutationPath(String entity, TargetKind kind, String member) {
 
     /** What an addressable path points at. */
     public enum TargetKind {
+        /** The entity itself, with no member segment. */
         ENTITY(null),
+        /** A field on the entity. */
         FIELD("fields"),
+        /** An association on the entity. */
         RELATIONSHIP("relationships"),
+        /** An action on the entity. */
         ACTION("actions");
 
         private final String segment;
@@ -41,7 +49,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
             this.segment = segment;
         }
 
-        /** The collection segment in the path string, or {@code null} for the entity root. */
+        /** The collection segment in the path string, or {@code null} for the entity root.          *
+         * @return the path segment this kind contributes, or {@code null} for the entity itself
+        */
         public String segment() {
             return segment;
         }
@@ -58,6 +68,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
         }
     }
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public MutationPath {
         Objects.requireNonNull(entity, MutationMessages.ENTITY_REQUIRED);
         Objects.requireNonNull(kind, MutationMessages.KIND_REQUIRED);
@@ -86,18 +99,45 @@ public record MutationPath(String entity, TargetKind kind, String member) {
         }
     }
 
+    /**
+     * Creates a {@code MutationPath}.
+     *
+     * @param entity the {@code entity} the result carries
+     * @return the {@code MutationPath}
+     */
     public static MutationPath entity(String entity) {
         return new MutationPath(entity, TargetKind.ENTITY, null);
     }
 
+    /**
+     * Creates a {@code MutationPath}.
+     *
+     * @param entity the {@code entity} the result carries
+     * @param name the {@code name} the result carries
+     * @return the {@code MutationPath}
+     */
     public static MutationPath field(String entity, String name) {
         return new MutationPath(entity, TargetKind.FIELD, name);
     }
 
+    /**
+     * Creates a {@code MutationPath}.
+     *
+     * @param entity the {@code entity} the result carries
+     * @param fieldName the {@code fieldName} the result carries
+     * @return the {@code MutationPath}
+     */
     public static MutationPath relationship(String entity, String fieldName) {
         return new MutationPath(entity, TargetKind.RELATIONSHIP, fieldName);
     }
 
+    /**
+     * Creates a {@code MutationPath}.
+     *
+     * @param entity the {@code entity} the result carries
+     * @param name the {@code name} the result carries
+     * @return the {@code MutationPath}
+     */
     public static MutationPath action(String entity, String name) {
         return new MutationPath(entity, TargetKind.ACTION, name);
     }
@@ -106,7 +146,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * Parse a path string against the grammar.
      *
      * @throws IllegalArgumentException if the string is not a structurally valid path
-     */
+          * @param path the path in its string form
+     * @return the parsed path
+    */
     public static MutationPath parse(String path) {
         Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         if (!path.startsWith("/")) {
@@ -155,7 +197,10 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * <p>Pure path arithmetic — the ADR-042 "ancestor-or-descendant" conflict
      * rule (obligation 4) is {@code a.isSameOrAncestorOf(b) || b.isSameOrAncestorOf(a)},
      * assembled by the detection slice.
-     */
+          *
+     * @param other the path to test
+     * @return whether this path targets {@code other} or something containing it
+    */
     public boolean isSameOrAncestorOf(MutationPath other) {
         Objects.requireNonNull(other, MutationMessages.OTHER_REQUIRED);
         if (!entity.equals(other.entity)) {

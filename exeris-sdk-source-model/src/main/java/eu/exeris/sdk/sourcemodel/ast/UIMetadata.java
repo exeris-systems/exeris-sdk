@@ -44,10 +44,20 @@ public record UIMetadata(
         List<UIGroupMetadata> groups,
         List<UIFieldMetadata> fieldOverrides
 ) {
+    /**
+     * The default {@code UIMetadata}.
+     *
+     * @return the {@code UIMetadata}
+     */
     public static UIMetadata defaults() {
         return new UIMetadata(null, null, true, true, true, true, true, true, false, false, 12, "grid", List.of(), List.of());
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
@@ -77,6 +87,14 @@ public record UIMetadata(
             int gridSpan,
             List<String> fields
     ) {
+        /**
+         * Creates a minimal {@code UIGroupMetadata}, with only the essentials set.
+         *
+         * @param name the {@code name} the result carries
+         * @param label the {@code label} the result carries
+         * @param fields the {@code fields} the result carries
+         * @return the {@code UIGroupMetadata}
+         */
         public static UIGroupMetadata simple(String name, String label, List<String> fields) {
             return new UIGroupMetadata(name, label, null, 1, false, false, null, 12, fields);
         }
@@ -135,16 +153,33 @@ public record UIMetadata(
         // serializing as ""-valued fields. UIFieldMetadata has no builder, so the
         // record itself owns the guard (mirrors FieldMetadata.Builder). Existing
         // string fields keep their prior (un-normalized) behavior intentionally.
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public UIFieldMetadata {
             customComponent = (customComponent == null || customComponent.isBlank()) ? null : customComponent;
             placeholderKey = (placeholderKey == null || placeholderKey.isBlank()) ? null : placeholderKey;
             helpTextKey = (helpTextKey == null || helpTextKey.isBlank()) ? null : helpTextKey;
         }
 
+        /**
+         * Creates a minimal {@code UIFieldMetadata}, with only the essentials set.
+         *
+         * @param fieldName the {@code fieldName} the result carries
+         * @param componentType the {@code componentType} the result carries
+         * @return the {@code UIFieldMetadata}
+         */
         public static UIFieldMetadata simple(String fieldName, ComponentType componentType) {
             return new UIFieldMetadata(fieldName, componentType, 6, 0, true, true, true, null, null, null, null, null, null, null, null, null, null, null);
         }
 
+        /**
+         * Creates a {@code UIFieldMetadata}.
+         *
+         * @param fieldName the {@code fieldName} the result carries
+         * @param componentType the {@code componentType} the result carries
+         * @return the {@code UIFieldMetadata}
+         */
         public static UIFieldMetadata fullWidth(String fieldName, ComponentType componentType) {
             return new UIFieldMetadata(fieldName, componentType, 12, 0, true, true, true, null, null, null, null, null, null, null, null, null, null, null);
         }
@@ -152,7 +187,11 @@ public record UIMetadata(
         /**
          * Field rendered by an application-supplied custom component
          * ({@link ComponentType#CUSTOM}); {@code customComponent} names the control.
-         */
+                  *
+         * @param fieldName the {@code fieldName} the result carries
+         * @param customComponent the {@code customComponent} the result carries
+         * @return the {@code UIFieldMetadata}
+        */
         public static UIFieldMetadata custom(String fieldName, String customComponent) {
             return new UIFieldMetadata(fieldName, ComponentType.CUSTOM, 6, 0, true, true, true, null, null, null, null, null, null, null, null, customComponent, null, null);
         }
@@ -162,32 +201,59 @@ public record UIMetadata(
      * Component types for form fields.
      */
     public enum ComponentType {
+        /** Let the generator choose from the field's type. */
         AUTO,
+        /** A single-line text box. */
         TEXT_INPUT,
+        /** A multi-line text box. */
         TEXT_AREA,
+        /** A numeric input. */
         NUMBER_INPUT,
+        /** A calendar date. */
         DATE_PICKER,
+        /** A date and a time. */
         DATETIME_PICKER,
+        /** A time of day. */
         TIME_PICKER,
+        /** A single on/off box. */
         CHECKBOX,
+        /** An on/off switch. */
         TOGGLE,
+        /** One choice from a drop-down list. */
         SELECT,
+        /** Several choices from a list. */
         MULTI_SELECT,
+        /** One choice from a small visible set. */
         RADIO_GROUP,
+        /** A type-ahead lookup against another entity. */
         AUTOCOMPLETE,
+        /** A file chooser. */
         FILE_UPLOAD,
+        /** An image chooser, with a preview. */
         IMAGE_UPLOAD,
+        /** A formatted-text editor. */
         RICH_TEXT_EDITOR,
+        /** A code editor with syntax highlighting. */
         CODE_EDITOR,
+        /** A colour. */
         COLOR_PICKER,
+        /** A slider over a bounded range. */
         SLIDER,
+        /** A star-style rating control. */
         RATING,
+        /** Several free-form values, each shown as a removable chip. */
         CHIPS,
+        /** A masked text box. */
         PASSWORD,
+        /** A text box validated as an email address. */
         EMAIL,
+        /** A text box formatted as a telephone number. */
         PHONE,
+        /** A text box validated as a URL. */
         URL,
+        /** A numeric input formatted as money. */
         CURRENCY,
+        /** Carried in the form but not shown. */
         HIDDEN,
         /**
          * Application-supplied custom component — the escape hatch out of this
@@ -220,6 +286,13 @@ public record UIMetadata(
             boolean allowCreate,
             String createAction
     ) {
+        /**
+         * Creates a {@code AutocompleteConfig}.
+         *
+         * @param targetEntity the {@code targetEntity} the result carries
+         * @param displayField the {@code displayField} the result carries
+         * @return the {@code AutocompleteConfig}
+         */
         public static AutocompleteConfig forEntity(String targetEntity, String displayField) {
             return new AutocompleteConfig(targetEntity, displayField, "id", null, 2, 20, false, null);
         }
@@ -246,10 +319,22 @@ public record UIMetadata(
             boolean searchable,
             String groupBy
     ) {
+        /**
+         * Creates a {@code SelectConfig}.
+         *
+         * @param enumType the {@code enumType} the result carries
+         * @return the {@code SelectConfig}
+         */
         public static SelectConfig fromEnum(String enumType) {
             return new SelectConfig("enum:" + enumType, null, null, false, true, false, null);
         }
 
+        /**
+         * Creates a {@code SelectConfig}.
+         *
+         * @param endpoint the {@code endpoint} the result carries
+         * @return the {@code SelectConfig}
+         */
         public static SelectConfig fromEndpoint(String endpoint) {
             return new SelectConfig("api", endpoint, null, false, true, true, null);
         }
@@ -272,12 +357,35 @@ public record UIMetadata(
             String group,
             boolean disabled
     ) {
+        /**
+         * Creates a minimal {@code SelectOption}, with only the essentials set.
+         *
+         * @param value the {@code value} the result carries
+         * @param label the {@code label} the result carries
+         * @return the {@code SelectOption}
+         */
         public static SelectOption simple(String value, String label) {
             return new SelectOption(value, label, null, null, false);
         }
     }
 
+    /**
+     * A mutable builder for {@code SelectOption}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
+        /**
+         * Creates an empty builder. Declared rather than left implicit so it carries a
+         * comment; it stays {@code public} because the implicit constructor of a public
+         * class is public, and narrowing it would be a binary break.
+         */
+        public Builder() {
+        }
+
         private String icon;
         private String color;
         private boolean listView = true;
@@ -308,6 +416,11 @@ public record UIMetadata(
         public Builder groups(List<UIGroupMetadata> v) { this.groups = v; return this; }
         public Builder fieldOverrides(List<UIFieldMetadata> v) { this.fieldOverrides = v; return this; }
 
+        /**
+         * Builds the {@code UIMetadata} from this builder's current state.
+         *
+         * @return the built {@code UIMetadata}
+         */
         public UIMetadata build() {
             return new UIMetadata(icon, color, listView, detailView, createForm, editForm,
                     searchable, filterable, exportable, bulkActions, columns, defaultLayout, groups, fieldOverrides);

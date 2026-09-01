@@ -182,35 +182,45 @@ public record DomainMetadata(
 
     /**
      * Fully qualified class name.
-     */
+          *
+     * @return the {@code String}
+    */
     public String fullyQualifiedName() {
         return packageName + "." + entityName;
     }
 
     /**
      * Effective table name (explicit or derived from entityName).
-     */
+          *
+     * @return the {@code String}
+    */
     public String effectiveTableName() {
         return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(entityName);
     }
 
     /**
      * Effective API path (explicit or derived from entityName).
-     */
+          *
+     * @return the {@code String}
+    */
     public String effectivePath() {
         return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(entityName) + "s";
     }
 
     /**
      * Effective aggregate name.
-     */
+          *
+     * @return the {@code String}
+    */
     public String effectiveAggregate() {
         return (aggregate != null && !aggregate.isBlank()) ? aggregate : entityName;
     }
 
     /**
      * Plural name for entity (derived from entityName).
-     */
+          *
+     * @return the {@code String}
+    */
     public String pluralName() {
         // Simple pluralization - add 's' to entityName
         if (entityName.endsWith("s") || entityName.endsWith("x") || entityName.endsWith("z")
@@ -228,39 +238,74 @@ public record DomainMetadata(
 
     /**
      * Display name for entity (same as entityName but can add spaces before capitals).
-     */
+          *
+     * @return the {@code String}
+    */
     public String displayName() {
         // Add space before capital letters: "OrderItem" -> "Order Item"
         return entityName.replaceAll("([a-z])([A-Z])", "$1 $2");
     }
 
+    /**
+     * Whether any {@code fields} is declared.
+     *
+     * @return {@code true} when {@link #fields()} is neither null nor empty
+     */
     public boolean hasFields() {
         return fields != null && !fields.isEmpty();
     }
 
+    /**
+     * Whether any {@code actions} is declared.
+     *
+     * @return {@code true} when {@link #actions()} is neither null nor empty
+     */
     public boolean hasActions() {
         return actions != null && !actions.isEmpty();
     }
 
+    /**
+     * Whether any {@code events} is declared.
+     *
+     * @return {@code true} when {@link #events()} is neither null nor empty
+     */
     public boolean hasEvents() {
         return events != null && !events.isEmpty();
     }
 
+    /**
+     * Whether any {@code eventHandlers} is declared.
+     *
+     * @return {@code true} when {@link #eventHandlers()} is neither null nor empty
+     */
     public boolean hasEventHandlers() {
         return eventHandlers != null && !eventHandlers.isEmpty();
     }
 
+    /**
+     * Whether any {@code rules} is declared.
+     *
+     * @return {@code true} when {@link #rules()} is neither null nor empty
+     */
     public boolean hasRules() {
         return rules != null && !rules.isEmpty();
     }
 
+    /**
+     * Whether any {@code relationships} is declared.
+     *
+     * @return {@code true} when {@link #relationships()} is neither null nor empty
+     */
     public boolean hasRelationships() {
         return relationships != null && !relationships.isEmpty();
     }
 
     /**
      * Find a field by name.
-     */
+          *
+     * @param fieldName the {@code fieldName} the result carries
+     * @return the {@code java.util.Optional}
+    */
     public java.util.Optional<FieldMetadata> findField(String fieldName) {
         if (fields == null || fieldName == null) {
             return java.util.Optional.empty();
@@ -270,14 +315,29 @@ public record DomainMetadata(
                 .findFirst();
     }
 
+    /**
+     * Whether a {@code eventSourced} is declared.
+     *
+     * @return {@code true} when {@link #eventSourced()} is present
+     */
     public boolean isEventSourced() {
         return eventSourced != null;
     }
 
+    /**
+     * Whether a {@code sagaMetadata} is declared.
+     *
+     * @return {@code true} when {@link #sagaMetadata()} is present
+     */
     public boolean isSaga() {
         return sagaMetadata != null;
     }
 
+    /**
+     * Whether a {@code graphMetadata} is declared.
+     *
+     * @return {@code true} when {@link #graphMetadata()} is present
+     */
     public boolean hasGraphMetadata() {
         return graphMetadata != null;
     }
@@ -330,6 +390,13 @@ public record DomainMetadata(
     // BUILDER (for easier construction in processor)
     // ═══════════════════════════════════════════════════════════════════════
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param entityName the {@code entityName} the result carries
+     * @param packageName the {@code packageName} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String entityName, String packageName) {
         return new Builder(entityName, packageName);
     }
@@ -344,6 +411,14 @@ public record DomainMetadata(
         return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
     }
 
+    /**
+     * A mutable builder for {@code DomainMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String entityName;
         private final String packageName;
@@ -430,6 +505,11 @@ public record DomainMetadata(
         public Builder dataScope(DataScope v) { this.dataScope = v; return this; }
         public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
+        /**
+         * Builds the {@code DomainMetadata} from this builder's current state.
+         *
+         * @return the built {@code DomainMetadata}
+         */
         public DomainMetadata build() {
             return new DomainMetadata(
                     entityName, packageName, module, path, aggregate, description, apiVersion, tags,

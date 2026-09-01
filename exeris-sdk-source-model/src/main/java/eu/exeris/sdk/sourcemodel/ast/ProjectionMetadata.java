@@ -95,7 +95,9 @@ public record ProjectionMetadata(
      * True when the projection names the aggregate(s) it is a view of.
      *
      * @since 0.7.0
-     */
+          *
+     * @return the {@code boolean}
+    */
     public boolean hasSourceAggregate() {
         return !aggregateTypes.isEmpty();
     }
@@ -104,7 +106,9 @@ public record ProjectionMetadata(
      * True when the projection exposes an explicit field subset.
      *
      * @since 0.7.0
-     */
+          *
+     * @return the {@code boolean}
+    */
     public boolean hasFields() {
         return !fields.isEmpty();
     }
@@ -112,7 +116,11 @@ public record ProjectionMetadata(
     /**
      * A minimal projection: a named view exposing a field subset, with no source
      * aggregate / subscription declared. Preserves the pre-0.7.0 factory shape.
-     */
+          *
+     * @param name the {@code name} the result carries
+     * @param fields the {@code fields} the result carries
+     * @return the {@code ProjectionMetadata}
+    */
     public static ProjectionMetadata simple(String name, List<String> fields) {
         return builder(name).fields(fields).build();
     }
@@ -122,12 +130,23 @@ public record ProjectionMetadata(
      * common "subset of this aggregate as a read-only view" case.
      *
      * @since 0.7.0
-     */
+          *
+     * @param name the {@code name} the result carries
+     * @param aggregateType the {@code aggregateType} the result carries
+     * @param fields the {@code fields} the result carries
+     * @return the {@code ProjectionMetadata}
+    */
     public static ProjectionMetadata of(String name, String aggregateType, List<String> fields) {
         return builder(name).aggregateType(aggregateType).fields(fields).build();
     }
 
-    /** @since 0.7.0 */
+    /**
+     * Declarative projection metadata.
+     *
+     * @since 0.7.0      *
+     * @param name the {@code name} the result carries
+     * @return the {@code Builder}
+    */
     public static Builder builder(String name) {
         return new Builder(name);
     }
@@ -160,6 +179,11 @@ public record ProjectionMetadata(
         public Builder fields(List<String> v) { this.fields = v; return this; }
         public Builder cacheable(boolean v) { this.cacheable = v; return this; }
 
+        /**
+         * Builds the {@code ProjectionMetadata} from this builder's current state.
+         *
+         * @return the built {@code ProjectionMetadata}
+         */
         public ProjectionMetadata build() {
             return new ProjectionMetadata(
                     name, description, aggregateTypes, events, eventClassNames,

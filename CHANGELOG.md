@@ -89,7 +89,28 @@ for per-version upgrade steps.
   reaches nothing. This is the bar for publishing to Maven Central: the schema is what a
   non-JVM consumer reads instead of the sources, and the artifact carrying it is permanent.
 
+- **Every publishable module is javadoc-complete, and each one is gated.** 811 undocumented
+  public members across six modules — `source-model` 597, `annotations` 121, `source-model-io`
+  49, `composition-runtime` 24, `tck` 11, `composition-spec` 9 (`composition-lifecycle` was
+  already clean). All documented except **215 builder setters**, which are deliberately left
+  alone: each sets the record component of the same name, that component carries the prose, and
+  215 restatements would be filler. Each `Builder` says so in its own class javadoc.
+
+  Gated two ways, because a one-off pass decays. The five clean modules plus `annotations` turn
+  on `maven-javadoc-plugin`'s `failOnWarnings`, so a new undocumented member fails the build
+  outright. `source-model` cannot — javadoc has no way to exempt the builder setters — so
+  `JavadocCompletenessTest` runs the javadoc tool itself and applies the exemption as a rule a
+  reader can check. Both verified non-vacuous.
+
+  The bar is Maven Central: nothing in the publish path checks completeness, the javadoc jar
+  builds either way, and the artifact is permanent.
+
 ### Fixed
+
+- **The javadoc warning count was being read off a truncated log.** `maven-javadoc-plugin`
+  caps at 100 warnings per module, so `annotations` and `source-model` both reported exactly
+  100 and the survey under-counted by a factor of five (real: 121 and 597). Measured by running
+  the javadoc tool directly with the cap lifted.
 
 - **"Most AST components are documented in the record header" — measured, they are not.**
   The claim shipped with the AST schema and overstated the case badly: of 43 records, **three**

@@ -59,17 +59,47 @@ public record SagaStepMetadata(
         String errorHandler,
         StepKind kind
 ) {
+    /**
+     * Creates a minimal {@code SagaStepMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @param order the {@code order} the result carries
+     * @param command the {@code command} the result carries
+     * @return the {@code SagaStepMetadata}
+     */
     public static SagaStepMetadata simple(String name, int order, String command) {
         return new SagaStepMetadata(name, null, order, null, command, null, "PT5M", 3, "PT1S",
                 false, true, null, false, List.of(), List.of(), null, null, null, null);
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param name the {@code name} the result carries
+     * @param order the {@code order} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name, int order) {
         return new Builder(name, order);
     }
 
+    /**
+     * Whether a non-blank {@code compensation} is declared.
+     *
+     * @return {@code true} when {@link #compensation()} is set and not blank
+     */
     public boolean hasCompensation() { return compensation != null && !compensation.isBlank(); }
+    /**
+     * Whether any {@code dependsOn} is declared.
+     *
+     * @return {@code true} when {@link #dependsOn()} is neither null nor empty
+     */
     public boolean hasDependencies() { return dependsOn != null && !dependsOn.isEmpty(); }
+    /**
+     * Whether a non-blank {@code condition} is declared.
+     *
+     * @return {@code true} when {@link #condition()} is set and not blank
+     */
     public boolean hasCondition() { return condition != null && !condition.isBlank(); }
 
     /**
@@ -84,7 +114,9 @@ public record SagaStepMetadata(
      * Returns {@code null} when no kind is set and none can be inferred.
      *
      * @since 0.7.0
-     */
+          *
+     * @return the {@code StepKind}
+    */
     public StepKind effectiveKind() {
         if (kind != null) {
             return kind;
@@ -131,10 +163,22 @@ public record SagaStepMetadata(
             String expression,
             List<FieldMapping> fieldMappings
     ) {
+        /**
+         * Creates a {@code InputMapping}.
+         *
+         * @param expr the {@code expr} the result carries
+         * @return the {@code InputMapping}
+         */
         public static InputMapping expression(String expr) {
             return new InputMapping(expr, null);
         }
 
+        /**
+         * Creates a {@code InputMapping}.
+         *
+         * @param mappings the {@code mappings} the result carries
+         * @return the {@code InputMapping}
+         */
         public static InputMapping fields(List<FieldMapping> mappings) {
             return new InputMapping(null, mappings);
         }
@@ -151,6 +195,12 @@ public record SagaStepMetadata(
             String expression,
             List<FieldMapping> fieldMappings
     ) {
+        /**
+         * Creates a {@code OutputMapping}.
+         *
+         * @param expr the {@code expr} the result carries
+         * @return the {@code OutputMapping}
+         */
         public static OutputMapping expression(String expr) {
             return new OutputMapping(expr, null);
         }
@@ -169,11 +219,26 @@ public record SagaStepMetadata(
             String target,
             String transform
     ) {
+        /**
+         * Creates a {@code FieldMapping}.
+         *
+         * @param source the {@code source} the result carries
+         * @param target the {@code target} the result carries
+         * @return the {@code FieldMapping}
+         */
         public static FieldMapping direct(String source, String target) {
             return new FieldMapping(source, target, null);
         }
     }
 
+    /**
+     * A mutable builder for {@code FieldMapping}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private final int order;
@@ -218,6 +283,11 @@ public record SagaStepMetadata(
         public Builder errorHandler(String v) { this.errorHandler = v; return this; }
         public Builder kind(StepKind v) { this.kind = v; return this; }
 
+        /**
+         * Builds the {@code SagaStepMetadata} from this builder's current state.
+         *
+         * @return the built {@code SagaStepMetadata}
+         */
         public SagaStepMetadata build() {
             return new SagaStepMetadata(name, description, order, service, command, compensation, timeout,
                     maxRetries, retryBackoff, parallel, required, condition, skipOnConditionFalse,

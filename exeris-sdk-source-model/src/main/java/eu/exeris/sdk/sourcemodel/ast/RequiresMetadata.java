@@ -34,30 +34,52 @@ public record RequiresMetadata(
         String versionRange,
         boolean optional
 ) {
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public RequiresMetadata {
         Objects.requireNonNull(service, "service is required");
     }
 
-    /** A mandatory dependency with no version constraint. */
+    /** A mandatory dependency with no version constraint.      *
+     * @param service the {@code service} the result carries
+     * @return the {@code RequiresMetadata}
+    */
     public static RequiresMetadata of(String service) {
         return new RequiresMetadata(service, null, false);
     }
 
-    /** A mandatory dependency pinned to a version range. */
+    /** A mandatory dependency pinned to a version range.      *
+     * @param service the {@code service} the result carries
+     * @param versionRange the {@code versionRange} the result carries
+     * @return the {@code RequiresMetadata}
+    */
     public static RequiresMetadata of(String service, String versionRange) {
         return new RequiresMetadata(service, versionRange, false);
     }
 
-    /** An optional dependency with no version constraint. */
+    /** An optional dependency with no version constraint.      *
+     * @param service the {@code service} the result carries
+     * @return the {@code RequiresMetadata}
+    */
     public static RequiresMetadata optional(String service) {
         return new RequiresMetadata(service, null, true);
     }
 
-    /** An optional dependency pinned to a version range. */
+    /** An optional dependency pinned to a version range.      *
+     * @param service the {@code service} the result carries
+     * @param versionRange the {@code versionRange} the result carries
+     * @return the {@code RequiresMetadata}
+    */
     public static RequiresMetadata optional(String service, String versionRange) {
         return new RequiresMetadata(service, versionRange, true);
     }
 
+    /**
+     * Whether a non-blank {@code versionRange} is declared.
+     *
+     * @return {@code true} when {@link #versionRange()} is set and not blank
+     */
     public boolean hasVersionRange() {
         return versionRange != null && !versionRange.isBlank();
     }

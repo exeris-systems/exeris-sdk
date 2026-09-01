@@ -27,20 +27,33 @@ public record ProvidesMetadata(
         String service,
         String version
 ) {
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ProvidesMetadata {
         Objects.requireNonNull(service, "service is required");
     }
 
-    /** A provided service with no declared version. */
+    /** A provided service with no declared version.      *
+     * @param service the {@code service} the result carries
+     * @return the {@code ProvidesMetadata}
+    */
     public static ProvidesMetadata of(String service) {
         return new ProvidesMetadata(service, null);
     }
 
-    /** A provided service with a version. */
+    /** A provided service with a version.      *
+     * @return the {@code ProvidesMetadata}
+    */
     public static ProvidesMetadata of(String service, String version) {
         return new ProvidesMetadata(service, version);
     }
 
+    /**
+     * Whether a non-blank {@code version} is declared.
+     *
+     * @return {@code true} when {@link #version()} is set and not blank
+     */
     public boolean hasVersion() {
         return version != null && !version.isBlank();
     }

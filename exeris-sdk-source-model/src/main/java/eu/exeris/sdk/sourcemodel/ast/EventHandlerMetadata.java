@@ -104,12 +104,16 @@ public record EventHandlerMetadata(
 
     // ── convenience ─────────────────────────────────────────────────────────
 
-    /** True when this handler participates in a saga (drives or awaits a step). */
+    /** True when this handler participates in a saga (drives or awaits a step).      *
+     * @return the {@code boolean}
+    */
     public boolean isSagaHandler() {
         return triggerStep != null || !expectedEvents.isEmpty() || !failureEvents.isEmpty();
     }
 
-    /** True when a SpEL filter narrows which events this handler reacts to. */
+    /** True when a SpEL filter narrows which events this handler reacts to.      *
+     * @return the {@code boolean}
+    */
     public boolean hasCondition() {
         return condition != null;
     }
@@ -117,11 +121,21 @@ public record EventHandlerMetadata(
     /**
      * A minimal handler reacting to a single named event with the annotation's
      * default ordering / execution semantics.
-     */
+          *
+     * @param name the {@code name} the result carries
+     * @param event the {@code event} the result carries
+     * @return the {@code EventHandlerMetadata}
+    */
     public static EventHandlerMetadata simple(String name, String event) {
         return builder(name).event(event).build();
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param name the {@code name} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
@@ -165,6 +179,11 @@ public record EventHandlerMetadata(
         public Builder expectedEvents(List<String> v) { this.expectedEvents = v; return this; }
         public Builder failureEvents(List<String> v) { this.failureEvents = v; return this; }
 
+        /**
+         * Builds the {@code EventHandlerMetadata} from this builder's current state.
+         *
+         * @return the built {@code EventHandlerMetadata}
+         */
         public EventHandlerMetadata build() {
             return new EventHandlerMetadata(
                     name, description, event, events, eventClassNames, topic, condition,

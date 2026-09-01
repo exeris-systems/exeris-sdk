@@ -40,22 +40,49 @@ public record EventSourcedMetadata(
         String versionField,
         ConflictResolution conflictResolution
 ) {
+    /**
+     * A {@code EventSourcedMetadata} with the feature turned on.
+     *
+     * @param aggregateType the {@code aggregateType} the result carries
+     * @return the {@code EventSourcedMetadata}
+     */
     public static EventSourcedMetadata enabled(String aggregateType) {
         return new EventSourcedMetadata(true, aggregateType, null, 100,
                 SnapshotStrategy.COUNT_BASED, null, false, 0, List.of(), List.of(),
                 "version", ConflictResolution.OPTIMISTIC_LOCK);
     }
 
+    /**
+     * A {@code EventSourcedMetadata} with the feature turned off.
+     *
+     * @return the {@code EventSourcedMetadata}
+     */
     public static EventSourcedMetadata disabled() {
         return new EventSourcedMetadata(false, null, null, 0, null, null, false, 0,
                 List.of(), List.of(), null, null);
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param aggregateType the {@code aggregateType} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String aggregateType) {
         return new Builder(aggregateType);
     }
 
+    /**
+     * Whether any {@code projections} is declared.
+     *
+     * @return {@code true} when {@link #projections()} is neither null nor empty
+     */
     public boolean hasProjections() { return projections != null && !projections.isEmpty(); }
+    /**
+     * Whether any {@code eventHandlers} is declared.
+     *
+     * @return {@code true} when {@link #eventHandlers()} is neither null nor empty
+     */
     public boolean hasEventHandlers() { return eventHandlers != null && !eventHandlers.isEmpty(); }
 
     /**
@@ -107,15 +134,40 @@ public record EventSourcedMetadata(
             boolean async,
             String topic
     ) {
+        /**
+         * Creates a {@code ProjectionConfig}.
+         *
+         * @param name the {@code name} the result carries
+         * @param targetType the {@code targetType} the result carries
+         * @param eventTypes the {@code eventTypes} the result carries
+         * @return the {@code ProjectionConfig}
+         */
         public static ProjectionConfig sync(String name, String targetType, List<String> eventTypes) {
             return new ProjectionConfig(name, targetType, eventTypes, null, false, null);
         }
 
+        /**
+         * Creates a {@code ProjectionConfig}.
+         *
+         * @param name the {@code name} the result carries
+         * @param targetType the {@code targetType} the result carries
+         * @param eventTypes the {@code eventTypes} the result carries
+         * @param topic the {@code topic} the result carries
+         * @return the {@code ProjectionConfig}
+         */
         public static ProjectionConfig async(String name, String targetType, List<String> eventTypes, String topic) {
             return new ProjectionConfig(name, targetType, eventTypes, null, true, topic);
         }
     }
 
+    /**
+     * A mutable builder for {@code ProjectionConfig}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String aggregateType;
         private boolean enabled = true;
@@ -144,6 +196,11 @@ public record EventSourcedMetadata(
         public Builder versionField(String v) { this.versionField = v; return this; }
         public Builder conflictResolution(ConflictResolution v) { this.conflictResolution = v; return this; }
 
+        /**
+         * Builds the {@code EventSourcedMetadata} from this builder's current state.
+         *
+         * @return the built {@code EventSourcedMetadata}
+         */
         public EventSourcedMetadata build() {
             return new EventSourcedMetadata(enabled, aggregateType, eventStore, snapshotEvery,
                     snapshotStrategy, retentionPolicy, compactEvents, archiveAfterDays,

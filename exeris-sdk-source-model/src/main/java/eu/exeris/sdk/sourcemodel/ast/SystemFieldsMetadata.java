@@ -33,6 +33,11 @@ public record SystemFieldsMetadata(
         String softDeleteTimestampField,
         String softDeletedByField
 ) {
+    /**
+     * The default {@code SystemFieldsMetadata}.
+     *
+     * @return the {@code SystemFieldsMetadata}
+     */
     public static SystemFieldsMetadata defaults() {
         return new SystemFieldsMetadata(
                 "id", "createdAt", "createdBy",

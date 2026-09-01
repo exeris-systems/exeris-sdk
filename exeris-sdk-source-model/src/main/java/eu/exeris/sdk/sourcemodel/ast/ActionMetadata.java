@@ -129,6 +129,9 @@ public record ActionMetadata(
         RouteAccess routeAccess
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ActionMetadata {
         Objects.requireNonNull(name, "name is required");
         if (httpMethod == null) httpMethod = "POST";
@@ -138,27 +141,75 @@ public record ActionMetadata(
         if (streamEventType != null && streamEventType.isBlank()) streamEventType = null;
     }
 
+    /**
+     * Creates a minimal {@code ActionMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @return the {@code ActionMetadata}
+     */
     public static ActionMetadata simple(String name) {
         return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null, null);
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param name the {@code name} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
+    /**
+     * Whether any {@code params} is declared.
+     *
+     * @return {@code true} when {@link #params()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasParams() { return !params.isEmpty(); }
+    /**
+     * Whether any {@code permissions} is declared.
+     *
+     * @return {@code true} when {@link #permissions()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasPermissions() { return !permissions.isEmpty(); }
+    /**
+     * Whether any {@code producesEvents} is declared.
+     *
+     * @return {@code true} when {@link #producesEvents()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasProducedEvents() { return !producesEvents.isEmpty(); }
+    /**
+     * Whether a {@code streamEventType} is declared.
+     *
+     * @return {@code true} when {@link #streamEventType()} is present
+     */
     @JsonIgnore
     public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
+    /**
+     * Whether a {@code schedule} is declared.
+     *
+     * @return {@code true} when {@link #schedule()} is present
+     */
     @JsonIgnore
     public boolean isScheduled() { return schedule != null; }
+    /**
+     * Whether this action's route was explicitly declared public.
+     *
+     * @return {@code isPublicRoute} as this record reports it
+     */
     @JsonIgnore
     public boolean isPublicRoute() { return routeAccess == RouteAccess.PUBLIC; }
 
+    /**
+     * The effective {@code displayName}: the declared value when one is set, and this
+     * record's documented fallback otherwise.
+     *
+     * @return the effective value
+     */
     @JsonIgnore
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
@@ -168,12 +219,22 @@ public record ActionMetadata(
      * The Java method to dispatch to: {@link #methodName()} when known, else the
      * action {@link #name()} as a best-effort fallback (covers hand-built metadata
      * and legacy JSON written before {@code methodName} existed).
-     */
+          *
+     * @return the {@code String}
+    */
     @JsonIgnore
     public String effectiveMethodName() {
         return (methodName != null && !methodName.isBlank()) ? methodName : name;
     }
 
+    /**
+     * A mutable builder for {@code ActionMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private String displayName;
@@ -215,6 +276,11 @@ public record ActionMetadata(
         public Builder schedule(ScheduleMetadata v) { this.schedule = v; return this; }
         public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
+        /**
+         * Builds the {@code ActionMetadata} from this builder's current state.
+         *
+         * @return the built {@code ActionMetadata}
+         */
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
                     async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName,

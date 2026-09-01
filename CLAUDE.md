@@ -105,6 +105,25 @@ The full rationale is in two package-info files; keep them in sync when changing
 
 The long-deferred "wider `min` / `max` / `pattern` overlap" cut **landed in 0.9.0 (ADR-054)**, informed by the budgetHQ corpus (19/19 constraint usages on `@Validation`): the overlap was fictional at the annotation level (`@Field` never declared those attributes), and `ValidationMetadata` — never populated by any processor/reader nor consumed by any generator, with no published artifact for anyone to depend on — was **removed outright in 0.9.0** (0.x permits the break; a deprecation window with zero possible consumers is vacuous). Do not reintroduce constraint attributes on `@Field` or a parallel AST validation carrier.
 
+## Javadoc completeness is a publish gate, not a preference
+
+Every public member of every publishable module carries javadoc, and the build enforces it.
+These jars go to Maven Central, where they are permanent and where their javadoc is what a
+consumer reads instead of the sources; nothing in the publish path checks completeness, so the
+build does.
+
+- **Six modules use `maven-javadoc-plugin`'s `failOnWarnings`** — `annotations`,
+  `source-model-io`, `composition-spec`, `composition-lifecycle`, `composition-runtime`, `tck`.
+  Any new undocumented public member fails the build there.
+- **`source-model` uses `JavadocCompletenessTest` instead**, because it has one deliberate
+  exemption javadoc cannot express: **builder setters are not documented**. Each sets the record
+  component of the same name, and that component's `@param` carries the meaning — a per-setter
+  restatement is filler. The test runs the javadoc tool and drops warnings whose declaration
+  matches `public Builder <name>(`. Do not "fix" a setter by documenting it, and do not widen
+  the exemption to anything else.
+
+Adding a public method, factory, enum constant or record component means adding its javadoc.
+
 ## Route access: "unspecified" and "public" are different, and only one is declarable
 
 `@RouteAccess(PUBLIC | AUTHENTICATED)` (0.12.0, reserved) is the **sole** way to say a

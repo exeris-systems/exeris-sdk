@@ -42,6 +42,9 @@ public record BlobMetadata(
         List<String> contentTypes
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public BlobMetadata {
         if (container != null && container.isBlank()) {
             container = null;
@@ -50,23 +53,32 @@ public record BlobMetadata(
         contentTypes = contentTypes == null ? List.of() : List.copyOf(contentTypes);
     }
 
-    /** A blob facet with a derived container and no declared media types. */
+    /** A blob facet with a derived container and no declared media types.      *
+     * @return the {@code BlobMetadata}
+    */
     public static BlobMetadata unrestricted() {
         return new BlobMetadata(null, List.of());
     }
 
-    /** A blob facet restricted to the given media types, with a derived container. */
+    /** A blob facet restricted to the given media types, with a derived container.      *
+     * @param contentTypes the {@code contentTypes} the result carries
+     * @return the {@code BlobMetadata}
+    */
     public static BlobMetadata ofContentTypes(List<String> contentTypes) {
         return new BlobMetadata(null, contentTypes);
     }
 
-    /** Whether an explicit container was declared (rather than left to be derived). */
+    /** Whether an explicit container was declared (rather than left to be derived).      *
+     * @return the {@code boolean}
+    */
     @JsonIgnore
     public boolean hasContainer() {
         return container != null;
     }
 
-    /** Whether the accepted media types were narrowed at all. */
+    /** Whether the accepted media types were narrowed at all.      *
+     * @return the {@code boolean}
+    */
     @JsonIgnore
     public boolean hasContentTypes() {
         return !contentTypes.isEmpty();

@@ -49,13 +49,20 @@ import java.util.Objects;
 })
 public sealed interface MutationResult {
 
-    /** {@code true} only for {@link Success}. Convenience for non-pattern-matching callers. */
+    /** {@code true} only for {@link Success}. Convenience for non-pattern-matching callers.      *
+     * @return whether the mutation applied
+    */
     boolean successful();
 
-    /** The op applied cleanly. */
+    /** The op applied cleanly.      *
+     * @param path the mutation path naming what is being changed
+    */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Success(String path) implements MutationResult {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public Success {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
@@ -70,11 +77,19 @@ public sealed interface MutationResult {
      * The op collides with a user edit that drifted from the baseline.
      * Each value is the rendered form at {@code path}; {@code null} means
      * "absent at that side" (e.g. the field did not exist in the baseline).
-     */
+          *
+     * @param path the mutation path naming what is being changed
+     * @param baselineValue the value the mutation was authored against
+     * @param currentValue the value found now
+     * @param intendedValue the value the mutation wanted to write
+    */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Conflict(String path, String baselineValue, String currentValue, String intendedValue)
             implements MutationResult {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public Conflict {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
@@ -85,10 +100,16 @@ public sealed interface MutationResult {
         }
     }
 
-    /** The op was rejected structurally before any drift comparison. */
+    /** The op was rejected structurally before any drift comparison.      *
+     * @param path the mutation path naming what is being changed
+     * @param message what was wrong with the operation
+    */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ValidationError(String path, String message) implements MutationResult {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public ValidationError {
             Objects.requireNonNull(message, MutationMessages.MESSAGE_REQUIRED);
         }
@@ -99,10 +120,16 @@ public sealed interface MutationResult {
         }
     }
 
-    /** No trustworthy baseline to compare against. */
+    /** No trustworthy baseline to compare against.      *
+     * @param cause why no trusted baseline was available
+     * @param detail the specifics, for a diagnostic
+    */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record NoBaseline(NoBaselineCause cause, String detail) implements MutationResult {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public NoBaseline {
             Objects.requireNonNull(cause, MutationMessages.CAUSE_REQUIRED);
         }

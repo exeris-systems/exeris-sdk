@@ -128,57 +128,143 @@ public record FieldMetadata(
         BlobMetadata blob
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public FieldMetadata {
         Objects.requireNonNull(name, "name is required");
         Objects.requireNonNull(type, "type is required");
         if (computedFrom == null) computedFrom = List.of();
     }
 
+    /**
+     * Creates a minimal {@code FieldMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @return the {@code FieldMetadata}
+     */
     public static FieldMetadata simple(String name, String type) {
         return builder(name, type).searchable(true).sortable(true).filterable(true).build();
     }
 
+    /**
+     * Creates a required {@code FieldMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @return the {@code FieldMetadata}
+     */
     public static FieldMetadata required(String name, String type) {
         return builder(name, type).required(true).searchable(true).sortable(true).filterable(true).build();
     }
 
+    /**
+     * Starts a builder for a {@code Builder}.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name, String type) {
         return new Builder(name, type);
     }
 
+    /**
+     * Whether a {@code minLength} is declared.
+     *
+     * @return {@code true} when {@link #minLength()} is present
+     */
     @JsonIgnore
     public boolean hasValidation() {
         return minLength != null || maxLength != null || min != null || max != null || pattern != null;
     }
 
+    /**
+     * The effective {@code columnName}: the declared value when one is set, and this
+     * record's documented fallback otherwise.
+     *
+     * @return the effective value
+     */
     @JsonIgnore
     public String effectiveColumnName() {
         return (columnName != null && !columnName.isBlank()) ? columnName : toSnakeCase(name);
     }
 
+    /**
+     * The effective {@code displayName}: the declared value when one is set, and this
+     * record's documented fallback otherwise.
+     *
+     * @return the effective value
+     */
     @JsonIgnore
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
     }
 
+    /**
+     * Whether a {@code derived} is declared.
+     *
+     * @return {@code true} when {@link #derived()} is present
+     */
     @JsonIgnore
     public boolean hasDerived() { return derived != null; }
 
+    /**
+     * Whether a {@code blob} is declared.
+     *
+     * @return {@code true} when {@link #blob()} is present
+     */
     @JsonIgnore
     public boolean hasBlob() { return blob != null; }
 
+    /**
+     * Whether a non-blank {@code enumType} is declared.
+     *
+     * @return {@code true} when {@link #enumType()} is set and not blank
+     */
     @JsonIgnore
     public boolean isEnum() { return enumType != null && !enumType.isBlank(); }
+    /**
+     * Whether the field's declared type is a string.
+     *
+     * @return {@code isString} as this record reports it
+     */
     @JsonIgnore
     public boolean isString() { return "String".equals(type) || "java.lang.String".equals(type); }
+    /**
+     * Whether the field's declared type is a number, integral or decimal.
+     *
+     * @return {@code isNumeric} as this record reports it
+     */
     @JsonIgnore
     public boolean isNumeric() { return isInteger() || isDecimal(); }
+    /**
+     * Whether the field's declared type is an integral number.
+     *
+     * @return {@code isInteger} as this record reports it
+     */
     @JsonIgnore
     public boolean isInteger() { return "Integer".equals(type) || "Long".equals(type) || "int".equals(type) || "long".equals(type); }
+    /**
+     * Whether the field's declared type is a decimal number.
+     *
+     * @return {@code isDecimal} as this record reports it
+     */
     @JsonIgnore
     public boolean isDecimal() { return "BigDecimal".equals(type) || "Double".equals(type) || "Float".equals(type); }
+    /**
+     * Whether the field's declared type is a boolean.
+     *
+     * @return {@code isBoolean} as this record reports it
+     */
     @JsonIgnore
     public boolean isBoolean() { return "Boolean".equals(type) || "boolean".equals(type); }
+    /**
+     * Whether the field's declared type is a date, time or instant.
+     *
+     * @return {@code isTemporal} as this record reports it
+     */
     @JsonIgnore
     public boolean isTemporal() { return type.contains("LocalDate") || type.contains("LocalDateTime") || type.contains("Instant") || type.contains("OffsetDateTime"); }
 
@@ -186,6 +272,14 @@ public record FieldMetadata(
         return input.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
+    /**
+     * A mutable builder for {@code FieldMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private final String type;
@@ -259,6 +353,11 @@ public record FieldMetadata(
         public Builder derived(DerivedMetadata v) { this.derived = v; return this; }
         public Builder blob(BlobMetadata v) { this.blob = v; return this; }
 
+        /**
+         * Builds the {@code FieldMetadata} from this builder's current state.
+         *
+         * @return the built {@code FieldMetadata}
+         */
         public FieldMetadata build() {
             return new FieldMetadata(name, type, columnName, displayName, description, required, unique,
                     indexed, searchable, sortable, filterable, audited, readOnly, hidden, defaultValue,

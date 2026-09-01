@@ -40,6 +40,9 @@ public record DerivedMetadata(
     /** The expression-language tag assumed when none is declared. */
     public static final String DEFAULT_LANGUAGE = "spel";
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public DerivedMetadata {
         Objects.requireNonNull(expression, "expression is required");
         if (expression.isBlank()) {
@@ -53,23 +56,34 @@ public record DerivedMetadata(
         dependsOn = dependsOn == null ? List.of() : List.copyOf(dependsOn);
     }
 
-    /** A derivation with just an expression (default language, no dependency hints). */
+    /** A derivation with just an expression (default language, no dependency hints).      *
+     * @param expression the {@code expression} the result carries
+     * @return the {@code DerivedMetadata}
+    */
     public static DerivedMetadata of(String expression) {
         return new DerivedMetadata(expression, null, List.of());
     }
 
-    /** A derivation with an expression and explicit dependency hints. */
+    /** A derivation with an expression and explicit dependency hints.      *
+     * @param expression the {@code expression} the result carries
+     * @param dependsOn the {@code dependsOn} the result carries
+     * @return the {@code DerivedMetadata}
+    */
     public static DerivedMetadata of(String expression, List<String> dependsOn) {
         return new DerivedMetadata(expression, null, dependsOn);
     }
 
-    /** The effective language tag: the declared one, or {@link #DEFAULT_LANGUAGE}. */
+    /** The effective language tag: the declared one, or {@link #DEFAULT_LANGUAGE}.      *
+     * @return the {@code String}
+    */
     @JsonIgnore
     public String effectiveLanguage() {
         return language != null ? language : DEFAULT_LANGUAGE;
     }
 
-    /** Whether any dependency hints were declared. */
+    /** Whether any dependency hints were declared.      *
+     * @return the {@code boolean}
+    */
     @JsonIgnore
     public boolean hasDependencies() {
         return !dependsOn.isEmpty();
