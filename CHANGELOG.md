@@ -105,7 +105,28 @@ for per-version upgrade steps.
   The bar is Maven Central: nothing in the publish path checks completeness, the javadoc jar
   builds either way, and the artifact is permanent.
 
+
 ### Fixed
+
+- **`@SagaStep.order` / `parallel` and `@Saga`'s compensation pair now say what the platform
+  actually does with them.** Raised from `exeris-tooling` as an `INERT_ATTRIBUTES` candidate for
+  `order`; measurement says otherwise, and the notes record what was measured.
+
+  `order` is **live**, and the only thing deciding the sequence: `ExerisDomainProcessor` and the
+  `-io` reader both read it and sort by it, so the generator's list-order emission follows it.
+  Declaration position breaks ties only — the sort is stable. It keeps no default, because giving
+  one would let every step share it and hand the sequence to file position, silently turning a
+  method move into a drain-before-deploy break (kernel ADR-062).
+
+  `parallel` is the genuine gap: extracted, carried, and read by nothing — the emitted flow is a
+  strict linear chain. Two steps with equal `order` and `parallel = true` run one after the other,
+  which two javadocs previously implied otherwise. Concurrency has to be expressible in the
+  kernel's `FlowDefinition` first.
+
+  `@Saga.compensationStrategy` / `compensationOrder` are the actual declared-but-unextracted pair
+  here: both exist on the annotation and an author can set them, but neither producer reads them,
+  so `SagaMetadata` holds builder defaults on every build path. Noted on the attributes and on
+  their AST components.
 
 - **The javadoc warning count was being read off a truncated log.** `maven-javadoc-plugin`
   caps at 100 warnings per module, so `annotations` and `source-model` both reported exactly

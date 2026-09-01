@@ -14,7 +14,10 @@ import java.util.List;
  *        at, and a wake whose plan no longer carries that name fails closed (kernel ADR-062)
  *
  * @param description human-readable prose for generated documentation
- * @param order the step's position in the saga's sequence
+ * @param order the step's position in the saga's sequence. Live: both producers sort the step
+ *        list by it, so list order is {@code order} and the generator's list-order emission
+ *        follows it. Changing it is a drain-before-deploy operation for sagas already running
+ *        (kernel ADR-062), not a refactor
  * @param service the service the step invokes
  * @param command the command the step sends to that service
  * @param compensation the command that undoes this step when a later one fails
@@ -23,7 +26,10 @@ import java.util.List;
  *
  * @param maxRetries how many times the step is retried before the saga compensates
  * @param retryBackoff the backoff strategy between retries
- * @param parallel whether the step may run alongside its siblings rather than after them
+ * @param parallel whether the step may run alongside its siblings rather than after them.
+ *        <strong>Recorded intent only:</strong> the attribute is extracted into this component and
+ *        no generator reads it — the emitted flow is a strict linear chain. Concurrency must first
+ *        be expressible in the kernel's {@code FlowDefinition}
  * @param required whether the saga fails when this step fails, or carries on
  * @param condition an expression gating whether the step runs at all
  * @param skipOnConditionFalse whether a false {@link #condition()} skips the step rather than

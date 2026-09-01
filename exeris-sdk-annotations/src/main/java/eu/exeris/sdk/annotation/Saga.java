@@ -294,12 +294,28 @@ public @interface Saga {
     /**
      * Order of compensation execution.
      *
+     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * {@code exeris-tooling} processor reads this attribute and the
+     * {@code exeris-sdk-source-model-io} reader does not read it either, so
+     * {@code SagaMetadata.compensationOrder()} holds its builder default on every
+     * build path and setting it here changes no generated artifact. The attribute is
+     * kept rather than removed because the compensation semantics it names are real —
+     * what is missing is the extraction and a generator that acts on it.
+     *
      * @return compensation order
      */
     CompensationOrder compensationOrder() default CompensationOrder.REVERSE;
 
     /**
      * Compensation execution strategy.
+     *
+     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * {@code exeris-tooling} processor reads this attribute and the
+     * {@code exeris-sdk-source-model-io} reader does not read it either, so
+     * {@code SagaMetadata.compensationStrategy()} holds its builder default on every
+     * build path and setting it here changes no generated artifact. The attribute is
+     * kept rather than removed because the compensation semantics it names are real —
+     * what is missing is the extraction and a generator that acts on it.
      *
      * @return compensation strategy
      */
