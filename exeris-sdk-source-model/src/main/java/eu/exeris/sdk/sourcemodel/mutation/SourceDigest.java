@@ -36,7 +36,12 @@ public final class SourceDigest {
     private SourceDigest() {
     }
 
-    /** The hex SHA-256 of the {@linkplain #normalize normalized} source. */
+    /**
+     * The hex SHA-256 of the {@linkplain #normalize normalized} source.
+     *
+     * @param source the Java source text to digest
+     * @return its digest
+     */
     public static String of(String source) {
         byte[] hash = sha256(normalize(source).getBytes(StandardCharsets.UTF_8));
         StringBuilder hex = new StringBuilder(hash.length * 2);

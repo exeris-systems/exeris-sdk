@@ -627,6 +627,9 @@ public @interface GraphQuery {
     // ENUMS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * The shape of the traversal this query performs.
+     */
     enum QueryType {
         /** Find similar nodes */
         SIMILAR,
@@ -662,24 +665,45 @@ public @interface GraphQuery {
         CUSTOM
     }
 
+    /**
+     * Which way an edge is followed during traversal.
+     */
     enum Direction {
+        /** Follow edges leaving the start node. */
         OUTGOING,
+        /** Follow edges arriving at the start node. */
         INCOMING,
+        /** Follow edges in either direction. */
         BOTH
     }
 
+    /**
+     * How similarity between two nodes is scored.
+     */
     enum SimilarityAlgorithm {
+        /** Let the provider choose, based on the property types involved. */
         AUTO,
+        /** Cosine of the angle between two vectors; magnitude-insensitive. */
         COSINE,
+        /** Straight-line distance between two vectors. */
         EUCLIDEAN,
+        /** Overlap of two sets, relative to their union. */
         JACCARD,
+        /** Linear correlation between two value series. */
         PEARSON,
+        /** Overlap of two sets, relative to the smaller one. */
         OVERLAP,
+        /** Edit distance between two strings. */
         LEVENSHTEIN,
+        /** String similarity weighted towards a shared prefix. */
         JARO_WINKLER,
+        /** A provider-supplied measure named elsewhere on the query. */
         CUSTOM
     }
 
+    /**
+     * How a path between two nodes is searched for.
+     */
     enum PathAlgorithm {
         /** Dijkstra's shortest path */
         DIJKSTRA,
@@ -706,6 +730,9 @@ public @interface GraphQuery {
         RANDOM_WALK
     }
 
+    /**
+     * How recommendations are derived from the graph.
+     */
     enum RecommendationAlgorithm {
         /** Collaborative filtering */
         COLLABORATIVE_FILTERING,
@@ -729,30 +756,57 @@ public @interface GraphQuery {
         CUSTOM
     }
 
+    /**
+     * How matched values are reduced to a single result.
+     */
     enum AggregationType {
+        /** How many values matched. */
         COUNT,
+        /** Their total. */
         SUM,
+        /** Their mean. */
         AVG,
+        /** The smallest. */
         MIN,
+        /** The largest. */
         MAX,
+        /** All of them, as a list. */
         COLLECT,
+        /** How many distinct values matched. */
         DISTINCT_COUNT,
+        /** A percentile of the distribution. */
         PERCENTILE,
+        /** Their standard deviation. */
         STDDEV,
+        /** Their variance. */
         VARIANCE
     }
 
+    /**
+     * Which way results are sorted.
+     */
     enum OrderDirection {
+        /** Smallest first. */
         ASC,
+        /** Largest first. */
         DESC
     }
 
+    /**
+     * How much detail the generated code logs for this surface.
+     */
     enum LogLevel {
+        /** Finest detail; every step and its payload. */
         TRACE,
+        /** Diagnostic detail useful while developing. */
         DEBUG,
+        /** Normal progress worth recording. */
         INFO,
+        /** Something unexpected that did not stop the work. */
         WARN,
+        /** A failure. */
         ERROR,
+        /** No logging at all. */
         OFF
     }
 

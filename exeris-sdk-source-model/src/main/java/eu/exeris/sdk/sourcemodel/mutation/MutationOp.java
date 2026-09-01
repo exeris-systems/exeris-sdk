@@ -47,44 +47,79 @@ import java.util.Objects;
 })
 public sealed interface MutationOp {
 
-    /** The target path this op addresses (see {@link MutationPath}). */
+    /**
+     * The target path this op addresses (see {@link MutationPath}).
+     *
+     * @return the mutation path this operation targets
+     */
     String path();
 
     // ---- field ops -------------------------------------------------------
 
-    /** Add a field; {@code path} is the new field's path, {@code field} the shape to write. */
+    /**
+     * Add a field; {@code path} is the new field's path, {@code field} the shape to write.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param field the field to add
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddField(String path, FieldMetadata field) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public AddField {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(field, MutationMessages.FIELD_REQUIRED);
         }
     }
 
-    /** Remove the field at {@code path}. */
+    /**
+     * Remove the field at {@code path}.
+     *
+     * @param path the mutation path naming what is being changed
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveField(String path) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public RemoveField {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
     }
 
-    /** Rename the field at {@code path} to {@code newName}. */
+    /**
+     * Rename the field at {@code path} to {@code newName}.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param newName the name to give it
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RenameField(String path, String newName) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public RenameField {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(newName, MutationMessages.NEW_NAME_REQUIRED);
         }
     }
 
-    /** Change the Java type of the field at {@code path} to {@code newType}. */
+    /**
+     * Change the Java type of the field at {@code path} to {@code newType}.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param newType the type to give it
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChangeFieldType(String path, String newType) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public ChangeFieldType {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(newType, MutationMessages.NEW_TYPE_REQUIRED);
@@ -93,30 +128,53 @@ public sealed interface MutationOp {
 
     // ---- relationship ops ------------------------------------------------
 
-    /** Add a relationship; {@code path} is the new relationship's path. */
+    /**
+     * Add a relationship; {@code path} is the new relationship's path.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param relationship the relationship to add
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddRelationship(String path, RelationshipMetadata relationship) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public AddRelationship {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(relationship, MutationMessages.RELATIONSHIP_REQUIRED);
         }
     }
 
-    /** Remove the relationship at {@code path}. */
+    /**
+     * Remove the relationship at {@code path}.
+     *
+     * @param path the mutation path naming what is being changed
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveRelationship(String path) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public RemoveRelationship {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }
     }
 
-    /** Change the cardinality of the relationship at {@code path}. */
+    /**
+     * Change the cardinality of the relationship at {@code path}.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param newCardinality the cardinality to give it
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChangeRelationshipCardinality(String path, RelationshipMetadata.RelationType newCardinality)
             implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public ChangeRelationshipCardinality {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(newCardinality, MutationMessages.NEW_CARDINALITY_REQUIRED);
@@ -125,20 +183,35 @@ public sealed interface MutationOp {
 
     // ---- action ops ------------------------------------------------------
 
-    /** Add an action; {@code path} is the new action's path. */
+    /**
+     * Add an action; {@code path} is the new action's path.
+     *
+     * @param path the mutation path naming what is being changed
+     * @param action the action to add
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddAction(String path, ActionMetadata action) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public AddAction {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
             Objects.requireNonNull(action, MutationMessages.ACTION_REQUIRED);
         }
     }
 
-    /** Remove the action at {@code path}. */
+    /**
+     * Remove the action at {@code path}.
+     *
+     * @param path the mutation path naming what is being changed
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveAction(String path) implements MutationOp {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public RemoveAction {
             Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         }

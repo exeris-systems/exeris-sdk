@@ -149,6 +149,9 @@ public final class SchemaVersion {
      * Whether a baseline's stamped schema version is the one this build reads.
      * A {@code null} or absent stamp (e.g. a pre-0.5.0 baseline) is <em>not</em>
      * current — the safe posture is to refuse, not to assume compatibility.
+          *
+     * @param schemaVersion the version stamped on a baseline
+     * @return whether it is the version this build reads
      */
     public static boolean isCurrent(String schemaVersion) {
         return CURRENT.equals(schemaVersion);

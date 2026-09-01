@@ -40,6 +40,9 @@ public record BindingMetadata(
         String language
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public BindingMetadata {
         if (ref != null && ref.isBlank()) {
             ref = null;
@@ -55,32 +58,61 @@ public record BindingMetadata(
         }
     }
 
-    /** A binding to nothing (authored / unbound content). */
+    /**
+     * A binding to nothing (authored / unbound content).
+     *
+     * @return the {@code BindingMetadata}
+     */
     public static BindingMetadata none() {
         return new BindingMetadata(BindSource.NONE, null, null, null, null);
     }
 
-    /** A binding to an entity field path. */
+    /**
+     * A binding to an entity field path.
+     *
+     * @param ref the {@code ref} the result carries
+     * @param path the {@code path} the result carries
+     * @return the {@code BindingMetadata}
+     */
     public static BindingMetadata entity(String ref, String path) {
         return new BindingMetadata(BindSource.ENTITY, ref, path, null, null);
     }
 
-    /** A binding to a projection (read-model) field path. */
+    /**
+     * A binding to a projection (read-model) field path.
+     *
+     * @param ref the {@code ref} the result carries
+     * @param path the {@code path} the result carries
+     * @return the {@code BindingMetadata}
+     */
     public static BindingMetadata projection(String ref, String path) {
         return new BindingMetadata(BindSource.PROJECTION, ref, path, null, null);
     }
 
-    /** A binding to an action, by name. */
+    /**
+     * A binding to an action, by name.
+     *
+     * @param ref the {@code ref} the result carries
+     * @return the {@code BindingMetadata}
+     */
     public static BindingMetadata action(String ref) {
         return new BindingMetadata(BindSource.ACTION, ref, null, null, null);
     }
 
-    /** A static / authored-literal binding. */
+    /**
+     * A static / authored-literal binding.
+     *
+     * @return the {@code BindingMetadata}
+     */
     public static BindingMetadata staticBinding() {
         return new BindingMetadata(BindSource.STATIC, null, null, null, null);
     }
 
-    /** The effective source: the declared one, or {@link BindSource#NONE}. */
+    /**
+     * The effective source: the declared one, or {@link BindSource#NONE}.
+     *
+     * @return the {@code BindSource}
+     */
     @JsonIgnore
     public BindSource effectiveSource() {
         return source != null ? source : BindSource.NONE;

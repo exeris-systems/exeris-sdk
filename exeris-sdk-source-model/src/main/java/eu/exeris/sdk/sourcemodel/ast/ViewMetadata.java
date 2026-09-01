@@ -59,6 +59,9 @@ public record ViewMetadata(
         List<RegionMetadata> regions
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ViewMetadata {
         Objects.requireNonNull(name, "name is required");
         if (name.isBlank()) {
@@ -79,27 +82,55 @@ public record ViewMetadata(
         regions = regions == null ? List.of() : List.copyOf(regions);
     }
 
-    /** A minimal presentation artifact — just a name and kind, no regions. */
+    /**
+     * A minimal presentation artifact — just a name and kind, no regions.
+     *
+     * @param name the {@code name} the result carries
+     * @param kind the {@code kind} the result carries
+     * @return the {@code ViewMetadata}
+     */
     public static ViewMetadata of(String name, ViewKind kind) {
         return new ViewMetadata(name, kind, null, null, null, null, List.of());
     }
 
+    /**
+     * Starts a builder for a {@code ViewMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
-    /** The effective kind: the declared one, or {@link ViewKind#PAGE}. */
+    /**
+     * The effective kind: the declared one, or {@link ViewKind#PAGE}.
+     *
+     * @return the {@code ViewKind}
+     */
     @JsonIgnore
     public ViewKind effectiveKind() {
         return kind != null ? kind : ViewKind.PAGE;
     }
 
-    /** Whether this view carries any regions. */
+    /**
+     * Whether this view carries any regions.
+     *
+     * @return the {@code boolean}
+     */
     @JsonIgnore
     public boolean hasRegions() {
         return !regions.isEmpty();
     }
 
+    /**
+     * A mutable builder for {@code ViewMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private ViewKind kind;
@@ -120,6 +151,11 @@ public record ViewMetadata(
         public Builder layout(String v) { this.layout = v; return this; }
         public Builder regions(List<RegionMetadata> v) { this.regions = v; return this; }
 
+        /**
+         * Builds the {@code ViewMetadata} from this builder's current state.
+         *
+         * @return the built {@code ViewMetadata}
+         */
         public ViewMetadata build() {
             return new ViewMetadata(name, kind, route, title, titleKey, layout, regions);
         }

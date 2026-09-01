@@ -45,6 +45,9 @@ public record RuleMetadata(
     /** The expression-language tag assumed when none is declared. */
     public static final String DEFAULT_LANGUAGE = "spel";
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public RuleMetadata {
         Objects.requireNonNull(name, "name is required");
         if (name.isBlank()) {
@@ -65,18 +68,32 @@ public record RuleMetadata(
         }
     }
 
-    /** A rule with just a name + invariant expression (default severity / language, no message). */
+    /**
+     * A rule with just a name + invariant expression (default severity / language, no message).
+     *
+     * @param name the {@code name} the result carries
+     * @param expression the {@code expression} the result carries
+     * @return the {@code RuleMetadata}
+     */
     public static RuleMetadata of(String name, String expression) {
         return new RuleMetadata(name, expression, null, null, null);
     }
 
-    /** The effective severity: the declared one, or {@link #DEFAULT_SEVERITY}. */
+    /**
+     * The effective severity: the declared one, or {@link #DEFAULT_SEVERITY}.
+     *
+     * @return the {@code String}
+     */
     @JsonIgnore
     public String effectiveSeverity() {
         return severity != null ? severity : DEFAULT_SEVERITY;
     }
 
-    /** The effective language tag: the declared one, or {@link #DEFAULT_LANGUAGE}. */
+    /**
+     * The effective language tag: the declared one, or {@link #DEFAULT_LANGUAGE}.
+     *
+     * @return the {@code String}
+     */
     @JsonIgnore
     public String effectiveLanguage() {
         return language != null ? language : DEFAULT_LANGUAGE;
@@ -86,6 +103,8 @@ public record RuleMetadata(
      * Whether a violation message was declared. The compact constructor
      * normalizes a blank {@code message} to {@code null}, so a present message
      * is always non-blank.
+          *
+     * @return the {@code boolean}
      */
     @JsonIgnore
     public boolean hasMessage() {

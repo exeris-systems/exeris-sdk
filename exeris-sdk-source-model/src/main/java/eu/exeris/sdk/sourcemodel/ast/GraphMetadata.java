@@ -22,6 +22,12 @@ public record GraphMetadata(
         List<GraphEdgeMetadata> edges,
         List<GraphQueryMetadata> queries
 ) {
+    /**
+     * Creates a minimal {@code GraphMetadata}, with only the essentials set.
+     *
+     * @param label the {@code label} the result carries
+     * @return the {@code GraphMetadata}
+     */
     public static GraphMetadata simple(String label) {
         return new GraphMetadata(label, List.of(), List.of(), List.of());
     }

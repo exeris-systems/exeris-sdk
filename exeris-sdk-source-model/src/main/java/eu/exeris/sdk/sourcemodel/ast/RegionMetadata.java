@@ -31,6 +31,9 @@ public record RegionMetadata(
         List<ComponentNodeMetadata> components
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public RegionMetadata {
         if (slot != null && slot.isBlank()) {
             slot = null;
@@ -38,7 +41,11 @@ public record RegionMetadata(
         components = components == null ? List.of() : List.copyOf(components);
     }
 
-    /** Whether this region carries any component nodes. */
+    /**
+     * Whether this region carries any component nodes.
+     *
+     * @return the {@code boolean}
+     */
     @JsonIgnore
     public boolean hasComponents() {
         return !components.isEmpty();

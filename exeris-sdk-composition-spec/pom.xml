@@ -66,6 +66,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!-- These modules carry no javadoc warning at all, so the cheapest possible
+                         gate is the real one: any new undocumented public member fails the build
+                         here rather than shipping to Maven Central undocumented. exeris-sdk-source-model
+                         cannot use this — its builder setters are deliberately undocumented (their
+                         components carry the prose) — and is gated by JavadocCompletenessTest instead. -->
+                    <failOnWarnings>true</failOnWarnings>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>

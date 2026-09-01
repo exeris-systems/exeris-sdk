@@ -818,6 +818,9 @@ public @interface Projection {
     // ENUMS
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * Where in the event stream the projection begins reading.
+     */
     enum StartPosition {
         /** Start from beginning of stream */
         EARLIEST,
@@ -832,6 +835,9 @@ public @interface Projection {
         SPECIFIC
     }
 
+    /**
+     * How the projection's writes participate in a transaction.
+     */
     enum TransactionMode {
         /** One transaction per event */
         PER_EVENT,
@@ -843,6 +849,9 @@ public @interface Projection {
         NONE
     }
 
+    /**
+     * How stream partitions are distributed across instances.
+     */
     enum PartitionAssignment {
         /** Range-based assignment */
         RANGE,
@@ -857,6 +866,9 @@ public @interface Projection {
         COOPERATIVE_STICKY
     }
 
+    /**
+     * What happens when applying an event fails.
+     */
     enum ErrorStrategy {
         /** Retry failed events */
         RETRY,
@@ -877,6 +889,9 @@ public @interface Projection {
         CUSTOM
     }
 
+    /**
+     * How the projection is rebuilt from scratch.
+     */
     enum RebuildStrategy {
         /** Delete all and rebuild from scratch */
         FULL,
@@ -894,6 +909,9 @@ public @interface Projection {
         MANUAL
     }
 
+    /**
+     * How current a read of the projection is guaranteed to be.
+     */
     enum Consistency {
         /** Eventually consistent (async processing) */
         EVENTUAL,
@@ -908,21 +926,39 @@ public @interface Projection {
         SESSION
     }
 
+    /**
+     * Where the projection's stream position is persisted.
+     */
     enum CheckpointStorage {
+        /** In the application's own database. */
         DATABASE,
+        /** In Redis. */
         REDIS,
+        /** In Kafka's own offset storage. */
         KAFKA,
+        /** In a file on local disk. */
         FILE,
+        /** In a store the application supplies. */
         CUSTOM
     }
 
+    /**
+     * Where seen event identifiers are kept for deduplication.
+     */
     enum EventIdStorage {
+        /** In the application's own database. */
         DATABASE,
+        /** In Redis. */
         REDIS,
+        /** In a Bloom filter — compact, and may report a false duplicate. */
         BLOOM_FILTER,
+        /** In process memory; lost on restart. */
         IN_MEMORY
     }
 
+    /**
+     * When cached projection reads are discarded.
+     */
     enum CacheInvalidation {
         /** Invalidate single entry */
         ENTRY,
@@ -937,12 +973,21 @@ public @interface Projection {
         TTL_ONLY
     }
 
+    /**
+     * How much detail the generated code logs for this surface.
+     */
     enum LogLevel {
+        /** Finest detail; every step and its payload. */
         TRACE,
+        /** Diagnostic detail useful while developing. */
         DEBUG,
+        /** Normal progress worth recording. */
         INFO,
+        /** Something unexpected that did not stop the work. */
         WARN,
+        /** A failure. */
         ERROR,
+        /** No logging at all. */
         OFF
     }
 }

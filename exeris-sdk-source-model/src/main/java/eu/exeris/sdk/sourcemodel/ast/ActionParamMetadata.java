@@ -40,33 +40,77 @@ public record ActionParamMetadata(
         Long max
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ActionParamMetadata {
         Objects.requireNonNull(name, "name is required");
         Objects.requireNonNull(type, "type is required");
     }
 
+    /**
+     * Creates a required {@code ActionParamMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @return the {@code ActionParamMetadata}
+     */
     public static ActionParamMetadata required(String name, String type) {
         return new ActionParamMetadata(name, type, null, null, true, null, null, null, null, null, null);
     }
 
+    /**
+     * Creates an optional {@code ActionParamMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @param defaultValue the {@code defaultValue} the result carries
+     * @return the {@code ActionParamMetadata}
+     */
     public static ActionParamMetadata optional(String name, String type, String defaultValue) {
         return new ActionParamMetadata(name, type, null, null, false, defaultValue, null, null, null, null, null);
     }
 
+    /**
+     * Starts a builder for a {@code ActionParamMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param type the {@code type} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name, String type) {
         return new Builder(name, type);
     }
 
+    /**
+     * Whether a {@code pattern} is declared.
+     *
+     * @return {@code true} when {@link #pattern()} is present
+     */
     @JsonIgnore
     public boolean hasValidation() {
         return pattern != null || minLength != null || maxLength != null || min != null || max != null;
     }
 
+    /**
+     * The effective {@code displayName}: the declared value when one is set, and this
+     * record's documented fallback otherwise.
+     *
+     * @return the effective value
+     */
     @JsonIgnore
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
     }
 
+    /**
+     * A mutable builder for {@code ActionParamMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private final String type;
@@ -95,6 +139,11 @@ public record ActionParamMetadata(
         public Builder min(Long v) { this.min = v; return this; }
         public Builder max(Long v) { this.max = v; return this; }
 
+        /**
+         * Builds the {@code ActionParamMetadata} from this builder's current state.
+         *
+         * @return the built {@code ActionParamMetadata}
+         */
         public ActionParamMetadata build() {
             return new ActionParamMetadata(name, type, displayName, description, required,
                     defaultValue, pattern, minLength, maxLength, min, max);

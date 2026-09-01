@@ -13,10 +13,21 @@ public final class CompositionStampException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Creates a stamp mismatch.
+     *
+     * @param message what disagreed
+     */
     public CompositionStampException(String message) {
         super(message);
     }
 
+    /**
+     * The same, carrying the failure that caused it.
+     *
+     * @param message what disagreed
+     * @param cause   the underlying failure
+     */
     public CompositionStampException(String message, Throwable cause) {
         super(message, cause);
     }

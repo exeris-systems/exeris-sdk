@@ -24,8 +24,10 @@ import java.util.List;
  *
  * @param entityName the annotated class's simple name — the entity's identity throughout the
  *        generated tree, and what {@link #effectiveTableName()} falls back to
+ *
  * @param packageName the package the annotated class is declared in; generated Java is emitted
  *        relative to it
+ *
  * @param module the logical module the entity belongs to ({@code @ExerisDomain.module})
  * @param path the base API path for the entity's generated endpoints
  * @param aggregate the aggregate root this entity belongs to, when it is not one itself
@@ -40,16 +42,20 @@ import java.util.List;
  *        {@link #dataScope()}</strong>, which expresses the same question as a mutually-exclusive
  *        tier rather than a boolean; read through {@link #effectiveDataScope()}, which falls back
  *        to this flag when no tier was declared
+ *
  * @param softDelete whether deletion marks a row rather than removing it
  * @param audited whether created/updated timestamp and user columns are maintained
  * @param versioned whether optimistic locking is enabled through a version column
  * @param roles default roles required to reach this entity's API. Declared but not extracted:
  *        the kernel's edge decides on scopes and declares no role kind (kernel ADR-061/ADR-063),
  *        so what this would compile into is undecided
+ *
  * @param permissions default permissions required to reach this entity's API — the half of the
  *        pair that maps onto a named scope, and so the one a generated route policy could carry
+ *
  * @param sensitive whether the entity holds sensitive or personal data, which tightens logging,
  *        export and at-rest handling in the generated tree
+ *
  * @param cacheable whether generated reads are cached
  * @param cacheTtl the cache entry lifetime, as an ISO-8601 duration
  * @param cacheRegion the cache region or namespace entries are placed in
@@ -57,6 +63,7 @@ import java.util.List;
  * @param searchConfig the PostgreSQL text-search configuration the index is built with
  * @param tableName the physical table name. Optional: blank means "derive it", and
  *        {@link #effectiveTableName()} is the accessor that applies the snake-case default
+ *
  * @param fields the entity's persisted and presented fields, in declaration order
  * @param actions the domain actions callable on the entity
  * @param events the domain events the entity publishes
@@ -69,17 +76,21 @@ import java.util.List;
  * @param eventSourced the event-sourcing facet, when the entity is sourced from its event stream
  * @param internalApi the internal-API facet: what is hidden, read-only or disabled on the
  *        generated surface
+ *
  * @param systemFields which system columns (primary key, tenant, audit, soft-delete, version)
  *        the entity carries and what they are named
+ *
  * @param rules the entity-level invariants declared with {@code @Rule}
  * @param dataScope the data-scope tier — the mutually-exclusive successor of
  *        {@link #tenantScoped()}. Absent means no tier was declared; read through
  *        {@link #effectiveDataScope()}
+ *
  * @param routeAccess whether the entity's generated routes admit unauthenticated callers.
  *        Absent means the author declared nothing and the generated policy's default decides
  *
  *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator emits a route
  *        policy from it, and it is outside the 1.0.0 freeze (ADR-072)
+ *
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -182,6 +193,8 @@ public record DomainMetadata(
 
     /**
      * Fully qualified class name.
+          *
+     * @return the {@code String}
      */
     public String fullyQualifiedName() {
         return packageName + "." + entityName;
@@ -189,6 +202,8 @@ public record DomainMetadata(
 
     /**
      * Effective table name (explicit or derived from entityName).
+          *
+     * @return the {@code String}
      */
     public String effectiveTableName() {
         return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(entityName);
@@ -196,6 +211,8 @@ public record DomainMetadata(
 
     /**
      * Effective API path (explicit or derived from entityName).
+          *
+     * @return the {@code String}
      */
     public String effectivePath() {
         return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(entityName) + "s";
@@ -203,6 +220,8 @@ public record DomainMetadata(
 
     /**
      * Effective aggregate name.
+          *
+     * @return the {@code String}
      */
     public String effectiveAggregate() {
         return (aggregate != null && !aggregate.isBlank()) ? aggregate : entityName;
@@ -210,6 +229,8 @@ public record DomainMetadata(
 
     /**
      * Plural name for entity (derived from entityName).
+          *
+     * @return the {@code String}
      */
     public String pluralName() {
         // Simple pluralization - add 's' to entityName
@@ -228,38 +249,73 @@ public record DomainMetadata(
 
     /**
      * Display name for entity (same as entityName but can add spaces before capitals).
+          *
+     * @return the {@code String}
      */
     public String displayName() {
         // Add space before capital letters: "OrderItem" -> "Order Item"
         return entityName.replaceAll("([a-z])([A-Z])", "$1 $2");
     }
 
+    /**
+     * Whether any {@code fields} is declared.
+     *
+     * @return {@code true} when {@link #fields()} is neither null nor empty
+     */
     public boolean hasFields() {
         return fields != null && !fields.isEmpty();
     }
 
+    /**
+     * Whether any {@code actions} is declared.
+     *
+     * @return {@code true} when {@link #actions()} is neither null nor empty
+     */
     public boolean hasActions() {
         return actions != null && !actions.isEmpty();
     }
 
+    /**
+     * Whether any {@code events} is declared.
+     *
+     * @return {@code true} when {@link #events()} is neither null nor empty
+     */
     public boolean hasEvents() {
         return events != null && !events.isEmpty();
     }
 
+    /**
+     * Whether any {@code eventHandlers} is declared.
+     *
+     * @return {@code true} when {@link #eventHandlers()} is neither null nor empty
+     */
     public boolean hasEventHandlers() {
         return eventHandlers != null && !eventHandlers.isEmpty();
     }
 
+    /**
+     * Whether any {@code rules} is declared.
+     *
+     * @return {@code true} when {@link #rules()} is neither null nor empty
+     */
     public boolean hasRules() {
         return rules != null && !rules.isEmpty();
     }
 
+    /**
+     * Whether any {@code relationships} is declared.
+     *
+     * @return {@code true} when {@link #relationships()} is neither null nor empty
+     */
     public boolean hasRelationships() {
         return relationships != null && !relationships.isEmpty();
     }
 
     /**
      * Find a field by name.
+          *
+     * @param fieldName the {@code fieldName} the result carries
+     * @return the {@code java.util.Optional}
      */
     public java.util.Optional<FieldMetadata> findField(String fieldName) {
         if (fields == null || fieldName == null) {
@@ -270,14 +326,29 @@ public record DomainMetadata(
                 .findFirst();
     }
 
+    /**
+     * Whether a {@code eventSourced} is declared.
+     *
+     * @return {@code true} when {@link #eventSourced()} is present
+     */
     public boolean isEventSourced() {
         return eventSourced != null;
     }
 
+    /**
+     * Whether a {@code sagaMetadata} is declared.
+     *
+     * @return {@code true} when {@link #sagaMetadata()} is present
+     */
     public boolean isSaga() {
         return sagaMetadata != null;
     }
 
+    /**
+     * Whether a {@code graphMetadata} is declared.
+     *
+     * @return {@code true} when {@link #graphMetadata()} is present
+     */
     public boolean hasGraphMetadata() {
         return graphMetadata != null;
     }
@@ -330,6 +401,13 @@ public record DomainMetadata(
     // BUILDER (for easier construction in processor)
     // ═══════════════════════════════════════════════════════════════════════
 
+    /**
+     * Starts a builder for a {@code DomainMetadata}.
+     *
+     * @param entityName the {@code entityName} the result carries
+     * @param packageName the {@code packageName} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String entityName, String packageName) {
         return new Builder(entityName, packageName);
     }
@@ -344,6 +422,14 @@ public record DomainMetadata(
         return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
     }
 
+    /**
+     * A mutable builder for {@code DomainMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String entityName;
         private final String packageName;
@@ -430,6 +516,11 @@ public record DomainMetadata(
         public Builder dataScope(DataScope v) { this.dataScope = v; return this; }
         public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
+        /**
+         * Builds the {@code DomainMetadata} from this builder's current state.
+         *
+         * @return the built {@code DomainMetadata}
+         */
         public DomainMetadata build() {
             return new DomainMetadata(
                     entityName, packageName, module, path, aggregate, description, apiVersion, tags,

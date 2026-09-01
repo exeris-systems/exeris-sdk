@@ -369,6 +369,9 @@ public @interface GraphProperty {
         RANGE
     }
 
+    /**
+     * How similarity between two vector values is measured.
+     */
     enum SimilarityMethod {
         /** Auto-detect based on type */
         AUTO,

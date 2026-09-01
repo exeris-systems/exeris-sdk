@@ -12,6 +12,7 @@ import java.util.List;
  * @param name the step's identity, unique within its saga. Renaming it is a breaking change for
  *        in-flight sagas rather than a refactor: a parked snapshot records the name it stopped
  *        at, and a wake whose plan no longer carries that name fails closed (kernel ADR-062)
+ *
  * @param description human-readable prose for generated documentation
  * @param order the step's position in the saga's sequence
  * @param service the service the step invokes
@@ -19,6 +20,7 @@ import java.util.List;
  * @param compensation the command that undoes this step when a later one fails
  * @param timeout how long the step may run before it is treated as failed, as an ISO-8601
  *        duration
+ *
  * @param maxRetries how many times the step is retried before the saga compensates
  * @param retryBackoff the backoff strategy between retries
  * @param parallel whether the step may run alongside its siblings rather than after them
@@ -26,6 +28,7 @@ import java.util.List;
  * @param condition an expression gating whether the step runs at all
  * @param skipOnConditionFalse whether a false {@link #condition()} skips the step rather than
  *        failing the saga
+ *
  * @param dependsOn the names of steps that must complete before this one starts
  * @param producesEvents the events the step publishes on success
  * @param inputMapping how the step's input is built from the saga's accumulated state
@@ -33,6 +36,7 @@ import java.util.List;
  * @param errorHandler the handler invoked when the step fails
  * @param kind the step's shape — the discriminator distinguishing an ordinary step from a
  *        compensation or a terminal one
+ *
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -59,17 +63,47 @@ public record SagaStepMetadata(
         String errorHandler,
         StepKind kind
 ) {
+    /**
+     * Creates a minimal {@code SagaStepMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @param order the {@code order} the result carries
+     * @param command the {@code command} the result carries
+     * @return the {@code SagaStepMetadata}
+     */
     public static SagaStepMetadata simple(String name, int order, String command) {
         return new SagaStepMetadata(name, null, order, null, command, null, "PT5M", 3, "PT1S",
                 false, true, null, false, List.of(), List.of(), null, null, null, null);
     }
 
+    /**
+     * Starts a builder for a {@code SagaStepMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param order the {@code order} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name, int order) {
         return new Builder(name, order);
     }
 
+    /**
+     * Whether a non-blank {@code compensation} is declared.
+     *
+     * @return {@code true} when {@link #compensation()} is set and not blank
+     */
     public boolean hasCompensation() { return compensation != null && !compensation.isBlank(); }
+    /**
+     * Whether any {@code dependsOn} is declared.
+     *
+     * @return {@code true} when {@link #dependsOn()} is neither null nor empty
+     */
     public boolean hasDependencies() { return dependsOn != null && !dependsOn.isEmpty(); }
+    /**
+     * Whether a non-blank {@code condition} is declared.
+     *
+     * @return {@code true} when {@link #condition()} is set and not blank
+     */
     public boolean hasCondition() { return condition != null && !condition.isBlank(); }
 
     /**
@@ -84,6 +118,8 @@ public record SagaStepMetadata(
      * Returns {@code null} when no kind is set and none can be inferred.
      *
      * @since 0.7.0
+          *
+     * @return the {@code StepKind}
      */
     public StepKind effectiveKind() {
         if (kind != null) {
@@ -122,6 +158,7 @@ public record SagaStepMetadata(
 
     /**
      * Input mapping from saga state to step command.
+     *
      * @param expression an expression building the step's whole input from saga state
      * @param fieldMappings per-field mappings, when the input is assembled field by field
      */
@@ -131,10 +168,22 @@ public record SagaStepMetadata(
             String expression,
             List<FieldMapping> fieldMappings
     ) {
+        /**
+         * Creates a {@code InputMapping}.
+         *
+         * @param expr the {@code expr} the result carries
+         * @return the {@code InputMapping}
+         */
         public static InputMapping expression(String expr) {
             return new InputMapping(expr, null);
         }
 
+        /**
+         * Creates a {@code InputMapping}.
+         *
+         * @param mappings the {@code mappings} the result carries
+         * @return the {@code InputMapping}
+         */
         public static InputMapping fields(List<FieldMapping> mappings) {
             return new InputMapping(null, mappings);
         }
@@ -142,6 +191,7 @@ public record SagaStepMetadata(
 
     /**
      * Output mapping from step result to saga state.
+     *
      * @param expression an expression writing the step's whole result back into saga state
      * @param fieldMappings per-field mappings, when the result is written back field by field
      */
@@ -151,6 +201,12 @@ public record SagaStepMetadata(
             String expression,
             List<FieldMapping> fieldMappings
     ) {
+        /**
+         * Creates a {@code OutputMapping}.
+         *
+         * @param expr the {@code expr} the result carries
+         * @return the {@code OutputMapping}
+         */
         public static OutputMapping expression(String expr) {
             return new OutputMapping(expr, null);
         }
@@ -158,6 +214,7 @@ public record SagaStepMetadata(
 
     /**
      * Field-level mapping.
+     *
      * @param source the field read from
      * @param target the field written to
      * @param transform the transformation applied in between
@@ -169,11 +226,26 @@ public record SagaStepMetadata(
             String target,
             String transform
     ) {
+        /**
+         * Creates a {@code FieldMapping}.
+         *
+         * @param source the {@code source} the result carries
+         * @param target the {@code target} the result carries
+         * @return the {@code FieldMapping}
+         */
         public static FieldMapping direct(String source, String target) {
             return new FieldMapping(source, target, null);
         }
     }
 
+    /**
+     * A mutable builder for {@code FieldMapping}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private final int order;
@@ -218,6 +290,11 @@ public record SagaStepMetadata(
         public Builder errorHandler(String v) { this.errorHandler = v; return this; }
         public Builder kind(StepKind v) { this.kind = v; return this; }
 
+        /**
+         * Builds the {@code SagaStepMetadata} from this builder's current state.
+         *
+         * @return the built {@code SagaStepMetadata}
+         */
         public SagaStepMetadata build() {
             return new SagaStepMetadata(name, description, order, service, command, compensation, timeout,
                     maxRetries, retryBackoff, parallel, required, condition, skipOnConditionFalse,

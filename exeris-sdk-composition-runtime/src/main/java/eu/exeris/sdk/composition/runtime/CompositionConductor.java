@@ -107,12 +107,20 @@ public final class CompositionConductor implements AutoCloseable {
      * {@link Builder#start()}, with the same mapper posture and failure class as
      * {@link CompositionStampAssertion#assertConsistent(Path)} — an unreadable or unparseable
      * manifest is a {@link CompositionStampException} before any effect.
+          *
+     * @param manifestPath the manifest to read
+     * @return a builder seeded from it
      */
     public static Builder from(Path manifestPath) {
         return new Builder(Objects.requireNonNull(manifestPath, "manifestPath"), null);
     }
 
-    /** Conduct an already-parsed manifest (still stamp-asserted first in {@link Builder#start()}). */
+    /**
+     * Conduct an already-parsed manifest (still stamp-asserted first in {@link Builder#start()}).
+     *
+     * @param manifest the manifest to boot
+     * @return a builder seeded from it
+     */
     public static Builder from(CapManifest manifest) {
         return new Builder(null, Objects.requireNonNull(manifest, "manifest"));
     }
@@ -301,7 +309,12 @@ public final class CompositionConductor implements AutoCloseable {
             this.manifest = manifest;
         }
 
-        /** The composition-wide drain budget (default {@link #DEFAULT_DRAIN_DEADLINE}); must be positive. */
+        /**
+         * The composition-wide drain budget (default {@link #DEFAULT_DRAIN_DEADLINE}); must be positive.
+         *
+         * @param deadline how long drain may take before it is abandoned
+         * @return this builder
+         */
         public Builder drainDeadline(Duration deadline) {
             Objects.requireNonNull(deadline, "deadline");
             if (deadline.isZero() || deadline.isNegative()) {
@@ -314,6 +327,9 @@ public final class CompositionConductor implements AutoCloseable {
         /**
          * The class loader lifecycle owners are loaded from. Default: the thread context class
          * loader at {@code start()} time (falling back to this class's own loader if unset).
+                  *
+         * @param loader the loader the capability classes are resolved through
+         * @return this builder
          */
         public Builder classLoader(ClassLoader loader) {
             this.classLoader = Objects.requireNonNull(loader, "loader");
@@ -338,9 +354,12 @@ public final class CompositionConductor implements AutoCloseable {
          *
          * @throws CompositionStampException if the manifest is unreadable, unparseable, or fails
          *         the ADR-024 stamp assertion (before any effect)
+         *
          * @throws CompositionBootException  if hook discovery or a cap's initialize/ready fails
          *         (touched caps are unwound first)
-         */
+         *
+                  * @return the running conductor, with every capability past its start phase
+                  */
         public CompositionConductor start() {
             CapManifest resolved = resolveManifest();
             CompositionStampAssertion.assertConsistent(resolved);

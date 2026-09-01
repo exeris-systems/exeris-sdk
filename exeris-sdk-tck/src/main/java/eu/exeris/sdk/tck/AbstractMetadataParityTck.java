@@ -50,17 +50,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("java:S5960")
 public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
 
+    /**
+     * For subclasses; this type is extended, never instantiated directly.
+     *
+     * <p>Declared so the producer/reader parity suite carries a documented constructor rather than an implicit
+     * one. It stays {@code public} rather than becoming {@code protected}: the implicit
+     * constructor of a public class is public, so narrowing it here would be a binary
+     * break on a published artifact — which the semver gate reports as
+     * {@code CONSTRUCTOR_LESS_ACCESSIBLE}, and did.
+     */
+    // java:S5993 asks for protected here, and is right in general — an abstract class's
+    // constructor exists only for subclasses. It is wrong for this one: the constructor it
+    // replaces was implicit and therefore public, so narrowing it breaks binary
+    // compatibility on a published artifact. japicmp reported exactly that
+    // (CONSTRUCTOR_LESS_ACCESSIBLE) when it was first written as protected.
+    @SuppressWarnings("java:S5993")
+    public AbstractMetadataParityTck() {
+        // Nothing to initialize; declared so it carries a comment rather than being implicit.
+    }
+
     private static final String FIELDS = "fields/";
     private static final String RELATIONSHIPS = "relationships/";
     private static final String ACTIONS = "actions/";
 
     /**
+     * Produces the build-time JSON for one entity — implement this with your own producer.
+     *
      * @param entitySource Java source text of a single {@code @ExerisDomain} class
      * @return the JSON your build writes for it
      */
     protected abstract String produce(String entitySource);
 
     /**
+     * Reads one entity into metadata — implement this with your own reader.
+     *
      * @param entitySource the same source text
      * @return the metadata your reader produces for it
      */

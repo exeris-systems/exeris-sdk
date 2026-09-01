@@ -47,49 +47,117 @@ public record RelationshipMetadata(
      * The cardinality of an association between two entities.
      */
     public enum RelationType {
-        ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
+        /** One row on each side. */
+        ONE_TO_ONE,
+        /** One owner, many targets. */
+        ONE_TO_MANY,
+        /** Many owners, one target. */
+        MANY_TO_ONE,
+        /** Many on both sides. */
+        MANY_TO_MANY
     }
 
     /**
      * Which operations on this entity propagate to the association's target.
      */
     public enum CascadeType {
-        ALL, PERSIST, MERGE, REMOVE, REFRESH, DETACH, NONE
+        /** Every operation cascades. */
+        ALL,
+        /** Saving the owner saves the target. */
+        PERSIST,
+        /** Merging the owner merges the target. */
+        MERGE,
+        /** Deleting the owner deletes the target. */
+        REMOVE,
+        /** Reloading the owner reloads the target. */
+        REFRESH,
+        /** Detaching the owner detaches the target. */
+        DETACH,
+        /** Nothing cascades. */
+        NONE
     }
 
     /**
      * Whether an association is loaded with its owner or on first access.
      */
     public enum FetchType {
-        LAZY, EAGER
+        /** The target is loaded on first access. */
+        LAZY,
+        /** The target is loaded with its owner. */
+        EAGER
     }
 
+    /**
+     * Creates a {@code RelationshipMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param target the {@code target} the result carries
+     * @return the {@code RelationshipMetadata}
+     */
     public static RelationshipMetadata manyToOne(String name, String target) {
         return new RelationshipMetadata(name, name, target, RelationType.MANY_TO_ONE, null, true,
                 CascadeType.NONE, FetchType.LAZY, true, false, "name", "id", null, List.of());
     }
 
+    /**
+     * Creates a {@code RelationshipMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param target the {@code target} the result carries
+     * @param mappedBy the {@code mappedBy} the result carries
+     * @return the {@code RelationshipMetadata}
+     */
     public static RelationshipMetadata oneToMany(String name, String target, String mappedBy) {
         return new RelationshipMetadata(name, name, target, RelationType.ONE_TO_MANY, mappedBy, true,
                 CascadeType.ALL, FetchType.LAZY, true, false, "name", "id", null, List.of());
     }
 
+    /**
+     * Starts a builder for a {@code RelationshipMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @param targetEntity the {@code targetEntity} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name, String targetEntity) {
         return new Builder(name, targetEntity);
     }
 
+    /**
+     * The field holding the association; falls back to {@link #name()} when unset.
+     *
+     * @return {@code fieldName} as this record reports it
+     */
     public String fieldName() {
         return fieldName != null ? fieldName : name;
     }
 
+    /**
+     * The target's field shown when the association is presented.
+     *
+     * @return {@code displayField} as this record reports it
+     */
     public String displayField() {
         return displayField != null ? displayField : "name";
     }
 
+    /**
+     * The target's field carried as the stored value.
+     *
+     * @return {@code valueField} as this record reports it
+     */
     public String valueField() {
         return valueField != null ? valueField : "id";
     }
 
+    /**
+     * A mutable builder for {@code RelationshipMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private final String targetEntity;
@@ -125,6 +193,11 @@ public record RelationshipMetadata(
         public Builder searchEndpoint(String v) { this.searchEndpoint = v; return this; }
         public Builder joinColumns(List<String> v) { this.joinColumns = v; return this; }
 
+        /**
+         * Builds the {@code RelationshipMetadata} from this builder's current state.
+         *
+         * @return the built {@code RelationshipMetadata}
+         */
         public RelationshipMetadata build() {
             return new RelationshipMetadata(name, fieldName, targetEntity, type, mappedBy, lazy,
                     cascade, fetch, optional, orphanRemoval, displayField, valueField, searchEndpoint, joinColumns);

@@ -14,6 +14,7 @@ import java.util.Objects;
  * @param version the plan version. The kernel keys its plan catalog by name and version: a
  *        parked saga resumes on the exact version it parked under, and an unregistered version
  *        fails closed rather than rebinding to the newest plan (kernel ADR-064)
+ *
  * @param steps the saga's steps, in order
  * @param compensationStrategy how compensation is driven when a step fails
  * @param compensationOrder the order compensations run in
@@ -50,21 +51,51 @@ public record SagaMetadata(
         MonitoringConfig monitoring,
         List<SagaTransition> transitions
 ) {
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public SagaMetadata {
         transitions = transitions == null ? List.of() : List.copyOf(transitions);
     }
 
+    /**
+     * Creates a minimal {@code SagaMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @return the {@code SagaMetadata}
+     */
     public static SagaMetadata simple(String name) {
         return new SagaMetadata(name, null, 1, List.of(), CompensationStrategy.ALL_OR_NOTHING,
                 CompensationOrder.REVERSE, "PT30M", "PT10M", 3, "PT1S", null, true, null, List.of(), null, List.of());
     }
 
+    /**
+     * Starts a builder for a {@code SagaMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
+    /**
+     * Whether any {@code steps} is declared.
+     *
+     * @return {@code true} when {@link #steps()} is neither null nor empty
+     */
     public boolean hasSteps() { return steps != null && !steps.isEmpty(); }
+    /**
+     * Whether a {@code trigger} is declared.
+     *
+     * @return {@code true} when {@link #trigger()} is present
+     */
     public boolean hasTrigger() { return trigger != null; }
+    /**
+     * Whether any {@code transitions} is declared.
+     *
+     * @return {@code true} when {@link #transitions()} is neither null nor empty
+     */
     public boolean hasTransitions() { return transitions != null && !transitions.isEmpty(); }
 
     /**
@@ -93,6 +124,7 @@ public record SagaMetadata(
 
     /**
      * Saga trigger configuration.
+     *
      * @param type what kind of occurrence starts the saga
      * @param source the originator the trigger listens to
      * @param topic the messaging topic carrying the triggering message
@@ -108,14 +140,32 @@ public record SagaMetadata(
             String cronExpression,
             String condition
     ) {
+        /**
+         * Creates a {@code SagaTrigger}.
+         *
+         * @param eventClass the {@code eventClass} the result carries
+         * @param topic the {@code topic} the result carries
+         * @return the {@code SagaTrigger}
+         */
         public static SagaTrigger onEvent(String eventClass, String topic) {
             return new SagaTrigger(TriggerType.EVENT, eventClass, topic, null, null);
         }
 
+        /**
+         * Creates a {@code SagaTrigger}.
+         *
+         * @param cron the {@code cron} the result carries
+         * @return the {@code SagaTrigger}
+         */
         public static SagaTrigger scheduled(String cron) {
             return new SagaTrigger(TriggerType.SCHEDULED, null, null, cron, null);
         }
 
+        /**
+         * A {@code SagaTrigger} started by hand rather than by an occurrence.
+         *
+         * @return the {@code SagaTrigger}
+         */
         public static SagaTrigger manual() {
             return new SagaTrigger(TriggerType.MANUAL, null, null, null, null);
         }
@@ -125,14 +175,19 @@ public record SagaMetadata(
      * What kind of occurrence starts a saga.
      */
     public enum TriggerType {
+        /** A published event starts the saga. */
         EVENT,
+        /** A schedule starts it. */
         SCHEDULED,
+        /** It is started by hand. */
         MANUAL,
+        /** An API call starts it. */
         API
     }
 
     /**
      * Saga monitoring configuration.
+     *
      * @param metricsEnabled whether the saga emits metrics
      * @param tracingEnabled whether the saga emits trace spans
      * @param alertOnFailure where a failure alert is sent
@@ -146,6 +201,11 @@ public record SagaMetadata(
             String alertOnFailure,
             String slaThreshold
     ) {
+        /**
+         * A {@code MonitoringConfig} with the feature turned on.
+         *
+         * @return the {@code MonitoringConfig}
+         */
         public static MonitoringConfig enabled() {
             return new MonitoringConfig(true, true, null, null);
         }
@@ -180,6 +240,9 @@ public record SagaMetadata(
             TransitionOutcome on,
             String guard
     ) {
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         */
         public SagaTransition {
             Objects.requireNonNull(from, "from");
             if (from.isBlank()) {
@@ -196,22 +259,47 @@ public record SagaMetadata(
             }
         }
 
-        /** An edge firing on {@code outcome} from {@code from} to {@code to}. */
+        /**
+         * An edge firing on {@code outcome} from {@code from} to {@code to}.
+         *
+         * @param from the {@code from} the result carries
+         * @param to the {@code to} the result carries
+         * @param outcome the {@code outcome} the result carries
+         * @return the {@code SagaTransition}
+         */
         public static SagaTransition ofOutcome(String from, String to, TransitionOutcome outcome) {
             return new SagaTransition(from, to, outcome, null);
         }
 
-        /** A {@code SUCCESS} edge from {@code from} to {@code to}. */
+        /**
+         * A {@code SUCCESS} edge from {@code from} to {@code to}.
+         *
+         * @param from the {@code from} the result carries
+         * @param to the {@code to} the result carries
+         * @return the {@code SagaTransition}
+         */
         public static SagaTransition success(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.SUCCESS, null);
         }
 
-        /** A {@code FAILURE} edge from {@code from} to {@code to}. */
+        /**
+         * A {@code FAILURE} edge from {@code from} to {@code to}.
+         *
+         * @param from the {@code from} the result carries
+         * @param to the {@code to} the result carries
+         * @return the {@code SagaTransition}
+         */
         public static SagaTransition failure(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.FAILURE, null);
         }
 
-        /** A {@code TIMEOUT} edge from {@code from} to {@code to}. */
+        /**
+         * A {@code TIMEOUT} edge from {@code from} to {@code to}.
+         *
+         * @param from the {@code from} the result carries
+         * @param to the {@code to} the result carries
+         * @return the {@code SagaTransition}
+         */
         public static SagaTransition timeout(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.TIMEOUT, null);
         }
@@ -220,6 +308,8 @@ public record SagaMetadata(
          * Whether this edge is terminal (no target step — saga end / abort).
          * The compact constructor normalizes a blank {@code to} to {@code null},
          * so the terminal invariant is exactly {@code to == null}.
+                  *
+         * @return the {@code boolean}
          */
         public boolean isTerminal() { return to == null; }
 
@@ -227,6 +317,8 @@ public record SagaMetadata(
          * Whether this edge carries a guard condition. The compact constructor
          * normalizes a blank {@code guard} to {@code null}, so a present
          * {@code guard} is always non-blank.
+                  *
+         * @return the {@code boolean}
          */
         public boolean hasGuard() { return guard != null; }
     }
@@ -248,6 +340,14 @@ public record SagaMetadata(
         COMPENSATED
     }
 
+    /**
+     * A mutable builder for {@code SagaTransition}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private String description;
@@ -284,6 +384,11 @@ public record SagaMetadata(
         public Builder monitoring(MonitoringConfig v) { this.monitoring = v; return this; }
         public Builder transitions(List<SagaTransition> v) { this.transitions = v; return this; }
 
+        /**
+         * Builds the {@code SagaMetadata} from this builder's current state.
+         *
+         * @return the built {@code SagaMetadata}
+         */
         public SagaMetadata build() {
             return new SagaMetadata(name, description, version, steps, compensationStrategy, compensationOrder,
                     timeout, compensationTimeout, maxRetries, retryBackoff, trigger, persistent, stateClass,

@@ -19,18 +19,21 @@ import java.util.Objects;
  *        legacy JSON); use {@link #effectiveMethodName()} for a name-based fallback.
  *
  *        <p>Added in 0.7.0.
+ *
  * @param streaming Whether the action returns a streaming (server-push) response rather than
  *        responding once — the AST twin of {@code @Action(streaming=true)}. When
  *        {@code true}, build-time codegen emits a kernel {@code HttpStreamHandler}
  *        bound to a streaming route (ADR-043) instead of a respond-once handler.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param streamEventType The SSE {@code event:} name carried on each emitted {@link #streaming()}
  *        frame — the AST twin of {@code @Action(streamEventType=…)}. Optional:
  *        {@code null} when unset (normalized from a blank annotation value).
  *        Meaningful only when {@link #streaming()} is {@code true}.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param realTimeUpdates Whether clients may subscribe to this action's progress in real time —
  *        the AST twin of {@code @Action(realTimeUpdates=true)}. Distinct from
  *        {@link #streaming()}: streaming is the response shape, this is the
@@ -54,6 +57,7 @@ import java.util.Objects;
  *        status note on {@code @Action.realTimeUpdates()}.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param schedule The schedule on which this action also fires without a client call —
  *        the AST twin of {@code @Schedule} on the action method. Optional:
  *        {@code null} when the action is call-only, which is the common case.
@@ -69,6 +73,7 @@ import java.util.Objects;
  *        and a 1.x minor may still change it (ADR-072).
  *
  *        <p>Added in 0.11.0.
+ *
  * @param routeAccess What this action's generated route demands of its caller — the identity
  *        half of the kernel's route-authorization decision (kernel ADR-061), and
  *        the AST twin of {@code @RouteAccess} on the action method.
@@ -90,8 +95,10 @@ import java.util.Objects;
  *        1.x minor may still change it (ADR-072).
  *
  *        <p>Added in 0.12.0.
+ *
  * @param name the action's identity, as the generated surface exposes it — distinct from
  *        {@link #methodName()}, the Java method behind it
+ *
  * @param displayName the label a generated UI shows for the action
  * @param description human-readable prose for generated documentation
  * @param httpMethod the HTTP method the generated route is bound to
@@ -129,6 +136,9 @@ public record ActionMetadata(
         RouteAccess routeAccess
 ) {
 
+    /**
+     * Compact constructor; applies this record's normalization rules.
+     */
     public ActionMetadata {
         Objects.requireNonNull(name, "name is required");
         if (httpMethod == null) httpMethod = "POST";
@@ -138,27 +148,75 @@ public record ActionMetadata(
         if (streamEventType != null && streamEventType.isBlank()) streamEventType = null;
     }
 
+    /**
+     * Creates a minimal {@code ActionMetadata}, with only the essentials set.
+     *
+     * @param name the {@code name} the result carries
+     * @return the {@code ActionMetadata}
+     */
     public static ActionMetadata simple(String name) {
         return new ActionMetadata(name, null, null, "POST", null, false, false, false, false, List.of(), List.of(), List.of(), null, false, null, false, null, null);
     }
 
+    /**
+     * Starts a builder for a {@code ActionMetadata}.
+     *
+     * @param name the {@code name} the result carries
+     * @return a new builder
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
+    /**
+     * Whether any {@code params} is declared.
+     *
+     * @return {@code true} when {@link #params()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasParams() { return !params.isEmpty(); }
+    /**
+     * Whether any {@code permissions} is declared.
+     *
+     * @return {@code true} when {@link #permissions()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasPermissions() { return !permissions.isEmpty(); }
+    /**
+     * Whether any {@code producesEvents} is declared.
+     *
+     * @return {@code true} when {@link #producesEvents()} is neither null nor empty
+     */
     @JsonIgnore
     public boolean hasProducedEvents() { return !producesEvents.isEmpty(); }
+    /**
+     * Whether a {@code streamEventType} is declared.
+     *
+     * @return {@code true} when {@link #streamEventType()} is present
+     */
     @JsonIgnore
     public boolean hasStreamEventType() { return streamEventType != null; } // blank normalized to null in the compact constructor
+    /**
+     * Whether a {@code schedule} is declared.
+     *
+     * @return {@code true} when {@link #schedule()} is present
+     */
     @JsonIgnore
     public boolean isScheduled() { return schedule != null; }
+    /**
+     * Whether this action's route was explicitly declared public.
+     *
+     * @return {@code isPublicRoute} as this record reports it
+     */
     @JsonIgnore
     public boolean isPublicRoute() { return routeAccess == RouteAccess.PUBLIC; }
 
+    /**
+     * The effective {@code displayName}: the declared value when one is set, and this
+     * record's documented fallback otherwise.
+     *
+     * @return the effective value
+     */
     @JsonIgnore
     public String effectiveDisplayName() {
         return (displayName != null && !displayName.isBlank()) ? displayName : name;
@@ -168,12 +226,22 @@ public record ActionMetadata(
      * The Java method to dispatch to: {@link #methodName()} when known, else the
      * action {@link #name()} as a best-effort fallback (covers hand-built metadata
      * and legacy JSON written before {@code methodName} existed).
+          *
+     * @return the {@code String}
      */
     @JsonIgnore
     public String effectiveMethodName() {
         return (methodName != null && !methodName.isBlank()) ? methodName : name;
     }
 
+    /**
+     * A mutable builder for {@code ActionMetadata}.
+     *
+     * <p>Each setter sets the record component of the same name. Those components are
+     * documented by the record's own {@code @param} tags and are deliberately not restated
+     * here — a per-setter repetition of the component's meaning is filler, and filler is what
+     * makes generated javadoc worth less than none.
+     */
     public static final class Builder {
         private final String name;
         private String displayName;
@@ -215,6 +283,11 @@ public record ActionMetadata(
         public Builder schedule(ScheduleMetadata v) { this.schedule = v; return this; }
         public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
 
+        /**
+         * Builds the {@code ActionMetadata} from this builder's current state.
+         *
+         * @return the built {@code ActionMetadata}
+         */
         public ActionMetadata build() {
             return new ActionMetadata(name, displayName, description, httpMethod, resultType,
                     async, idempotent, dangerous, requiresConfirmation, params, permissions, producesEvents, methodName,

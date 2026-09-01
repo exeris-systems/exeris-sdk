@@ -56,6 +56,9 @@ public final class SourceModelWriter {
 
     private final JavaParser javaParser;
 
+    /**
+     * Creates a writer with the default JavaParser configuration.
+     */
     public SourceModelWriter() {
         this.javaParser = new JavaParser(new ParserConfiguration()
                 .setLanguageLevel(ParserConfiguration.LanguageLevel.CURRENT));
@@ -68,6 +71,11 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param type the new field's Java type
+     * @param fieldName the new field's name
+     * @return the source with the field added
      */
     public String addField(String javaSource, String type, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -89,6 +97,11 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param fromName the field's current name
+     * @param toName the name to give it
+     * @return the source with the field renamed
      */
     public String renameField(String javaSource, String fromName, String toName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -112,6 +125,11 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param fieldName the field to retype
+     * @param newType the type to give it
+     * @return the source with the field's type changed
      */
     public String changeFieldType(String javaSource, String fieldName, String newType) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -133,6 +151,10 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param fieldName the field to remove
+     * @return the source with the field removed
      */
     public String removeField(String javaSource, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -160,6 +182,12 @@ public final class SourceModelWriter {
      *                                  {@code @ExerisDomain} type, or
      *                                  {@code relationshipType} produces a
      *                                  malformed annotation
+     *
+          * @param javaSource the entity's Java source text
+     * @param fieldName the field holding the association
+     * @param targetType the entity on the other end
+     * @param relationshipType the association's cardinality
+     * @return the source with the relationship added
      */
     public String addRelationship(String javaSource, String fieldName, String targetType, String relationshipType) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -190,6 +218,10 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param fieldName the field holding the association
+     * @return the source with the relationship removed
      */
     public String removeRelationship(String javaSource, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -234,6 +266,10 @@ public final class SourceModelWriter {
      *                                  {@code @ExerisDomain} type, or
      *                                  {@code actionName} produces a malformed
      *                                  annotation
+     *
+          * @param javaSource the entity's Java source text
+     * @param actionName the action's name
+     * @return the source with the action added
      */
     public String addAction(String javaSource, String actionName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -261,6 +297,10 @@ public final class SourceModelWriter {
      *
      * @throws IllegalArgumentException if the source is not valid Java or has no
      *                                  {@code @ExerisDomain} type
+     *
+          * @param javaSource the entity's Java source text
+     * @param actionName the action to remove
+     * @return the source with the action removed
      */
     public String removeAction(String javaSource, String actionName) {
         CompilationUnit cu = parseOrThrow(javaSource);

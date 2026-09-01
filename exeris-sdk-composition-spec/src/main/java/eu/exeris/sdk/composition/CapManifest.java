@@ -39,6 +39,13 @@ import java.util.List;
  * consumer's well-formedness check must treat it as legal-unversioned, never a hard reject.
  *
  * @since 0.8.0
+  *
+ * @param schemaVersion the manifest format's version. A missing value reads back as {@code 0} under a
+ *                      stock Jackson 3 mapper; an explicit null throws
+ *
+ * @param stamp the composition stamp the SKU boots against
+ * @param modules the capability modules this SKU composes
+ * @param initOrder the order the modules are initialized in, by module name
  */
 public record CapManifest(
         int schemaVersion,
@@ -52,8 +59,10 @@ public record CapManifest(
      *
      * @param validated          always {@code true} in an emitted manifest — a failed graph
      *                           throws and no manifest is written, so presence is what is asserted
+     *
      * @param compositionVersion the composition release identity, or {@code "0.0.0"} until the
      *                           build supplies one (the {@code -Dexeris.composition.version} seam)
+     *
      * @param contentBinding     {@code "sha256:" + 64 lowercase hex} over the resolved cap set
      */
     public record Stamp(boolean validated, String compositionVersion, String contentBinding) {}
@@ -89,6 +98,7 @@ public record CapManifest(
      *                       conductor instantiates), or {@code null} for a cap with no hooks
      */
     public record ModuleBody(List<Provided> provides, String lifecycleOwner) {
+        /** Normalizes a blank {@code lifecycleOwner} to {@code null}, so "no hooks" has one spelling. */
         public ModuleBody {
             if (lifecycleOwner != null && lifecycleOwner.isBlank()) lifecycleOwner = null;
         }

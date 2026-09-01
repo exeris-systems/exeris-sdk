@@ -39,6 +39,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
 
     /**
+     * For subclasses; this type is extended, never instantiated directly.
+     *
+     * <p>Declared so the metadata-reader suite carries a documented constructor rather than an implicit
+     * one. It stays {@code public} rather than becoming {@code protected}: the implicit
+     * constructor of a public class is public, so narrowing it here would be a binary
+     * break on a published artifact — which the semver gate reports as
+     * {@code CONSTRUCTOR_LESS_ACCESSIBLE}, and did.
+     */
+    // java:S5993 asks for protected here, and is right in general — an abstract class's
+    // constructor exists only for subclasses. It is wrong for this one: the constructor it
+    // replaces was implicit and therefore public, so narrowing it breaks binary
+    // compatibility on a published artifact. japicmp reported exactly that
+    // (CONSTRUCTOR_LESS_ACCESSIBLE) when it was first written as protected.
+    @SuppressWarnings("java:S5993")
+    public AbstractMetadataReaderTck() {
+        // Nothing to initialize; declared so it carries a comment rather than being implicit.
+    }
+
+    /**
      * Reads one entity's source into the AST.
      *
      * @param entitySource Java source text of a single {@code @ExerisDomain} class

@@ -43,17 +43,27 @@ public final class TckCorpus {
         // Intentionally empty: static holder — the corpus is classpath data, not state.
     }
 
-    /** @return the simple names of every corpus entity, in a stable order */
+    /**
+     * The corpus entities, named.
+     *
+     * @return the simple names of every corpus entity, in a stable order
+     */
     public static List<String> entityNames() {
         return NAMES;
     }
 
-    /** @return the package every corpus entity declares */
+    /**
+     * The package the corpus is written in.
+     *
+     * @return the package every corpus entity declares
+     */
     public static String packageName() {
         return PACKAGE;
     }
 
     /**
+     * One entity's source, by name.
+     *
      * @param simpleName one of {@link #entityNames()}
      * @return that entity's Java source text
      * @throws IllegalArgumentException if the name is not a corpus entity
@@ -74,7 +84,11 @@ public final class TckCorpus {
         }
     }
 
-    /** @return every corpus entity as simple name → source text, in {@link #entityNames()} order */
+    /**
+     * The whole corpus, ready to feed to an implementation under test.
+     *
+     * @return every corpus entity as simple name → source text, in {@link #entityNames()} order
+     */
     public static Map<String, String> all() {
         Map<String, String> sources = new LinkedHashMap<>();
         for (String name : NAMES) {
