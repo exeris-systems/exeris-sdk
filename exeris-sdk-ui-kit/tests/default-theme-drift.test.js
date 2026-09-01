@@ -60,10 +60,12 @@ function tokens(prefix, css = LIGHT) {
 /**
  * CSS colour tokens with no `defaultTheme` counterpart, each one a decision rather than an
  * oversight. Anything not listed here must exist on both sides.
+ *
+ * Empty, and worth keeping that way: `primary-hover` was the sole entry, recorded when this
+ * test first found it missing, and it has since been added to `defaultTheme` rather than
+ * excused. An entry here should be rare and should say why.
  */
-const COLOURS_WITHOUT_A_JS_FALLBACK = new Map([
-  ['primary-hover', 'a hover state; components take it from CSS, and the JS fallback carries base colours only'],
-]);
+const COLOURS_WITHOUT_A_JS_FALLBACK = new Map([]);
 
 /**
  * Palette colours deliberately not re-tuned under `.dark` — status colours held constant

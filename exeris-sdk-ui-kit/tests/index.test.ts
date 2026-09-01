@@ -14,7 +14,7 @@ describe('defaultTheme', () => {
 
   it('declares every documented color token', () => {
     expect(Object.keys(defaultTheme.colors).sort())
-      .toEqual(['danger', 'info', 'primary', 'secondary', 'success', 'warning']);
+      .toEqual(['danger', 'info', 'primary', 'primary-hover', 'secondary', 'success', 'warning']);
     for (const [key, value] of Object.entries(defaultTheme.colors)) {
       expect(value, `colors.${key} must be an rgb() literal`).toMatch(/^rgb\(\s*\d+,\s*\d+,\s*\d+\s*\)$/);
     }
