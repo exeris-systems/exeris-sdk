@@ -153,7 +153,7 @@ public final class SourceModelReader {
      * @throws IllegalArgumentException if the source is not valid Java
           * @param javaSource the entity's Java source text
      * @return the entity's metadata, or empty when the source declares no {@code @ExerisDomain}
-    */
+     */
     public Optional<DomainMetadata> read(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
         return cu.findFirst(ClassOrInterfaceDeclaration.class,
@@ -169,7 +169,7 @@ public final class SourceModelReader {
      * @throws IllegalArgumentException if the source is not valid Java
           * @param javaSource the entity's Java source text
      * @return the enums the source declares, in declaration order
-    */
+     */
     public List<EnumMetadata> readEnums(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
         String packageName = packageName(cu);
@@ -200,7 +200,7 @@ public final class SourceModelReader {
      * @since 0.4.0
           * @param javaSource the entity's Java source text
      * @return the capability module's metadata, or empty when the source declares none
-    */
+     */
     public Optional<CapabilityModuleMetadata> readCapabilityModule(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
         return cu.findFirst(ClassOrInterfaceDeclaration.class,
@@ -242,7 +242,7 @@ public final class SourceModelReader {
           *
      * @param javaSource the entity's Java source text
      * @return the names of annotations present in the source that this reader does not model — the honest report of what a round-trip would drop
-    */
+     */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
         // The guard arms for both modelled roots: @ExerisDomain entities (0.3.0)

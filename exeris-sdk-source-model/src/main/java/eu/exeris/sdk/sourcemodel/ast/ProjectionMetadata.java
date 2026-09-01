@@ -97,7 +97,7 @@ public record ProjectionMetadata(
      * @since 0.7.0
           *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasSourceAggregate() {
         return !aggregateTypes.isEmpty();
     }
@@ -108,7 +108,7 @@ public record ProjectionMetadata(
      * @since 0.7.0
           *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasFields() {
         return !fields.isEmpty();
     }
@@ -120,7 +120,7 @@ public record ProjectionMetadata(
      * @param name the {@code name} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
-    */
+     */
     public static ProjectionMetadata simple(String name, List<String> fields) {
         return builder(name).fields(fields).build();
     }
@@ -135,7 +135,7 @@ public record ProjectionMetadata(
      * @param aggregateType the {@code aggregateType} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
-    */
+     */
     public static ProjectionMetadata of(String name, String aggregateType, List<String> fields) {
         return builder(name).aggregateType(aggregateType).fields(fields).build();
     }
@@ -146,7 +146,7 @@ public record ProjectionMetadata(
      * @since 0.7.0      *
      * @param name the {@code name} the result carries
      * @return the {@code Builder}
-    */
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }

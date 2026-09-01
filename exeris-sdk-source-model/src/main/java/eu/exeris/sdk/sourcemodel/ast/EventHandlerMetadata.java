@@ -104,16 +104,20 @@ public record EventHandlerMetadata(
 
     // ── convenience ─────────────────────────────────────────────────────────
 
-    /** True when this handler participates in a saga (drives or awaits a step).      *
+    /**
+     * True when this handler participates in a saga (drives or awaits a step).
+     *
      * @return the {@code boolean}
-    */
+     */
     public boolean isSagaHandler() {
         return triggerStep != null || !expectedEvents.isEmpty() || !failureEvents.isEmpty();
     }
 
-    /** True when a SpEL filter narrows which events this handler reacts to.      *
+    /**
+     * True when a SpEL filter narrows which events this handler reacts to.
+     *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasCondition() {
         return condition != null;
     }
@@ -125,7 +129,7 @@ public record EventHandlerMetadata(
      * @param name the {@code name} the result carries
      * @param event the {@code event} the result carries
      * @return the {@code EventHandlerMetadata}
-    */
+     */
     public static EventHandlerMetadata simple(String name, String event) {
         return builder(name).event(event).build();
     }

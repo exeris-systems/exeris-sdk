@@ -34,15 +34,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
   *
  * @param sourceDigest the digest of the source the baseline was taken from
  * @param schemaVersion the AST wire-format version the baseline was written under
-*/
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BaselineTrust(String sourceDigest, String schemaVersion) {
 
-    /** The trust fields a fresh baseline gets: the current schema version and the given digest.      *
+    /**
+     * The trust fields a fresh baseline gets: the current schema version and the given digest.
+     *
      * @param sourceDigest the digest of the source being stamped
      * @return a trust record pairing that digest with this build's schema version
-    */
+     */
     public static BaselineTrust current(String sourceDigest) {
         return new BaselineTrust(sourceDigest, SchemaVersion.CURRENT);
     }

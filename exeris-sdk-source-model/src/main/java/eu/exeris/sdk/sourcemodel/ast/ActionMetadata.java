@@ -19,18 +19,21 @@ import java.util.Objects;
  *        legacy JSON); use {@link #effectiveMethodName()} for a name-based fallback.
  *
  *        <p>Added in 0.7.0.
+ *
  * @param streaming Whether the action returns a streaming (server-push) response rather than
  *        responding once — the AST twin of {@code @Action(streaming=true)}. When
  *        {@code true}, build-time codegen emits a kernel {@code HttpStreamHandler}
  *        bound to a streaming route (ADR-043) instead of a respond-once handler.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param streamEventType The SSE {@code event:} name carried on each emitted {@link #streaming()}
  *        frame — the AST twin of {@code @Action(streamEventType=…)}. Optional:
  *        {@code null} when unset (normalized from a blank annotation value).
  *        Meaningful only when {@link #streaming()} is {@code true}.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param realTimeUpdates Whether clients may subscribe to this action's progress in real time —
  *        the AST twin of {@code @Action(realTimeUpdates=true)}. Distinct from
  *        {@link #streaming()}: streaming is the response shape, this is the
@@ -54,6 +57,7 @@ import java.util.Objects;
  *        status note on {@code @Action.realTimeUpdates()}.
  *
  *        <p>Added in 0.8.0.
+ *
  * @param schedule The schedule on which this action also fires without a client call —
  *        the AST twin of {@code @Schedule} on the action method. Optional:
  *        {@code null} when the action is call-only, which is the common case.
@@ -69,6 +73,7 @@ import java.util.Objects;
  *        and a 1.x minor may still change it (ADR-072).
  *
  *        <p>Added in 0.11.0.
+ *
  * @param routeAccess What this action's generated route demands of its caller — the identity
  *        half of the kernel's route-authorization decision (kernel ADR-061), and
  *        the AST twin of {@code @RouteAccess} on the action method.
@@ -90,8 +95,10 @@ import java.util.Objects;
  *        1.x minor may still change it (ADR-072).
  *
  *        <p>Added in 0.12.0.
+ *
  * @param name the action's identity, as the generated surface exposes it — distinct from
  *        {@link #methodName()}, the Java method behind it
+ *
  * @param displayName the label a generated UI shows for the action
  * @param description human-readable prose for generated documentation
  * @param httpMethod the HTTP method the generated route is bound to
@@ -221,7 +228,7 @@ public record ActionMetadata(
      * and legacy JSON written before {@code methodName} existed).
           *
      * @return the {@code String}
-    */
+     */
     @JsonIgnore
     public String effectiveMethodName() {
         return (methodName != null && !methodName.isBlank()) ? methodName : name;

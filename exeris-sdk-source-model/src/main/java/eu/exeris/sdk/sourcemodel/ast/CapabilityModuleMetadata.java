@@ -35,9 +35,11 @@ public record CapabilityModuleMetadata(
         List<RequiresMetadata> requires,
         String lifecycleOwner
 ) {
-    /** An empty capability module — provides/requires nothing, no lifecycle owner.      *
+    /**
+     * An empty capability module — provides/requires nothing, no lifecycle owner.
+     *
      * @return the {@code CapabilityModuleMetadata}
-    */
+     */
     public static CapabilityModuleMetadata empty() {
         return new CapabilityModuleMetadata(List.of(), List.of(), null);
     }

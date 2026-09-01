@@ -19,7 +19,7 @@ import eu.exeris.sdk.sourcemodel.mutation.MutationResult;
   *
  * @param outcome what the mutation decided — applied, rejected, or refused for want of a trusted baseline
  * @param source the resulting Java source text; unchanged from the input when the mutation did not apply
-*/
+ */
 public record ApplyResult(MutationResult outcome, String source) {
 
     /**
@@ -29,7 +29,7 @@ public record ApplyResult(MutationResult outcome, String source) {
      * compare {@link #source} against the input.
           *
      * @return whether the mutation changed the source
-    */
+     */
     public boolean applied() {
         return outcome.successful();
     }

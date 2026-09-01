@@ -29,7 +29,7 @@ import java.util.Objects;
  * @param entity the entity the path starts at
  * @param kind what kind of member the path targets
  * @param member the member's name; {@code null} when the path targets the entity itself
-*/
+ */
 public record MutationPath(String entity, TargetKind kind, String member) {
 
     /** What an addressable path points at. */
@@ -49,9 +49,11 @@ public record MutationPath(String entity, TargetKind kind, String member) {
             this.segment = segment;
         }
 
-        /** The collection segment in the path string, or {@code null} for the entity root.          *
+        /**
+         * The collection segment in the path string, or {@code null} for the entity root.
+         *
          * @return the path segment this kind contributes, or {@code null} for the entity itself
-        */
+         */
         public String segment() {
             return segment;
         }
@@ -148,7 +150,7 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * @throws IllegalArgumentException if the string is not a structurally valid path
           * @param path the path in its string form
      * @return the parsed path
-    */
+     */
     public static MutationPath parse(String path) {
         Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
         if (!path.startsWith("/")) {
@@ -200,7 +202,7 @@ public record MutationPath(String entity, TargetKind kind, String member) {
           *
      * @param other the path to test
      * @return whether this path targets {@code other} or something containing it
-    */
+     */
     public boolean isSameOrAncestorOf(MutationPath other) {
         Objects.requireNonNull(other, MutationMessages.OTHER_REQUIRED);
         if (!entity.equals(other.entity)) {

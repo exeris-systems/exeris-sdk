@@ -41,9 +41,11 @@ public record RegionMetadata(
         components = components == null ? List.of() : List.copyOf(components);
     }
 
-    /** Whether this region carries any component nodes.      *
+    /**
+     * Whether this region carries any component nodes.
+     *
      * @return the {@code boolean}
-    */
+     */
     @JsonIgnore
     public boolean hasComponents() {
         return !components.isEmpty();

@@ -48,7 +48,7 @@ public final class CompositionBinding {
           *
      * @param manifest the manifest to bind
      * @return the canonical binding string for its modules
-    */
+     */
     public static String compute(CapManifest manifest) {
         List<CapManifest.Module> modules = manifest.modules();
         return compute(modules != null ? modules : List.of());
@@ -62,7 +62,7 @@ public final class CompositionBinding {
           *
      * @param modules the modules to bind, in any order — the binding canonicalizes them
      * @return the canonical binding string
-    */
+     */
     public static String compute(List<CapManifest.Module> modules) {
         List<CapManifest.Module> sorted = modules.stream()
                 .sorted(Comparator.comparing(CapManifest.Module::qualifiedName))

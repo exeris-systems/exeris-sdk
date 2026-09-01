@@ -64,6 +64,7 @@ public record UIMetadata(
 
     /**
      * Metadata for UI field groups (card/section grouping).
+     *
      * @param name the group's identity, referenced by the fields that belong to it
      * @param label the heading a generated form shows for the group
      * @param description prose shown beneath the group heading
@@ -102,6 +103,7 @@ public record UIMetadata(
 
     /**
      * Per-field UI configuration overrides.
+     *
      * @param fieldName the field this override applies to
      * @param componentType the input component the field is rendered with
      * @param gridSpan how many grid columns the field occupies
@@ -191,7 +193,7 @@ public record UIMetadata(
          * @param fieldName the {@code fieldName} the result carries
          * @param customComponent the {@code customComponent} the result carries
          * @return the {@code UIFieldMetadata}
-        */
+         */
         public static UIFieldMetadata custom(String fieldName, String customComponent) {
             return new UIFieldMetadata(fieldName, ComponentType.CUSTOM, 6, 0, true, true, true, null, null, null, null, null, null, null, null, customComponent, null, null);
         }
@@ -265,6 +267,7 @@ public record UIMetadata(
 
     /**
      * Configuration for autocomplete fields (relationships).
+     *
      * @param targetEntity the entity the lookup searches
      * @param displayField the target's field shown to the reader
      * @param valueField the target's field carried as the stored value
@@ -300,6 +303,7 @@ public record UIMetadata(
 
     /**
      * Configuration for select/dropdown fields.
+     *
      * @param optionsSource where the options come from — a static list, or an endpoint
      * @param optionsEndpoint the endpoint the options are fetched from, when they are not static
      * @param staticOptions the options carried inline, when they are
@@ -342,6 +346,7 @@ public record UIMetadata(
 
     /**
      * Static option for select fields.
+     *
      * @param value the value stored when the option is chosen
      * @param label the text shown to the reader
      * @param icon the icon shown beside the label

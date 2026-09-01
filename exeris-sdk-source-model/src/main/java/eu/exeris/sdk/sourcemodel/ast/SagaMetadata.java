@@ -14,6 +14,7 @@ import java.util.Objects;
  * @param version the plan version. The kernel keys its plan catalog by name and version: a
  *        parked saga resumes on the exact version it parked under, and an unregistered version
  *        fails closed rather than rebinding to the newest plan (kernel ADR-064)
+ *
  * @param steps the saga's steps, in order
  * @param compensationStrategy how compensation is driven when a step fails
  * @param compensationOrder the order compensations run in
@@ -123,6 +124,7 @@ public record SagaMetadata(
 
     /**
      * Saga trigger configuration.
+     *
      * @param type what kind of occurrence starts the saga
      * @param source the originator the trigger listens to
      * @param topic the messaging topic carrying the triggering message
@@ -185,6 +187,7 @@ public record SagaMetadata(
 
     /**
      * Saga monitoring configuration.
+     *
      * @param metricsEnabled whether the saga emits metrics
      * @param tracingEnabled whether the saga emits trace spans
      * @param alertOnFailure where a failure alert is sent
@@ -256,39 +259,47 @@ public record SagaMetadata(
             }
         }
 
-        /** An edge firing on {@code outcome} from {@code from} to {@code to}.          *
+        /**
+         * An edge firing on {@code outcome} from {@code from} to {@code to}.
+         *
          * @param from the {@code from} the result carries
          * @param to the {@code to} the result carries
          * @param outcome the {@code outcome} the result carries
          * @return the {@code SagaTransition}
-        */
+         */
         public static SagaTransition ofOutcome(String from, String to, TransitionOutcome outcome) {
             return new SagaTransition(from, to, outcome, null);
         }
 
-        /** A {@code SUCCESS} edge from {@code from} to {@code to}.          *
+        /**
+         * A {@code SUCCESS} edge from {@code from} to {@code to}.
+         *
          * @param from the {@code from} the result carries
          * @param to the {@code to} the result carries
          * @return the {@code SagaTransition}
-        */
+         */
         public static SagaTransition success(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.SUCCESS, null);
         }
 
-        /** A {@code FAILURE} edge from {@code from} to {@code to}.          *
+        /**
+         * A {@code FAILURE} edge from {@code from} to {@code to}.
+         *
          * @param from the {@code from} the result carries
          * @param to the {@code to} the result carries
          * @return the {@code SagaTransition}
-        */
+         */
         public static SagaTransition failure(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.FAILURE, null);
         }
 
-        /** A {@code TIMEOUT} edge from {@code from} to {@code to}.          *
+        /**
+         * A {@code TIMEOUT} edge from {@code from} to {@code to}.
+         *
          * @param from the {@code from} the result carries
          * @param to the {@code to} the result carries
          * @return the {@code SagaTransition}
-        */
+         */
         public static SagaTransition timeout(String from, String to) {
             return new SagaTransition(from, to, TransitionOutcome.TIMEOUT, null);
         }
@@ -299,7 +310,7 @@ public record SagaMetadata(
          * so the terminal invariant is exactly {@code to == null}.
                   *
          * @return the {@code boolean}
-        */
+         */
         public boolean isTerminal() { return to == null; }
 
         /**
@@ -308,7 +319,7 @@ public record SagaMetadata(
          * {@code guard} is always non-blank.
                   *
          * @return the {@code boolean}
-        */
+         */
         public boolean hasGuard() { return guard != null; }
     }
 

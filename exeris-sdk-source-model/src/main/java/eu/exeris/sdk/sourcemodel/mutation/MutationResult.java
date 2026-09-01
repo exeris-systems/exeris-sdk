@@ -49,14 +49,18 @@ import java.util.Objects;
 })
 public sealed interface MutationResult {
 
-    /** {@code true} only for {@link Success}. Convenience for non-pattern-matching callers.      *
+    /**
+     * {@code true} only for {@link Success}. Convenience for non-pattern-matching callers.
+     *
      * @return whether the mutation applied
-    */
+     */
     boolean successful();
 
-    /** The op applied cleanly.      *
+    /**
+     * The op applied cleanly.
+     *
      * @param path the mutation path naming what is being changed
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Success(String path) implements MutationResult {
@@ -82,7 +86,7 @@ public sealed interface MutationResult {
      * @param baselineValue the value the mutation was authored against
      * @param currentValue the value found now
      * @param intendedValue the value the mutation wanted to write
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Conflict(String path, String baselineValue, String currentValue, String intendedValue)
@@ -100,10 +104,12 @@ public sealed interface MutationResult {
         }
     }
 
-    /** The op was rejected structurally before any drift comparison.      *
+    /**
+     * The op was rejected structurally before any drift comparison.
+     *
      * @param path the mutation path naming what is being changed
      * @param message what was wrong with the operation
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ValidationError(String path, String message) implements MutationResult {
@@ -120,10 +126,12 @@ public sealed interface MutationResult {
         }
     }
 
-    /** No trustworthy baseline to compare against.      *
+    /**
+     * No trustworthy baseline to compare against.
+     *
      * @param cause why no trusted baseline was available
      * @param detail the specifics, for a diagnostic
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record NoBaseline(NoBaselineCause cause, String detail) implements MutationResult {

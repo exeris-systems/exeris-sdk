@@ -12,6 +12,7 @@ import java.util.List;
  * @param name the step's identity, unique within its saga. Renaming it is a breaking change for
  *        in-flight sagas rather than a refactor: a parked snapshot records the name it stopped
  *        at, and a wake whose plan no longer carries that name fails closed (kernel ADR-062)
+ *
  * @param description human-readable prose for generated documentation
  * @param order the step's position in the saga's sequence
  * @param service the service the step invokes
@@ -19,6 +20,7 @@ import java.util.List;
  * @param compensation the command that undoes this step when a later one fails
  * @param timeout how long the step may run before it is treated as failed, as an ISO-8601
  *        duration
+ *
  * @param maxRetries how many times the step is retried before the saga compensates
  * @param retryBackoff the backoff strategy between retries
  * @param parallel whether the step may run alongside its siblings rather than after them
@@ -26,6 +28,7 @@ import java.util.List;
  * @param condition an expression gating whether the step runs at all
  * @param skipOnConditionFalse whether a false {@link #condition()} skips the step rather than
  *        failing the saga
+ *
  * @param dependsOn the names of steps that must complete before this one starts
  * @param producesEvents the events the step publishes on success
  * @param inputMapping how the step's input is built from the saga's accumulated state
@@ -33,6 +36,7 @@ import java.util.List;
  * @param errorHandler the handler invoked when the step fails
  * @param kind the step's shape — the discriminator distinguishing an ordinary step from a
  *        compensation or a terminal one
+ *
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -116,7 +120,7 @@ public record SagaStepMetadata(
      * @since 0.7.0
           *
      * @return the {@code StepKind}
-    */
+     */
     public StepKind effectiveKind() {
         if (kind != null) {
             return kind;
@@ -154,6 +158,7 @@ public record SagaStepMetadata(
 
     /**
      * Input mapping from saga state to step command.
+     *
      * @param expression an expression building the step's whole input from saga state
      * @param fieldMappings per-field mappings, when the input is assembled field by field
      */
@@ -186,6 +191,7 @@ public record SagaStepMetadata(
 
     /**
      * Output mapping from step result to saga state.
+     *
      * @param expression an expression writing the step's whole result back into saga state
      * @param fieldMappings per-field mappings, when the result is written back field by field
      */
@@ -208,6 +214,7 @@ public record SagaStepMetadata(
 
     /**
      * Field-level mapping.
+     *
      * @param source the field read from
      * @param target the field written to
      * @param transform the transformation applied in between

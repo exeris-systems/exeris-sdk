@@ -39,8 +39,10 @@ import java.util.Objects;
  *
  * @param kind which of the three trigger shapes this schedule is — the discriminator that makes
  *        a cron-and-interval combination unrepresentable rather than merely discouraged
+ *
  * @param expression the trigger itself, read according to {@link #kind()}: a five-field cron
  *        expression, an ISO-8601 duration, or an ISO-8601 instant
+ *
  * @since 0.11.0
  * @see ActionMetadata#schedule()
  */
@@ -77,33 +79,41 @@ public record ScheduleMetadata(
         }
     }
 
-    /** A cron trigger from a standard five-field expression.      *
+    /**
+     * A cron trigger from a standard five-field expression.
+     *
      * @param expression the {@code expression} the result carries
      * @return the {@code ScheduleMetadata}
-    */
+     */
     public static ScheduleMetadata cron(String expression) {
         return new ScheduleMetadata(TriggerKind.CRON, expression);
     }
 
-    /** A fixed-interval trigger from an ISO-8601 duration, e.g. {@code "PT15M"}.      *
+    /**
+     * A fixed-interval trigger from an ISO-8601 duration, e.g. {@code "PT15M"}.
+     *
      * @param isoDuration the {@code isoDuration} the result carries
      * @return the {@code ScheduleMetadata}
-    */
+     */
     public static ScheduleMetadata every(String isoDuration) {
         return new ScheduleMetadata(TriggerKind.INTERVAL, isoDuration);
     }
 
-    /** A one-shot trigger from an ISO-8601 instant.      *
+    /**
+     * A one-shot trigger from an ISO-8601 instant.
+     *
      * @param isoInstant the {@code isoInstant} the result carries
      * @return the {@code ScheduleMetadata}
-    */
+     */
     public static ScheduleMetadata at(String isoInstant) {
         return new ScheduleMetadata(TriggerKind.ONE_SHOT, isoInstant);
     }
 
-    /** Whether this trigger repeats (cron or interval) rather than firing once.      *
+    /**
+     * Whether this trigger repeats (cron or interval) rather than firing once.
+     *
      * @return the {@code boolean}
-    */
+     */
     @JsonIgnore
     public boolean isRecurring() {
         return kind != TriggerKind.ONE_SHOT;

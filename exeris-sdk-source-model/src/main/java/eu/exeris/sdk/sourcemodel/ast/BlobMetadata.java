@@ -30,8 +30,10 @@ import java.util.List;
  * @param container the container the object is addressed in, relative to the caller's
  *        namespace — never an absolute or physical location. Absent means the tooling derives
  *        it from the domain
+ *
  * @param contentTypes the media types the generated upload surface accepts; empty means
  *        unrestricted
+ *
  * @since 0.11.0
  * @see FieldMetadata#blob()
  */
@@ -53,32 +55,40 @@ public record BlobMetadata(
         contentTypes = contentTypes == null ? List.of() : List.copyOf(contentTypes);
     }
 
-    /** A blob facet with a derived container and no declared media types.      *
+    /**
+     * A blob facet with a derived container and no declared media types.
+     *
      * @return the {@code BlobMetadata}
-    */
+     */
     public static BlobMetadata unrestricted() {
         return new BlobMetadata(null, List.of());
     }
 
-    /** A blob facet restricted to the given media types, with a derived container.      *
+    /**
+     * A blob facet restricted to the given media types, with a derived container.
+     *
      * @param contentTypes the {@code contentTypes} the result carries
      * @return the {@code BlobMetadata}
-    */
+     */
     public static BlobMetadata ofContentTypes(List<String> contentTypes) {
         return new BlobMetadata(null, contentTypes);
     }
 
-    /** Whether an explicit container was declared (rather than left to be derived).      *
+    /**
+     * Whether an explicit container was declared (rather than left to be derived).
+     *
      * @return the {@code boolean}
-    */
+     */
     @JsonIgnore
     public boolean hasContainer() {
         return container != null;
     }
 
-    /** Whether the accepted media types were narrowed at all.      *
+    /**
+     * Whether the accepted media types were narrowed at all.
+     *
      * @return the {@code boolean}
-    */
+     */
     @JsonIgnore
     public boolean hasContentTypes() {
         return !contentTypes.isEmpty();

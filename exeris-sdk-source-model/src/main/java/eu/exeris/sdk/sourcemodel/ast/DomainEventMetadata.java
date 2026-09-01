@@ -74,8 +74,10 @@ import java.util.List;
  * @param payloadFields the entity fields carried in the event payload
  * @param sensitiveFields the payload fields holding sensitive data, which generated
  *        serialization and logging must treat accordingly
+ *
  * @param trigger when the event fires — the discriminator between a lifecycle moment, an
  *        action, and a field change
+ *
  * @param actionName the action the event fires on, when {@link #trigger()} names one
  * @param fieldName the field whose change fires the event, when {@link #trigger()} names one
  * @author Exeris SDK Team
@@ -149,7 +151,7 @@ public record DomainEventMetadata(
      * @param topic the {@code topic} the result carries
      * @param description the {@code description} the result carries
      * @param aggregateType the {@code aggregateType} the result carries
-    */
+     */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType) {
         this(name, topic, description, aggregateType, List.of(), List.of(), null, null, null);
     }
@@ -166,7 +168,7 @@ public record DomainEventMetadata(
      * @param aggregateType the {@code aggregateType} the result carries
      * @param payloadFields the {@code payloadFields} the result carries
      * @param sensitiveFields the {@code sensitiveFields} the result carries
-    */
+     */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType,
                                List<String> payloadFields, List<String> sensitiveFields) {
         this(name, topic, description, aggregateType, payloadFields, sensitiveFields,
@@ -202,21 +204,25 @@ public record DomainEventMetadata(
      * @since 0.8.0 (EV1)      *
      * @param name the {@code name} the result carries
      * @return the {@code Builder}
-    */
+     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
-    /** True when the event declares a resolved payload field subset.      *
+    /**
+     * True when the event declares a resolved payload field subset.
+     *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasPayloadFields() {
         return !payloadFields.isEmpty();
     }
 
-    /** True when the event declares sensitive fields to redact.      *
+    /**
+     * True when the event declares sensitive fields to redact.
+     *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasSensitiveFields() {
         return !sensitiveFields.isEmpty();
     }
@@ -228,7 +234,7 @@ public record DomainEventMetadata(
      * @since 0.11.0
           *
      * @return the {@code boolean}
-    */
+     */
     public boolean hasTrigger() {
         return trigger != null;
     }

@@ -56,14 +56,16 @@ public final class CompositionBootException extends RuntimeException {
      * detected before the discovery loop).
           *
      * @return the capability that failed
-    */
+     */
     public String capName() {
         return capName;
     }
 
-    /** The failed phase: {@code "discover"}, {@code "initialize"} or {@code "ready"}.      *
+    /**
+     * The failed phase: {@code "discover"}, {@code "initialize"} or {@code "ready"}.
+     *
      * @return the lifecycle phase it failed in
-    */
+     */
     public String phase() {
         return phase;
     }

@@ -47,17 +47,21 @@ import java.util.Objects;
 })
 public sealed interface MutationOp {
 
-    /** The target path this op addresses (see {@link MutationPath}).      *
+    /**
+     * The target path this op addresses (see {@link MutationPath}).
+     *
      * @return the mutation path this operation targets
-    */
+     */
     String path();
 
     // ---- field ops -------------------------------------------------------
 
-    /** Add a field; {@code path} is the new field's path, {@code field} the shape to write.      *
+    /**
+     * Add a field; {@code path} is the new field's path, {@code field} the shape to write.
+     *
      * @param path the mutation path naming what is being changed
      * @param field the field to add
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddField(String path, FieldMetadata field) implements MutationOp {
@@ -70,9 +74,11 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Remove the field at {@code path}.      *
+    /**
+     * Remove the field at {@code path}.
+     *
      * @param path the mutation path naming what is being changed
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveField(String path) implements MutationOp {
@@ -84,10 +90,12 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Rename the field at {@code path} to {@code newName}.      *
+    /**
+     * Rename the field at {@code path} to {@code newName}.
+     *
      * @param path the mutation path naming what is being changed
      * @param newName the name to give it
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RenameField(String path, String newName) implements MutationOp {
@@ -100,10 +108,12 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Change the Java type of the field at {@code path} to {@code newType}.      *
+    /**
+     * Change the Java type of the field at {@code path} to {@code newType}.
+     *
      * @param path the mutation path naming what is being changed
      * @param newType the type to give it
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChangeFieldType(String path, String newType) implements MutationOp {
@@ -118,10 +128,12 @@ public sealed interface MutationOp {
 
     // ---- relationship ops ------------------------------------------------
 
-    /** Add a relationship; {@code path} is the new relationship's path.      *
+    /**
+     * Add a relationship; {@code path} is the new relationship's path.
+     *
      * @param path the mutation path naming what is being changed
      * @param relationship the relationship to add
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddRelationship(String path, RelationshipMetadata relationship) implements MutationOp {
@@ -134,9 +146,11 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Remove the relationship at {@code path}.      *
+    /**
+     * Remove the relationship at {@code path}.
+     *
      * @param path the mutation path naming what is being changed
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveRelationship(String path) implements MutationOp {
@@ -148,10 +162,12 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Change the cardinality of the relationship at {@code path}.      *
+    /**
+     * Change the cardinality of the relationship at {@code path}.
+     *
      * @param path the mutation path naming what is being changed
      * @param newCardinality the cardinality to give it
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChangeRelationshipCardinality(String path, RelationshipMetadata.RelationType newCardinality)
@@ -167,10 +183,12 @@ public sealed interface MutationOp {
 
     // ---- action ops ------------------------------------------------------
 
-    /** Add an action; {@code path} is the new action's path.      *
+    /**
+     * Add an action; {@code path} is the new action's path.
+     *
      * @param path the mutation path naming what is being changed
      * @param action the action to add
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record AddAction(String path, ActionMetadata action) implements MutationOp {
@@ -183,9 +201,11 @@ public sealed interface MutationOp {
         }
     }
 
-    /** Remove the action at {@code path}.      *
+    /**
+     * Remove the action at {@code path}.
+     *
      * @param path the mutation path naming what is being changed
-    */
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record RemoveAction(String path) implements MutationOp {

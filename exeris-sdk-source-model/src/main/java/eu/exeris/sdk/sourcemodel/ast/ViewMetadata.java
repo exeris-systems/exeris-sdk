@@ -82,11 +82,13 @@ public record ViewMetadata(
         regions = regions == null ? List.of() : List.copyOf(regions);
     }
 
-    /** A minimal presentation artifact — just a name and kind, no regions.      *
+    /**
+     * A minimal presentation artifact — just a name and kind, no regions.
+     *
      * @param name the {@code name} the result carries
      * @param kind the {@code kind} the result carries
      * @return the {@code ViewMetadata}
-    */
+     */
     public static ViewMetadata of(String name, ViewKind kind) {
         return new ViewMetadata(name, kind, null, null, null, null, List.of());
     }
@@ -101,17 +103,21 @@ public record ViewMetadata(
         return new Builder(name);
     }
 
-    /** The effective kind: the declared one, or {@link ViewKind#PAGE}.      *
+    /**
+     * The effective kind: the declared one, or {@link ViewKind#PAGE}.
+     *
      * @return the {@code ViewKind}
-    */
+     */
     @JsonIgnore
     public ViewKind effectiveKind() {
         return kind != null ? kind : ViewKind.PAGE;
     }
 
-    /** Whether this view carries any regions.      *
+    /**
+     * Whether this view carries any regions.
+     *
      * @return the {@code boolean}
-    */
+     */
     @JsonIgnore
     public boolean hasRegions() {
         return !regions.isEmpty();

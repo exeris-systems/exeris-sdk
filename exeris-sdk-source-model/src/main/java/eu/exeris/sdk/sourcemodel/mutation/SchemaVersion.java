@@ -152,7 +152,7 @@ public final class SchemaVersion {
           *
      * @param schemaVersion the version stamped on a baseline
      * @return whether it is the version this build reads
-    */
+     */
     public static boolean isCurrent(String schemaVersion) {
         return CURRENT.equals(schemaVersion);
     }
