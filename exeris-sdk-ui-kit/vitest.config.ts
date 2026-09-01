@@ -13,9 +13,20 @@ import { defineConfig } from 'vitest/config';
  *     accidental rename would silently break downstream `bg-exeris-primary`
  *     class lookups).
  *
- * Coverage thresholds are applied per-file at 85% to match the Java side.
- * For a package this small a small number of tests reaches the threshold
- * easily — the value of the gate is regression detection, not bulk metric.
+ * Coverage thresholds are applied per-file at 85% to match the Java side, and it is
+ * worth being exact about what that buys, because it is easy to read as more:
+ *
+ *   - src/index.ts is ONE statement (the `defaultTheme` const; the interface is a type
+ *     and is erased), and tailwind.preset.js is ZERO (a single object literal). Measured,
+ *     not estimated — see coverage/coverage-summary.json.
+ *   - So for today's two files the threshold cannot fail. It reports that the module was
+ *     imported, which the tests would fail without anyway.
+ *
+ * Its value is therefore prospective: the first source file with real logic is held to
+ * 85% from the moment it lands, per-file so the others cannot carry it. What actually
+ * detects regressions in the current files is the derived drift tests — theme.test.js
+ * (preset vs @theme vs index.css) and default-theme-drift.test.js (defaultTheme vs
+ * index.css) — which compare the two sides against each other rather than counting lines.
  */
 export default defineConfig({
   test: {

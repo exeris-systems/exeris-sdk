@@ -123,6 +123,21 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **The ui-kit's real gate was one hard-coded assertion; it is now derived from the CSS.**
+  `defaultTheme` is what generated components fall back to when a host overrides nothing, and
+  exactly one of its values — `primary` — was checked against `index.css`. Every other colour,
+  spacing and radius was pinned only by a shape regex against a key list the test carried
+  itself, so a wrong `rgb()` or a `1rem` → `2rem` slip passed. `default-theme-drift.test.js`
+  now derives from `index.css` in both directions: values must match, and a CSS colour with no
+  JS fallback fails unless it is recorded as one. It also guards `.dark` against `:root` for
+  the palette — the four status colours held constant across themes are listed rather than
+  asserted to be a defect. Four probes confirm each guard fires.
+- **`CLAUDE.md` said the ui-kit's 85% coverage threshold was its quality gate.** Measured, it
+  is not: `src/index.ts` is one statement and `tailwind.preset.js` is zero, so the threshold
+  cannot fail for either and only reports that the module was imported. The threshold stays —
+  it holds the first source file with real logic — but both it and `vitest.config.ts` now say
+  what it does and what does the actual work.
+
 - **`@SagaStep.order` / `parallel` and `@Saga`'s compensation pair now say what the platform
   actually does with them.** Raised from `exeris-tooling` as an `INERT_ATTRIBUTES` candidate for
   `order`; measurement says otherwise, and the notes record what was measured.
