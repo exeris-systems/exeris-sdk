@@ -385,8 +385,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   zero false positives across the package. Guarded at both levels, and verified
   non-vacuous by restoring the naive lookup
 - [x] **Property prose is unreachable from annotation processing, and the document
-  says so rather than looking truncated** — most AST components are documented with
-  a comment written above them *inside the record header*. Javadoc-the-tool renders
+  says so rather than looking truncated** — a component can be documented with a
+  comment written above it *inside the record header*. Javadoc-the-tool renders
   those; annotation processing cannot reach them. Four routes were measured and all
   return `null`: `Elements.getDocComment` on the component,
   `DocTrees.getDocCommentTree(Element)`, `DocTrees.getPath` on the component (so
@@ -394,7 +394,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   component's `VariableTree` member off the record's own resolvable path. The
   derived accessor and field carry no source position, so neither helps. `@param`
   on the record **does** resolve — proven by probe — and is the canonical Java form,
-  but **no** record in the package uses it today, so property-level `description` is
+  but **no** record in the package used it, so property-level `description` was
   empty. Rather than ship a schema that reads as truncated, the document carries
   `x-exeris-prose-coverage` with the counts and the reason. Converting the existing
   header prose is a separate decision: much of it is multi-paragraph and a `@param`

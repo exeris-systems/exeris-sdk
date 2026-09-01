@@ -68,7 +68,28 @@ for per-version upgrade steps.
   `required` array: all three `@JsonInclude` postures in the package omit rather than write,
   so a `required` list would reject documents this SDK itself produces.
 
+- **AST record components are documented with `@param`, and a guard keeps them there.** The
+  fifteen doc comments written inside a record header — six on `ActionMetadata`, nine across
+  `EnumMetadata` / `EnumValueMetadata` — moved onto their record as `@param` tags, which is
+  the canonical Java form and the only one annotation processing can read. They now reach
+  `ast-schema.json`: property prose goes from `0/362` to `15/362`, and the record headers are
+  a plain component list instead of 116 lines of interleaved comment.
+  `AstComponentProseConventionTest` fails if a header comment comes back — the two forms are
+  indistinguishable in an IDE, so the trap needs catching where it is written rather than
+  where it is missed. `@param` carries no nested `@since`, so the six per-component
+  introduction versions on `ActionMetadata` (`methodName` 0.7.0, the three streaming/real-time
+  components 0.8.0, `schedule` 0.11.0, `routeAccess` 0.12.0) are stated in the prose instead —
+  which also puts them in the schema, where a consumer pinning an older SDK can read them.
+
 ### Fixed
+
+- **"Most AST components are documented in the record header" — measured, they are not.**
+  The claim shipped with the AST schema and overstated the case badly: of 43 records, **three**
+  carried component prose at all, totalling **fifteen** comments. The other forty document
+  nothing at component level. The corrected statement is in `ROADMAP.md` and in
+  `AstSchemaProcessor`'s javadoc: a header comment is *a* form a component can be documented
+  in, not the prevailing one, and the reason property prose was empty is mostly that the prose
+  does not exist rather than that it was unreachable.
 
 - **The AST schema described the boxed-zero hazard as unmitigated.** Jackson's
   `@JsonInclude` targets do not include `RECORD_COMPONENT`, so an annotation written on a
