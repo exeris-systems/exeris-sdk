@@ -56,8 +56,24 @@ apply). Import the `@theme` entry next to Tailwind:
 @import "@exeris-systems/ui-kit/theme";
 ```
 
-Both entries declare the same tokens, so generated components render identically
-on either major; a parity test keeps them in sync.
+Both entries declare the same tokens and both resolve them through the same
+`--exeris-*` custom properties, so a utility follows a runtime override on either
+major. Two tests keep it that way: one compares the two declarations, the other
+compiles `theme.css` with a real Tailwind v4 and checks the utilities it produces.
+
+**Scoped overrides on v4 need one extra line.** Re-pointing a token on `:root`
+works as you would expect. Re-pointing it on a *container* — a `.dark` wrapper, a
+tenant scope — also needs the colour it maps to, because v4 resolves a `@theme`
+value where it is declared:
+
+```css
+.tenant-acme {
+  --exeris-primary: 220 38 38;
+  --color-exeris-primary: rgb(var(--exeris-primary)); /* v4 only; v3 needs no repeat */
+}
+```
+
+The kit already does this for its own `.dark`, so dark mode needs nothing from you.
 
 ### Import Base Styles
 
@@ -66,6 +82,11 @@ In your main CSS file:
 ```css
 @import '@exeris-systems/ui-kit/styles';
 ```
+
+> **Tailwind v4:** this file is v3-only — it opens with `@tailwind base/components/utilities`
+> and its component layer uses `@apply exeris-btn`, and a v4 build rejects both. On v4, import
+> `@exeris-systems/ui-kit/theme` (above) for the design tokens; the `.exeris-*` component
+> classes do not have a v4 build yet.
 
 Or in Angular's `angular.json`:
 
