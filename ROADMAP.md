@@ -395,7 +395,9 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   derived accessor and field carry no source position, so neither helps. `@param`
   on the record **does** resolve — proven by probe — and is the canonical Java form,
   but **no** record in the package used it, so property-level `description` was
-  empty. Rather than ship a schema that reads as truncated, the document carries
+  empty. **Closed in the same milestone:** all 362 components and all 61 definitions
+  now carry prose, and two gates hold it there — one refusing header comments, one
+  refusing a coverage drop. Rather than ship a schema that reads as truncated, the document carries
   `x-exeris-prose-coverage` with the counts and the reason. Converting the existing
   header prose is a separate decision: much of it is multi-paragraph and a `@param`
   tag is a phrase

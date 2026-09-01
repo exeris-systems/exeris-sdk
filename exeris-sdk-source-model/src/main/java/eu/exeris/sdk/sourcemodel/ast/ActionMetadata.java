@@ -90,6 +90,19 @@ import java.util.Objects;
  *        1.x minor may still change it (ADR-072).
  *
  *        <p>Added in 0.12.0.
+ * @param name the action's identity, as the generated surface exposes it — distinct from
+ *        {@link #methodName()}, the Java method behind it
+ * @param displayName the label a generated UI shows for the action
+ * @param description human-readable prose for generated documentation
+ * @param httpMethod the HTTP method the generated route is bound to
+ * @param resultType the action's return type, as written in source
+ * @param async whether the action returns before its work completes
+ * @param idempotent whether repeating the call is safe
+ * @param dangerous whether the action is destructive enough to warrant a warning
+ * @param requiresConfirmation whether a generated UI asks before invoking it
+ * @param params the action's parameters, in declaration order
+ * @param permissions the permissions required to invoke the action
+ * @param producesEvents the events the action publishes on success
  * @author Exeris SDK Team
  * @since 0.1.0
  */

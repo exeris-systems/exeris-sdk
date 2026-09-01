@@ -31,6 +31,22 @@ import java.util.List;
  * dependency-light {@code source-model} module never pulls in the annotation
  * module's enum types.
  *
+ * @param name the handler's identity
+ * @param description human-readable prose for generated documentation
+ * @param event the single event the handler consumes, when it consumes exactly one
+ * @param events the events the handler consumes, when it consumes several
+ * @param eventClassNames the fully qualified types of those events
+ * @param topic the messaging topic the handler subscribes to
+ * @param condition an expression gating whether an received event is handled
+ * @param order the handler's position among handlers of the same event
+ * @param priority the dispatch priority relative to other handlers
+ * @param idempotent whether re-delivering the same event is safe
+ * @param async whether the handler runs off the publishing thread
+ * @param timeout how long the handler may run, as an ISO-8601 duration
+ * @param transactionMode how the handler participates in a transaction
+ * @param triggerStep the saga step this handler advances, when it drives one
+ * @param expectedEvents the events that let the saga proceed
+ * @param failureEvents the events that put the saga into compensation
  * @author Exeris SDK Team
  * @since 0.6.0
  */

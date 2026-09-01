@@ -9,6 +9,20 @@ import java.util.List;
  * Metadata for UI rendering including Grid Layout, component types, and groups.
  * Supports Atom v3 Enterprise UI features.
  *
+ * @param icon the icon representing the entity in generated navigation
+ * @param color the accent colour applied to the entity's generated surfaces
+ * @param listView whether a list view is generated
+ * @param detailView whether a detail view is generated
+ * @param createForm whether a create form is generated
+ * @param editForm whether an edit form is generated
+ * @param searchable whether the generated list view offers a search box
+ * @param filterable whether the generated list view offers filters
+ * @param exportable whether the generated list view offers an export action
+ * @param bulkActions whether the generated list view allows acting on a selection
+ * @param columns the number of columns the generated form grid is laid out on
+ * @param defaultLayout the layout the generated views start in
+ * @param groups the field groupings the generated forms are organised into
+ * @param fieldOverrides per-field presentation overrides, keyed by field name
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -40,6 +54,15 @@ public record UIMetadata(
 
     /**
      * Metadata for UI field groups (card/section grouping).
+     * @param name the group's identity, referenced by the fields that belong to it
+     * @param label the heading a generated form shows for the group
+     * @param description prose shown beneath the group heading
+     * @param order the group's position among its siblings
+     * @param collapsible whether a reader may collapse the group
+     * @param collapsed whether the group starts collapsed
+     * @param icon the icon shown beside the group heading
+     * @param gridSpan how many grid columns the group occupies
+     * @param fields the names of the fields placed in this group, in order
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -61,6 +84,24 @@ public record UIMetadata(
 
     /**
      * Per-field UI configuration overrides.
+     * @param fieldName the field this override applies to
+     * @param componentType the input component the field is rendered with
+     * @param gridSpan how many grid columns the field occupies
+     * @param displayOrder the field's position within its group
+     * @param displayInList whether the field appears in the generated list view
+     * @param displayInDetail whether the field appears in the generated detail view
+     * @param editableInForm whether the field may be edited in generated forms
+     * @param placeholder the placeholder text shown in an empty input
+     * @param helpText prose shown beneath the input
+     * @param format the display format applied to the value
+     * @param width the input's width, as a CSS length
+     * @param cssClass extra CSS classes applied to the input
+     * @param mask the input mask applied while typing
+     * @param autocomplete the autocomplete configuration, when the field is rendered as a lookup
+     * @param select the option-list configuration, when the field is rendered as a select
+     * @param customComponent the component to render instead of the built-in one
+     * @param placeholderKey the message-bundle key for the placeholder; the literal is the fallback
+     * @param helpTextKey the message-bundle key for the help text, on the same terms
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -158,6 +199,14 @@ public record UIMetadata(
 
     /**
      * Configuration for autocomplete fields (relationships).
+     * @param targetEntity the entity the lookup searches
+     * @param displayField the target's field shown to the reader
+     * @param valueField the target's field carried as the stored value
+     * @param searchEndpoint the endpoint the lookup queries
+     * @param minChars how many characters must be typed before a query is issued
+     * @param maxResults the maximum number of suggestions returned
+     * @param allowCreate whether the reader may create a new target from the lookup
+     * @param createAction the action invoked when they do
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -178,6 +227,13 @@ public record UIMetadata(
 
     /**
      * Configuration for select/dropdown fields.
+     * @param optionsSource where the options come from — a static list, or an endpoint
+     * @param optionsEndpoint the endpoint the options are fetched from, when they are not static
+     * @param staticOptions the options carried inline, when they are
+     * @param multiple whether more than one option may be chosen
+     * @param clearable whether the selection may be cleared back to empty
+     * @param searchable whether the option list offers a search box
+     * @param groupBy the option attribute the list is grouped under
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -201,6 +257,11 @@ public record UIMetadata(
 
     /**
      * Static option for select fields.
+     * @param value the value stored when the option is chosen
+     * @param label the text shown to the reader
+     * @param icon the icon shown beside the label
+     * @param group the heading this option is listed under
+     * @param disabled whether the option is shown but cannot be chosen
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)

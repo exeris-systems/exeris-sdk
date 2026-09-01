@@ -21,6 +21,9 @@ import java.util.Objects;
  * {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} contract is for the other case: an
  * explicit {@code null} in a baseline this SDK did not write.
  *
+ * @param service the service name required — a source-written string, not a type reference
+ * @param versionRange the acceptable versions of that service
+ * @param optional whether the capability still boots when the service is absent
  * @author Exeris SDK Team
  * @since 0.4.0
  */

@@ -8,6 +8,19 @@ import java.util.List;
  * Metadata for event sourcing configuration.
  * Supports full event sourcing with snapshots, projections, and archival.
  *
+ * @param enabled whether the entity is reconstructed from its event stream rather than stored
+ *        as rows
+ * @param aggregateType the aggregate the stream belongs to
+ * @param eventStore the store the stream is persisted in
+ * @param snapshotEvery how many events pass between snapshots
+ * @param snapshotStrategy how snapshots are taken
+ * @param retentionPolicy how long events are kept
+ * @param compactEvents whether superseded events are compacted away
+ * @param archiveAfterDays how long before events move to archival storage
+ * @param eventHandlers the handlers applied when rebuilding state from the stream
+ * @param projections the read models maintained from the stream
+ * @param versionField the field carrying the aggregate's stream version
+ * @param conflictResolution how concurrent appends to one stream are reconciled
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -45,6 +58,12 @@ public record EventSourcedMetadata(
     public boolean hasProjections() { return projections != null && !projections.isEmpty(); }
     public boolean hasEventHandlers() { return eventHandlers != null && !eventHandlers.isEmpty(); }
 
+    /**
+
+     * How snapshots of a rebuilt aggregate are taken.
+
+     */
+
     public enum SnapshotStrategy {
         /** Take snapshot every N events */
         COUNT_BASED,
@@ -57,6 +76,12 @@ public record EventSourcedMetadata(
         /** Adaptive based on access patterns */
         ADAPTIVE
     }
+
+    /**
+
+     * How concurrent appends to one aggregate's event stream are reconciled.
+
+     */
 
     public enum ConflictResolution {
         /** Optimistic locking with version check */
@@ -71,6 +96,12 @@ public record EventSourcedMetadata(
 
     /**
      * Configuration for event projections.
+     * @param name the projection's identity
+     * @param targetType the read model the projection maintains
+     * @param eventTypes the events the projection consumes
+     * @param handler the handler applying those events to the read model
+     * @param async whether the projection is updated off the publishing thread
+     * @param topic the messaging topic the projection subscribes to
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)

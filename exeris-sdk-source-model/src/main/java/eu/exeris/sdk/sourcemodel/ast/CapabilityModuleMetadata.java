@@ -22,6 +22,9 @@ import java.util.List;
  * {@code @Requires}→{@code @Provides} resolution, the dependency DAG,
  * version-range intersection, the cap-tier Wall checks, and the cap manifest.
  *
+ * @param provides the services this capability offers to others
+ * @param requires the services it needs from others
+ * @param lifecycleOwner the type implementing the capability's lifecycle hooks
  * @author Exeris SDK Team
  * @since 0.4.0
  */

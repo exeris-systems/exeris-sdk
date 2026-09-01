@@ -9,6 +9,24 @@ import java.util.Objects;
  * Metadata for saga orchestrations.
  * Supports full saga configuration including triggers, compensation, and monitoring.
  *
+ * @param name the saga's identity
+ * @param description human-readable prose for generated documentation
+ * @param version the plan version. The kernel keys its plan catalog by name and version: a
+ *        parked saga resumes on the exact version it parked under, and an unregistered version
+ *        fails closed rather than rebinding to the newest plan (kernel ADR-064)
+ * @param steps the saga's steps, in order
+ * @param compensationStrategy how compensation is driven when a step fails
+ * @param compensationOrder the order compensations run in
+ * @param timeout how long the whole saga may run, as an ISO-8601 duration
+ * @param compensationTimeout the same bound for the compensation phase
+ * @param maxRetries how many times a failed step is retried before compensating
+ * @param retryBackoff the backoff strategy between retries
+ * @param trigger what starts the saga
+ * @param persistent whether saga state survives a restart
+ * @param stateClass the type carrying the saga's accumulated state
+ * @param permissions the permissions required to start the saga
+ * @param monitoring the metrics, tracing and alerting configuration
+ * @param transitions the state-machine edges between steps
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -49,6 +67,12 @@ public record SagaMetadata(
     public boolean hasTrigger() { return trigger != null; }
     public boolean hasTransitions() { return transitions != null && !transitions.isEmpty(); }
 
+    /**
+
+     * How compensation is driven once a saga step fails.
+
+     */
+
     public enum CompensationStrategy {
         /** All steps must be compensated or saga fails */
         ALL_OR_NOTHING,
@@ -57,6 +81,12 @@ public record SagaMetadata(
         /** Custom compensation handler decides */
         CUSTOM
     }
+
+    /**
+
+     * The order in which a failed saga's compensations run.
+
+     */
 
     public enum CompensationOrder {
         /** Compensate in reverse order of execution */
@@ -69,6 +99,11 @@ public record SagaMetadata(
 
     /**
      * Saga trigger configuration.
+     * @param type what kind of occurrence starts the saga
+     * @param source the originator the trigger listens to
+     * @param topic the messaging topic carrying the triggering message
+     * @param cronExpression the schedule, when the saga is started on one
+     * @param condition an expression gating whether the trigger fires
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -92,6 +127,12 @@ public record SagaMetadata(
         }
     }
 
+    /**
+
+     * What kind of occurrence starts a saga.
+
+     */
+
     public enum TriggerType {
         EVENT,
         SCHEDULED,
@@ -101,6 +142,10 @@ public record SagaMetadata(
 
     /**
      * Saga monitoring configuration.
+     * @param metricsEnabled whether the saga emits metrics
+     * @param tracingEnabled whether the saga emits trace spans
+     * @param alertOnFailure where a failure alert is sent
+     * @param slaThreshold the duration beyond which the saga is treated as breaching its SLA
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -130,6 +175,10 @@ public record SagaMetadata(
      * step names — resolving the edge against the actual step set, and generating
      * the dispatch/await/compensate body, is build-time tooling's job.
      *
+     * @param from the step the edge leaves
+     * @param to the step the edge enters
+     * @param on the outcome that takes this edge
+     * @param guard an expression that must hold for the edge to be taken
      * @since 0.7.0
      */
     @JsonIgnoreProperties(ignoreUnknown = true)

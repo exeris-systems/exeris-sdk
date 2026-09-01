@@ -31,6 +31,12 @@ import java.util.List;
  * processor passes {@code null} for it today, so field-level render detail
  * stays on {@code @UI} until the facet subsumption lands.
  *
+ * @param type the node's block kind
+ * @param customType the component to render, when {@link #type()} is the custom escape hatch
+ * @param binding where the node's value comes from
+ * @param props the node's configuration, carried as serialized properties
+ * @param children the nodes nested inside this one
+ * @param field the per-field presentation override, when the node renders a field
  * @since 0.8.0
  * @see BlockType
  * @see BindingMetadata

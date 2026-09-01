@@ -36,6 +36,16 @@ import java.util.List;
  * records use, so {@code source-model} never pulls the annotation module's
  * types.
  *
+ * @param name the projection's identity
+ * @param description human-readable prose for generated documentation
+ * @param aggregateTypes the aggregates whose events feed the projection
+ * @param events the events the projection consumes
+ * @param eventClassNames the fully qualified types of those events
+ * @param topicPattern the topic pattern the projection subscribes to
+ * @param model the read model the projection maintains
+ * @param schema the schema the read model is stored under
+ * @param fields the read model's fields
+ * @param cacheable whether reads of the projection are cached
  * @author Exeris SDK Team
  * @since 0.1.0
  */

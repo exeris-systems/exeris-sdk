@@ -37,6 +37,10 @@ import java.util.Objects;
  * action runs as is an open question tracked in ADR-072 — a declared trigger has no
  * submission event, and the kernel captures identity at submission.
  *
+ * @param kind which of the three trigger shapes this schedule is — the discriminator that makes
+ *        a cron-and-interval combination unrepresentable rather than merely discouraged
+ * @param expression the trigger itself, read according to {@link #kind()}: a five-field cron
+ *        expression, an ISO-8601 duration, or an ISO-8601 instant
  * @since 0.11.0
  * @see ActionMetadata#schedule()
  */

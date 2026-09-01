@@ -7,6 +7,20 @@ import java.util.List;
 /**
  * Metadata for entity relationships with UI configuration for autocomplete/select.
  *
+ * @param name the relationship's identity
+ * @param fieldName the field on this entity that holds the association
+ * @param targetEntity the entity on the other end
+ * @param type the relationship's cardinality
+ * @param mappedBy the field on the target that owns the association, when this side does not
+ * @param lazy whether the association is loaded on demand rather than eagerly
+ * @param cascade which operations propagate to the target
+ * @param fetch how the association is fetched
+ * @param optional whether the association may be absent
+ * @param orphanRemoval whether a target detached from this entity is deleted
+ * @param displayField the target's field shown when the association is presented
+ * @param valueField the target's field carried as the stored value
+ * @param searchEndpoint the endpoint a generated lookup queries for targets
+ * @param joinColumns the columns joining the two tables
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -29,13 +43,31 @@ public record RelationshipMetadata(
         List<String> joinColumns
 ) {
 
+    /**
+
+     * The cardinality of an association between two entities.
+
+     */
+
     public enum RelationType {
         ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
     }
 
+    /**
+
+     * Which operations on this entity propagate to the association's target.
+
+     */
+
     public enum CascadeType {
         ALL, PERSIST, MERGE, REMOVE, REFRESH, DETACH, NONE
     }
+
+    /**
+
+     * Whether an association is loaded with its owner or on first access.
+
+     */
 
     public enum FetchType {
         LAZY, EAGER

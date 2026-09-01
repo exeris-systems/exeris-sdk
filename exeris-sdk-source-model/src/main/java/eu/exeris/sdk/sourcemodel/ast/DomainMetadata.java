@@ -22,6 +22,64 @@ import java.util.List;
  *
  * <p>Field names match {@code @ExerisDomain} annotation attributes.
  *
+ * @param entityName the annotated class's simple name — the entity's identity throughout the
+ *        generated tree, and what {@link #effectiveTableName()} falls back to
+ * @param packageName the package the annotated class is declared in; generated Java is emitted
+ *        relative to it
+ * @param module the logical module the entity belongs to ({@code @ExerisDomain.module})
+ * @param path the base API path for the entity's generated endpoints
+ * @param aggregate the aggregate root this entity belongs to, when it is not one itself
+ * @param description human-readable prose for generated documentation
+ * @param apiVersion the API version segment the generated endpoints are published under
+ * @param tags grouping labels carried into the generated OpenAPI/AsyncAPI document
+ * @param restApi whether REST endpoints are generated for this entity
+ * @param graphqlApi whether a GraphQL schema and resolvers are generated
+ * @param realTimeApi whether real-time streaming endpoints (SSE/WebTransport) are generated
+ * @param internalClient whether an internal HTTP client is generated for service-to-service calls
+ * @param tenantScoped whether rows are tenant-partitioned. <strong>Deprecated in favour of
+ *        {@link #dataScope()}</strong>, which expresses the same question as a mutually-exclusive
+ *        tier rather than a boolean; read through {@link #effectiveDataScope()}, which falls back
+ *        to this flag when no tier was declared
+ * @param softDelete whether deletion marks a row rather than removing it
+ * @param audited whether created/updated timestamp and user columns are maintained
+ * @param versioned whether optimistic locking is enabled through a version column
+ * @param roles default roles required to reach this entity's API. Declared but not extracted:
+ *        the kernel's edge decides on scopes and declares no role kind (kernel ADR-061/ADR-063),
+ *        so what this would compile into is undecided
+ * @param permissions default permissions required to reach this entity's API — the half of the
+ *        pair that maps onto a named scope, and so the one a generated route policy could carry
+ * @param sensitive whether the entity holds sensitive or personal data, which tightens logging,
+ *        export and at-rest handling in the generated tree
+ * @param cacheable whether generated reads are cached
+ * @param cacheTtl the cache entry lifetime, as an ISO-8601 duration
+ * @param cacheRegion the cache region or namespace entries are placed in
+ * @param fullTextSearch whether a full-text search index and query surface are generated
+ * @param searchConfig the PostgreSQL text-search configuration the index is built with
+ * @param tableName the physical table name. Optional: blank means "derive it", and
+ *        {@link #effectiveTableName()} is the accessor that applies the snake-case default
+ * @param fields the entity's persisted and presented fields, in declaration order
+ * @param actions the domain actions callable on the entity
+ * @param events the domain events the entity publishes
+ * @param relationships the entity's associations to other entities
+ * @param projections the read models derived from the entity
+ * @param eventHandlers the handlers this entity declares for events, its own or another's
+ * @param uiMetadata the entity-level presentation facet driving generated UI
+ * @param graphMetadata the graph-projection facet, when the entity is mirrored into a graph store
+ * @param sagaMetadata the saga definition, when the entity carries one
+ * @param eventSourced the event-sourcing facet, when the entity is sourced from its event stream
+ * @param internalApi the internal-API facet: what is hidden, read-only or disabled on the
+ *        generated surface
+ * @param systemFields which system columns (primary key, tenant, audit, soft-delete, version)
+ *        the entity carries and what they are named
+ * @param rules the entity-level invariants declared with {@code @Rule}
+ * @param dataScope the data-scope tier — the mutually-exclusive successor of
+ *        {@link #tenantScoped()}. Absent means no tier was declared; read through
+ *        {@link #effectiveDataScope()}
+ * @param routeAccess whether the entity's generated routes admit unauthenticated callers.
+ *        Absent means the author declared nothing and the generated policy's default decides
+ *
+ *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator emits a route
+ *        policy from it, and it is outside the 1.0.0 freeze (ADR-072)
  * @author Exeris SDK Team
  * @since 0.1.0
  */

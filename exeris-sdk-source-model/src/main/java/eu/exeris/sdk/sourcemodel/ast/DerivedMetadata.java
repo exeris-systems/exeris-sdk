@@ -22,6 +22,10 @@ import java.util.Objects;
  * plain strings; resolution against the relationship graph is build-time
  * tooling's job. See {@code RFC-2026-06-18}.
  *
+ * @param expression the expression producing the field's value
+ * @param language the language {@link #expression()} is written in
+ * @param dependsOn the fields the expression reads, which is what tells a generator when to
+ *        recompute
  * @since 0.7.0
  * @see RuleMetadata
  */

@@ -185,6 +185,36 @@ class AstSchemaContractTest {
                 "x-exeris-prose-coverage", "x-exeris-reader-requirements");
     }
 
+    @Test
+    @DisplayName("every definition and every property carries prose — the ratchet, not a snapshot")
+    void theSchemaIsFullyDocumented() {
+        JsonNode coverage = schema.get("x-exeris-prose-coverage");
+        int properties = coverage.get("properties").asInt();
+        int describedProperties = coverage.get("describedProperties").asInt();
+        int definitions = coverage.get("definitions").asInt();
+        int describedDefinitions = coverage.get("describedDefinitions").asInt();
+
+        assertThat(properties)
+                .as("an empty document would satisfy the equality below vacuously")
+                .isGreaterThan(300);
+
+        // Held at 100% deliberately. This schema is what a non-JVM consumer reads instead of
+        // the sources, and it is attached to a release that will sit on Maven Central
+        // permanently — a property with a type and no meaning is the shape that makes the
+        // published contract useless to the audience it was built for. Documenting all 362 was
+        // the work; keeping the number there is what stops it decaying one component at a time.
+        //
+        // Adding a record component therefore means adding its @param. A comment written above
+        // the component inside the record header will NOT satisfy this — annotation processing
+        // cannot read one; AstComponentProseConventionTest is the guard that says so directly.
+        assertThat(describedProperties)
+                .as("every AST record component needs an @param tag on its record")
+                .isEqualTo(properties);
+        assertThat(describedDefinitions)
+                .as("every AST record and enum needs a doc comment")
+                .isEqualTo(definitions);
+    }
+
     // ---- helpers ---------------------------------------------------------
 
     private static void collectRefs(JsonNode node, List<String> into) {

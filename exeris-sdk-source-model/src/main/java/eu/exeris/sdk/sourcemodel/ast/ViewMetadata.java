@@ -36,6 +36,13 @@ import java.util.Objects;
  * {@code ComponentNodeMetadata.field} seed exists but the processor does not
  * populate it yet, so field-level render detail stays on {@code @UI}.
  *
+ * @param name the view's identity
+ * @param kind whether the view is route-bearing or a fragment
+ * @param route the path the view is reachable at; absent for a fragment
+ * @param title the heading the view shows
+ * @param titleKey the message-bundle key for {@link #title()}; the literal is the fallback
+ * @param layout the layout the view's regions are arranged in
+ * @param regions the view's regions, each holding components
  * @since 0.8.0
  * @see ViewKind
  * @see RegionMetadata
