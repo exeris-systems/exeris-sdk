@@ -199,11 +199,11 @@ public record DomainEventMetadata(
     }
 
     /**
-     * The event's trigger facet.
+     * Starts a builder for a {@code DomainEventMetadata}.
      *
-     * @since 0.8.0 (EV1)      *
-     * @param name the {@code name} the result carries
-     * @return the {@code Builder}
+     * @param name the event's name
+     * @return a new builder
+     * @since 0.8.0 (EV1)
      */
     public static Builder builder(String name) {
         return new Builder(name);

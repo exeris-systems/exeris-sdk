@@ -141,11 +141,11 @@ public record ProjectionMetadata(
     }
 
     /**
-     * Declarative projection metadata.
+     * Starts a builder for a {@code ProjectionMetadata}.
      *
-     * @since 0.7.0      *
-     * @param name the {@code name} the result carries
-     * @return the {@code Builder}
+     * @param name the projection's name
+     * @return a new builder
+     * @since 0.7.0
      */
     public static Builder builder(String name) {
         return new Builder(name);
