@@ -395,10 +395,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   derived accessor and field carry no source position, so neither helps. `@param`
   on the record **does** resolve — proven by probe — and is the canonical Java form,
   but **no** record in the package used it, so property-level `description` was
-  empty. Rather than ship a schema that reads as truncated, the document carries
-  `x-exeris-prose-coverage` with the counts and the reason. Converting the existing
-  header prose is a separate decision: much of it is multi-paragraph and a `@param`
-  tag is a phrase
+  empty. The document carried `x-exeris-prose-coverage` with the counts and the
+  reason, rather than shipping a schema that reads as truncated.
+  **Closed in the same milestone:** the fifteen header comments were transcribed and
+  the remaining 347 components written, so all 362 properties and all 61 definitions
+  now carry prose. Two gates hold it there — `AstComponentProseConventionTest`
+  refuses the header form, `AstSchemaContractTest` refuses a coverage drop — because
+  documenting it once is not the same as keeping it documented, and the artifact this
+  schema ships on will sit on Maven Central permanently
 
 ### Kernel 0.12 — verified, and nothing moves
 

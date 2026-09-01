@@ -81,6 +81,14 @@ for per-version upgrade steps.
   components 0.8.0, `schedule` 0.11.0, `routeAccess` 0.12.0) are stated in the prose instead —
   which also puts them in the schema, where a consumer pinning an older SDK can read them.
 
+- **Every AST record component is documented, and a gate holds it there.** All 362 components
+  across 43 records, and all 61 definitions, now carry prose reaching
+  `META-INF/exeris/ast-schema.json` — up from 15. `AstSchemaContractTest` fails if coverage
+  drops below 100%, so adding a component means adding its `@param`, and
+  `AstComponentProseConventionTest` refuses the header-comment form that looks documented and
+  reaches nothing. This is the bar for publishing to Maven Central: the schema is what a
+  non-JVM consumer reads instead of the sources, and the artifact carrying it is permanent.
+
 ### Fixed
 
 - **"Most AST components are documented in the record header" — measured, they are not.**

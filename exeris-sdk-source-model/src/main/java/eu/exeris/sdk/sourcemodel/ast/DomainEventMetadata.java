@@ -67,6 +67,17 @@ import java.util.List;
  * there is no computed-field source in the persisted field list. See the
  * {@code // TODO(EV1)} note in {@code ExerisDomainProcessor.extractSingleEventMetadata}.
  *
+ * @param name the event's name — its identity on the wire and in generated handlers
+ * @param topic the messaging topic the event is published to
+ * @param description human-readable prose for generated documentation
+ * @param aggregateType the aggregate the event originates from
+ * @param payloadFields the entity fields carried in the event payload
+ * @param sensitiveFields the payload fields holding sensitive data, which generated
+ *        serialization and logging must treat accordingly
+ * @param trigger when the event fires — the discriminator between a lifecycle moment, an
+ *        action, and a field change
+ * @param actionName the action the event fires on, when {@link #trigger()} names one
+ * @param fieldName the field whose change fires the event, when {@link #trigger()} names one
  * @author Exeris SDK Team
  * @since 0.1.0
  */

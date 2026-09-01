@@ -21,6 +21,11 @@ import java.util.Objects;
  * {@link #effectiveLanguage()} ⇒ {@link #DEFAULT_LANGUAGE}), so the common case
  * carries neither on the wire. See {@code RFC-2026-06-18}.
  *
+ * @param name the rule's identity
+ * @param expression the invariant that must hold
+ * @param message the text reported when it does not
+ * @param severity how a violation is treated
+ * @param language the language {@link #expression()} is written in
  * @since 0.7.0
  * @see DerivedMetadata
  */

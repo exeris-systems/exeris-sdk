@@ -15,6 +15,61 @@ import java.util.Objects;
  * {@code minLength} / {@code maxLength} / {@code pattern}); DB NOT NULL /
  * not-blank semantics derive from {@link #required()} at generator level.
  *
+ * @param name the Java field's name — the field's identity throughout the generated tree
+ * @param type the field's Java type, as written in source
+ * @param columnName the physical column name; blank means the generator derives it from
+ *        {@link #name()}
+ * @param displayName the label a generated UI shows for the field
+ * @param description human-readable prose for generated documentation and UI help text
+ * @param required whether a value must be present. This is the <em>single</em> carrier of the
+ *        obligation: database NOT NULL and not-blank checks are derived from it at generator
+ *        level rather than declared separately (ADR-054)
+ * @param unique whether values must be unique across rows
+ * @param indexed whether a database index is generated for the column
+ * @param searchable whether the field participates in generated search queries
+ * @param sortable whether generated list views may sort on the field
+ * @param filterable whether generated list views may filter on the field
+ * @param audited whether changes to this field are recorded in the audit trail
+ * @param readOnly whether the field is presented but never written by a client
+ * @param hidden whether the field is omitted from generated presentation surfaces
+ * @param defaultValue the value applied when a client supplies none, as source text
+ * @param minLength the minimum string length, from {@code @Validation}. Absent means no bound;
+ *        this component carries its own {@code NON_NULL} so a zero bound survives the wire
+ * @param maxLength the maximum string length, from {@code @Validation}. Absent means no bound;
+ *        carries its own {@code NON_NULL} for the same reason as {@link #minLength()}
+ * @param min the inclusive numeric floor, from {@code @Validation}. Absent means no bound;
+ *        carries its own {@code NON_NULL}, which is what lets {@code min = 0} — a non-negativity
+ *        floor — survive a posture that treats boxed zero as empty
+ * @param max the inclusive numeric ceiling, from {@code @Validation}. Absent means no bound;
+ *        carries its own {@code NON_NULL} for the same reason as {@link #min()}
+ * @param pattern the regular expression a string value must match, from {@code @Validation}.
+ *        Unlike the numeric bounds it stays under the record's posture — a string has no
+ *        zero-analog hazard, and {@code ""} is correctly dropped
+ * @param format the semantic format hint (e.g. an email or URL shape) driving generated
+ *        validation and input widgets
+ * @param dataType a free-form presentation hint about how the value should be rendered. It is
+ *        not a constraint and does not declare storage: {@code @Blob} is what says a field holds
+ *        a binary object
+ * @param enumType the fully qualified name of the enum the field's values come from, when it is
+ *        enum-typed
+ * @param computed whether the value is derived rather than stored
+ * @param computedFrom the names of the fields a {@link #computed()} value is derived from
+ * @param inCreate whether the field is accepted on the generated create surface
+ * @param inUpdate whether the field is accepted on the generated update surface
+ * @param displayNameKey the message-bundle key for {@link #displayName()}; when set, the literal
+ *        display name is the fallback text. Absent when unset
+ * @param descriptionKey the message-bundle key for {@link #description()}, on the same terms as
+ *        {@link #displayNameKey()}
+ * @param derived the declarative derivation facet, present when the field carries a
+ *        {@code @Derived} expression and absent for an ordinary stored field
+ *
+ *        <p>Added in 0.7.0
+ * @param blob the binary-object facet, present when the field carries a {@code @Blob}
+ *        declaration and absent for an ordinary inline-valued field
+ *
+ *        <p>Added in 0.11.0. Reserved: no processor populates it and no generator consumes it,
+ *        and it is outside the 1.0.0 freeze while the kernel holds {@code …spi.storage.blob} at
+ *        tier {@code preview} (ADR-072)
  * @author Exeris SDK Team
  * @since 0.1.0
  */

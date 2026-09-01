@@ -5,6 +5,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Metadata for system fields (audit, soft-delete, tenant).
+ *
+ * @param primaryKeyField the name of the primary-key field
+ * @param createdAtField the name of the creation-timestamp audit field
+ * @param createdByField the name of the creating-principal audit field
+ * @param updatedAtField the name of the last-update-timestamp audit field
+ * @param updatedByField the name of the last-updating-principal audit field
+ * @param tenantIdField the name of the tenant discriminator field
+ * @param versionField the name of the optimistic-locking version field
+ * @param softDeleteField the name of the boolean soft-delete flag field
+ * @param softDeleteTimestampField the name of the soft-deletion timestamp field
+ * @param softDeletedByField the name of the soft-deleting-principal field
  * @author Exeris SDK Team
  * @since 0.1.0
  */

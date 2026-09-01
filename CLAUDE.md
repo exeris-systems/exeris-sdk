@@ -222,8 +222,10 @@ Four things to know before touching it:
   wire contract.
 - **Property prose comes from `@param` on the record, and nothing else works.** A comment
   written above a component inside the record header renders in javadoc but is unreachable
-  from annotation processing — four routes were measured and all return `null`. If you want a
-  component described in the schema, add a `@param` tag.
+  from annotation processing — four routes were measured and all return `null`. Adding a
+  record component therefore means adding its `@param`: coverage is held at **100%** by
+  `AstSchemaContractTest`, and `AstComponentProseConventionTest` refuses the header form
+  outright. Both fail loudly rather than letting the schema quietly thin out.
 - **No `required` array, deliberately.** All three postures the package uses (`NON_NULL`,
   `NON_DEFAULT`, `NON_EMPTY`) omit rather than write, so any `required` list would reject
   documents this SDK produces. Which components a compact constructor rejects as `null` is a

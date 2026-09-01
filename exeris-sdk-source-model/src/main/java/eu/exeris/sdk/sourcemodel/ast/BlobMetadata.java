@@ -27,6 +27,11 @@ import java.util.List;
  * {@code …spi.storage.blob} at tier {@code preview}, so the shape is excluded from
  * the 1.0.0 freeze and a 1.x minor may still change it.
  *
+ * @param container the container the object is addressed in, relative to the caller's
+ *        namespace — never an absolute or physical location. Absent means the tooling derives
+ *        it from the domain
+ * @param contentTypes the media types the generated upload surface accepts; empty means
+ *        unrestricted
  * @since 0.11.0
  * @see FieldMetadata#blob()
  */

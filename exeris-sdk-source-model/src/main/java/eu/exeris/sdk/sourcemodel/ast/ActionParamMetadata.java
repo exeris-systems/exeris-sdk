@@ -9,6 +9,18 @@ import java.util.Objects;
 /**
  * Metadata for action parameters defined with @ActionParam annotation.
  *
+ *
+ * @param name the parameter's name, as the generated request surface exposes it
+ * @param type the parameter's Java type, as written in source
+ * @param displayName the label a generated UI shows for the input
+ * @param description human-readable prose for generated documentation and help text
+ * @param required whether the parameter must be supplied
+ * @param defaultValue the value applied when a client supplies none, as source text
+ * @param pattern the regular expression a string value must match
+ * @param minLength the minimum string length; absent means no bound
+ * @param maxLength the maximum string length; absent means no bound
+ * @param min the inclusive numeric floor; absent means no bound
+ * @param max the inclusive numeric ceiling; absent means no bound
  * @author Exeris SDK Team
  * @since 0.1.0
  */

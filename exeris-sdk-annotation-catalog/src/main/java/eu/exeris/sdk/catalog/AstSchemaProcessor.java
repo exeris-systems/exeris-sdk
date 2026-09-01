@@ -384,11 +384,9 @@ public final class AstSchemaProcessor extends AbstractProcessor {
      * field are both javac-derived and carry no source position, so neither helps.
      *
      * <p>{@code @param} on the record does resolve, and is the canonical Java way to document
-     * a record component. It is now the only form this package uses — the fifteen header
-     * comments that existed were converted, and {@code AstComponentProseConventionTest} fails
-     * if one comes back. Most components carry no prose at all, which is why property-level
-     * {@code description} is sparse; the document says so at its root rather than letting a
-     * consumer infer that the properties are meaningless.
+     * a record component. It is now the only form this package uses, and every component has
+     * one: {@code AstComponentProseConventionTest} fails if a header comment comes back, and
+     * {@code AstSchemaContractTest} fails if any definition or property loses its prose.
      */
     private void putComponentDoc(ObjectNode node, RecordComponentElement component, DocCommentTree recordDoc) {
         if (recordDoc == null) {
@@ -483,9 +481,10 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         node.put("describedProperties", describedProperties);
         node.put("note",
                 "Property prose comes from @param tags on the record — the only form that reaches "
-                        + "this document, and the convention the AST package now follows. A component "
-                        + "with no @param has no prose to carry, so a low describedProperties count is "
-                        + "an accurate schema rather than a truncated one.");
+                        + "this document, and the convention the AST package follows. Coverage is held "
+                        + "at 100% by a build gate, so describedProperties below properties means a "
+                        + "component was added without its @param rather than that prose was omitted "
+                        + "by choice.");
         return node;
     }
 

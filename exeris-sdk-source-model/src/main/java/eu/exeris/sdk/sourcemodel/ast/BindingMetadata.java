@@ -22,6 +22,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * view generator (RFC-2026-06-28, tooling); the ADR-047 leaf-field facet is the
  * remaining unpopulated piece.
  *
+ * @param source where the bound value comes from
+ * @param ref the name of the thing being bound, interpreted per {@link #source()}
+ * @param path the path into that thing, when the binding reaches inside it
+ * @param expression the expression producing the value, when the binding computes one
+ * @param language the language {@link #expression()} is written in
  * @since 0.8.0
  * @see ComponentNodeMetadata
  */

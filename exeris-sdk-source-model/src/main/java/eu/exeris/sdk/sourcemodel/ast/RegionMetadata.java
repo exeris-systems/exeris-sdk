@@ -19,6 +19,8 @@ import java.util.List;
  * generator (RFC-2026-06-28, tooling); the ADR-047 leaf-field facet is the
  * remaining unpopulated piece.
  *
+ * @param slot the layout slot the region fills
+ * @param components the component nodes placed in the region, in order
  * @since 0.8.0
  * @see ComponentNodeMetadata
  */

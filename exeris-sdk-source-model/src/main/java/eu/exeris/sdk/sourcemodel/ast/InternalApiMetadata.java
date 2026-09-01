@@ -8,6 +8,14 @@ import java.util.List;
  * Metadata for internal API visibility and access control.
  * Supports read-only mode, disabled actions, and internal-only access.
  *
+ * @param hidden whether the entity is omitted from generated public documentation
+ * @param readOnly whether the generated surface offers reads only
+ * @param internal whether the entity is internal — the predicate
+ *        {@link DomainMetadata#isInternal()} reads
+ * @param reason why the surface is restricted, for generated documentation
+ * @param since the version from which the restriction applies
+ * @param disabledActions the actions withheld from the generated surface
+ * @param allowedRoles the roles still permitted to reach it
  * @author Exeris SDK Team
  * @since 0.1.0
  */

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Metadata for graph queries.
+ * @param name the query's identity
+ * @param cypher the traversal, written in Cypher
+ * @param description human-readable prose for generated documentation
  * @author Exeris SDK Team
  * @since 0.1.0
  */

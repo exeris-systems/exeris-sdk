@@ -16,6 +16,8 @@ import java.util.Objects;
  * {@code null} when unversioned (an empty {@code @Provides(version = "")} maps to
  * {@code null}).
  *
+ * @param service the service name offered — a source-written string, not a type reference
+ * @param version the version of that service this capability offers
  * @author Exeris SDK Team
  * @since 0.4.0
  */
