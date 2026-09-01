@@ -122,10 +122,9 @@ class AstSchemaContractTest {
         // AbstractMapperPostureTck is the executable statement of the same fact.
         String why = requirement(requirements, "FAIL_ON_NULL_FOR_PRIMITIVES").get("why").asString();
         assertThat(why)
-                .as("the hazard is an explicit null, and the document must say which one it means")
-                .containsIgnoringCase("explicit");
-        assertThat(why)
-                .as("an absent property is not the hazard; do not restate the superseded claim")
+                .as("the entry must name the explicit-null hazard, and must not restate the "
+                        + "superseded claim that an absent property reaches the constructor as null")
+                .containsIgnoringCase("explicit")
                 .doesNotContainIgnoringCase("reaches the constructor as null");
     }
 
