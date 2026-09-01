@@ -37,7 +37,7 @@ import java.util.List;
  * @param events the events the handler consumes, when it consumes several
  * @param eventClassNames the fully qualified types of those events
  * @param topic the messaging topic the handler subscribes to
- * @param condition an expression gating whether an received event is handled
+ * @param condition an expression gating whether a received event is handled
  * @param order the handler's position among handlers of the same event
  * @param priority the dispatch priority relative to other handlers
  * @param idempotent whether re-delivering the same event is safe

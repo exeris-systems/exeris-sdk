@@ -68,11 +68,8 @@ public record SagaMetadata(
     public boolean hasTransitions() { return transitions != null && !transitions.isEmpty(); }
 
     /**
-
      * How compensation is driven once a saga step fails.
-
      */
-
     public enum CompensationStrategy {
         /** All steps must be compensated or saga fails */
         ALL_OR_NOTHING,
@@ -83,11 +80,8 @@ public record SagaMetadata(
     }
 
     /**
-
      * The order in which a failed saga's compensations run.
-
      */
-
     public enum CompensationOrder {
         /** Compensate in reverse order of execution */
         REVERSE,
@@ -128,11 +122,8 @@ public record SagaMetadata(
     }
 
     /**
-
      * What kind of occurrence starts a saga.
-
      */
-
     public enum TriggerType {
         EVENT,
         SCHEDULED,

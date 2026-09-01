@@ -59,11 +59,8 @@ public record EventSourcedMetadata(
     public boolean hasEventHandlers() { return eventHandlers != null && !eventHandlers.isEmpty(); }
 
     /**
-
      * How snapshots of a rebuilt aggregate are taken.
-
      */
-
     public enum SnapshotStrategy {
         /** Take snapshot every N events */
         COUNT_BASED,
@@ -78,11 +75,8 @@ public record EventSourcedMetadata(
     }
 
     /**
-
      * How concurrent appends to one aggregate's event stream are reconciled.
-
      */
-
     public enum ConflictResolution {
         /** Optimistic locking with version check */
         OPTIMISTIC_LOCK,

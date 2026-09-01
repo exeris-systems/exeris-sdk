@@ -44,31 +44,22 @@ public record RelationshipMetadata(
 ) {
 
     /**
-
      * The cardinality of an association between two entities.
-
      */
-
     public enum RelationType {
         ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
     }
 
     /**
-
      * Which operations on this entity propagate to the association's target.
-
      */
-
     public enum CascadeType {
         ALL, PERSIST, MERGE, REMOVE, REFRESH, DETACH, NONE
     }
 
     /**
-
      * Whether an association is loaded with its owner or on first access.
-
      */
-
     public enum FetchType {
         LAZY, EAGER
     }
