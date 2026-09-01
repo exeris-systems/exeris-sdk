@@ -16,8 +16,12 @@ import java.util.Objects;
  *        fails closed rather than rebinding to the newest plan (kernel ADR-064)
  *
  * @param steps the saga's steps, in order
- * @param compensationStrategy how compensation is driven when a step fails
- * @param compensationOrder the order compensations run in
+ * @param compensationStrategy how compensation is driven when a step fails. <strong>Declared but
+ *        not populated:</strong> {@code @Saga.compensationStrategy} exists and an author can set
+ *        it, but neither the processor nor the {@code -io} reader extracts it, so on every build
+ *        path this holds the builder default
+ * @param compensationOrder the order compensations run in. Declared but not populated, on the
+ *        same terms as {@link #compensationStrategy()}
  * @param timeout how long the whole saga may run, as an ISO-8601 duration
  * @param compensationTimeout the same bound for the compensation phase
  * @param maxRetries how many times a failed step is retried before compensating

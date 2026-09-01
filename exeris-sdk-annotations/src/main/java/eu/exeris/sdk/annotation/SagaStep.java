@@ -75,7 +75,28 @@ public @interface SagaStep {
 
     /**
      * Step execution order (lower = first).
-     * <p>Steps with same order can execute in parallel if parallel = true.
+     *
+     * <p><strong>This is live, and it is the only thing that decides the sequence.</strong> Both
+     * producers read it and sort by it — {@code ExerisDomainProcessor.extractSagaSteps} and the
+     * {@code exeris-sdk-source-model-io} reader, which mirrors it deliberately. The Java kernel
+     * generator then emits a strict linear chain in list order and says it does not consult
+     * {@code order()}; that is true of the generator alone and harmless, because the list it
+     * receives was already sorted. Where a method sits in the file decides nothing except a tie:
+     * the sort is stable, so equal {@code order} keeps declaration sequence.
+     *
+     * <p><strong>Changing it is a breaking change for sagas already running.</strong> Kernel
+     * ADR-062 binds resume to a step's <em>name at its position</em>: a parked flow records where
+     * it stopped, and a wake whose plan carries a different name there fails closed rather than
+     * resuming into the wrong step. Reordering steps is therefore a drain-before-deploy operation,
+     * not a refactor — the same procedure a rename requires.
+     *
+     * <p><strong>No default, deliberately.</strong> Giving one would let every step share it, and
+     * a stable sort would then quietly hand the sequence to declaration position — turning an
+     * innocuous method move into the breaking change described above, with nothing in the source
+     * to show it happened. Requiring the value keeps the ordering a statement the author made.
+     *
+     * <p>For what "same order" is documented to mean, see {@link #parallel()} — and read its note
+     * on what the platform does with it today.
      *
      * @return execution order
      */
@@ -432,6 +453,17 @@ public @interface SagaStep {
 
     /**
      * Step can run in parallel with other parallel steps of same order.
+     *
+     * <p><strong>Not honoured today — the generated flow is sequential.</strong> The attribute is
+     * extracted and reaches {@code SagaStepMetadata.parallel()}, and there it stops: no generator
+     * reads it, and the Java kernel generator emits a strict linear chain of transitions. Two
+     * steps sharing an {@link #order()} and both declaring {@code parallel = true} are emitted one
+     * after the other.
+     *
+     * <p>This is not a gap {@code exeris-tooling} can close on its own. Concurrency has to be
+     * expressible in the kernel's {@code FlowDefinition} before a generator can emit it; until it
+     * is, a linear chain is the only correct compilation of these steps, and the honest reading of
+     * this attribute is "recorded author intent", not "runs in parallel".
      *
      * @return true for parallel execution
      */
