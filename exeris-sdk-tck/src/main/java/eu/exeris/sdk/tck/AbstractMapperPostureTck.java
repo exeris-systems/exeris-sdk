@@ -52,7 +52,14 @@ public abstract class AbstractMapperPostureTck extends AbstractExerisTck {
      * break on a published artifact — which the semver gate reports as
      * {@code CONSTRUCTOR_LESS_ACCESSIBLE}, and did.
      */
+    // java:S5993 asks for protected here, and is right in general — an abstract class's
+    // constructor exists only for subclasses. It is wrong for this one: the constructor it
+    // replaces was implicit and therefore public, so narrowing it breaks binary
+    // compatibility on a published artifact. japicmp reported exactly that
+    // (CONSTRUCTOR_LESS_ACCESSIBLE) when it was first written as protected.
+    @SuppressWarnings("java:S5993")
     public AbstractMapperPostureTck() {
+        // Nothing to initialize; declared so it carries a comment rather than being implicit.
     }
 
     /**

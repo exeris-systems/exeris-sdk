@@ -94,6 +94,7 @@ public record InternalApiMetadata(
          * class is public, and narrowing it would be a binary break.
          */
         public Builder() {
+            // Nothing to initialize: every component has its own field default.
         }
 
         private boolean hidden = false;
