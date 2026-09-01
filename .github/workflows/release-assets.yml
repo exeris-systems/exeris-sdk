@@ -46,8 +46,8 @@ jobs:
       # The catalog is written by the annotation processor during the annotations
       # module's own compilation, so `package` on that module is enough — no need
       # to run the whole reactor or its gates to produce it.
-      - name: Build the annotations module
-        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations -am package -DskipTests -Djapicmp.skip=true
+      - name: Build the modules that carry the descriptors
+        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model -am package -DskipTests -Djapicmp.skip=true
 
       - name: Locate the catalog and check it describes this tag
         id: catalog
@@ -70,6 +70,27 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Attaching a catalog of $COUNT annotations at version $STAMPED to $TAG"
 
+      - name: Locate the AST schema and check it describes this tag
+        id: schema
+        run: |
+          set -euo pipefail
+          SCHEMA=exeris-sdk-source-model/target/classes/META-INF/exeris/ast-schema.json
+          test -s "$SCHEMA" || { echo "::error::$SCHEMA was not generated"; exit 1; }
+
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          STAMPED=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['sdkVersion'])" "$SCHEMA")
+          if [ "$STAMPED" != "${TAG#v}" ]; then
+            echo "::error::AST schema says sdkVersion=$STAMPED but the tag is $TAG"
+            exit 1
+          fi
+          # astSchemaVersion is deliberately NOT compared against the tag: the wire shape
+          # changes on its own schedule and is expected to lag the SDK version. That it
+          # matches SchemaVersion.CURRENT is guarded in the build, by AstSchemaContractTest.
+          AST=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['astSchemaVersion'])" "$SCHEMA")
+          DEFS=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['definitionCount'])" "$SCHEMA")
+          echo "path=$SCHEMA" >> "$GITHUB_OUTPUT"
+          echo "Attaching an AST schema of $DEFS definitions (wire format $AST) at version $STAMPED to $TAG"
+
       # Uploads to an EXISTING release; this job never creates one. That matches how
       # this repo cuts a release — `gh release create` publishes the tag and the release
       # object together, so the release is already there when the tag-push webhook reaches
@@ -80,4 +101,7 @@ jobs:
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.catalog.outputs.tag }}" "${{ steps.catalog.outputs.path }}" --clobber
+        run: |
+          gh release upload "${{ steps.catalog.outputs.tag }}" \
+            "${{ steps.catalog.outputs.path }}" \
+            "${{ steps.schema.outputs.path }}" --clobber

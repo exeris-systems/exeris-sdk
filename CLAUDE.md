@@ -66,7 +66,7 @@ npm run test:coverage   # Vitest + the 85% per-file gate
 | `exeris-sdk-composition-spec` | **yes** (jar) | `cap-manifest.json` schema + the one canonical content binding (ADR-024 obligation 8b); zero runtime deps |
 | `exeris-sdk-composition-lifecycle` | **yes** (jar) | Cap-facing `CapabilityLifecycleHooks` interface — the four-phase lifecycle contract (ADR-024 obligation 8a); zero deps (enforcer-proven), so cap authors compile against annotations + this jar only |
 | `exeris-sdk-composition-runtime` | **yes** (jar) | SKU-boot stamp asserter + boot conductor (ADR-024 obligations 8a/8a′); ships into the SKU jar; deps = spec + lifecycle + `jackson-databind` |
-| `exeris-sdk-annotation-catalog` | **no** (build-time tool) | The annotation processor that emits `annotation-catalog.json`; runs on `exeris-sdk-annotations`' processor path and ships its output, not itself. `maven.deploy.skip` |
+| `exeris-sdk-annotation-catalog` | **no** (build-time tool) | The two contract emitters: `AnnotationCatalogProcessor` (emits `annotation-catalog.json`, on `exeris-sdk-annotations`' processor path) and `AstSchemaProcessor` (emits `ast-schema.json`, on `exeris-sdk-source-model`'s). Both ship their output, not themselves; the artifactId predates the second emitter. `maven.deploy.skip` |
 | `exeris-sdk-ui-kit` | npm, not Maven | Excluded from the reactor in `pom.xml` |
 
 When adding a new Maven module that's intended for publish, mirror the `attach-sources` + `attach-javadocs` executions from `exeris-sdk-annotations/pom.xml` — without them, Maven Central rejects the artifact.
@@ -192,6 +192,41 @@ That channel needs no publishing infrastructure, so it does not wait for the Cen
 It uploads to an *existing* release and never creates one — which is how releases are cut
 here (`gh release create` publishes tag and release together). A tag pushed alone with
 `git push --tags` fails the job; re-run it via `workflow_dispatch` once the release exists.
+
+## The AST JSON Schema
+
+`META-INF/exeris/ast-schema.json` ships inside `exeris-sdk-source-model` and is attached to
+each GitHub Release. Same technique as the annotation catalog: `AstSchemaProcessor` in
+`exeris-sdk-annotation-catalog`, on **`exeris-sdk-source-model`**'s javac processor path
+(again not a dependency edge — the published jar stays free of the emitter and of databind,
+and the module's enforcer rule still proves it).
+
+Four things to know before touching it:
+
+- **Two versions, and they are not the same number.** `sdkVersion` comes from
+  `${project.version}`; `astSchemaVersion` is the AST wire shape and comes from the
+  `ast.schema.version` property in `exeris-sdk-source-model/pom.xml`. That property duplicates
+  `SchemaVersion.CURRENT`, which cannot be read from the POM or the declaration model because
+  it is deliberately no longer a compile-time constant. **Bump both together** —
+  `AstSchemaContractTest` fails when they drift.
+- **Jackson's annotations do not stay on a record component.** `@JsonInclude` and
+  `@JsonProperty` target `{ANNOTATION_TYPE, METHOD, FIELD, TYPE, PARAMETER}` — no
+  `RECORD_COMPONENT` — so `RecordComponentElement.getAnnotation` returns `null` and javac
+  propagates them to the accessor and backing field instead. Read all three (`onComponent`
+  does). Getting this wrong is silent: the schema still emits, and simply understates the
+  wire contract.
+- **Property prose comes from `@param` on the record, and nothing else works.** A comment
+  written above a component inside the record header renders in javadoc but is unreachable
+  from annotation processing — four routes were measured and all return `null`. If you want a
+  component described in the schema, add a `@param` tag.
+- **No `required` array, deliberately.** All three postures the package uses (`NON_NULL`,
+  `NON_DEFAULT`, `NON_EMPTY`) omit rather than write, so any `required` list would reject
+  documents this SDK produces. Which components a compact constructor rejects as `null` is a
+  construction-time invariant, not a property of the wire format.
+
+Adding an AST record or component needs no schema edit — the emitter picks it up, and
+`AstSchemaContractTest` fails if a new Java type reaches the document unmapped (add it to the
+type switch rather than shipping `x-exeris-unmapped`).
 
 ## ADR-003 — Entity-First
 
