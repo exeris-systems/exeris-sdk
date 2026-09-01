@@ -22,6 +22,17 @@
         source parser/writer used by Studio and IDE plugins for bidirectional sync.
     </description>
 
+    <properties>
+        <!-- The AST wire-format version stamped into META-INF/exeris/ast-schema.json, and
+             the same number SchemaVersion.CURRENT returns. It lives here because the
+             processor path needs it as a compiler argument and SchemaVersion.CURRENT is
+             deliberately not a compile-time constant (it is initialized from a method so it
+             does not inline into consumers), which puts it out of reach of both the POM and
+             the declaration model. The duplication is guarded, not tolerated:
+             AstSchemaContractTest fails if the two disagree. Bump both together. -->
+        <ast.schema.version>0.12.0</ast.schema.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>eu.exeris</groupId>
@@ -52,9 +63,46 @@
 
     <build>
         <plugins>
+            <!-- The AST JSON Schema is generated from THIS module's own sources, by a
+                 processor on the javac processor path. That path is not this project's
+                 dependency tree: the published jar stays free of the emitter and of
+                 databind. (The enforcer rule below proves the JavaParser half of zero
+                 coupling only — ADR-037; databind is held at test scope by its declaration
+                 above, not by that rule.) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>eu.exeris</groupId>
+                                    <artifactId>exeris-sdk-annotation-catalog</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <annotationProcessors>
+                                <processor>eu.exeris.sdk.catalog.AstSchemaProcessor</processor>
+                            </annotationProcessors>
+                            <compilerArgs>
+                                <arg>-Aexeris.schema.sdkVersion=${project.version}</arg>
+                                <arg>-Aexeris.schema.astVersion=${ast.schema.version}</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <!-- The schema describes the published surface. Running the
+                                 emitter again over the tests would reopen the same output
+                                 file and fail, and a schema carrying test fixtures would be
+                                 describing something nobody ships. -->
+                            <proc>none</proc>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

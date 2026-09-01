@@ -52,8 +52,31 @@ for per-version upgrade steps.
   by-name; a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established posture of
   refusing a cross-shape baseline rather than assuming compatibility.
 
+- **`META-INF/exeris/ast-schema.json` ships inside `exeris-sdk-source-model`, and is attached
+  to the GitHub Release.** A JSON Schema (draft 2020-12) for the build-time metadata hand-off
+  format — 61 definitions covering every record and enum in `eu.exeris.sdk.sourcemodel.ast`,
+  nested ones included, `$ref`-linked and rooted at `DomainMetadata`. The two Jackson 3
+  postures a reader must adopt are carried **in the document** rather than as folklore:
+  `x-exeris-reader-requirements` states both, every primitive property is flagged
+  `x-exeris-primitive`, and each definition — plus any property that overrides it — carries
+  its `x-exeris-json-include`, so whether a zero is meaningful is answerable from the schema.
+  Stamped with both `sdkVersion` and `astSchemaVersion` (the wire shape, which moves on its
+  own schedule); the release workflow refuses a mismatched `sdkVersion` and
+  `AstSchemaContractTest` refuses a drift between `astSchemaVersion` and
+  `SchemaVersion.CURRENT`. Emitted by the same processor technique as the annotation catalog,
+  so no schema library and no second pass over the sources. Deliberately carries no
+  `required` array: all three `@JsonInclude` postures in the package omit rather than write,
+  so a `required` list would reject documents this SDK itself produces.
+
 ### Fixed
 
+- **The AST schema described the boxed-zero hazard as unmitigated.** Jackson's
+  `@JsonInclude` targets do not include `RECORD_COMPONENT`, so an annotation written on a
+  record component is propagated to the derived members and
+  `RecordComponentElement.getAnnotation` returns `null`. The first emitter asked the
+  component alone, so `FieldMetadata`'s four bounds were reported as ordinary `NON_DEFAULT`
+  properties — the exact defect their per-component `NON_NULL` exists to prevent. It now
+  reads the accessor and backing field too, recovering all four and only those four.
 - **The annotation-surface gate rejected a mandatory element on a *new* annotation.**
   `AnnotationSurfaceContractTest` read "new element, no default" as a break for every
   annotation, but the rule protects existing usages and a brand-new annotation has none — the

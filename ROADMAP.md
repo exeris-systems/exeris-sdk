@@ -298,13 +298,19 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   not constants to hard-code — the drift between 0.10.0 (49 top-level) and
   0.11.0 (51) is precisely the argument the downstream makes for generating this
   upstream at all
-- [ ] **JSON Schema for the AST records** (`DomainMetadata` + siblings) — the
-  second half of the same ask, listed separately on the downstream's own
-  accounting: the annotation catalog is "the whole of 0.6.0's content", while the
-  AST schema serves one tool of the five. It must carry the two non-obvious
-  Jackson 3 constraints as part of the contract rather than as folklore —
-  `FAIL_ON_NULL_FOR_PRIMITIVES=false`, and per-component `NON_NULL` where a
-  boxed-zero bound must survive the wire
+- [x] **JSON Schema for the AST records** (`DomainMetadata` + siblings) — the
+  second half of the same ask. `META-INF/exeris/ast-schema.json` ships inside
+  `exeris-sdk-source-model` and is attached to the GitHub Release: 61 definitions
+  (every record and enum in `…sourcemodel.ast`, nested ones included), draft
+  2020-12, `$ref`-linked, rooted at `DomainMetadata`. Both Jackson constraints are
+  **in the document**, not in a wiki page: `x-exeris-reader-requirements` states
+  them, every primitive property is flagged `x-exeris-primitive` (the set on which
+  an *explicit* null is fatal without the flag — an absent one binds the type
+  default and is harmless, per the 2026-08-26 correction), and each definition and
+  overriding property carries its
+  `x-exeris-json-include` — so "is a zero meaningful here?" is answerable from the
+  schema. Emitted by the same processor technique as the annotation catalog, so it
+  needs no schema library and no second pass over the sources
 
 ### Landed — and what building it found
 
@@ -366,6 +372,33 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   new; such an element is still reported so it must be recorded before the next
   change to it is gated. Verified non-vacuous by adding an undefaulted `probe()`
   to `@Blob` — still caught, with the original message
+- [x] **Jackson's annotations never reach a record component, and the schema was
+  quietly saying so** — `@JsonInclude`'s `@Target` is
+  `{ANNOTATION_TYPE, METHOD, FIELD, TYPE, PARAMETER}` and does **not** include
+  `RECORD_COMPONENT`, so an annotation written on a record component is propagated
+  to the derived members and `RecordComponentElement.getAnnotation` returns `null`.
+  The first emitter asked the component directly and got nothing — which meant the
+  schema reported `FieldMetadata.min` / `max` / `minLength` / `maxLength` as
+  ordinary `NON_DEFAULT` properties, i.e. it described the boxed-zero bug those
+  per-component `NON_NULL`s exist to prevent *as if it were still present*. Reading
+  the accessor and the backing field as well recovers all four, and exactly four —
+  zero false positives across the package. Guarded at both levels, and verified
+  non-vacuous by restoring the naive lookup
+- [x] **Property prose is unreachable from annotation processing, and the document
+  says so rather than looking truncated** — most AST components are documented with
+  a comment written above them *inside the record header*. Javadoc-the-tool renders
+  those; annotation processing cannot reach them. Four routes were measured and all
+  return `null`: `Elements.getDocComment` on the component,
+  `DocTrees.getDocCommentTree(Element)`, `DocTrees.getPath` on the component (so
+  there is no path for the tree overload either), and a path built to the
+  component's `VariableTree` member off the record's own resolvable path. The
+  derived accessor and field carry no source position, so neither helps. `@param`
+  on the record **does** resolve — proven by probe — and is the canonical Java form,
+  but **no** record in the package uses it today, so property-level `description` is
+  empty. Rather than ship a schema that reads as truncated, the document carries
+  `x-exeris-prose-coverage` with the counts and the reason. Converting the existing
+  header prose is a separate decision: much of it is multi-paragraph and a `@param`
+  tag is a phrase
 
 ### Kernel 0.12 — verified, and nothing moves
 
