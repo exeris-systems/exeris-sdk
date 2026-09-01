@@ -16,6 +16,16 @@
 export interface ExerisTheme {
   colors: {
     primary: string;
+    /**
+     * The hover state of {@link ExerisTheme.colors.primary}.
+     *
+     * Kebab-cased, matching `--exeris-primary-hover` in `index.css` and the
+     * `primary-hover` key in the Tailwind preset. All three name design tokens and
+     * naming them identically is what lets the drift test map one onto another without
+     * a translation step — a camel-cased `primaryHover` here would need one, and a
+     * translation is a place two sides can disagree.
+     */
+    'primary-hover': string;
     secondary: string;
     success: string;
     warning: string;
@@ -41,6 +51,7 @@ export interface ExerisTheme {
 export const defaultTheme: ExerisTheme = {
   colors: {
     primary: 'rgb(79, 70, 229)', // indigo-600
+    'primary-hover': 'rgb(67, 56, 202)', // indigo-700
     secondary: 'rgb(100, 116, 139)', // slate-500
     success: 'rgb(34, 197, 94)', // green-500
     warning: 'rgb(245, 158, 11)', // amber-500
