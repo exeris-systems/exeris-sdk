@@ -24,14 +24,16 @@ import java.lang.annotation.*;
  * }
  * }</pre>
  *
- * <h2>Parallel Execution:</h2>
+ * <h2>Parallel Execution — declared, not yet executed:</h2>
  * <pre>{@code
  * @SagaStep(order = 2, name = "notifyWarehouse", parallel = true, ...)
  * public SagaAction notifyWarehouse() { ... }
  *
  * @SagaStep(order = 2, name = "notifyShipping", parallel = true, ...)
  * public SagaAction notifyShipping() { ... }
- * // Both execute at the same time since order = 2 and parallel = true
+ * // Declares that these two may run together. Today they do not: the generated
+ * // flow is a strict linear chain, so notifyShipping runs after notifyWarehouse.
+ * // See parallel() for why, and for what has to change first.
  * }</pre>
  *
  * <h2>Conditional Step:</h2>
@@ -495,6 +497,11 @@ public @interface SagaStep {
     /**
      * Wait for all parallel steps to complete before continuing.
      * <p>Only applies to parallel steps.
+     *
+     * <p><strong>Inert while {@link #parallel()} is.</strong> It qualifies a concurrency the
+     * generated flow does not yet express — a linear chain has nothing to wait for — and it is
+     * neither extracted nor carried on {@code SagaStepMetadata}. It becomes meaningful in the same
+     * change that makes {@code parallel} meaningful, and not before.
      *
      * @return true to wait for all
      */
