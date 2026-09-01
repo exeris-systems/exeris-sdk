@@ -136,6 +136,16 @@ for per-version upgrade steps.
   all green while breaking every consumer. Snapshot-gated the way `annotation-surface.txt` gates
   the Java surface: additions reported so they get recorded, removals and renames fail. Verified
   against exactly that coordinated rename.
+  
+- **`defaultTheme` gains `primary-hover`, the token it was missing.** `--exeris-primary-hover`
+  exists in `index.css` and as a `primary-hover` key in the Tailwind preset; the JS fallback
+  had neither, so a generated component taking the fallback had no hover colour while a CSS
+  consumer did. Found by the new drift test, which recorded it as an exemption rather than
+  silently passing; the exemption is now empty. Kebab-cased to match the other two — three
+  artifacts naming one token identically is what lets the drift test map them without a
+  translation step. Taken at `0.1.0` deliberately: adding a property to the exported
+  `ExerisTheme` is consumer-visible, and doing it before the package reaches public npm costs
+  nothing.
 
 - **The ui-kit's real gate was one hard-coded assertion; it is now derived from the CSS.**
   `defaultTheme` is what generated components fall back to when a host overrides nothing, and
