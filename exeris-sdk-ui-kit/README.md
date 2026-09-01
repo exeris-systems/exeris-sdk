@@ -87,9 +87,10 @@ This works on both majors. The file is written against v3 — it opens with the 
 directives, which are no-ops under v4 — and every `.exeris-*` component class it declares is
 emitted by a v4 build too, checked by compiling it with each major on every CI run.
 
-> On v4 you want both entries: `…/theme` for the `exeris-*` utility namespace (v4 has no JS
-> preset to read it from) and `…/styles` for the design tokens and component classes. Importing
-> both declares the tokens twice with identical values, which is harmless and guarded by a test.
+> On v4 you want both entries: `…/theme` for the `bg-exeris-*` utility namespace (only
+> `theme.css` carries the v4 `@theme` mapping, and v4 has no JS preset to read it from) and
+> `…/styles` for the component classes. The `--exeris-*` design tokens come along either way —
+> both files declare them, with identical values, which is harmless and guarded by a test.
 
 Or in Angular's `angular.json`:
 
