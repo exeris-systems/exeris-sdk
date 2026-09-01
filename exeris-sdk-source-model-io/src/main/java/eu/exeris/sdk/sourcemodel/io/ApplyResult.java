@@ -16,7 +16,10 @@ import eu.exeris.sdk.sourcemodel.mutation.MutationResult;
  * </ul>
  *
  * @since 0.5.0
- */
+  *
+ * @param outcome what the mutation decided — applied, rejected, or refused for want of a trusted baseline
+ * @param source the resulting Java source text; unchanged from the input when the mutation did not apply
+*/
 public record ApplyResult(MutationResult outcome, String source) {
 
     /**
@@ -24,7 +27,9 @@ public record ApplyResult(MutationResult outcome, String source) {
      * Note this is {@code true} for a convergent no-op too — the verdict, not a
      * byte-changed signal. A caller that needs "did the source change?" should
      * compare {@link #source} against the input.
-     */
+          *
+     * @return whether the mutation changed the source
+    */
     public boolean applied() {
         return outcome.successful();
     }

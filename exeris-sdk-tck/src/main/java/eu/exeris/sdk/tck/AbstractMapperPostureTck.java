@@ -44,6 +44,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class AbstractMapperPostureTck extends AbstractExerisTck {
 
     /**
+     * For subclasses; this type is extended, never instantiated directly.
+     *
+     * <p>Declared so the mapper-posture suite carries a documented constructor rather than an implicit
+     * one. It stays {@code public} rather than becoming {@code protected}: the implicit
+     * constructor of a public class is public, so narrowing it here would be a binary
+     * break on a published artifact — which the semver gate reports as
+     * {@code CONSTRUCTOR_LESS_ACCESSIBLE}, and did.
+     */
+    public AbstractMapperPostureTck() {
+    }
+
+    /**
      * Deserializes with the mapper under test.
      *
      * @param json the document to read

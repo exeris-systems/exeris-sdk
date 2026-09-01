@@ -111,7 +111,10 @@ public final class SourceModelConflictDetector {
      *         with a non-convergent user edit; {@link MutationResult.Conflict}
      *         when it does; {@link MutationResult.ValidationError} when the op is
      *         structurally inapplicable to this comparison.
-     */
+          * @param op the mutation being attempted
+     * @param baseline the metadata the mutation was authored against
+     * @param current the metadata as it stands now
+    */
     public MutationResult detect(MutationOp op, DomainMetadata baseline, DomainMetadata current) {
         Objects.requireNonNull(op, "op is required");
         Objects.requireNonNull(baseline, "baseline is required");
@@ -158,7 +161,12 @@ public final class SourceModelConflictDetector {
         };
     }
 
-    /** Detect each op independently against the same baseline/current pair, preserving order. */
+    /** Detect each op independently against the same baseline/current pair, preserving order.      *
+     * @param ops the mutations being attempted, in order
+     * @param baseline the metadata they were authored against
+     * @param current the metadata as it stands now
+     * @return one result per op, in the same order
+    */
     public List<MutationResult> detect(List<MutationOp> ops, DomainMetadata baseline, DomainMetadata current) {
         Objects.requireNonNull(ops, "ops is required");
         List<MutationResult> results = new ArrayList<>(ops.size());

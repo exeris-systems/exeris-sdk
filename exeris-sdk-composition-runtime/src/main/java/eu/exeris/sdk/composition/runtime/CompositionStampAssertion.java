@@ -63,7 +63,9 @@ public final class CompositionStampAssertion {
     private CompositionStampAssertion() {
     }
 
-    /** Read {@code cap-manifest.json} from {@code manifestPath} and assert it (single-bundled). */
+    /** Read {@code cap-manifest.json} from {@code manifestPath} and assert it (single-bundled).      *
+     * @param manifestPath the manifest to check
+    */
     public static void assertConsistent(Path manifestPath) {
         Objects.requireNonNull(manifestPath, "manifestPath");
         String json;
@@ -76,12 +78,16 @@ public final class CompositionStampAssertion {
         assertConsistent(parse(json, manifestPath.toString()));
     }
 
-    /** Parse {@code manifestJson} and assert it (single-bundled). */
+    /** Parse {@code manifestJson} and assert it (single-bundled).      *
+     * @param manifestJson the manifest's JSON text
+    */
     public static void assertConsistent(String manifestJson) {
         assertConsistent(parse(manifestJson, "<string>"));
     }
 
-    /** Assert a parsed manifest (single-bundled; no classpath version-match). */
+    /** Assert a parsed manifest (single-bundled; no classpath version-match).      *
+     * @param manifest the manifest to check
+    */
     public static void assertConsistent(CapManifest manifest) {
         assertConsistent(manifest, Map.of());
     }
@@ -90,7 +96,10 @@ public final class CompositionStampAssertion {
      * Assert a parsed manifest, additionally checking each provided service's version against
      * {@code classpathServiceVersions} (service → version actually loaded). An empty map skips the
      * version-match (self-consistent single-bundled case).
-     */
+          *
+     * @param manifest the manifest to check
+     * @param classpathServiceVersions the service versions actually on the classpath, by service name
+    */
     public static void assertConsistent(CapManifest manifest, Map<String, String> classpathServiceVersions) {
         Objects.requireNonNull(manifest, "manifest");
         Objects.requireNonNull(classpathServiceVersions, "classpathServiceVersions");
@@ -234,7 +243,10 @@ public final class CompositionStampAssertion {
      * entry NPEs, by design; this is a post-assertion helper, not an entry validator. (A null service
      * would map to a {@code null} key; {@link #assertConsistent} rejects a null service before this is
      * ever reached, so a post-assertion caller never hits it.)
-     */
+          *
+     * @param manifest the manifest to read
+     * @return the version each service is provided at, by service name
+    */
     public static Map<String, String> serviceVersions(CapManifest manifest) {
         Map<String, String> versions = new HashMap<>();
         if (manifest.modules() != null) {

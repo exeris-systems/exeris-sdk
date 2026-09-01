@@ -31,6 +31,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class AbstractExerisTck {
 
     /**
+     * For subclasses; this type is extended, never instantiated directly.
+     *
+     * <p>Declared so the root of the TCK hierarchy carries a documented constructor rather than an implicit
+     * one. It stays {@code public} rather than becoming {@code protected}: the implicit
+     * constructor of a public class is public, so narrowing it here would be a binary
+     * break on a published artifact — which the semver gate reports as
+     * {@code CONSTRUCTOR_LESS_ACCESSIBLE}, and did.
+     */
+    public AbstractExerisTck() {
+    }
+
+    /**
      * Facets this binding does not implement yet. Their cases skip rather than fail.
      *
      * <p>Override only for surface that is genuinely unbuilt. A facet listed here is a claim that
