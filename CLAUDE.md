@@ -203,6 +203,11 @@ and the module's enforcer rule still proves it).
 
 Four things to know before touching it:
 
+- **The reader requirements are quoted contract, not prose.** The
+  `FAIL_ON_NULL_FOR_PRIMITIVES` entry states the *corrected* posture (an explicit null is
+  the hazard; an absent property binds the type default) — the claim this file's own
+  2026-08-26 correction above supersedes. `AstSchemaContractTest` fails if the superseded
+  wording comes back, because a schema is where a dead reason must not be resurrected.
 - **Two versions, and they are not the same number.** `sdkVersion` comes from
   `${project.version}`; `astSchemaVersion` is the AST wire shape and comes from the
   `ast.schema.version` property in `exeris-sdk-source-model/pom.xml`. That property duplicates

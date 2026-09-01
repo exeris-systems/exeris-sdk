@@ -304,8 +304,10 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   (every record and enum in `…sourcemodel.ast`, nested ones included), draft
   2020-12, `$ref`-linked, rooted at `DomainMetadata`. Both Jackson constraints are
   **in the document**, not in a wiki page: `x-exeris-reader-requirements` states
-  them, every primitive property is flagged `x-exeris-primitive` (the set a reader
-  must tolerate absent), and each definition and overriding property carries its
+  them, every primitive property is flagged `x-exeris-primitive` (the set on which
+  an *explicit* null is fatal without the flag — an absent one binds the type
+  default and is harmless, per the 2026-08-26 correction), and each definition and
+  overriding property carries its
   `x-exeris-json-include` — so "is a zero meaningful here?" is answerable from the
   schema. Emitted by the same processor technique as the annotation catalog, so it
   needs no schema library and no second pass over the sources

@@ -66,7 +66,9 @@
             <!-- The AST JSON Schema is generated from THIS module's own sources, by a
                  processor on the javac processor path. That path is not this project's
                  dependency tree: the published jar stays free of the emitter and of
-                 databind, and the enforcer rule below still proves it. -->
+                 databind. (The enforcer rule below proves the JavaParser half of zero
+                 coupling only — ADR-037; databind is held at test scope by its declaration
+                 above, not by that rule.) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

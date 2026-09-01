@@ -58,11 +58,15 @@ import java.util.TreeMap;
  * <h2>The two requirements, and how the schema carries them</h2>
  * <ol>
  *   <li><b>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false}.</b> Jackson 3 defaults it to
- *       {@code true}. The AST uses primitive {@code boolean} / {@code int} components under
- *       {@code NON_DEFAULT}, so a default-valued one is <em>absent</em> from the document
- *       and arrives at the constructor as {@code null}. Every property whose Java type is
- *       primitive is flagged {@code x-exeris-primitive}, which is the set a reader has to
- *       be able to tolerate absent.</li>
+ *       {@code true} (Jackson 2 defaulted it to {@code false}), and the AST is
+ *       primitive-boolean heavy, so an <em>explicit</em> {@code null} standing where one of
+ *       them is declared throws. An <em>absent</em> property is not the hazard: it binds the
+ *       primitive's own default and raises nothing, so the obligation does not follow from
+ *       this SDK's own inclusion posture. It follows from the document being one the reader
+ *       did not necessarily write — third-party producers, hand edits and
+ *       {@code ALWAYS}-inclusion re-serialization all put explicit nulls on the wire. Every
+ *       property whose Java type is primitive is flagged {@code x-exeris-primitive}: the set
+ *       on which an explicit null is fatal without the flag.</li>
  *   <li><b>Per-component {@code NON_NULL} is what lets a zero survive.</b> Class-level
  *       {@code NON_DEFAULT} treats a boxed {@code 0} as empty and drops it, which is why
  *       {@code FieldMetadata}'s bounds carry their own {@code NON_NULL}. Each definition
@@ -117,7 +121,11 @@ public final class AstSchemaProcessor extends AbstractProcessor {
      */
     public static final int SCHEMA_FORMAT = 1;
 
-    private final JsonNodeFactory json = JsonNodeFactory.instance;
+    private static final String KEY_JAVA_TYPE = "x-exeris-java-type";
+    private static final String KEY_PROPERTIES = "properties";
+    private static final String KEY_DESCRIPTION = "description";
+
+    private static final JsonNodeFactory json = JsonNodeFactory.instance;
     private final Map<String, ObjectNode> defsByName = new TreeMap<>();
 
     private DocTrees docTrees;
@@ -189,14 +197,14 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         ObjectNode node = json.objectNode();
         node.put("type", "object");
         putDoc(node, type);
-        node.put("x-exeris-java-type", type.getQualifiedName().toString());
+        node.put(KEY_JAVA_TYPE, type.getQualifiedName().toString());
 
         String include = jsonInclude(type);
         if (include != null) {
             node.put("x-exeris-json-include", include);
         }
 
-        ObjectNode properties = node.putObject("properties");
+        ObjectNode properties = node.putObject(KEY_PROPERTIES);
         DocCommentTree recordDoc = docTrees.getDocCommentTree(type);
         for (RecordComponentElement component : ElementFilter.recordComponentsIn(type.getEnclosedElements())) {
             if (onComponent(component, JsonIgnore.class) != null) {
@@ -216,7 +224,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         ObjectNode node = json.objectNode();
         node.put("type", "string");
         putDoc(node, type);
-        node.put("x-exeris-java-type", type.getQualifiedName().toString());
+        node.put(KEY_JAVA_TYPE, type.getQualifiedName().toString());
         ArrayNode constants = node.putArray("enum");
         for (VariableElement constant : ElementFilter.fieldsIn(type.getEnclosedElements())) {
             if (constant.getKind() == ElementKind.ENUM_CONSTANT) {
@@ -308,7 +316,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
             default -> node.put("x-exeris-unmapped", type.toString());
         }
         if (type.getKind() != TypeKind.DECLARED) {
-            node.put("x-exeris-java-type", type.toString());
+            node.put(KEY_JAVA_TYPE, type.toString());
         }
         return node;
     }
@@ -341,7 +349,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
             // schema is a gap in this switch, and AstSchemaContractTest fails on the key.
             default -> node.put("x-exeris-unmapped", qualified);
         }
-        node.put("x-exeris-java-type", qualified);
+        node.put(KEY_JAVA_TYPE, qualified);
     }
 
     // ---- prose -----------------------------------------------------------
@@ -353,7 +361,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         }
         String summary = JavadocText.oneLine(doc.getFirstSentence());
         if (!summary.isEmpty()) {
-            node.put("description", summary);
+            node.put(KEY_DESCRIPTION, summary);
         }
         String full = JavadocText.prose(doc.getFullBody());
         if (!full.isEmpty() && !full.equals(summary)) {
@@ -391,7 +399,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
                     && param.getName().getName().contentEquals(component.getSimpleName())) {
                 String prose = JavadocText.prose(param.getDescription());
                 if (!prose.isEmpty()) {
-                    node.put("description", prose);
+                    node.put(KEY_DESCRIPTION, prose);
                 }
                 return;
             }
@@ -415,7 +423,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         root.put("$schema", "https://json-schema.org/draft/2020-12/schema");
         root.put("$id", "https://exeris.eu/schema/sdk/ast/" + astVersion + ".json");
         root.put("title", "Exeris SDK AST — the build-time metadata hand-off format");
-        root.put("description",
+        root.put(KEY_DESCRIPTION,
                 "The shape of exeris-metadata/<entity>.json, the document exeris-tooling's processor "
                         + "writes and every generator reads. Generated from the "
                         + AST_PACKAGE + " sources; see x-exeris-reader-requirements before reading one.");
@@ -456,13 +464,13 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         int properties = 0;
         int describedProperties = 0;
         for (ObjectNode def : defsByName.values()) {
-            if (def.has("description")) {
+            if (def.has(KEY_DESCRIPTION)) {
                 describedDefinitions++;
             }
-            if (def.get("properties") instanceof ObjectNode props) {
+            if (def.get(KEY_PROPERTIES) instanceof ObjectNode props) {
                 for (var entry : props.properties()) {
                     properties++;
-                    if (entry.getValue().has("description")) {
+                    if (entry.getValue().has(KEY_DESCRIPTION)) {
                         describedProperties++;
                     }
                 }
@@ -471,7 +479,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         ObjectNode node = json.objectNode();
         node.put("definitions", definitions);
         node.put("describedDefinitions", describedDefinitions);
-        node.put("properties", properties);
+        node.put(KEY_PROPERTIES, properties);
         node.put("describedProperties", describedProperties);
         node.put("note",
                 "Property prose comes from @param tags on the record. Comments written above a "
@@ -492,12 +500,17 @@ public final class AstSchemaProcessor extends AbstractProcessor {
         ObjectNode primitives = requirements.addObject();
         primitives.put("id", "FAIL_ON_NULL_FOR_PRIMITIVES");
         primitives.put("statement",
-                "A Jackson reader of this format must set FAIL_ON_NULL_FOR_PRIMITIVES to false.");
+                "A Jackson reader of this format must set FAIL_ON_NULL_FOR_PRIMITIVES to false, so an "
+                        + "explicit null standing where a primitive is declared reads as that type's "
+                        + "default instead of throwing.");
         primitives.put("why",
-                "Jackson 3 defaults it to true. Records here use primitive boolean/int components "
-                        + "under class-level NON_DEFAULT, so a default-valued component is absent from the "
-                        + "document and reaches the constructor as null. The properties this applies to are "
-                        + "flagged x-exeris-primitive.");
+                "Jackson 3 defaults it to true; Jackson 2 defaulted it to false. The hazard is an "
+                        + "EXPLICIT null in the document, not an absent property: an absent property binds "
+                        + "the primitive's own default and raises nothing, so this obligation does not "
+                        + "follow from how this SDK writes. It follows from the document being one you did "
+                        + "not necessarily write - third-party producers, hand edits and re-serialization "
+                        + "under ALWAYS inclusion all emit explicit nulls. The properties on which such a "
+                        + "null is fatal are flagged x-exeris-primitive.");
 
         ObjectNode zeroes = requirements.addObject();
         zeroes.put("id", "NON_DEFAULT_DROPS_BOXED_ZERO");
