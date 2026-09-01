@@ -76,7 +76,10 @@ for per-version upgrade steps.
   a plain component list instead of 116 lines of interleaved comment.
   `AstComponentProseConventionTest` fails if a header comment comes back — the two forms are
   indistinguishable in an IDE, so the trap needs catching where it is written rather than
-  where it is missed.
+  where it is missed. `@param` carries no nested `@since`, so the six per-component
+  introduction versions on `ActionMetadata` (`methodName` 0.7.0, the three streaming/real-time
+  components 0.8.0, `schedule` 0.11.0, `routeAccess` 0.12.0) are stated in the prose instead —
+  which also puts them in the schema, where a consumer pinning an older SDK can read them.
 
 ### Fixed
 

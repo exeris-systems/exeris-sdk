@@ -17,14 +17,20 @@ import java.util.Objects;
  *        build-time codegen can emit a server-side dispatch that invokes the actual
  *        aggregate method. Optional: {@code null} when unknown (hand-built metadata or
  *        legacy JSON); use {@link #effectiveMethodName()} for a name-based fallback.
+ *
+ *        <p>Added in 0.7.0.
  * @param streaming Whether the action returns a streaming (server-push) response rather than
  *        responding once — the AST twin of {@code @Action(streaming=true)}. When
  *        {@code true}, build-time codegen emits a kernel {@code HttpStreamHandler}
  *        bound to a streaming route (ADR-043) instead of a respond-once handler.
+ *
+ *        <p>Added in 0.8.0.
  * @param streamEventType The SSE {@code event:} name carried on each emitted {@link #streaming()}
  *        frame — the AST twin of {@code @Action(streamEventType=…)}. Optional:
  *        {@code null} when unset (normalized from a blank annotation value).
  *        Meaningful only when {@link #streaming()} is {@code true}.
+ *
+ *        <p>Added in 0.8.0.
  * @param realTimeUpdates Whether clients may subscribe to this action's progress in real time —
  *        the AST twin of {@code @Action(realTimeUpdates=true)}. Distinct from
  *        {@link #streaming()}: streaming is the response shape, this is the
@@ -46,6 +52,8 @@ import java.util.Objects;
  *        and setting it changes no generated artifact. The extraction lands in
  *        the same change that introduces its consumer, matching the Open-Core
  *        status note on {@code @Action.realTimeUpdates()}.
+ *
+ *        <p>Added in 0.8.0.
  * @param schedule The schedule on which this action also fires without a client call —
  *        the AST twin of {@code @Schedule} on the action method. Optional:
  *        {@code null} when the action is call-only, which is the common case.
@@ -59,6 +67,8 @@ import java.util.Objects;
  *        {@code null}. The kernel holds {@code …spi.scheduling} at tier
  *        {@code preview}, so the component is excluded from the 1.0.0 freeze
  *        and a 1.x minor may still change it (ADR-072).
+ *
+ *        <p>Added in 0.11.0.
  * @param routeAccess What this action's generated route demands of its caller — the identity
  *        half of the kernel's route-authorization decision (kernel ADR-061), and
  *        the AST twin of {@code @RouteAccess} on the action method.
@@ -78,6 +88,8 @@ import java.util.Objects;
  *        always {@code null}. The kernel holds route authorization at tier
  *        {@code preview}, so the component is excluded from the 1.0.0 freeze and a
  *        1.x minor may still change it (ADR-072).
+ *
+ *        <p>Added in 0.12.0.
  * @author Exeris SDK Team
  * @since 0.1.0
  */
