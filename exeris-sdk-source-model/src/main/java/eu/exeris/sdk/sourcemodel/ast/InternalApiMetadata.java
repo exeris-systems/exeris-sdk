@@ -61,7 +61,7 @@ public record InternalApiMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code InternalApiMetadata}.
      *
      * @return a new builder
      */

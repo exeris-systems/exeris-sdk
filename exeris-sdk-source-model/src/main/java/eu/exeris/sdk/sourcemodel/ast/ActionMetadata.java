@@ -159,7 +159,7 @@ public record ActionMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code ActionMetadata}.
      *
      * @param name the {@code name} the result carries
      * @return a new builder

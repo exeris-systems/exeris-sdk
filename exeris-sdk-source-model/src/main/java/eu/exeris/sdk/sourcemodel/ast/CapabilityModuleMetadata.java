@@ -45,7 +45,7 @@ public record CapabilityModuleMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code CapabilityModuleMetadata}.
      *
      * @return a new builder
      */

@@ -70,7 +70,7 @@ public record SagaMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code SagaMetadata}.
      *
      * @param name the {@code name} the result carries
      * @return a new builder

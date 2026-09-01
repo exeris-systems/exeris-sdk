@@ -54,7 +54,7 @@ public record UIMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code UIMetadata}.
      *
      * @return a new builder
      */

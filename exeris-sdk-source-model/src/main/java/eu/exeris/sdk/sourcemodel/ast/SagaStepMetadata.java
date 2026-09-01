@@ -77,7 +77,7 @@ public record SagaStepMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code SagaStepMetadata}.
      *
      * @param name the {@code name} the result carries
      * @param order the {@code order} the result carries

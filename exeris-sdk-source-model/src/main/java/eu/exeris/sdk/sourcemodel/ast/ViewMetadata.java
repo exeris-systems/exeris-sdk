@@ -94,7 +94,7 @@ public record ViewMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code ViewMetadata}.
      *
      * @param name the {@code name} the result carries
      * @return a new builder

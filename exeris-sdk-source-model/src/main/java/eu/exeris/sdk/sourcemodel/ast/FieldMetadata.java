@@ -160,7 +160,7 @@ public record FieldMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code FieldMetadata}.
      *
      * @param name the {@code name} the result carries
      * @param type the {@code type} the result carries

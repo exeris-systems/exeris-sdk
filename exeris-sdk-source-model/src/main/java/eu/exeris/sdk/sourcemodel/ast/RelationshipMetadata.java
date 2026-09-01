@@ -113,7 +113,7 @@ public record RelationshipMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code RelationshipMetadata}.
      *
      * @param name the {@code name} the result carries
      * @param targetEntity the {@code targetEntity} the result carries

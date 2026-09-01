@@ -402,7 +402,7 @@ public record DomainMetadata(
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code DomainMetadata}.
      *
      * @param entityName the {@code entityName} the result carries
      * @param packageName the {@code packageName} the result carries

@@ -72,7 +72,7 @@ public record ActionParamMetadata(
     }
 
     /**
-     * Starts a builder for a {@code Builder}.
+     * Starts a builder for a {@code ActionParamMetadata}.
      *
      * @param name the {@code name} the result carries
      * @param type the {@code type} the result carries
