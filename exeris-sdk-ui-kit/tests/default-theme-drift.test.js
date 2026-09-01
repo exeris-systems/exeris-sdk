@@ -71,8 +71,13 @@ const COLOURS_WITHOUT_A_JS_FALLBACK = new Map([
  */
 const HELD_ACROSS_THEMES = new Set(['success', 'warning', 'danger', 'info']);
 
-/** CSS colour tokens that are surface/text/border scales rather than the semantic palette. */
-const NON_PALETTE = /^(bg|text|border|shadow|spacing|radius|transition)(-|$)/;
+/**
+ * Tokens that are not semantic palette colours: surface/text/border scales, and the
+ * geometry and motion tokens that do not vary with colour scheme. Both checks below need
+ * this same distinction — one to decide what needs a JS fallback, the other to decide what
+ * needs a dark override — so it is defined once. A new prefix belongs here, not in a copy.
+ */
+const NOT_A_PALETTE_COLOUR = /^(bg|text|border|shadow|spacing|radius|transition)(-|$)/;
 
 describe('defaultTheme agrees with the CSS custom properties', () => {
   it('every colour it declares matches the CSS channels exactly', () => {
@@ -88,7 +93,7 @@ describe('defaultTheme agrees with the CSS custom properties', () => {
     const declared = new Set(Object.keys(defaultTheme.colors));
     const missing = [];
     for (const name of tokens('').keys()) {
-      if (NON_PALETTE.test(name) || declared.has(name) || COLOURS_WITHOUT_A_JS_FALLBACK.has(name)) continue;
+      if (NOT_A_PALETTE_COLOUR.test(name) || declared.has(name) || COLOURS_WITHOUT_A_JS_FALLBACK.has(name)) continue;
       missing.push(name);
     }
     expect(missing, 'add it to defaultTheme.colors, or record why it has no JS fallback')
@@ -115,8 +120,7 @@ describe('defaultTheme agrees with the CSS custom properties', () => {
     // status colours are often held constant — so it is recorded rather than asserted to be
     // a defect. What this guards is the next one: a palette colour added to :root and
     // forgotten in .dark fails here instead of rendering a light value on a dark surface.
-    const invariant = /^(bg|text|border|shadow|spacing|radius|transition)(-|$)/;
-    const light = [...tokens('', LIGHT).keys()].filter((k) => !invariant.test(k)).sort();
+    const light = [...tokens('', LIGHT).keys()].filter((k) => !NOT_A_PALETTE_COLOUR.test(k)).sort();
     const dark = new Set(tokens('', DARK).keys());
     const notOverridden = light.filter((k) => !dark.has(k) && !HELD_ACROSS_THEMES.has(k));
     expect(notOverridden, 'add a .dark value, or record it in HELD_ACROSS_THEMES')
