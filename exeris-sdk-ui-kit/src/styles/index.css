@@ -88,8 +88,21 @@
    ============================================================================ */
 
 @layer components {
-  /* Buttons */
-  .exeris-btn {
+  /* Buttons
+     The base is a selector list rather than `@apply exeris-btn` inside each
+     variant. `@apply` of a *custom* class is the one construct in this file a
+     Tailwind v4 build rejects outright ("Cannot apply unknown utility class"),
+     and it was the only thing standing between a v4 consumer and this whole
+     stylesheet — v4 tolerates the `@tailwind` directives above and understands
+     everything else here. A selector list needs no v4-only syntax, keeps one
+     copy of the base declarations, and leaves v3 behaviour untouched: a variant
+     used on its own still carries the base, exactly as `@apply exeris-btn` gave
+     it. See tests/component-classes-v4-compile.test.js. */
+  .exeris-btn,
+  .exeris-btn-primary,
+  .exeris-btn-secondary,
+  .exeris-btn-danger,
+  .exeris-btn-ghost {
     @apply inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm
            transition-colors duration-[var(--exeris-transition-fast)]
            focus:outline-none focus:ring-2 focus:ring-offset-2
@@ -97,23 +110,23 @@
   }
 
   .exeris-btn-primary {
-    @apply exeris-btn bg-indigo-600 text-white
+    @apply bg-indigo-600 text-white
            hover:bg-indigo-700 focus:ring-indigo-500;
   }
 
   .exeris-btn-secondary {
-    @apply exeris-btn bg-white text-gray-700 border border-gray-300
+    @apply bg-white text-gray-700 border border-gray-300
            hover:bg-gray-50 focus:ring-indigo-500
            dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
   }
 
   .exeris-btn-danger {
-    @apply exeris-btn bg-red-600 text-white
+    @apply bg-red-600 text-white
            hover:bg-red-700 focus:ring-red-500;
   }
 
   .exeris-btn-ghost {
-    @apply exeris-btn bg-transparent text-gray-600
+    @apply bg-transparent text-gray-600
            hover:bg-gray-100 focus:ring-gray-500
            dark:text-gray-400 dark:hover:bg-gray-800;
   }

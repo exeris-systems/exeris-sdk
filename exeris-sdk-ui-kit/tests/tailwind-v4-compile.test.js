@@ -1,11 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import postcss from 'postcss';
-import tailwindV4 from '@tailwindcss/postcss';
+import { join } from 'node:path';
 import preset from '../tailwind.preset.js';
+import { DECLARED_V3_RANGE, PACKAGE_ROOT, V4_VERSION, compileWithV4 } from './support/tailwind.js';
 
 /**
  * The B1 follow-up: `src/styles/theme.css` compiled by a real Tailwind v4.
@@ -24,21 +21,7 @@ import preset from '../tailwind.preset.js';
  * preset stays the single source of truth for what the namespace contains and
  * for which entries indirect through a runtime `--exeris-*` property.
  */
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const require = createRequire(import.meta.url);
-
-/**
- * v4's CSS entry, resolved from the copy `@tailwindcss/postcss` itself loads.
- * A consumer writes `@import "tailwindcss"`; here that bare specifier would hit
- * the top-level v3 devDep (which has no `index.css`), so the absolute path to
- * the engine's own entry is what keeps the two halves on one version.
- */
-const V4_ENTRY = require.resolve('tailwindcss/index.css', {
-  paths: [require.resolve('@tailwindcss/postcss')],
-});
-const V4_VERSION = require(
-  require.resolve('tailwindcss/package.json', { paths: [require.resolve('@tailwindcss/postcss')] }),
-).version;
+const root = PACKAGE_ROOT;
 
 /** Preset family → the v4 `@theme` namespace and the utility prefix it feeds. */
 const FAMILIES = [
@@ -70,38 +53,17 @@ const EXPECTED = FAMILIES.flatMap(({ entries, themeVar, utility }) =>
 /** Candidates with no token behind them — the compile must ignore them. */
 const NONEXISTENT = ['bg-exeris-nonesuch', 'p-exeris-nonesuch', 'rounded-exeris-nonesuch', 'duration-exeris-nonesuch'];
 
-let compiled;
 let rules;
 let rootVars;
 
-/**
- * `source(none)` turns off automatic file scanning, so the only candidates are
- * the ones named here. Without it Tailwind would harvest class names out of this
- * package's own docs and tests, and a utility could appear to compile because
- * something mentioned it in prose.
- */
 beforeAll(async () => {
-  const candidates = [...EXPECTED.map((e) => e.utility), ...NONEXISTENT].join(' ');
-  const input = [
-    `@import "${V4_ENTRY}" source(none);`,
-    `@import "${join(root, 'src/styles/theme.css')}";`,
-    `@source inline("${candidates}");`,
-  ].join('\n');
-
-  const result = await postcss([tailwindV4()]).process(input, { from: join(root, 'v4-compile-probe.css') });
-  compiled = result.css;
-
-  rules = new Map();
-  rootVars = new Map();
-  postcss.parse(compiled).walkRules((rule) => {
-    rules.set(rule.selector, rule);
-    if (/(^|,\s*):root(\s|,|$)/.test(rule.selector)) {
-      rule.walkDecls((decl) => rootVars.set(decl.prop, decl.value));
-    }
-  });
+  ({ rules, rootVars } = await compileWithV4('src/styles/theme.css', [
+    ...EXPECTED.map((entry) => entry.utility),
+    ...NONEXISTENT,
+  ]));
 }, 60_000);
 
-const ruleFor = (utility) => rules.get(`.${utility}`);
+const rulesForUtility = (utility) => rules.get(`.${utility}`) ?? [];
 
 /**
  * What a utility's declarations amount to once the compiled `:root` *theme*
@@ -114,8 +76,8 @@ const ruleFor = (utility) => rules.get(`.${utility}`);
  * question here.
  */
 function resolved(utility) {
-  const text = ruleFor(utility).nodes
-    .filter((node) => node.type === 'decl')
+  const text = rulesForUtility(utility)
+    .flatMap((rule) => rule.nodes.filter((node) => node.type === 'decl'))
     .map((node) => node.value)
     .join(' ');
   return text.replace(/var\((--[a-z0-9-]+)\)/g, (whole, name) =>
@@ -126,18 +88,17 @@ function resolved(utility) {
 describe('theme.css through a real Tailwind v4 compile', () => {
   it('runs against v4, not the package\'s v3 devDep', () => {
     expect(V4_VERSION, `resolved Tailwind for the compile guard is ${V4_VERSION}`).toMatch(/^4\./);
-    expect(require(join(root, 'package.json')).devDependencies.tailwindcss, 'the v3 devDep stays: index.css is v3-only')
-      .toMatch(/3\./);
+    expect(DECLARED_V3_RANGE, 'the v3 devDep stays: index.css and the preset are written against v3').toMatch(/3\./);
   });
 
   it('generates every utility the v3 preset declares', () => {
-    const missing = EXPECTED.filter((e) => !ruleFor(e.utility)).map((e) => e.utility);
+    const missing = EXPECTED.filter((e) => rulesForUtility(e.utility).length === 0).map((e) => e.utility);
     expect(missing, 'v4 produced no rule for these — the @theme namespace does not match the preset').toEqual([]);
     expect(EXPECTED.length).toBeGreaterThan(20);
   });
 
   it('ignores candidates with no token behind them', () => {
-    const spurious = NONEXISTENT.filter((name) => ruleFor(name));
+    const spurious = NONEXISTENT.filter((name) => rulesForUtility(name).length > 0);
     expect(spurious, 'these have no @theme entry, so a rule for them means the guard proves nothing').toEqual([]);
   });
 
