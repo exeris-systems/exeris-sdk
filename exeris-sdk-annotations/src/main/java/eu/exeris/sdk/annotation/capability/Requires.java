@@ -71,6 +71,9 @@ public @interface Requires {
      * {@link CapabilityModule} class. Synthesized by the compiler; authors use
      * repeated {@code @Requires} directly and never write this type.
      *
+     *
+     * <p><strong>Status: LIVE</strong> — a container is read exactly when the annotation it
+     * holds is, and {@code @Requires} drives the cap manifest.
      * @see Requires
      */
     @Target(ElementType.TYPE)

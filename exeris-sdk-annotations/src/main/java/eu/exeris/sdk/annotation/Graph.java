@@ -604,6 +604,10 @@ public @interface Graph {
 
     /**
      * GraphQL query definition for graph data.
+     *
+     * <p><strong>Status: RESERVED</strong> — there is no GraphQL emitter anywhere in the
+     * toolchain, and the carrying attribute is not extracted. The {@code @Graph} family
+     * projects to a graph <em>database</em>; it is not a GraphQL surface.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -694,6 +698,9 @@ public @interface Graph {
 
     /**
      * GraphQL query argument definition.
+     *
+     * <p><strong>Status: RESERVED</strong> — carried only by {@link Graph.GraphqlQuery},
+     * which is itself unread.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

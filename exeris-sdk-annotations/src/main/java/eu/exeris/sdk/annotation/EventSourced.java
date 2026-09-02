@@ -698,6 +698,10 @@ public @interface EventSourced {
 
     /**
      * Retry policy for failed event operations.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link EventSourced#retryPolicy()} is not
+     * extracted, so this reaches no AST component — narrower than {@code @EventSourced}
+     * itself, which does reach the AST and stops there.
      */
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
@@ -733,6 +737,9 @@ public @interface EventSourced {
 
     /**
      * Custom metadata for event streams.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link EventSourced#streamMetadata()} is not
+     * extracted, so this reaches no AST component.
      */
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})

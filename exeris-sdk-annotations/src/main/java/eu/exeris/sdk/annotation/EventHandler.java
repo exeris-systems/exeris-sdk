@@ -298,6 +298,9 @@ public @interface EventHandler {
 
     /**
      * Retry policy for failed event processing.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@code @EventHandler} is not extracted at all,
+     * so nothing declared here has a destination.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -341,6 +344,9 @@ public @interface EventHandler {
      * public class OrderProcessor { ... }
      * }</pre>
      *
+     *
+     * <p><strong>Status: RESERVED</strong> — a container is read only when the annotation
+     * it holds is, and {@code @EventHandler} is not extracted.
      * @see EventHandler
      */
     @Target({ElementType.METHOD, ElementType.TYPE})

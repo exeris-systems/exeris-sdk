@@ -836,6 +836,10 @@ public @interface DomainEvent {
 
     /**
      * Message header definition.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link DomainEvent#headers()} is not extracted
+     * by the {@code exeris-tooling} processor, so a header declared here reaches neither
+     * the AST nor the emitted event.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -874,6 +878,10 @@ public @interface DomainEvent {
      * public class Order { ... }
      * }</pre>
      *
+     *
+     * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+     * repeated {@code @DomainEvent} declarations, so its status is {@code @DomainEvent}'s
+     * own.
      * @see DomainEvent
      */
     @Target(ElementType.TYPE)

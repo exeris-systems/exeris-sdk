@@ -989,6 +989,10 @@ public @interface Saga {
      * classpath, by name or pattern when it is not. {@link Saga#trigger()} defaults to
      * {@code @SagaTrigger} with every attribute at its own default, i.e. a
      * {@link TriggerType#COMMAND} trigger naming no source.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link Saga#trigger()} is not extracted.
+     * {@code @Saga} itself is read and drives the emitted saga, but what starts it is not
+     * carried.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -1110,6 +1114,9 @@ public @interface Saga {
      * <p>Durations are ISO-8601 ({@code PT1S}, {@code PT1M}). The two throwable lists
      * narrow what is retried: {@code retryOn} restricts retries to the types it names when
      * it is non-empty, {@code noRetryOn} excludes the types it names.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link Saga#retryPolicy()} is not extracted,
+     * so the emitted saga applies no declared retry behaviour.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

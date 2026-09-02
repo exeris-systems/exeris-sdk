@@ -61,6 +61,9 @@ public @interface Provides {
      * {@link CapabilityModule} class. Synthesized by the compiler; authors use
      * repeated {@code @Provides} directly and never write this type.
      *
+     *
+     * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+     * repeated {@code @Provides} declarations, so its status is {@code @Provides}'s own.
      * @see Provides
      */
     @Target(ElementType.TYPE)

@@ -819,6 +819,9 @@ public @interface GraphQuery {
      *
      * <p>{@code type} is written in GraphQL's own type syntax rather than as a Java type —
      * the two vocabularies do not coincide, and this one is the schema's.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@code @GraphQuery} is not extracted, so an
+     * argument declared here describes a schema no emitter writes.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

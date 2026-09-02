@@ -844,6 +844,9 @@ public @interface SagaStep {
      * <p>Supply either a literal {@code value} or a SpEL {@code expression} evaluated
      * against saga state; they are alternatives, and leaving both unset leaves the header
      * empty.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#commandHeaders()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -876,6 +879,10 @@ public @interface SagaStep {
      *
      * <p>Carried by {@link SagaStep#inputMappings()}. Both attributes are mandatory: a
      * mapping that names no target field, or produces no value, describes nothing.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#inputMappings()} is not
+     * extracted, so the dispatched command is populated by generated defaults rather than
+     * by a mapping declared here.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -900,6 +907,9 @@ public @interface SagaStep {
      *
      * <p>The mirror of {@link InputMapping}, applied after the step completes, so a later
      * step reads what this one returned.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#outputMappings()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -924,6 +934,9 @@ public @interface SagaStep {
      *
      * <p>Read only while {@link SagaStep#emitMetrics()} is on. Supply either a literal
      * {@code value} or a SpEL {@code expression} evaluated against saga state.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#metricTags()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

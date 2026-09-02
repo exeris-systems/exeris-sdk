@@ -436,6 +436,9 @@ public @interface GraphEdge {
 
     /**
      * Maps entity field to graph edge property.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#propertyMappings()} is not
+     * extracted, so the emitted graph-sync writer carries no property mapping.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -461,6 +464,9 @@ public @interface GraphEdge {
 
     /**
      * Static property with fixed value on graph edge.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#staticProperties()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -476,6 +482,9 @@ public @interface GraphEdge {
 
     /**
      * Computed property using SpEL expression.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#computedProperties()} is not
+     * extracted. The SpEL expression is stored verbatim and evaluated by nobody.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
