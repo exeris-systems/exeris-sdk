@@ -118,23 +118,17 @@ public @interface ExerisDomain {
     /**
      * API version.
      *
-     * <p><strong>Not consumed by any generator.</strong> This used to say the value
-     * is "used in URL path: {@code /api/{version}/{path}}". No emitted artifact
-     * publishes that prefix: the generated router registers routes at the derived
-     * domain path, the OpenAPI document publishes the same, and the generated
-     * typed client was aligned onto it after the mismatch was measured — a client
-     * prepending {@code /api/<version>} could not reach the router it was generated
-     * beside, so every cross-service call answered 404. The two streaming TypeScript
-     * emitters that still folded the version into their SSE routes were aligned in
-     * the same batch, and {@code -Aexeris.strict} now reports the attribute as inert.
+     * <p><strong>Not consumed by any generator.</strong> No emitted artifact publishes
+     * an {@code /api/<version>} segment: the generated router registers routes at the
+     * derived domain path, the OpenAPI document publishes the same, and the generated
+     * typed client requests the same. Setting this attribute does not change where an
+     * endpoint is served, and {@code -Aexeris.strict} reports it.
      *
-     * <p>The value still reaches {@code DomainMetadata.apiVersion()}, so it is
-     * carried on the wire and available to a future consumer — unlike
-     * {@link Action#path()}, which reaches no AST component at all. Whether the
-     * router and the published contract should serve {@code /api/<version>/…} is a
-     * real and defensible design question, but taking it changes every emitted route,
-     * so it is a decision rather than a bug: until it is taken, setting this
-     * attribute changes nothing about where an endpoint is served.
+     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()} — so it is
+     * carried on the wire and available to a future consumer, unlike
+     * {@link Action#path()}, which reaches no AST component at all. Whether the router
+     * and the published contract should serve {@code /api/<version>/…} is an open
+     * design question; taking it would change every emitted route.
      *
      * @return API version (e.g., "v1", "v2"); carried into the AST, read by no
      *         generator today
@@ -225,29 +219,28 @@ public @interface ExerisDomain {
      * processor reports rather than silently resolving.
      *
      * <p><strong>Open-Core status — {@code GLOBAL} / {@code TENANT} live,
-     * {@code UNIVERSE} refused:</strong> the kernel carrier for the shared tier
-     * ({@code sharedScopeKey} + a {@code SHARED_WORLD} row-visibility mode
-     * composing with the physical isolation strategy, read-widen + owner-scoped
-     * write) is fixed by the kernel ADR-012 §4b amendment and implemented with
-     * its read-widen/write-pin TCK on the kernel 0.11 line. The
-     * {@code exeris-tooling} transcription — mapping {@code UNIVERSE} onto
-     * presence of that carrier — is not built yet, and until it is,
-     * <em>declaring {@code UNIVERSE} fails the build</em>: the processor refuses
-     * it at the declaration site, naming the tier and the reason.
+     * {@code UNIVERSE} refused:</strong> {@code GLOBAL} and {@code TENANT} carry
+     * exactly the semantics {@code tenantScoped} already carried, and are live
+     * through the same path. <em>Declaring {@code UNIVERSE} fails the build</em> —
+     * the processor refuses it at the declaration site, naming the tier and the
+     * reason.
      *
-     * <p>This note used to say the tier had "no generated effect", which was
-     * never true and became less true. Without the transcription the tier is not
-     * inert — it falls through to the {@code TENANT} emission (owner column,
-     * owner-pinned policy, a repository binding {@code getTenantId()}), and a
-     * shared-world row is precisely one with no owner property, so the archetypal
-     * {@code UNIVERSE} entity used to fail with {@code cannot find symbol} inside
-     * generated code its author is told not to edit. Tooling turned that into a
-     * refusal at the declaration; the honest reading of "reserved" here is
-     * therefore "rejected", not "ignored". There is no way to obtain
-     * cross-tenant read-widening from this build yet — if the entity really is
+     * <p>The kernel carrier for the shared tier ({@code sharedScopeKey} + a
+     * {@code SHARED_WORLD} row-visibility mode composing with the physical
+     * isolation strategy, read-widen + owner-scoped write) is fixed by the kernel
+     * ADR-012 §4b amendment and implemented with its read-widen/write-pin TCK on
+     * the kernel 0.11 line. The {@code exeris-tooling} transcription mapping
+     * {@code UNIVERSE} onto that carrier is not built, and without it the tier is
+     * not inert: it falls through to the {@code TENANT} emission — owner column,
+     * owner-pinned policy, a repository binding {@code getTenantId()}. A
+     * shared-world row is precisely the row with no owner property, so that build
+     * fails inside generated code its author is told not to edit. Refusing the
+     * declaration is what replaces that.
+     *
+     * <p><strong>What to do instead:</strong> there is no way to obtain
+     * cross-tenant read-widening from this build. If the entity really is
      * partitioned by an owner, declare {@code TENANT} and give it a tenant
-     * property. {@code GLOBAL} and {@code TENANT} carry exactly the semantics
-     * {@code tenantScoped} already carried, and are live through the same path.
+     * property; otherwise leave the tier undeclared until the transcription lands.
      *
      * @return the data-scope tier, or {@link DataScope#UNSPECIFIED} to defer to
      *         {@link #tenantScoped()}
@@ -293,12 +286,11 @@ public @interface ExerisDomain {
          * (a common reference dataset, a cross-tenant collaboration space).
          * Reads widen beyond the owning tenant; writes stay pinned to it.
          *
-         * <p><strong>Reserved — declaring it fails the build</strong>, which is
-         * a stronger statement than "has no effect" and is the one that holds:
-         * the tooling transcription onto the kernel carrier is not built, so the
+         * <p><strong>Reserved — declaring it fails the build.</strong> The
+         * tooling transcription onto the kernel carrier is not built, so the
          * processor refuses the tier rather than half-emitting the {@code TENANT}
          * shape for it. See the Open-Core status note on
-         * {@link ExerisDomain#dataScope()}.
+         * {@link ExerisDomain#dataScope()} for what to declare instead.
          */
         UNIVERSE
     }

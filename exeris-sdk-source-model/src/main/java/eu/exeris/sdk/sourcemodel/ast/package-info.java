@@ -13,42 +13,13 @@
  *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — our records use primitive
  *       booleans heavily, and without this flag deserialization throws on any
  *       explicit {@code null} standing where one of them is declared.
- *       <strong>Corrected 2026-08-26:</strong> this text used to say that
- *       {@code @JsonInclude(NON_DEFAULT)} / {@code NON_NULL} makes "absent
- *       fields arrive as {@code null}", and that the throw follows from a
- *       default-valued boolean being omitted. Measured, it does not: an
- *       <em>absent</em> property binds the primitive's own default and raises
- *       nothing, on a stock Jackson 3 mapper. What throws is an
- *       <em>explicit</em> {@code null} on the wire. The obligation is real and
- *       unchanged — a baseline is a file the reader did not necessarily write,
+ *       An <em>absent</em> property is not the trigger: it binds the
+ *       primitive's own default and raises nothing. What throws is an
+ *       <em>explicit</em> {@code null} on the wire, which a baseline can
+ *       legitimately carry — it is a file the reader did not necessarily write,
  *       and a third-party producer, a hand edit, or a re-serialization under
- *       {@code ALWAYS} inclusion each put explicit nulls in it — but its
- *       trigger is not the inclusion posture of our own writer. The case is
- *       pinned in {@code exeris-sdk-tck}
- *       ({@code AbstractMapperPostureTck}), whose self-test is what measured
- *       it: the suite's other three candidate cases could not be made to fail
- *       against a deliberately misconfigured mapper and were dropped. <strong>Which Jackson generation this bites:</strong> Jackson 3
- *       ({@code tools.jackson}) defaults the feature to {@code true}, so a
- *       Jackson-3 consumer <em>must</em> turn it off explicitly. Jackson 2
- *       ({@code com.fasterxml.jackson}) already defaults it to {@code false},
- *       so a Jackson-2 consumer gets the correct behaviour without configuring
- *       anything — which is why today's real producer/consumer pair in
- *       {@code exeris-tooling} ({@code ExerisDomainProcessor} writing,
- *       {@code MetadataLoader} reading, both on the 2.x line) never mentions
- *       the feature. Setting it explicitly is correct and harmless on both
- *       lines; state it, do not assume the default.</li>
- * </ul>
- * The wire-format guard test {@code AstJsonRoundTripTest} configures the
- * mapper accordingly and is the canonical reference. It runs on Jackson 3,
- * which this module pulls at <em>test</em> scope only — the published
- * {@code source-model} jar ships no databind at all, so the mapper is always
- * the consumer's own and the rule above is a consumer obligation, not
- * something the SDK can enforce.
+ *       {@code ALWAYS} inclusion each put explicit nulls in it.
  *
- * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0, finalized 0.9.0)</h2>
- * <p>The annotation surface splits field-shape ({@code @Field}) from constraint
- * declarations ({@code @Validation}); the AST carries both on a single record:
- * <ul>
  *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata}</strong>
  *       owns {@code required}, {@code inCreate}, {@code inUpdate} — field-shape /
  *       lifecycle facts populated from {@code @Field} only
@@ -276,16 +247,14 @@
  * posture every small facet record here already uses, with the
  * {@code NON_DEFAULT} on the larger records being the exception.
  *
- * <p>While pinning that, the round-trip suite also pins <em>why</em>, because one
- * standing justification for these choices turned out to be folklore. The
- * repo-wide caveat is correct as stated: {@code NON_DEFAULT} treats a boxed
- * numeric zero as "empty" and drops it, which is what cost the
- * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds a fix in 0.9.0. The
- * extension of that to enums is not — an ordinal-0 constant is not "empty" to
- * Jackson and survives {@code NON_DEFAULT} untouched, contrary to what ADR-059
- * obligation 3 asserted about {@code DataScope.GLOBAL}. Measured in
- * {@code AstJsonRoundTripTest}, so the next inclusion decision reasons from the
- * behaviour rather than from the claim.
+ * <p>The round-trip suite pins the inclusion behaviour these choices rest on, so
+ * a new component can be reasoned about rather than guessed. {@code NON_DEFAULT}
+ * treats a boxed numeric zero as "empty" and drops it — that is what cost the
+ * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds a fix in 0.9.0, and
+ * it is the trap to check for any new boxed-numeric component. It does not extend
+ * to enums: an ordinal-0 constant is not "empty" to Jackson and survives
+ * {@code NON_DEFAULT} untouched. Both are asserted in
+ * {@code AstJsonRoundTripTest}.
  *
  * <p>Both are <strong>reserved</strong>: no processor populates them and no
  * generator consumes them, the kernel holds both SPI packages at tier

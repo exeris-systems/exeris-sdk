@@ -216,10 +216,9 @@ public @interface Action {
      * {@code ActionMetadata} carries no path component, so the value does not even reach the
      * build-time JSON; setting it has no effect, and {@code -Aexeris.strict} reports it.
      *
-     * <p>It was mandatory (no default) until 0.11.0, which required every author to write a
-     * plausible, adjacent, wrong URL beside each action — and readers to believe it. The default is
-     * the fix for that; the derived convention is deliberate and stays. Whether the attribute becomes
-     * an honoured override or is removed outright is open (removal runs the {@code MIGRATION.md}
+     * <p>It was mandatory (no default) until 0.11.0, so existing sources carry a value here; it can
+     * be dropped. The derived convention is deliberate and stays. Whether the attribute becomes an
+     * honoured override or is removed outright is open (removal runs the {@code MIGRATION.md}
      * deprecation pipeline).
      *
      * @return URL path; empty (the default) means "use the derived route", which is what happens

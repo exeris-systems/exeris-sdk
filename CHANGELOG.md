@@ -161,6 +161,22 @@ for per-version upgrade steps.
   0.12.0 and carries this prose verbatim — a false status note now propagates into the first
   machine-readable copy of the SDK's own contract, and into every agent that reads it.
 
+- **Published documentation states what a thing does, not the history of our understanding of it.**
+  Several javadoc blocks had grown a correction narrative — "this note used to say X, which was never
+  true", "one standing justification turned out to be folklore". That belongs in a record, and this
+  repo has two of them: `CHANGELOG.md` for what changed and `ROADMAP.md` / the ADRs for what was
+  decided and later corrected. A reader opening `@ExerisDomain.dataScope` wants to know what happens
+  if they declare `UNIVERSE`; a reader of the javadoc jar, or an agent reading the annotation catalog,
+  gets no value from our archaeology and has to parse past it to reach the answer.
+
+  Rewritten to lead with the behaviour and follow with what to do instead: `@ExerisDomain.dataScope`
+  and `apiVersion`, the `UNIVERSE` constant, the AST package-info's Jackson-inclusion obligations,
+  `@Action.path`, `MIGRATION.md`'s `UNIVERSE` entry, and the ui-kit's `theme.css` header and preset
+  comment. Version history stays wherever it changes what a reader writes — "mandatory until 0.11.0,
+  so existing sources carry a value here" is a fact about the API; "we used to describe this wrongly"
+  is not. Nothing was lost: each correction is already recorded in `CHANGELOG.md`, the ROADMAP bullet,
+  or an ADR amendment, which is where a reader looking for it would go.
+
 - **Dark mode ran on two signals; the `.dark` class the README documents now drives both halves.**
   The `--exeris-*` design tokens took their dark values from a `.dark` *class*. The `.exeris-*`
   component classes took theirs from `dark:` variants, which fall back to
