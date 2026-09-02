@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  * exactly what this layer avoids); both front-doors converge on the same
  * {@code ViewMetadata}.
  *
- * <p><strong>Open-Core status — structurally live:</strong> the
+ * <p><strong>Open-Core status — LIVE (structurally):</strong> the
  * {@code exeris-tooling} processor extracts {@code @View} / {@code @Region} /
  * {@code @Block} / {@code @Bind} into the IR, and the codegen-ts Angular view
  * generator emits the component tree (RFC-2026-06-28, tooling). The remaining

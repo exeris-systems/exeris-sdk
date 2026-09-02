@@ -48,7 +48,7 @@ import java.lang.annotation.Target;
  * <p>The kernel's fourth, event-driven kind is excluded there and therefore absent
  * here. Event-driven work is already expressible — see {@link EventHandler}.
  *
- * <h2>Open-Core status — reserved, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
  * <p>Declared shape, not yet a running job. The kernel side demonstrably exists —
  * {@code JobScheduler} / {@code JobDescriptor} / {@code JobTrigger} shipped on the
  * kernel 0.11 line with {@code AbstractJobSchedulerTck} — but no

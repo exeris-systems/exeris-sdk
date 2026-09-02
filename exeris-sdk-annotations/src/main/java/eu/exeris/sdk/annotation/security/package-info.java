@@ -20,7 +20,7 @@
  * public class Order { }
  * }</pre>
  *
- * <h2>Open-Core status — reserved, not yet consumed</h2>
+ * <h2>Open-Core status — RESERVED, not yet consumed</h2>
  * <p>Both annotations are declared-but-unconsumed: their javadocs promise
  * generated encryption / RLS policies, but no Open-Core generator implements
  * them today — the {@code exeris-tooling} processor does not extract either

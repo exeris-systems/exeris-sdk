@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * <strong>region / slot</strong> in the presentation composition tree. A region
  * is a named container into which {@link Block} component nodes are placed.
  *
- * <p><strong>Open-Core status — structurally live:</strong> extracted by the
+ * <p><strong>Open-Core status — LIVE (structurally):</strong> extracted by the
  * {@code exeris-tooling} processor and emitted by the codegen-ts Angular view
  * generator (RFC-2026-06-28, tooling). The remaining piece is the ADR-047
  * leaf-field facet ({@code @UI}'s field-level render detail) — until it lands,

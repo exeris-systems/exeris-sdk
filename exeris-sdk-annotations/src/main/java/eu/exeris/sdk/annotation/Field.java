@@ -27,7 +27,7 @@ import java.lang.annotation.*;
  * contributes nothing and warns about nothing. Every example below uses the
  * sibling form.
  *
- * <h2>Open-Core status — partially live</h2>
+ * <h2>Open-Core status — LIVE, per attribute</h2>
  * <p>Of the 29 attributes declared here, 12 reach a code generator, 2 stop at the
  * AST, and 15 are read by nobody. Declaring an attribute from the last two groups
  * records author intent and changes no generated artifact.

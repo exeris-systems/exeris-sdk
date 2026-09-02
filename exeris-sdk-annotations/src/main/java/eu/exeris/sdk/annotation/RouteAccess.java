@@ -68,7 +68,7 @@ import java.lang.annotation.Target;
  * build-time job for {@code exeris-tooling}; it is recorded here so the combination
  * is not written in the first place.
  *
- * <h2>Open-Core status — reserved, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
  * <p>Declared shape, not yet an enforced route. The kernel side demonstrably
  * exists — {@code HttpRoutePolicy} / {@code RouteRequirement} shipped on the kernel
  * 0.11 line with {@code AbstractHttpRoutePolicyTck} — but no {@code exeris-tooling}

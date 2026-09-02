@@ -50,7 +50,7 @@ import java.lang.annotation.Target;
  * verbatim and interprets nothing (zero runtime coupling); evaluating it is
  * build-time / runtime tooling's job.
  *
- * <h2>Open-Core status — reserved, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
  * <p>The AST twin already exists: {@code SagaMetadata.transitions} (a list of
  * {@code SagaMetadata.SagaTransition} edges, since 0.7.0) is this annotation's
  * canonical carrier, and {@link #on()} maps by name onto the AST-owned

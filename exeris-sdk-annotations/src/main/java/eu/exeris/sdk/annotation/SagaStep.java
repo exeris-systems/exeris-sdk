@@ -159,7 +159,7 @@ public @interface SagaStep {
      * {@link StepKind#AWAIT_EVENT} / {@link StepKind#AWAIT_TIMER} always
      * require this attribute explicitly.
      *
-     * <p><strong>Open-Core status — reserved, extraction pending tooling:</strong>
+     * <p><strong>Open-Core status — RESERVED, extraction pending tooling:</strong>
      * the AST twin ({@code SagaStepMetadata.kind}, since 0.7.0) already exists,
      * but no build-time processor extracts this attribute yet and the
      * {@code -io} reader deliberately stays in parity by omission — the two

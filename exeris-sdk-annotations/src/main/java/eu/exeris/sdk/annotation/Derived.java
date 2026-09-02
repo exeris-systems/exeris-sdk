@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * field name. The expression syntax is named by {@link #language()}; the SDK
  * stores it verbatim and interprets nothing (zero runtime coupling).
  *
- * <h2>Open-Core status — reserved, generation pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, generation pending tooling</h2>
  * <p>This is a declared shape, not yet a live computation. The annotation is
  * defined now; its {@code DerivedMetadata} AST record is the next slice, and no
  * build-time processor extracts {@code @Derived} nor does any code generator

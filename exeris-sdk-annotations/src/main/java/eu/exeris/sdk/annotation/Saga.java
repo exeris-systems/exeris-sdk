@@ -299,7 +299,7 @@ public @interface Saga {
     /**
      * Order of compensation execution.
      *
-     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * <p><strong>Open-Core status — RESERVED; declared but not extracted.</strong> No
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationOrder()} holds its builder default on every
@@ -314,7 +314,7 @@ public @interface Saga {
     /**
      * Compensation execution strategy.
      *
-     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * <p><strong>Open-Core status — RESERVED; declared but not extracted.</strong> No
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationStrategy()} holds its builder default on every

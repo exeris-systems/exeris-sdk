@@ -201,8 +201,8 @@
  *       {@link eu.exeris.sdk.annotation.DomainEvent @DomainEvent},
  *       {@link eu.exeris.sdk.annotation.Saga @Saga},
  *       {@link eu.exeris.sdk.annotation.SagaStep @SagaStep},
- *       {@link eu.exeris.sdk.annotation.Graph @Graph},
- *       {@link eu.exeris.sdk.annotation.InternalApi @InternalApi},
+ *       {@link eu.exeris.sdk.annotation.Graph @Graph} with
+ *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge},
  *       {@link eu.exeris.sdk.annotation.View @View} with
  *       {@link eu.exeris.sdk.annotation.Region @Region} /
  *       {@link eu.exeris.sdk.annotation.Block @Block} /
@@ -216,9 +216,15 @@
  *   <dd>{@link eu.exeris.sdk.annotation.UI @UI}. Applied as a sibling of the
  *       <em>type</em> its view flags land in {@code UIMetadata}, but no emitter
  *       gates on them — which views are generated is a codegen CLI setting, not
- *       an annotation. Applied to a <em>field</em> (in either form) it is read
- *       by nobody: there is currently no field-level presentation path, and
- *       {@code @UI}'s own javadoc claim to the contrary is being corrected.</dd>
+ *       an annotation. The one {@code UIMetadata} field a generator does read,
+ *       {@code listColumns}, is not among the seven the processor extracts.
+ *       Applied to a <em>field</em> (in either form) it is read by nobody:
+ *       there is no field-level presentation path today.
+ *       {@link eu.exeris.sdk.annotation.InternalApi @InternalApi} lands in
+ *       {@code InternalApiMetadata} and is named by no generator on either
+ *       side. {@link eu.exeris.sdk.annotation.EventSourced @EventSourced} lands
+ *       in {@code EventSourcedMetadata}; event-sourcing emission is a tooling
+ *       gap, not a kernel one — the kernel ships both halves with a TCK.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
@@ -226,13 +232,11 @@
  *       {@link eu.exeris.sdk.annotation.Rule @Rule}
  *       ({@link eu.exeris.sdk.annotation.Rules @Rules});
  *       the graph detail annotations
- *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge},
  *       {@link eu.exeris.sdk.annotation.GraphProperty @GraphProperty},
  *       {@link eu.exeris.sdk.annotation.GraphQuery @GraphQuery};
  *       the saga state-machine half
  *       {@link eu.exeris.sdk.annotation.SagaTransition @SagaTransition};
  *       {@link eu.exeris.sdk.annotation.EventHandler @EventHandler},
- *       {@link eu.exeris.sdk.annotation.EventSourced @EventSourced},
  *       {@link eu.exeris.sdk.annotation.Projection @Projection},
  *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam};
  *       the kernel-preview facets
@@ -248,6 +252,15 @@
  *       {@code @SoftDelete}, the {@code @Audit*} family, {@code @Encrypted},
  *       {@code @RowLevelSecurity}. See the note below.</dd>
  * </dl>
+ *
+ * <p>Two rules extend the index to the types it does not name. A
+ * <strong>repeatable container</strong> ({@code @GraphEdges}, {@code @Rules},
+ * {@code @SagaSteps}, {@code @SagaTransitions}, {@code @DomainEvent.DomainEvents},
+ * {@code @Provides.List}, …) is compiler-synthesized and has the status of the
+ * annotation it holds. A <strong>member-value-only type</strong> has the status
+ * of the attribute that carries it, which is often narrower than its parent's:
+ * {@code @Saga} is LIVE and {@code @Saga.SagaTrigger} is RESERVED, because
+ * {@code trigger()} is not extracted.
  *
  * <h2>System fields are driven by flags, not by field annotations</h2>
  * <p>This is the most surprising consequence of the index above, so it is worth
