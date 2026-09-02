@@ -156,8 +156,18 @@ for per-version upgrade steps.
   step is what caught `@InternalApi`: it is extracted, so an extraction registry calls it read, but
   `InternalApiMetadata` is named by no generator on either side — only by the TypeScript schema
   module. A type declaration is not a consumer, so it is PARTIAL. The index in `package-info`
-  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → LIVE,
+  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → PARTIAL,
   `@EventSourced` RESERVED → PARTIAL, `@InternalApi` LIVE → PARTIAL).
+
+  `@GraphEdge` is PARTIAL rather than LIVE for the second half of that word's definition, which is
+  easy to read past: "or only one of the two readers (processor / `-io`) handles it". A generator
+  *does* consume it — `KernelGraphSyncGenerator` — but only the processor extracts it, and the
+  `-io` reader still lists it among the facets neither side reads. The same asymmetry makes
+  `@SagaSteps` and `@GraphEdges` PARTIAL even though `@SagaStep` is LIVE: container handling landed
+  in the processor and not in `-io`, so repeating `@SagaStep` is read on one path and silently
+  reduced to one step on the other. Both container javadocs asserted the pre-processor state and
+  have been corrected; `MIGRATION.md` carried the same stale claim about `@GraphEdge` and now
+  describes what actually happens — one edge extracted, two refused at the declaration.
 
   Nine annotations went further than silence: they carried a "Generated Behavior" / "Generated
   Angular Template" / "Generated PostgreSQL Policy" section describing output that nothing emits.

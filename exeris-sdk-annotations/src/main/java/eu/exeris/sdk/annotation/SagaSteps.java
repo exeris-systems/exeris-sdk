@@ -17,25 +17,22 @@ import java.lang.annotation.Target;
  * requires the container to be at least as accessible as the repeatable
  * annotation at every use site.
  *
- * <p><strong>Repeating a step compiles, and is then dropped.</strong> This holds
- * for a compiler-synthesized container and for a hand-written one alike. The
- * build-time processor matches the exact type
- * {@code eu.exeris.sdk.annotation.SagaStep} against a method's annotation
- * mirrors, and a repeated declaration presents only the {@code @SagaSteps}
- * mirror — so <em>no</em> step is extracted from that method. The {@code -io}
- * reader asks for the first {@code @SagaStep} on the declaration and therefore
- * keeps one. Both are silent: repetition is a clean compile that loses steps,
- * which is worse than an attribute that merely does nothing.
+ * <p><strong>Repeating a step is read by one reader and loses steps in the
+ * other.</strong> The build-time processor unwraps the container and extracts
+ * every step it holds. The {@code -io} reader asks for the first
+ * {@code @SagaStep} on the declaration and therefore keeps one, silently: on
+ * that path a repetition is a clean compile that loses steps, which is worse
+ * than an attribute that merely does nothing.
  *
- * <p>Declare each step on its own method until container handling lands in both
- * readers — a coordinated ADR-042 flip, cross-repo and unscheduled.
- * {@code @DomainEvent} is the only repeatable in the SDK whose container
- * <em>is</em> handled today, and is the reference shape for that flip.
+ * <p>Declare each step on its own method unless the processor is the only reader
+ * in play. Bringing {@code -io} level is a coordinated ADR-042 flip, cross-repo
+ * and unscheduled; {@code @DomainEvent} is the one repeatable both readers
+ * handle, and is the reference shape for it.
  *
- *
- * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
- * repeated {@link SagaStep @SagaStep} declarations, so its status is {@code @SagaStep}'s
- * own.
+ * <p><strong>Status: PARTIAL</strong> — one of the two readers handles this
+ * container. The processor unwraps it to reach the repeated
+ * {@link SagaStep @SagaStep} declarations, so on that path its status is
+ * {@code @SagaStep}'s own; the {@code -io} reader does not, and keeps one step.
  * @since 0.9.0
  * @see SagaStep
  */

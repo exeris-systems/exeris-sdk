@@ -45,8 +45,10 @@ import java.lang.annotation.*;
  * }</pre>
  *
  *
- * <p><strong>Status: LIVE</strong> — extracted into {@code GraphEdgeMetadata} and read by
- * {@code KernelGraphSyncGenerator}. Its three nested property types are not extracted — see
+ * <p><strong>Status: PARTIAL</strong> — extracted into {@code GraphEdgeMetadata} by the
+ * build-time processor and read by {@code KernelGraphSyncGenerator}, so on that path it
+ * does drive emitted output. The {@code -io} reader does not read it, which is what keeps
+ * this short of LIVE: only one of the two readers handles it. Its three nested property types are not extracted — see
  * their own notes — so an edge reaches the writer with its endpoints and without its
  * properties.
  * @author Exeris SDK Team

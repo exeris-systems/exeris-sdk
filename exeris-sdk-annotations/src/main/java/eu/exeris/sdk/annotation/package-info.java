@@ -201,8 +201,7 @@
  *       {@link eu.exeris.sdk.annotation.DomainEvent @DomainEvent},
  *       {@link eu.exeris.sdk.annotation.Saga @Saga},
  *       {@link eu.exeris.sdk.annotation.SagaStep @SagaStep},
- *       {@link eu.exeris.sdk.annotation.Graph @Graph} with
- *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge},
+ *       {@link eu.exeris.sdk.annotation.Graph @Graph},
  *       {@link eu.exeris.sdk.annotation.View @View} with
  *       {@link eu.exeris.sdk.annotation.Region @Region} /
  *       {@link eu.exeris.sdk.annotation.Block @Block} /
@@ -224,7 +223,11 @@
  *       {@code InternalApiMetadata} and is named by no generator on either
  *       side. {@link eu.exeris.sdk.annotation.EventSourced @EventSourced} lands
  *       in {@code EventSourcedMetadata}; event-sourcing emission is a tooling
- *       gap, not a kernel one — the kernel ships both halves with a TCK.</dd>
+ *       gap, not a kernel one — the kernel ships both halves with a TCK.
+ *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge} is PARTIAL for
+ *       the other reason in the definition: a generator does consume it
+ *       ({@code KernelGraphSyncGenerator}), but only the processor extracts it
+ *       — the {@code -io} reader does not, so the two readers disagree.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
@@ -257,7 +260,10 @@
  * <strong>repeatable container</strong> ({@code @GraphEdges}, {@code @Rules},
  * {@code @SagaSteps}, {@code @SagaTransitions}, {@code @DomainEvent.DomainEvents},
  * {@code @Provides.List}, …) is compiler-synthesized and has the status of the
- * annotation it holds. A <strong>member-value-only type</strong> has the status
+ * annotation it holds — <em>capped</em> by how far container handling itself has
+ * got. {@code @DomainEvents} and the capability containers are handled by both
+ * readers; {@code @SagaSteps} and {@code @GraphEdges} only by the processor, so
+ * both are PARTIAL even though {@code @SagaStep} is LIVE. A <strong>member-value-only type</strong> has the status
  * of the attribute that carries it, which is often narrower than its parent's:
  * {@code @Saga} is LIVE and {@code @Saga.SagaTrigger} is RESERVED, because
  * {@code trigger()} is not extracted.

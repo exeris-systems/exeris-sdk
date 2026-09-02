@@ -166,7 +166,7 @@ import java.lang.annotation.*;
  *     description = "Order customer",
  *     required = true,
  *     searchable = true,  // Search by customer name
- *     filterable = true,  // Filter by customer
+ *     filterable = true  // Filter by customer
  * )
  * @UI(
  *     componentType = UI.ComponentType.AUTOCOMPLETE,
