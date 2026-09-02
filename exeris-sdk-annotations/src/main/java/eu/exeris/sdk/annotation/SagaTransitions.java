@@ -16,6 +16,11 @@ import java.lang.annotation.Target;
  * ({@code SagaMetadata.transitions} is a flat edge list), so consumers see a
  * flat list, never the container.
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — a container is read exactly when the annotation it
+ * holds is, and {@link SagaTransition @SagaTransition} is not extracted.
+ * Compiler-synthesized; authors write repeated {@code @SagaTransition} directly and never
+ * this type.
  * @since 0.9.0
  * @see SagaTransition
  */

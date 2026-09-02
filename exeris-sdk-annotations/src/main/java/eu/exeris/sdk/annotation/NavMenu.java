@@ -63,7 +63,7 @@ import java.lang.annotation.*;
  * public class AuditLog { }
  * }</pre>
  *
- * <h2>Generated Menu Structure:</h2>
+ * <h2>Target design — the menu this would emit:</h2>
  * <pre>
  * +-- Dashboard
  * +-- Sales
@@ -79,6 +79,10 @@ import java.lang.annotation.*;
  *         +-- Permissions
  * </pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — no navigation artefact is emitted from this
+ * annotation on either side. The generated TypeScript app shell builds its sidebar from the
+ * entity list and the {@link View @View} routes, never from a menu declared here.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

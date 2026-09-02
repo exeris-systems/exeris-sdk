@@ -80,6 +80,10 @@ import java.lang.annotation.*;
  * }
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — not extracted by the {@code exeris-tooling}
+ * processor — {@code GraphMetadata.queries} is passed as an empty list. There is also no
+ * GraphQL emitter anywhere in the toolchain, so both hops are missing rather than one.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

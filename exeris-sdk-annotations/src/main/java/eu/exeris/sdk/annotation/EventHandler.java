@@ -44,6 +44,12 @@ import java.lang.annotation.*;
  * }
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
+ * extract this annotation, so a handler declared here is neither wired nor emitted. It is
+ * reserved for the event-reaction verb, which is design-gated on the behavioural corpus.
+ * Not to be confused with {@link DomainEvent @DomainEvent}, which is extracted and does
+ * reach the emitters.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
