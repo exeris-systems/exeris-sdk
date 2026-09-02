@@ -127,6 +127,33 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **All 72 annotations now carry a status label; two of them carried one that was wrong.** The root
+  `package-info` has stated since 0.9.0 that every annotation is labelled with one of four words —
+  LIVE / PARTIAL / RESERVED / DEPRECATED — and that you cannot infer from an attribute's existence
+  that it does anything. Two annotations used the vocabulary, twelve more said something in prose,
+  and fifty-eight said nothing at all, including every one of the twenty nested member-value types
+  and the whole `system` / `security` surface. The convention was announced and applied to 3% of the
+  surface it governs.
+
+  Each label names the reason and, for LIVE, the generator that reads it, so the claim can be
+  checked rather than trusted. The classification is derived from what `exeris-tooling` actually
+  does — its `EXTRACTED_ANNOTATIONS` allowlist, its `INERT_ANNOTATIONS` / `UNREAD_NOTES` registries,
+  and, where a registry does not answer the question, a read of the emitters themselves. That last
+  step is what caught `@InternalApi`: it is extracted, so an extraction registry calls it read, but
+  `InternalApiMetadata` is named by no generator on either side — only by the TypeScript schema
+  module. A type declaration is not a consumer, so it is PARTIAL. The index in `package-info`
+  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → LIVE,
+  `@EventSourced` RESERVED → PARTIAL, `@InternalApi` LIVE → PARTIAL).
+
+  Nine annotations went further than silence: they carried a "Generated Behavior" / "Generated
+  Angular Template" / "Generated PostgreSQL Policy" section describing output that nothing emits.
+  The `system` and `security` package javadocs already said those sections "describe the target
+  design, not current output" — the annotations themselves did not, so a reader landing on
+  `@TenantId` got four generated behaviours promised and no indication that none of them happen.
+  Those headings now say which side of the line they are on. This matters more than it did a
+  release ago: the annotation catalog carries this prose verbatim, and `exeris-ai-bridge` serves it
+  to agents that cannot cross-check it against the emitters.
+
 - **Two annotation attributes documented an effect they do not have — and one of them documented the
   opposite of what happens.** Both reported by the Stellar Tactics dog-food (T29, T38) and verified
   against the tooling source rather than taken on report, which changed what one of the fixes had to
