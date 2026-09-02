@@ -93,7 +93,7 @@
  * <dependency>
  *     <groupId>eu.exeris</groupId>
  *     <artifactId>exeris-sdk-annotations</artifactId>
- *     <version>0.10.0</version>
+ *     <version>0.12.0</version>
  *     <scope>provided</scope>
  * </dependency>
  * }</pre>
