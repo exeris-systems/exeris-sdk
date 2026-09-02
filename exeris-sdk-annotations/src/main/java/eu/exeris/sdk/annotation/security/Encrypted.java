@@ -55,7 +55,7 @@ import java.lang.annotation.*;
  * private String sensitiveData;
  * }</pre>
  *
- * <h2>Generated JPA Converter:</h2>
+ * <h2>Target design — the converter this would emit:</h2>
  * <pre>{@code
  * @Convert(converter = EncryptedStringConverter.class)
  * @Column(name = "ssn", columnDefinition = "bytea")
@@ -69,6 +69,10 @@ import java.lang.annotation.*;
  *   <li>Encrypted fields cannot be used in ORDER BY or LIKE queries</li>
  *   <li>Deterministic encryption allows equality search but is less secure</li>
  * </ul>
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
+ * extract this marker, so writing it changes nothing in the emitted output. See the package
+ * javadoc for the live path.
  *
  * @author Exeris SDK Team
  * @version 0.1.0

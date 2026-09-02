@@ -53,7 +53,7 @@ import java.lang.annotation.*;
  * public class Employee { }
  * }</pre>
  *
- * <h2>Generated PostgreSQL Policy:</h2>
+ * <h2>Target design — the policy this would emit:</h2>
  * <pre>{@code
  * -- Enable RLS on table
  * ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
@@ -66,6 +66,10 @@ import java.lang.annotation.*;
  * CREATE POLICY contacts_owner_access ON contacts
  *     USING (assigned_user_id = current_setting('app.user_id')::uuid);
  * }</pre>
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
+ * extract this marker, so writing it changes nothing in the emitted output. See the package
+ * javadoc for the live path.
  *
  * @author Exeris SDK Team
  * @version 0.1.0

@@ -30,13 +30,19 @@ import java.lang.annotation.Target;
  *   <li>{@code Instant} / {@code Timestamp} - timestamp-based versioning</li>
  * </ul>
  *
- * <h2>Generated Behavior:</h2>
+ * <h2>Target design — not emitted today:</h2>
  * <ul>
  *   <li>JPA {@code @Version} annotation added</li>
  *   <li>Update operations require version in request</li>
  *   <li>Concurrent modification throws {@code OptimisticLockException}</li>
  *   <li>Version exposed in ETag header for HTTP caching</li>
  * </ul>
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
+ * fields for this marker, so writing it changes nothing in the emitted output. What
+ * generates the column is the entity-level flag set on {@code @ExerisDomain}, with the
+ * field-name override attributes choosing its name. See the package javadoc for the live
+ * path.
  *
  * @author Exeris SDK Team
  * @version 0.1.0
