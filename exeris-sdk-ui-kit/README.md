@@ -87,10 +87,12 @@ This works on both majors. The file is written against v3 — it opens with the 
 directives, which are no-ops under v4 — and every `.exeris-*` component class it declares is
 emitted by a v4 build too, checked by compiling it with each major on every CI run.
 
-> On v4 you want both entries: `…/theme` for the `bg-exeris-*` utility namespace (only
+> On v4 you need both entries: `…/theme` for the `bg-exeris-*` utility namespace (only
 > `theme.css` carries the v4 `@theme` mapping, and v4 has no JS preset to read it from) and
-> `…/styles` for the component classes. The `--exeris-*` design tokens come along either way —
-> both files declare them, with identical values, which is harmless and guarded by a test.
+> `…/styles` for the component classes. `theme.css` also carries the `dark` variant definition,
+> so a v4 build without it falls back to the OS setting for component dark styling — see
+> [Dark Mode](#dark-mode). The `--exeris-*` design tokens come along either way — both files
+> declare them, with identical values, which is harmless and guarded by a test.
 
 Or in Angular's `angular.json`:
 
@@ -194,17 +196,43 @@ Apply the `.dark` class to your `<html>` or `<body>` element:
 </html>
 ```
 
-**Two halves, two signals — worth knowing before you wire a theme toggle.** The design tokens
-(`--exeris-*`, and every `bg-exeris-*` / `p-exeris-*` utility that reads them) follow the `.dark`
-class above. The component classes' own dark styling is written with Tailwind's `dark:` variant,
-which on both majors defaults to `@media (prefers-color-scheme: dark)` — the operating system's
-setting, not the class. So a toggle that only adds `.dark` re-themes the tokens while
-`.exeris-input` and friends keep their light chrome, unless the OS happens to agree.
+That class is the only signal, and it drives both halves of the package: the design tokens
+(`--exeris-*`, and every `bg-exeris-*` / `p-exeris-*` utility that reads them) and the component
+classes' own dark styling. Toggling it re-themes everything at once — no OS coordination needed,
+and no flash of light chrome on a dark-themed page.
 
-Until that is unified, the reliable combination is to drive both: set the class *and* let the OS
-preference through, or configure `darkMode: 'class'` in your own `tailwind.config.js` (v3) /
-`@custom-variant dark (&:where(.dark, .dark *));` in your CSS (v4), which re-points the `dark:`
-variant at the class for your whole build, this package included.
+It applies to `dark:` utilities *you* write too, not just the ones this package ships: with the
+preset (v3) or the theme entry (v4) in your build, `dark:bg-exeris-primary` in your own markup
+follows the same class.
+
+**If you would rather follow the OS**, override it in your own config — a consumer's setting wins
+over the preset's:
+
+```javascript
+export default {
+  presets: [exerisPreset],
+  darkMode: 'media',      // or ['selector', '[data-theme="dark"]'] for your own attribute
+};
+```
+
+<details>
+<summary>Why this is stated so explicitly</summary>
+
+Until recently the two halves answered to *different* signals. The tokens followed `.dark`, while
+the component classes' `dark:` variants fell back to Tailwind's default,
+`@media (prefers-color-scheme: dark)`. An app that toggled the class got dark tokens and light
+component chrome unless the operating system happened to agree — dark text on a light input.
+
+It is now one switch: `darkMode: 'class'` in the v3 preset, and
+`@custom-variant dark (&:where(.dark, .dark *))` in `theme.css` for v4, which has no JS preset to
+read the former from. Both are asserted against real compiler output on every CI run
+(`tests/dark-mode-signal.test.js`), including that your override above still works.
+
+**On v4 this needs the `…/theme` import.** A v4 build that pulls in `…/styles` alone keeps the
+media query for the component classes, because the `@custom-variant` line lives in the theme
+entry. It is not in `index.css` because that file is also v3's entry, and v3 does not consume
+`@custom-variant` — it copies the at-rule straight into every v3 consumer's compiled output.
+</details>
 
 ## License
 

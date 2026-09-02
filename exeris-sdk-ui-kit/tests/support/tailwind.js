@@ -39,8 +39,9 @@ export const V4_VERSION = require(
 export const DECLARED_V3_RANGE = require(join(PACKAGE_ROOT, 'package.json')).devDependencies.tailwindcss;
 
 /**
- * Compiles one of this package's stylesheets with v4 and returns the output plus
- * an index of its rules.
+ * Compiles one — or, for a setup that needs both entries, several — of this
+ * package's stylesheets with v4 and returns the output plus an index of its
+ * rules.
  *
  * `source(none)` turns off automatic file scanning, so the only candidates are
  * the ones passed in. Without it Tailwind would harvest class names out of this
@@ -48,9 +49,10 @@ export const DECLARED_V3_RANGE = require(join(PACKAGE_ROOT, 'package.json')).dev
  * comment mentioned it.
  */
 export async function compileWithV4(stylesheet, candidates = []) {
+  const sheets = Array.isArray(stylesheet) ? stylesheet : [stylesheet];
   const input = [
     `@import "${V4_ENTRY}" source(none);`,
-    `@import "${join(PACKAGE_ROOT, stylesheet)}";`,
+    ...sheets.map((sheet) => `@import "${join(PACKAGE_ROOT, sheet)}";`),
     candidates.length ? `@source inline("${candidates.join(' ')}");` : '',
   ].filter(Boolean).join('\n');
 
@@ -106,12 +108,15 @@ export function rulesFor(rules, className) {
  * v3 needs the candidates up front (there is no `@source inline`), and it reads
  * the preset the way a consumer's `tailwind.config.js` would.
  */
-export async function compileWithV3(stylesheet, candidates = []) {
+export async function compileWithV3(stylesheet, candidates = [], overrides = {}) {
   const { default: tailwindV3 } = await import('tailwindcss');
   const { default: preset } = await import('../../tailwind.preset.js');
   const config = {
     presets: [preset],
     content: [{ raw: candidates.join(' '), extension: 'html' }],
+    // `overrides` stands in for the rest of a consumer's own tailwind.config.js.
+    // Only the dark-mode guard uses it, to show a preset default stays overridable.
+    ...overrides,
   };
   const file = join(PACKAGE_ROOT, stylesheet);
   const { css } = await postcss([tailwindV3(config)]).process(readFileSync(file, 'utf8'), { from: file });

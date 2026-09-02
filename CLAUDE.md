@@ -94,6 +94,32 @@ The `--exeris-*` declarations are still repeated in `theme.css` (mirror-guarded 
 `theme.test.js`), for a narrower reason than before: a v4 consumer may import only the theme
 entry, and then there is no other source of them.
 
+#### Dark mode is declared in two files and must stay declared in both
+
+`.dark` is the only signal, on both majors, and nothing in one file tells you the other exists:
+
+- `darkMode: 'class'` in `tailwind.preset.js` — reaches v3 consumers.
+- `@custom-variant dark (&:where(.dark, .dark *));` in `src/styles/theme.css` — reaches v4, which
+  has no JS preset to read the former from.
+
+Drop either and that major silently reverts to `@media (prefers-color-scheme: dark)`, which is
+Tailwind's default for `dark:` on both. Nothing looks broken in the source; it fails as light
+component chrome on a page whose tokens went dark. `tests/dark-mode-signal.test.js` compiles the
+documented setup per major and asserts the **absence** of `prefers-color-scheme` — asserting the
+presence of a `.dark` rule would pass with a media query sitting beside it. It also pins the
+consumer escape hatch (`darkMode: 'media'`, or a custom selector strategy, in their own config
+wins over a preset), because a preset default that could not be overridden would be a breaking
+change rather than a new default.
+
+One trap if you extend that guard: Tailwind's escaped class name for a `dark:` utility is
+`.dark\:bg-exeris-primary`, which *contains* the literal `.dark`, so a substring test for the
+class scope passes regardless of which signal compiled. Match `.dark` not followed by `\`.
+
+The `@custom-variant` line stays out of `index.css` on purpose: that file is v3's entry too, and
+v3 does not consume the at-rule — it copies it into every v3 consumer's compiled output. The cost
+is that a v4 build importing only `…/styles` keeps the media signal, which the README covers by
+requiring both entries on v4.
+
 #### It versions independently, and it gets its own 1.0 — not the SDK's
 
 **The SDK's 1.0.0 freeze does not cover this package.** It is at `0.1.0` while the Java line is
