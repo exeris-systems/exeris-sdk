@@ -28,6 +28,10 @@ import java.lang.annotation.Target;
  * public final class GatewayEdgeModule { }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code RequiresMetadata} and consumed
+ * by the capability graph, which resolves it against the {@code @Provides} declarations of
+ * every other module.
  * @author Exeris SDK Team
  * @version 0.4.0
  * @since 0.4.0

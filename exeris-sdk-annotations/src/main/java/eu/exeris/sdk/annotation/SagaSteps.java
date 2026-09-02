@@ -32,6 +32,10 @@ import java.lang.annotation.Target;
  * {@code @DomainEvent} is the only repeatable in the SDK whose container
  * <em>is</em> handled today, and is the reference shape for that flip.
  *
+ *
+ * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+ * repeated {@link SagaStep @SagaStep} declarations, so its status is {@code @SagaStep}'s
+ * own.
  * @since 0.9.0
  * @see SagaStep
  */

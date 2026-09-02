@@ -79,6 +79,10 @@ import java.lang.annotation.*;
  * UUID assigneeId
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code ActionParamMetadata} and read by
+ * {@code KernelHandlerGenerator} and the TypeScript service emitter. {@link #description()}
+ * and {@link #required()} are the exceptions and carry their own notes below.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

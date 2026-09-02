@@ -27,6 +27,11 @@ import java.lang.annotation.Target;
  * reaches no AST today either. {@code GraphMetadata} carries an empty edge list
  * on both paths. Declaring edges records author intent and generates nothing.
  *
+ *
+ * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+ * repeated {@link GraphEdge @GraphEdge} declarations, so its status is {@code @GraphEdge}'s
+ * own. Compiler-synthesized; authors write repeated {@code @GraphEdge} directly and never
+ * this type.
  * @since 0.10.0
  * @see GraphEdge
  * @see Graph

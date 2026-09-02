@@ -51,6 +51,11 @@ import java.lang.annotation.*;
  * public class TransferMoneySaga implements Saga<TransferState> {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
+ * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
+ * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
+ * order.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

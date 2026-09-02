@@ -44,6 +44,11 @@ import java.lang.annotation.*;
  * private List<User> friends;
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code GraphEdgeMetadata} and read by
+ * {@code KernelGraphSyncGenerator}. Its three nested property types are not extracted — see
+ * their own notes — so an edge reaches the writer with its endpoints and without its
+ * properties.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

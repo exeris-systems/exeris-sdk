@@ -66,6 +66,10 @@ import java.lang.annotation.*;
  * public record HighValueOrderUpdatedEvent(...) implements DomainEvent {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code DomainEventMetadata} and read by
+ * the kernel event, event-handler, stream-handler and request-handler generators, plus the
+ * TypeScript event emitter. The repeatable container is unwrapped with it; {@link Header @Header} is not — see its own note.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

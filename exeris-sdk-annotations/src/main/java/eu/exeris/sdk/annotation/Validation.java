@@ -124,7 +124,7 @@ import java.lang.annotation.*;
  * private String password;
  * }</pre>
  *
- * <h2>Generated Validation Code:</h2>
+ * <h2>Target design — the code the bounds drive, and the flags do not:</h2>
  * <p>The SDK generates validation code for both backend and frontend:
  *
  * <p><strong>Backend (Spring Validation):</strong>
@@ -139,6 +139,11 @@ import java.lang.annotation.*;
  * email: ['', [Validators.required, Validators.email]],
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code FieldMetadata} and read by the
+ * Flyway, entity-schema, OpenAPI and validation-rule generators, and by the TypeScript form
+ * and type emitters. Only the bounds carry: {@link #min()}, {@link #max()}, {@link #minLength()}, {@link #maxLength()} and {@link #pattern()}. The flag constraints ({@link #email()}, {@link #url()}, {@link #future()}, {@link #past()}, …) are declared here and
+ * extracted by nobody.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

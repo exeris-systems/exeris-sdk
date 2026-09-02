@@ -53,6 +53,9 @@ import java.lang.annotation.*;
  * public class User { }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — the type-level annotation is extracted into {@code GraphMetadata} and read by {@code KernelGraphSyncGenerator}. The detail annotations
+ * around it are not: {@link GraphProperty @GraphProperty} and {@link GraphQuery @GraphQuery} are unread, so {@code properties} arrives null and {@code queries} empty.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

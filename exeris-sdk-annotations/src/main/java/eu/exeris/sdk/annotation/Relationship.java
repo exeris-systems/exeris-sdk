@@ -126,7 +126,7 @@ import java.lang.annotation.*;
  * private City city;
  * }</pre>
  *
- * <h2>Generated UI Components:</h2>
+ * <h2>Target design — the UI this would drive:</h2>
  * <p>The SDK generates appropriate UI components based on relationship configuration:
  * <ul>
  *   <li><strong>SELECT</strong> - Small datasets (&lt;100 items)</li>
@@ -135,6 +135,10 @@ import java.lang.annotation.*;
  *   <li><strong>MODAL</strong> - Complex entity selection with filters</li>
  * </ul>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code RelationshipMetadata} and read
+ * by the repository, Flyway and application generators — the foreign key, its constraint
+ * and the query path all come from here.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

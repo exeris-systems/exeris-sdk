@@ -58,6 +58,11 @@ import java.lang.annotation.*;
  * public SagaAction finalizeOrder() { ... }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code SagaStepMetadata} and read by
+ * {@code KernelSagaGenerator} and the TypeScript saga emitter. Its four nested mapping
+ * types are not extracted — see their own notes — so a step reaches the generator as a
+ * named, ordered unit without its command headers, input/output mappings or metric tags.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

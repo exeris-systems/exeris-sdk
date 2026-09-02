@@ -42,6 +42,12 @@ import java.lang.annotation.*;
  * public class Account extends EventSourcedAggregate {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: PARTIAL</strong> — extracted into {@code EventSourcedMetadata}, so it
+ * survives onto the wire, and read by no generator: event-sourcing emission is not
+ * implemented yet. This is a tooling gap rather than a kernel one — the kernel line ships
+ * the replayable read and the optimistic-concurrency write with both Community bindings and
+ * a TCK.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

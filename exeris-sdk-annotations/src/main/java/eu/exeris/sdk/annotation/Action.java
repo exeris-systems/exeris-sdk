@@ -143,6 +143,12 @@ import java.lang.annotation.*;
  * </button>
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code ActionMetadata} and read by the
+ * kernel handler, stream-handler, application and OpenAPI generators, and on the TypeScript
+ * side by the guard and action-stream client emitters. Not every attribute is live with it:
+ * {@link #path()}, {@link #roles()} and {@link #permissions()} are extracted by nobody and
+ * carry their own notes below.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
