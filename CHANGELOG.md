@@ -20,8 +20,8 @@ for per-version upgrade steps.
 ### Added
 
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
-  attached to the GitHub Release.** Every `@interface` the module declares — 71 of them, 51
-  top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  attached to the GitHub Release.** Every `@interface` the module declares — 72 as this release
+  stands, 52 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
   required-ness / admissible enum values, deprecations with their canonical replacement, and
   the javadoc prose. Written during the annotations module's own compilation by the new
   build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,
@@ -30,6 +30,10 @@ for per-version upgrade steps.
   reflection emitter cannot work around: a class file carries no javadoc at any retention,
   and a deprecation's replacement lives in `@deprecated` prose because `@Deprecated` has only
   `since` and `forRemoval`. No timestamp, so two builds of one commit produce identical bytes.
+  The count is the catalog's own `annotationCount` field and moves with the surface — it was 71 /
+  51 / 20 when this entry was first written, and `@RouteAccess` below has landed since. What is
+  gated is coverage, not the number: the guard derives the expected set from the sources rather
+  than restating it, so an annotation cannot go missing, only uncounted in this sentence.
   `.github/workflows/release-assets.yml` attaches it on a `v*` tag and refuses when the
   catalog's `sdkVersion` disagrees with the tag. This unblocks `exeris-ai-bridge`'s `sdk:*`
   family, whose whole content had no producer.
