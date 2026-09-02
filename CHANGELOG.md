@@ -127,6 +127,37 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Dark mode ran on two signals; the `.dark` class the README documents now drives both halves.**
+  The `--exeris-*` design tokens took their dark values from a `.dark` *class*. The `.exeris-*`
+  component classes took theirs from `dark:` variants, which fall back to
+  `@media (prefers-color-scheme: dark)` on v3 and v4 alike. So an app that toggled the class — the
+  only thing this package ever told you to do — got dark tokens and light component chrome unless
+  the operating system happened to agree: dark text on a light input.
+
+  Fixed with `darkMode: 'class'` in `tailwind.preset.js` (v3) and
+  `@custom-variant dark (&:where(.dark, .dark *))` in `theme.css` (v4, which has no JS preset to
+  read the former from). It covers `dark:` utilities a consumer writes as well as the ones this
+  package ships.
+
+  **This is a behaviour change for existing v3 consumers**, and the reason it was taken as its own
+  decision rather than as a rider on the v4 component-parity work below. An app that relies on the
+  OS signal gets it back with `darkMode: 'media'` — or any custom strategy, such as
+  `['selector', '[data-theme="dark"]']` — in its own `tailwind.config.js`, which wins over a
+  preset. Both overrides are asserted, so the escape hatch cannot rot.
+
+  `tests/dark-mode-signal.test.js` compiles the documented setup on each major and asserts the
+  **absence** of `prefers-color-scheme` alongside the presence of a `.dark`-scoped rule; asserting
+  only the latter would pass while a media query sat beside it, which is precisely the split being
+  closed. Both halves are mutation-verified, and that is what caught a vacuous assertion in the
+  guard itself: Tailwind's escaped class name for a `dark:` utility (`.dark\:bg-exeris-primary`)
+  contains the literal `.dark`, so the substring test passed whether or not the fix was in place.
+
+  **Residual, documented rather than fixed:** the `@custom-variant` line sits in `theme.css`, so a
+  v4 build importing only `…/styles` keeps the media signal for the component layer. `index.css`
+  is v3's entry too, and v3 does not consume `@custom-variant` — it copies the at-rule verbatim
+  into every v3 consumer's compiled output. The README's v4 guidance now says both entries are
+  required rather than wanted.
+
 - **The `.exeris-*` component classes now reach Tailwind v4 consumers, and the reason they did not
   was one line, not the file's shape.** B3 shipped a styled class for every renderable
   `ComponentType`, but only into `index.css`, which a v4 build refused. The account recorded a

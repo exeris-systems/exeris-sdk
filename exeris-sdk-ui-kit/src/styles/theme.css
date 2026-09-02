@@ -54,13 +54,35 @@
  *
  * ## Why the `--exeris-*` properties are declared here too
  *
- * They are declared in `index.css`, but `index.css` is v3-only — it opens with
- * `@tailwind base/components/utilities` and its component layer composes with
- * `@apply exeris-btn`, both of which a v4 build rejects. A v4 consumer
- * therefore cannot import it, so the token declarations a v4 build needs live
- * here. The duplication is deliberate and guarded: `tests/theme.test.js`
- * asserts this `:root` / `.dark` pair matches `index.css` value for value.
+ * They are declared in `index.css` too. That file is written against v3, but a
+ * v4 build *can* consume it — the reason recorded here while this file was
+ * written (that v4 rejects its `@tailwind` directives and its
+ * `@apply exeris-btn`) was measured false: v4 treats the directives as no-ops,
+ * and the custom-class `@apply` is gone. The mirroring stands for a narrower
+ * reason: a v4 consumer may import only this entry, for the `bg-exeris-*`
+ * utility namespace, without importing the component layer. The duplication is
+ * deliberate and guarded — `tests/theme.test.js` asserts this `:root` / `.dark`
+ * pair matches `index.css` value for value.
+ *
+ * ## Why the `dark` variant is redefined here
+ *
+ * v4 has no JS preset, so `darkMode: 'class'` in `tailwind.preset.js` reaches
+ * v3 consumers only. `@custom-variant` below is the v4 equivalent: it re-points
+ * every `dark:` utility — this package's component layer and whatever the
+ * consumer writes — at the `.dark` class that already drives the token block,
+ * instead of `@media (prefers-color-scheme: dark)`.
+ *
+ * It lives here rather than in `index.css` because it is v4-only syntax that
+ * v3 does not consume but does *copy through* to its output: every v3
+ * consumer's compiled CSS would carry a stray `@custom-variant` at-rule. The
+ * cost of that placement is one narrow gap — a v4 build importing `…/styles`
+ * without `…/theme` keeps the media signal for the component classes — which
+ * the README covers by stating both entries are required on v4.
  */
+
+/* Dark mode is driven by the `.dark` class on both majors — v3 gets this from
+   `darkMode: 'class'` in tailwind.preset.js, v4 from the line below. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Design tokens — the runtime theming surface (mirrors index.css). */
 :root {
