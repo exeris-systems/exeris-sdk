@@ -13,13 +13,34 @@
  *   <li>{@code FAIL_ON_NULL_FOR_PRIMITIVES = false} — our records use primitive
  *       booleans heavily, and without this flag deserialization throws on any
  *       explicit {@code null} standing where one of them is declared.
- *       An <em>absent</em> property is not the trigger: it binds the
- *       primitive's own default and raises nothing. What throws is an
- *       <em>explicit</em> {@code null} on the wire, which a baseline can
- *       legitimately carry — it is a file the reader did not necessarily write,
- *       and a third-party producer, a hand edit, or a re-serialization under
- *       {@code ALWAYS} inclusion each put explicit nulls in it.
+ *       An <em>absent</em> property is not the trigger: it binds the primitive's
+ *       own default and raises nothing. What throws is an <em>explicit</em>
+ *       {@code null} on the wire, which a baseline can legitimately carry — it is
+ *       a file the reader did not necessarily write, and a third-party producer, a
+ *       hand edit, or a re-serialization under {@code ALWAYS} inclusion each put
+ *       explicit nulls in it. Pinned in {@code exeris-sdk-tck}
+ *       ({@code AbstractMapperPostureTck}). <strong>Which Jackson generation this bites:</strong> Jackson 3
+ *       ({@code tools.jackson}) defaults the feature to {@code true}, so a
+ *       Jackson-3 consumer <em>must</em> turn it off explicitly. Jackson 2
+ *       ({@code com.fasterxml.jackson}) already defaults it to {@code false},
+ *       so a Jackson-2 consumer gets the correct behaviour without configuring
+ *       anything — which is why today's real producer/consumer pair in
+ *       {@code exeris-tooling} ({@code ExerisDomainProcessor} writing,
+ *       {@code MetadataLoader} reading, both on the 2.x line) never mentions
+ *       the feature. Setting it explicitly is correct and harmless on both
+ *       lines; state it, do not assume the default.</li>
+ * </ul>
+ * The wire-format guard test {@code AstJsonRoundTripTest} configures the
+ * mapper accordingly and is the canonical reference. It runs on Jackson 3,
+ * which this module pulls at <em>test</em> scope only — the published
+ * {@code source-model} jar ships no databind at all, so the mapper is always
+ * the consumer's own and the rule above is a consumer obligation, not
+ * something the SDK can enforce.
  *
+ * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0, finalized 0.9.0)</h2>
+ * <p>The annotation surface splits field-shape ({@code @Field}) from constraint
+ * declarations ({@code @Validation}); the AST carries both on a single record:
+ * <ul>
  *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata}</strong>
  *       owns {@code required}, {@code inCreate}, {@code inUpdate} — field-shape /
  *       lifecycle facts populated from {@code @Field} only

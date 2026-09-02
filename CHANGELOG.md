@@ -174,8 +174,16 @@ for per-version upgrade steps.
   `@Action.path`, `MIGRATION.md`'s `UNIVERSE` entry, and the ui-kit's `theme.css` header and preset
   comment. Version history stays wherever it changes what a reader writes — "mandatory until 0.11.0,
   so existing sources carry a value here" is a fact about the API; "we used to describe this wrongly"
-  is not. Nothing was lost: each correction is already recorded in `CHANGELOG.md`, the ROADMAP bullet,
-  or an ADR amendment, which is where a reader looking for it would go.
+  is not.
+
+  Each *narrative* removed is recorded elsewhere — in `CHANGELOG.md`, the ROADMAP bullet, or an ADR
+  amendment — but "nothing was lost" is not a safe blanket claim for a trim of this kind, and it did
+  not hold on the first attempt: the AST `package-info` edit took the surrounding `</ul>`, the
+  `FieldMetadata` vs `ValidationMetadata` section header, and a paragraph of genuinely forward-looking
+  Jackson guidance (which generation defaults `FAIL_ON_NULL_FOR_PRIMITIVES` which way, and why the
+  `exeris-tooling` pair on the 2.x line never sets it) along with the narrative. None of that existed
+  anywhere else. Restored, and the trims re-done as exact-string replacements rather than index
+  slicing — the mechanism that caused it.
 
 - **Dark mode ran on two signals; the `.dark` class the README documents now drives both halves.**
   The `--exeris-*` design tokens took their dark values from a `.dark` *class*. The `.exeris-*`
