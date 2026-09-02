@@ -28,6 +28,10 @@ import java.lang.annotation.Target;
  * public final class GatewayCoreModule { }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code ProvidesMetadata} and consumed
+ * by the capability graph and the composition stamp — this is one half of the edge set
+ * behind {@code cap-manifest.json}.
  * @author Exeris SDK Team
  * @version 0.4.0
  * @since 0.4.0
@@ -61,6 +65,9 @@ public @interface Provides {
      * {@link CapabilityModule} class. Synthesized by the compiler; authors use
      * repeated {@code @Provides} directly and never write this type.
      *
+     *
+     * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+     * repeated {@code @Provides} declarations, so its status is {@code @Provides}'s own.
      * @see Provides
      */
     @Target(ElementType.TYPE)

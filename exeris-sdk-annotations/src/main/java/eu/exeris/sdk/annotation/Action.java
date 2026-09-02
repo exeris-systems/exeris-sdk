@@ -81,7 +81,7 @@ import java.lang.annotation.*;
  *     bulk = true,
  *     roles = {"ROLE_MANAGER"},
  *     confirm = "Approve {count} selected orders?",
- *     ui = @UI(
+ *     ui = @UI(                       // RESERVED — reaches no AST component
  *         icon = "check_circle",
  *         cssClass = "btn-success"
  *     )
@@ -103,7 +103,7 @@ import java.lang.annotation.*;
  *     path = "/{id}/cancel",
  *     visibleWhen = "status == 'PENDING' || status == 'APPROVED'",
  *     roles = {"ROLE_USER"},
- *     ui = @UI(
+ *     ui = @UI(                       // RESERVED — reaches no AST component
  *         icon = "cancel",
  *         cssClass = "btn-danger"
  *     )
@@ -143,6 +143,12 @@ import java.lang.annotation.*;
  * </button>
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code ActionMetadata} and read by the
+ * kernel handler, stream-handler, application and OpenAPI generators, and on the TypeScript
+ * side by the guard and action-stream client emitters. Not every attribute is live with it:
+ * {@link #path()}, {@link #roles()} and {@link #permissions()} are extracted by nobody and
+ * carry their own notes below.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -372,6 +378,10 @@ public @interface Action {
     /**
      * UI configuration for the action button.
      * <p>Specifies icon, styling, and placement.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@code ActionMetadata} declares no {@code ui}
+     * component, so this reaches no AST component at all and no emitted button reads it.
+     * It is the same shape as {@link #path()}: written, compiled, and carried nowhere.
      *
      * <p><strong>Example:</strong>
      * <pre>{@code

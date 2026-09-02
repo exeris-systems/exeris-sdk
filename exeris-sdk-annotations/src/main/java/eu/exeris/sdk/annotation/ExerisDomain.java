@@ -576,7 +576,7 @@ public @interface ExerisDomain {
      *   <li>NONE: no validation</li>
      * </ul>
      *
-     * <p><strong>Open-Core status — inert by construction (reserved):</strong>
+     * <p><strong>Open-Core status — RESERVED, inert by construction:</strong>
      * this attribute governs the strictness of system-field <em>marker</em>
      * validation ({@code @TenantId}, {@code @Version}, …), but the tooling
      * processor does not scan fields for those markers, so no mode has

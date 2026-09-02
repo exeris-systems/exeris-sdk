@@ -27,7 +27,14 @@ import java.lang.annotation.*;
  * contributes nothing and warns about nothing. Every example below uses the
  * sibling form.
  *
- * <h2>Open-Core status — partially live</h2>
+ * <p><strong>A field-level {@code @UI} is read by nobody</strong>, in either form. The
+ * examples above write it as a sibling because that is the form this package mandates, not
+ * because the sibling form is extracted: there is no field-level presentation path today, so
+ * {@code @UI} beside a field records intent and changes no generated artifact. A sibling
+ * {@code @Validation} <em>is</em> read — its five bounds reach {@code FieldMetadata} — and so
+ * is a sibling {@code @Relationship}.
+ *
+ * <h2>Open-Core status — LIVE, per attribute</h2>
  * <p>Of the 29 attributes declared here, 12 reach a code generator, 2 stop at the
  * AST, and 15 are read by nobody. Declaring an attribute from the last two groups
  * records author intent and changes no generated artifact.
@@ -76,13 +83,13 @@ import java.lang.annotation.*;
  * @Field(
  *     label = "Total Amount",
  *     description = "Total order amount in USD",
- *     required = true,
- *     ui = @UI(
- *         componentType = UI.ComponentType.NUMBER_INPUT,
- *         format = "currency",
- *         displayInList = true,
- *         displayOrder = 3
- *     )
+ *     required = true
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.NUMBER_INPUT,
+ *     format = "currency",
+ *     displayInList = true,
+ *     displayOrder = 3
  * )
  * private BigDecimal totalAmount;
  * }</pre>
@@ -92,15 +99,15 @@ import java.lang.annotation.*;
  * @Field(
  *     label = "Email Address",
  *     description = "Customer's email for notifications",
- *     required = true,
- *     validation = @Validation(
- *         email = true,
- *         message = "Please enter a valid email address"
- *     ),
- *     ui = @UI(
- *         componentType = UI.ComponentType.EMAIL,
- *         placeholder = "customer@example.com"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     email = true,
+ *     message = "Please enter a valid email address"
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.EMAIL,
+ *     placeholder = "customer@example.com"
  * )
  * private String email;
  * }</pre>
@@ -111,11 +118,11 @@ import java.lang.annotation.*;
  *     label = "Status",
  *     searchable = false,  // Don't include in text search
  *     filterable = true,   // But allow filtering by dropdown
- *     sortable = true,
- *     ui = @UI(
- *         componentType = UI.ComponentType.SELECT,
- *         displayInList = true
- *     )
+ *     sortable = true
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.SELECT,
+ *     displayInList = true
  * )
  * @Enumerated(EnumType.STRING)
  * private OrderStatus status;
@@ -129,11 +136,11 @@ import java.lang.annotation.*;
  *     inDetail = true,    // Show in detail view
  *     inCreate = false,   // Hide in create form (auto-generated)
  *     inUpdate = false,   // Hide in update form (immutable)
- *     sortable = true,
- *     ui = @UI(
- *         componentType = UI.ComponentType.DATETIME_PICKER,
- *         format = "date:long"
- *     )
+ *     sortable = true
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.DATETIME_PICKER,
+ *     format = "date:long"
  * )
  * private LocalDateTime createdAt;
  * }</pre>
@@ -159,12 +166,12 @@ import java.lang.annotation.*;
  *     description = "Order customer",
  *     required = true,
  *     searchable = true,  // Search by customer name
- *     filterable = true,  // Filter by customer
- *     ui = @UI(
- *         componentType = UI.ComponentType.AUTOCOMPLETE,
- *         displayInList = true,
- *         displayOrder = 2
- *     )
+ *     filterable = true  // Filter by customer
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.AUTOCOMPLETE,
+ *     displayInList = true,
+ *     displayOrder = 2
  * )
  * @Relationship(
  *     targetEntity = Customer.class,
@@ -437,9 +444,9 @@ public @interface Field {
      * <p>Override for custom behavior:
      * <pre>{@code
      * @Field(
-     *     label = "Description",
-     *     ui = @UI(componentType = UI.ComponentType.TEXT_AREA)
+     *     label = "Description"
      * )
+     * @UI(componentType = UI.ComponentType.TEXT_AREA)
      * private String description;
      * }</pre>
      *
@@ -454,12 +461,12 @@ public @interface Field {
      * <p><strong>Example:</strong>
      * <pre>{@code
      * @Field(
-     *     label = "Email",
-     *     validation = @Validation(
-     *         required = true,
-     *         email = true,
-     *         message = "Valid email required"
-     *     )
+     *     label = "Email"
+     * )
+     * @Validation(
+     *     required = true,
+     *     email = true,
+     *     message = "Valid email required"
      * )
      * private String email;
      * }</pre>

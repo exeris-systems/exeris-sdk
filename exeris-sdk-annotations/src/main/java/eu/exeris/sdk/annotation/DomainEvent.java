@@ -66,6 +66,10 @@ import java.lang.annotation.*;
  * public record HighValueOrderUpdatedEvent(...) implements DomainEvent {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code DomainEventMetadata} and read by
+ * the kernel event, event-handler, stream-handler and request-handler generators, plus the
+ * TypeScript event emitter. The repeatable container is unwrapped with it; {@link Header @Header} is not — see its own note.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -836,6 +840,10 @@ public @interface DomainEvent {
 
     /**
      * Message header definition.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link DomainEvent#headers()} is not extracted
+     * by the {@code exeris-tooling} processor, so a header declared here reaches neither
+     * the AST nor the emitted event.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -874,6 +882,10 @@ public @interface DomainEvent {
      * public class Order { ... }
      * }</pre>
      *
+     *
+     * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the
+     * repeated {@code @DomainEvent} declarations, so its status is {@code @DomainEvent}'s
+     * own.
      * @see DomainEvent
      */
     @Target(ElementType.TYPE)

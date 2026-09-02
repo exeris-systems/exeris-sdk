@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * public class Order { ... }
  * }</pre>
  *
- * <h2>Open-Core status — reserved, generation pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, generation pending tooling</h2>
  * <p>This is a declared shape, not yet an enforced rule. The annotation is
  * defined now; its {@code RuleMetadata} AST record is the next slice, and no
  * build-time processor extracts {@code @Rule} nor does any code generator

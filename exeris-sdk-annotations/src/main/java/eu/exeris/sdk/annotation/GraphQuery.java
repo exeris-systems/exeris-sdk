@@ -80,6 +80,10 @@ import java.lang.annotation.*;
  * }
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — not extracted by the {@code exeris-tooling}
+ * processor — {@code GraphMetadata.queries} is passed as an empty list. There is also no
+ * GraphQL emitter anywhere in the toolchain, so both hops are missing rather than one.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -819,6 +823,9 @@ public @interface GraphQuery {
      *
      * <p>{@code type} is written in GraphQL's own type syntax rather than as a Java type —
      * the two vocabularies do not coincide, and this one is the schema's.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@code @GraphQuery} is not extracted, so an
+     * argument declared here describes a schema no emitter writes.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

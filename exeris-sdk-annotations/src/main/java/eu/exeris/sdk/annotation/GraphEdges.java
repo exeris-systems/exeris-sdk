@@ -20,13 +20,21 @@ import java.lang.annotation.Target;
  * {@code @Repeatable} container to the rule.
  *
  * <p><strong>What this fix does and does not buy.</strong> It makes repeating
- * {@code @GraphEdge} <em>compile</em> outside this package. It does not make it
- * <em>read</em>: the member annotations of {@code @Graph} — {@code @GraphEdge},
- * {@code @GraphProperty} and {@code @GraphQuery} — are extracted by neither the
- * build-time processor nor the {@code -io} reader, so a single edge declaration
- * reaches no AST today either. {@code GraphMetadata} carries an empty edge list
- * on both paths. Declaring edges records author intent and generates nothing.
+ * {@code @GraphEdge} <em>compile</em> outside this package. It does not make a
+ * repetition <em>readable</em>: the processor unwraps this container, and then
+ * refuses two edges on one field at the declaration, because
+ * {@code GraphEdgeMetadata} cannot express the shape. One edge is extracted;
+ * two are a build error rather than a silent loss.
  *
+ * <p>{@code @GraphEdge} itself is read by the processor and consumed by the
+ * graph-sync generator. Its siblings under {@code @Graph} —
+ * {@code @GraphProperty} and {@code @GraphQuery} — are read by nobody, so
+ * {@code GraphMetadata} carries a null property list and an empty query list.
+ * The {@code -io} reader reads none of the three.
+ *
+ * <p><strong>Status: PARTIAL</strong> — one of the two readers handles this
+ * container, and it admits only one edge. Compiler-synthesized; authors write
+ * repeated {@code @GraphEdge} directly and never this type.
  * @since 0.10.0
  * @see GraphEdge
  * @see Graph

@@ -127,6 +127,57 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
+  `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
+  Exeris metadata that silently does nothing" — and the canonical example on `@Validation` itself
+  used that form twelve times, with `@Field`, `@ActionParam`, `@Relationship` and `@Action` adding
+  fifteen more. All rewritten to the sibling form, with a note wherever the rewrite alone would
+  imply a fix that did not happen: a sibling `@Validation` beside a field *is* read (its five bounds
+  reach `FieldMetadata`), a sibling `@UI` beside a field is read by nobody in either form, and
+  beside an action *parameter* nothing is carried at all — `ActionParamMetadata` declares bound
+  components that the processor never fills. `@Action.ui()` needed no rewrite and a label instead:
+  `ActionMetadata` has no `ui` component, so the attribute reaches nothing, the same shape as
+  `@Action.path()`.
+
+- **The quick-start told a new consumer to depend on 0.10.0.** This javadoc ships inside 0.12.0.
+
+- **All 72 annotations now carry a status label; two of them carried one that was wrong.** The root
+  `package-info` has stated since 0.9.0 that every annotation is labelled with one of four words —
+  LIVE / PARTIAL / RESERVED / DEPRECATED — and that you cannot infer from an attribute's existence
+  that it does anything. Two annotations used the vocabulary, twelve more said something in prose,
+  and fifty-eight said nothing at all, including every one of the twenty nested member-value types
+  and the whole `system` / `security` surface. The convention was announced and applied to 3% of the
+  surface it governs.
+
+  Each label names the reason and, for LIVE, the generator that reads it, so the claim can be
+  checked rather than trusted. The classification is derived from what `exeris-tooling` actually
+  does — its `EXTRACTED_ANNOTATIONS` allowlist, its `INERT_ANNOTATIONS` / `UNREAD_NOTES` registries,
+  and, where a registry does not answer the question, a read of the emitters themselves. That last
+  step is what caught `@InternalApi`: it is extracted, so an extraction registry calls it read, but
+  `InternalApiMetadata` is named by no generator on either side — only by the TypeScript schema
+  module. A type declaration is not a consumer, so it is PARTIAL. The index in `package-info`
+  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → PARTIAL,
+  `@EventSourced` RESERVED → PARTIAL, `@InternalApi` LIVE → PARTIAL).
+
+  `@GraphEdge` is PARTIAL rather than LIVE for the second half of that word's definition, which is
+  easy to read past: "or only one of the two readers (processor / `-io`) handles it". A generator
+  *does* consume it — `KernelGraphSyncGenerator` — but only the processor extracts it, and the
+  `-io` reader still lists it among the facets neither side reads. The same asymmetry makes
+  `@SagaSteps` and `@GraphEdges` PARTIAL even though `@SagaStep` is LIVE: container handling landed
+  in the processor and not in `-io`, so repeating `@SagaStep` is read on one path and silently
+  reduced to one step on the other. Both container javadocs asserted the pre-processor state and
+  have been corrected; `MIGRATION.md` carried the same stale claim about `@GraphEdge` and now
+  describes what actually happens — one edge extracted, two refused at the declaration.
+
+  Nine annotations went further than silence: they carried a "Generated Behavior" / "Generated
+  Angular Template" / "Generated PostgreSQL Policy" section describing output that nothing emits.
+  The `system` and `security` package javadocs already said those sections "describe the target
+  design, not current output" — the annotations themselves did not, so a reader landing on
+  `@TenantId` got four generated behaviours promised and no indication that none of them happen.
+  Those headings now say which side of the line they are on. This matters more than it did a
+  release ago: the annotation catalog carries this prose verbatim, and `exeris-ai-bridge` serves it
+  to agents that cannot cross-check it against the emitters.
+
 - **Two annotation attributes documented an effect they do not have — and one of them documented the
   opposite of what happens.** Both reported by the Stellar Tactics dog-food (T29, T38) and verified
   against the tooling source rather than taken on report, which changed what one of the fixes had to

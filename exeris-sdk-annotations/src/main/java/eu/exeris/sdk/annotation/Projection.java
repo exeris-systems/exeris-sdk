@@ -51,6 +51,11 @@ import java.lang.annotation.*;
  * public class MonthlyReportProjection implements Projection {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — the processor performs no extraction, so a
+ * projection declared here reaches no read model. Reserved rather than overlooked: its open
+ * question is cross-service exposure — the same topology fork the {@link View @View} mesh
+ * binding sits on — so it is design-gated on a decision, not on a missing extractor.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

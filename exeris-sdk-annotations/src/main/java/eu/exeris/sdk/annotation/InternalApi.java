@@ -18,6 +18,10 @@ import java. lang.annotation.*;
  * public void syncBalance() { ... }
  * }</pre>
  *
+ *
+ * <p><strong>Status: PARTIAL</strong> — extracted into {@code InternalApiMetadata}, so it
+ * survives onto the wire, and read by no generator on either side — no emitted artifact
+ * changes when you write it.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

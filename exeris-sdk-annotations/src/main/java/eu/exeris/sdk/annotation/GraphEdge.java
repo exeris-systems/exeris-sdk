@@ -44,6 +44,13 @@ import java.lang.annotation.*;
  * private List<User> friends;
  * }</pre>
  *
+ *
+ * <p><strong>Status: PARTIAL</strong> — extracted into {@code GraphEdgeMetadata} by the
+ * build-time processor and read by {@code KernelGraphSyncGenerator}, so on that path it
+ * does drive emitted output. The {@code -io} reader does not read it, which is what keeps
+ * this short of LIVE: only one of the two readers handles it. Its three nested property types are not extracted — see
+ * their own notes — so an edge reaches the writer with its endpoints and without its
+ * properties.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -436,6 +443,9 @@ public @interface GraphEdge {
 
     /**
      * Maps entity field to graph edge property.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#propertyMappings()} is not
+     * extracted, so the emitted graph-sync writer carries no property mapping.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -461,6 +471,9 @@ public @interface GraphEdge {
 
     /**
      * Static property with fixed value on graph edge.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#staticProperties()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -476,6 +489,9 @@ public @interface GraphEdge {
 
     /**
      * Computed property using SpEL expression.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link GraphEdge#computedProperties()} is not
+     * extracted. The SpEL expression is stored verbatim and evaluated by nobody.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

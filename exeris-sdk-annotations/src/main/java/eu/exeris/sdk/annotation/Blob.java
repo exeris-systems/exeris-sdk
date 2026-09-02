@@ -44,7 +44,7 @@ import java.lang.annotation.Target;
  * what the generated upload surface accepts, the same kind of design-time statement
  * as {@code @Field.dataType}.
  *
- * <h2>Open-Core status — reserved, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
  * <p>Declared shape, not yet a live attachment. The kernel side demonstrably
  * exists — {@code BlobStore} / {@code BlobRef} shipped on the kernel 0.11 line with
  * {@code AbstractBlobStorageTck} — but no {@code exeris-tooling} processor extracts

@@ -44,6 +44,12 @@ import java.lang.annotation.*;
  * }
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
+ * extract this annotation, so a handler declared here is neither wired nor emitted. It is
+ * reserved for the event-reaction verb, which is design-gated on the behavioural corpus.
+ * Not to be confused with {@link DomainEvent @DomainEvent}, which is extracted and does
+ * reach the emitters.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -298,6 +304,9 @@ public @interface EventHandler {
 
     /**
      * Retry policy for failed event processing.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@code @EventHandler} is not extracted at all,
+     * so nothing declared here has a destination.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -341,6 +350,9 @@ public @interface EventHandler {
      * public class OrderProcessor { ... }
      * }</pre>
      *
+     *
+     * <p><strong>Status: RESERVED</strong> — a container is read only when the annotation
+     * it holds is, and {@code @EventHandler} is not extracted.
      * @see EventHandler
      */
     @Target({ElementType.METHOD, ElementType.TYPE})

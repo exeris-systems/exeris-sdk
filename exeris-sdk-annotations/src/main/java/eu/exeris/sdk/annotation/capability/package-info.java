@@ -55,7 +55,7 @@
  *       responsibilities of {@code exeris-tooling}.</li>
  * </ul>
  *
- * <h2>Open-Core status — extracted and conducted; generated call site pending</h2>
+ * <h2>Open-Core status — LIVE; extracted and conducted, generated call site pending</h2>
  * <p>This surface is consumed end-to-end today. Build-time: the
  * {@code exeris-tooling} processor extracts {@code @CapabilityModule} /
  * {@code @Provides} / {@code @Requires} and the {@code @CapabilityLifecycle}

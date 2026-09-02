@@ -53,6 +53,9 @@ import java.lang.annotation.*;
  * public class User { }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — the type-level annotation is extracted into {@code GraphMetadata} and read by {@code KernelGraphSyncGenerator}. The detail annotations
+ * around it are not: {@link GraphProperty @GraphProperty} and {@link GraphQuery @GraphQuery} are unread, so {@code properties} arrives null and {@code queries} empty.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -604,6 +607,10 @@ public @interface Graph {
 
     /**
      * GraphQL query definition for graph data.
+     *
+     * <p><strong>Status: RESERVED</strong> — there is no GraphQL emitter anywhere in the
+     * toolchain, and the carrying attribute is not extracted. The {@code @Graph} family
+     * projects to a graph <em>database</em>; it is not a GraphQL surface.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -694,6 +701,9 @@ public @interface Graph {
 
     /**
      * GraphQL query argument definition.
+     *
+     * <p><strong>Status: RESERVED</strong> — carried only by {@link Graph.GraphqlQuery},
+     * which is itself unread.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

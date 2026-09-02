@@ -43,7 +43,7 @@ import java.lang.annotation.*;
  * private Address billingAddress;
  * }</pre>
  *
- * <h2>Generated Angular Template:</h2>
+ * <h2>Target design — the template this would emit:</h2>
  * <pre>{@code
  * <mat-expansion-panel [expanded]="!collapsed">
  *   <mat-expansion-panel-header>
@@ -55,6 +55,10 @@ import java.lang.annotation.*;
  * </mat-expansion-panel>
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — the same gap as {@link Tab @Tab}: {@link UI @UI}
+ * is extracted per field, this grouping annotation is not. A group declared here appears in
+ * no generated template.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

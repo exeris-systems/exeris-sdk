@@ -39,6 +39,11 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor tests for its
+ * presence on the module class and records the result on {@code CapabilityModuleMetadata},
+ * which the capability graph consumes. Presence is the whole signal — the annotation
+ * carries no attribute the pipeline reads.
  * @author Exeris SDK Team
  * @version 0.4.0
  * @since 0.4.0

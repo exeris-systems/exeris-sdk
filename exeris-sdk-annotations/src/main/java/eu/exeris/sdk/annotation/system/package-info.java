@@ -16,7 +16,7 @@
  *       {@link eu.exeris.sdk.annotation.system.AuditUpdatedBy @AuditUpdatedBy} - Audit stamps</li>
  * </ul>
  *
- * <h2>Open-Core status — reserved, not yet consumed</h2>
+ * <h2>Open-Core status — RESERVED, not yet consumed</h2>
  * <p>These markers are declared-but-unconsumed: the {@code exeris-tooling}
  * processor does not scan fields for them, so placing one on a field has no
  * generated effect today — the per-annotation "Generated Behavior" javadocs

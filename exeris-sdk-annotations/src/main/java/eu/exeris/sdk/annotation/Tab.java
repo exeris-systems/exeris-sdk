@@ -59,7 +59,7 @@ import java.lang.annotation.*;
  * private List<Order> orderHistory;
  * }</pre>
  *
- * <h2>Generated Angular Template:</h2>
+ * <h2>Target design — the template this would emit:</h2>
  * <pre>{@code
  * <mat-tab-group>
  *   <mat-tab label="Basic Info">
@@ -73,6 +73,9 @@ import java.lang.annotation.*;
  * </mat-tab-group>
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — presentation grouping is emitted from {@link View @View} — its regions and blocks — and, at the leaf level, from {@link UI @UI}. This
+ * annotation feeds neither, so a tab declared here appears in no generated template.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

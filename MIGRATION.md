@@ -317,11 +317,13 @@ accessible as its repeatable annotation). The container is `public` as of
 0.10.0, keeping the same FQN — it moved to its own `GraphEdges.java`, which is
 a source-file reorganisation, not an API change.
 
-**What it does not change:** `@GraphEdge` is extracted by neither the processor
-nor the `-io` reader, so a repeated — or single — edge declaration still
-produces an empty edge list on `GraphMetadata`. If you worked around this by
-hand-writing a container or by collapsing edges onto one annotation, both forms
-are equally inert today; the workaround can go, but nothing starts generating.
+**What it does not change:** repeating `@GraphEdge` on one field is still not a
+way to declare two edges. The processor unwraps the container and then refuses
+two edges at the declaration, because `GraphEdgeMetadata` cannot express the
+shape — a build error rather than a silent loss. A single `@GraphEdge` is
+extracted by the processor and consumed by the graph-sync generator; the `-io`
+reader reads neither. If you worked around the old accessibility defect by
+hand-writing a container, that workaround can go.
 
 This is the same defect fixed for `@SagaSteps` in 0.9.0. `AnnotationContractTest`
 now asserts the rule for every `@Repeatable` in the SDK, so the class is closed

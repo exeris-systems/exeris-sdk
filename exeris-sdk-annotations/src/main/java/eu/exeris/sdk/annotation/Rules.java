@@ -14,6 +14,10 @@ import java.lang.annotation.Target;
  * compiler synthesizes it when {@code @Rule} is repeated — and the AST flattens
  * it, so consumers see a flat list, never the container.
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — a container is read exactly when the annotation it
+ * holds is, and {@link Rule @Rule} is not extracted. Compiler-synthesized; authors write
+ * repeated {@code @Rule} directly and never this type.
  * @since 0.7.0
  * @see Rule
  */

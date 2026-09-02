@@ -26,13 +26,19 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
- * <h2>Generated Behavior:</h2>
+ * <h2>Target design — not emitted today:</h2>
  * <ul>
  *   <li>DELETE operations set flag to true instead of removing row</li>
  *   <li>All queries automatically filter out soft-deleted records</li>
  *   <li>Restore operation available to undelete</li>
  *   <li>Optional: hard delete for compliance (GDPR right to erasure)</li>
  * </ul>
+ *
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
+ * fields for this marker, so writing it changes nothing in the emitted output. What
+ * generates the column is the entity-level flag set on {@code @ExerisDomain}, with the
+ * field-name override attributes choosing its name. See the package javadoc for the live
+ * path.
  *
  * @author Exeris SDK Team
  * @version 0.1.0

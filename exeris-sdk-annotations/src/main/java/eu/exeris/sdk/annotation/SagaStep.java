@@ -58,6 +58,11 @@ import java.lang.annotation.*;
  * public SagaAction finalizeOrder() { ... }
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code SagaStepMetadata} and read by
+ * {@code KernelSagaGenerator} and the TypeScript saga emitter. Its four nested mapping
+ * types are not extracted — see their own notes — so a step reaches the generator as a
+ * named, ordered unit without its command headers, input/output mappings or metric tags.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -154,7 +159,7 @@ public @interface SagaStep {
      * {@link StepKind#AWAIT_EVENT} / {@link StepKind#AWAIT_TIMER} always
      * require this attribute explicitly.
      *
-     * <p><strong>Open-Core status — reserved, extraction pending tooling:</strong>
+     * <p><strong>Open-Core status — RESERVED, extraction pending tooling:</strong>
      * the AST twin ({@code SagaStepMetadata.kind}, since 0.7.0) already exists,
      * but no build-time processor extracts this attribute yet and the
      * {@code -io} reader deliberately stays in parity by omission — the two
@@ -844,6 +849,9 @@ public @interface SagaStep {
      * <p>Supply either a literal {@code value} or a SpEL {@code expression} evaluated
      * against saga state; they are alternatives, and leaving both unset leaves the header
      * empty.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#commandHeaders()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -876,6 +884,10 @@ public @interface SagaStep {
      *
      * <p>Carried by {@link SagaStep#inputMappings()}. Both attributes are mandatory: a
      * mapping that names no target field, or produces no value, describes nothing.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#inputMappings()} is not
+     * extracted, so the dispatched command is populated by generated defaults rather than
+     * by a mapping declared here.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -900,6 +912,9 @@ public @interface SagaStep {
      *
      * <p>The mirror of {@link InputMapping}, applied after the step completes, so a later
      * step reads what this one returned.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#outputMappings()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -924,6 +939,9 @@ public @interface SagaStep {
      *
      * <p>Read only while {@link SagaStep#emitMetrics()} is on. Supply either a literal
      * {@code value} or a SpEL {@code expression} evaluated against saga state.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link SagaStep#metricTags()} is not
+     * extracted.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

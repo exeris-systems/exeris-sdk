@@ -30,6 +30,10 @@ import java.lang.annotation.*;
  * private BigDecimal amount;
  * }</pre>
  *
+ *
+ * <p><strong>Status: RESERVED</strong> — the type-level {@link Graph @Graph} is read, and
+ * so is {@link GraphEdge @GraphEdge}; this one is not. {@code GraphMetadata.properties} is
+ * passed as null in consequence, so a property declared here reaches no graph-sync writer.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0

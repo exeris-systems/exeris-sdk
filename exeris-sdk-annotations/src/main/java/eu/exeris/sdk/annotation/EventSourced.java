@@ -42,6 +42,12 @@ import java.lang.annotation.*;
  * public class Account extends EventSourcedAggregate {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: PARTIAL</strong> — extracted into {@code EventSourcedMetadata}, so it
+ * survives onto the wire, and read by no generator: event-sourcing emission is not
+ * implemented yet. This is a tooling gap rather than a kernel one — the kernel line ships
+ * the replayable read and the optimistic-concurrency write with both Community bindings and
+ * a TCK.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -698,6 +704,10 @@ public @interface EventSourced {
 
     /**
      * Retry policy for failed event operations.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link EventSourced#retryPolicy()} is not
+     * extracted, so this reaches no AST component — narrower than {@code @EventSourced}
+     * itself, which does reach the AST and stops there.
      */
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
@@ -733,6 +743,9 @@ public @interface EventSourced {
 
     /**
      * Custom metadata for event streams.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link EventSourced#streamMetadata()} is not
+     * extracted, so this reaches no AST component.
      */
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})

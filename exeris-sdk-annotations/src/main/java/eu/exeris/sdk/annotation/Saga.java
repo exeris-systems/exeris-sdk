@@ -51,6 +51,11 @@ import java.lang.annotation.*;
  * public class TransferMoneySaga implements Saga<TransferState> {}
  * }</pre>
  *
+ *
+ * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
+ * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
+ * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
+ * order.
  * @author Exeris SDK Team
  * @version 0.1.0
  * @since 0.1.0
@@ -294,7 +299,7 @@ public @interface Saga {
     /**
      * Order of compensation execution.
      *
-     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * <p><strong>Open-Core status — RESERVED; declared but not extracted.</strong> No
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationOrder()} holds its builder default on every
@@ -309,7 +314,7 @@ public @interface Saga {
     /**
      * Compensation execution strategy.
      *
-     * <p><strong>Open-Core status — declared but not extracted.</strong> No
+     * <p><strong>Open-Core status — RESERVED; declared but not extracted.</strong> No
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationStrategy()} holds its builder default on every
@@ -989,6 +994,10 @@ public @interface Saga {
      * classpath, by name or pattern when it is not. {@link Saga#trigger()} defaults to
      * {@code @SagaTrigger} with every attribute at its own default, i.e. a
      * {@link TriggerType#COMMAND} trigger naming no source.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link Saga#trigger()} is not extracted.
+     * {@code @Saga} itself is read and drives the emitted saga, but what starts it is not
+     * carried.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
@@ -1110,6 +1119,9 @@ public @interface Saga {
      * <p>Durations are ISO-8601 ({@code PT1S}, {@code PT1M}). The two throwable lists
      * narrow what is retried: {@code retryOn} restricts retries to the types it names when
      * it is non-empty, {@code noRetryOn} excludes the types it names.
+     *
+     * <p><strong>Status: RESERVED</strong> — {@link Saga#retryPolicy()} is not extracted,
+     * so the emitted saga applies no declared retry behaviour.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
