@@ -32,7 +32,10 @@ import java.util.List;
  * @param path the base API path for the entity's generated endpoints
  * @param aggregate the aggregate root this entity belongs to, when it is not one itself
  * @param description human-readable prose for generated documentation
- * @param apiVersion the API version segment the generated endpoints are published under
+ * @param apiVersion the declared API version. Carried on the wire and read by no generator —
+ *                   no emitted artifact publishes an {@code /api/<version>} segment, so this
+ *                   does not describe where an endpoint is served (see
+ *                   {@code @ExerisDomain.apiVersion})
  * @param tags grouping labels carried into the generated OpenAPI/AsyncAPI document
  * @param restApi whether REST endpoints are generated for this entity
  * @param graphqlApi whether a GraphQL schema and resolvers are generated

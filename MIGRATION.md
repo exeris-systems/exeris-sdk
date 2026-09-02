@@ -264,14 +264,24 @@ follows, the annotations resolve but the code generator does not run on 25.
 
 **If you are on JDK 21 LTS:** still below the baseline, unchanged from before.
 
-### `DataScope.UNIVERSE` is reserved — declaring it has no generated effect yet
+### `DataScope.UNIVERSE` is reserved — declaring it fails the build
 
 The kernel enforces the shared tier, but the `exeris-tooling` transcription
 that maps `UNIVERSE` onto the kernel's `sharedScopeKey` carrier is not built.
-`UNIVERSE` therefore ships with the same honesty note the streaming attributes
-carried before ADR-043: the AST carries the author's intent, no generator acts
-on it. `GLOBAL` and `TENANT` carry exactly the semantics `tenantScoped`
-already carried and are live through the same path.
+Until it is, the processor **refuses** a `UNIVERSE` declaration at the
+declaration site, naming the tier and the reason.
+
+The tier is not inert. Without the transcription it falls through to the
+`TENANT` emission — owner column, owner-pinned policy, a repository binding
+`getTenantId()` — and a shared-world row is exactly the row with no owner
+property, so the build fails inside generated code you are told not to edit.
+Refusing the declaration is what you meet instead.
+
+**If you declared it:** there is no way to obtain cross-tenant read-widening
+from this build. Declare `TENANT` if the entity really is partitioned by an
+owner (and give it a tenant property); leave the tier undeclared otherwise.
+`GLOBAL` and `TENANT` carry exactly the semantics `tenantScoped` already
+carried and are live through the same path.
 
 ### `DomainMetadata` arity grew (trailing `dataScope`) + schema `"0.9.0"` → `"0.10.0"`
 

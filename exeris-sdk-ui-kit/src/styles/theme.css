@@ -22,12 +22,10 @@
  * whole theming surface — it is what lets `.dark` (and a host, a tenant, a CMS)
  * re-point a token at runtime and have `bg-exeris-primary` follow.
  *
- * This file used to inline the light-theme literals instead, which compiled but
- * was not equivalent: a v4 consumer's `bg-exeris-primary` froze to
- * `rgb(79 70 229)`, and no `.dark` — the kit's, which lives in the v4-unusable
- * `index.css`, or one the consumer wrote — could move it. The `@theme` mapping now
- * indirects the same way v3 does, and the compile guard
- * (`tests/tailwind-v4-compile.test.js`) asserts it against real compiler output.
+ * Inlining a literal here would compile and would not be equivalent: the utility
+ * would freeze to that colour, and no `.dark` — this file's or one a consumer
+ * writes — could move it. `tests/tailwind-v4-compile.test.js` asserts the
+ * indirection against real compiler output rather than against the file's text.
  *
  * ## Why `.dark` repeats the `@theme` colours
  *
@@ -54,15 +52,12 @@
  *
  * ## Why the `--exeris-*` properties are declared here too
  *
- * They are declared in `index.css` too. That file is written against v3, but a
- * v4 build *can* consume it — the reason recorded here while this file was
- * written (that v4 rejects its `@tailwind` directives and its
- * `@apply exeris-btn`) was measured false: v4 treats the directives as no-ops,
- * and the custom-class `@apply` is gone. The mirroring stands for a narrower
- * reason: a v4 consumer may import only this entry, for the `bg-exeris-*`
- * utility namespace, without importing the component layer. The duplication is
- * deliberate and guarded — `tests/theme.test.js` asserts this `:root` / `.dark`
- * pair matches `index.css` value for value.
+ * `index.css` declares them too, and both majors can consume that file. The copy
+ * here exists because a v4 consumer may import only this entry — for the
+ * `bg-exeris-*` utility namespace — without importing the component layer, and
+ * then this is the only source of the tokens those utilities resolve against.
+ * The duplication is deliberate and guarded: `tests/theme.test.js` asserts this
+ * `:root` / `.dark` pair matches `index.css` value for value.
  *
  * ## Why the `dark` variant is redefined here
  *

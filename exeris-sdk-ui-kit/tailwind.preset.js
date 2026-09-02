@@ -16,24 +16,22 @@ export default {
   /**
    * Dark mode follows the `.dark` class, not the operating system.
    *
-   * This package has always had two dark surfaces: the `--exeris-*` design
-   * tokens, whose dark values live under a `.dark` selector, and the
-   * `.exeris-*` component classes, whose dark styling is written with `dark:`
-   * variants. Tailwind's default for `dark:` is
-   * `@media (prefers-color-scheme: dark)`, so the two answered to different
-   * signals — an app toggling `.dark` re-themed the tokens while the component
-   * chrome stayed light unless the OS happened to agree.
+   * This package has two dark surfaces and both answer to that one class: the
+   * `--exeris-*` design tokens, whose dark values live under a `.dark` selector,
+   * and the `.exeris-*` component classes, whose dark styling is written with
+   * `dark:` variants. Tailwind's default for `dark:` is
+   * `@media (prefers-color-scheme: dark)`, so without this setting the component
+   * chrome would ignore the class the README tells you to toggle and follow the
+   * OS instead.
    *
-   * `class` puts both behind the same switch, which is also what the README has
-   * always documented ("apply the `.dark` class"). The v4 half of the package
-   * declares the equivalent in `src/styles/theme.css`
-   * (`@custom-variant dark (&:where(.dark, .dark *))`), because v4 has no JS
-   * preset to read this from.
+   * v4 has no JS preset, so the v4 half of the package declares the equivalent in
+   * `src/styles/theme.css` (`@custom-variant dark (&:where(.dark, .dark *))`).
+   * Both are asserted against compiler output in `tests/dark-mode-signal.test.js`.
    *
-   * A consumer that wants the OS signal back overrides it — `darkMode: 'media'`
-   * in their own `tailwind.config.js` wins over a preset, as does a custom
-   * strategy such as `['selector', '[data-theme="dark"]']`. Both verified
-   * against compiler output in `tests/dark-mode-signal.test.js`.
+   * A consumer that wants the OS signal overrides it — `darkMode: 'media'` in
+   * their own `tailwind.config.js` wins over a preset, as does a custom strategy
+   * such as `['selector', '[data-theme="dark"]']`. Both overrides are asserted
+   * too, so the escape hatch cannot rot.
    */
   darkMode: 'class',
   theme: {

@@ -17,10 +17,9 @@ import java.lang.annotation.Target;
  * requires the container to be at least as accessible as the repeatable
  * annotation at every use site.
  *
- * <p><strong>Repeating a step compiles, and is then dropped (0.10.0
- * correction).</strong> This javadoc previously said hand-written containers
- * were "read identically"; they are not, and neither is a compiler-synthesized
- * one. The build-time processor matches the exact type
+ * <p><strong>Repeating a step compiles, and is then dropped.</strong> This holds
+ * for a compiler-synthesized container and for a hand-written one alike. The
+ * build-time processor matches the exact type
  * {@code eu.exeris.sdk.annotation.SagaStep} against a method's annotation
  * mirrors, and a repeated declaration presents only the {@code @SagaSteps}
  * mirror — so <em>no</em> step is extracted from that method. The {@code -io}
