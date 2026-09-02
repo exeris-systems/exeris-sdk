@@ -127,6 +127,20 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
+  `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
+  Exeris metadata that silently does nothing" — and the canonical example on `@Validation` itself
+  used that form twelve times, with `@Field`, `@ActionParam`, `@Relationship` and `@Action` adding
+  fifteen more. All rewritten to the sibling form, with a note wherever the rewrite alone would
+  imply a fix that did not happen: a sibling `@Validation` beside a field *is* read (its five bounds
+  reach `FieldMetadata`), a sibling `@UI` beside a field is read by nobody in either form, and
+  beside an action *parameter* nothing is carried at all — `ActionParamMetadata` declares bound
+  components that the processor never fills. `@Action.ui()` needed no rewrite and a label instead:
+  `ActionMetadata` has no `ui` component, so the attribute reaches nothing, the same shape as
+  `@Action.path()`.
+
+- **The quick-start told a new consumer to depend on 0.10.0.** This javadoc ships inside 0.12.0.
+
 - **All 72 annotations now carry a status label; two of them carried one that was wrong.** The root
   `package-info` has stated since 0.9.0 that every annotation is labelled with one of four words —
   LIVE / PARTIAL / RESERVED / DEPRECATED — and that you cannot infer from an attribute's existence
