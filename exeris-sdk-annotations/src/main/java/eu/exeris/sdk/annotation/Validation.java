@@ -11,11 +11,11 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Email Address",
- *     required = true,
- *     validation = @Validation(
- *         email = true,
- *         message = "Please enter a valid email address"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     email = true,
+ *     message = "Please enter a valid email address"
  * )
  * private String email;
  * }</pre>
@@ -24,13 +24,13 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Username",
- *     required = true,
- *     validation = @Validation(
- *         minLength = 3,
- *         maxLength = 20,
- *         pattern = "^[a-zA-Z0-9_]+$",
- *         message = "Username must be 3-20 characters, alphanumeric and underscore only"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     minLength = 3,
+ *     maxLength = 20,
+ *     pattern = "^[a-zA-Z0-9_]+$",
+ *     message = "Username must be 3-20 characters, alphanumeric and underscore only"
  * )
  * private String username;
  * }</pre>
@@ -39,12 +39,12 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Age",
- *     required = true,
- *     validation = @Validation(
- *         min = 18,
- *         max = 120,
- *         message = "Age must be between 18 and 120"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     min = 18,
+ *     max = 120,
+ *     message = "Age must be between 18 and 120"
  * )
  * private Integer age;
  * }</pre>
@@ -53,13 +53,13 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Price",
- *     required = true,
- *     validation = @Validation(
- *         min = 0,
- *         decimalMin = "0.01",
- *         decimalMax = "999999.99",
- *         message = "Price must be between 0.01 and 999,999.99"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     min = 0,
+ *     decimalMin = "0.01",
+ *     decimalMax = "999999.99",
+ *     message = "Price must be between 0.01 and 999,999.99"
  * )
  * private BigDecimal price;
  * }</pre>
@@ -67,11 +67,11 @@ import java.lang.annotation.*;
  * <h2>Pattern (Regex) Validation:</h2>
  * <pre>{@code
  * @Field(
- *     label = "Phone Number",
- *     validation = @Validation(
- *         pattern = "^\\+?[1-9]\\d{1,14}$",
- *         message = "Please enter a valid international phone number"
- *     )
+ *     label = "Phone Number"
+ * )
+ * @Validation(
+ *     pattern = "^\\+?[1-9]\\d{1,14}$",
+ *     message = "Please enter a valid international phone number"
  * )
  * private String phoneNumber;
  * }</pre>
@@ -79,20 +79,20 @@ import java.lang.annotation.*;
  * <h2>URL and Email Validation:</h2>
  * <pre>{@code
  * @Field(
- *     label = "Website",
- *     validation = @Validation(
- *         url = true,
- *         message = "Please enter a valid URL"
- *     )
+ *     label = "Website"
+ * )
+ * @Validation(
+ *     url = true,
+ *     message = "Please enter a valid URL"
  * )
  * private String website;
  *
  * @Field(
- *     label = "Email",
- *     validation = @Validation(
- *         email = true,
- *         message = "Invalid email format"
- *     )
+ *     label = "Email"
+ * )
+ * @Validation(
+ *     email = true,
+ *     message = "Invalid email format"
  * )
  * private String email;
  * }</pre>
@@ -100,11 +100,11 @@ import java.lang.annotation.*;
  * <h2>Custom Validation:</h2>
  * <pre>{@code
  * @Field(
- *     label = "Coupon Code",
- *     validation = @Validation(
- *         customValidator = "couponCodeValidator",
- *         message = "Invalid or expired coupon code"
- *     )
+ *     label = "Coupon Code"
+ * )
+ * @Validation(
+ *     customValidator = "couponCodeValidator",
+ *     message = "Invalid or expired coupon code"
  * )
  * private String couponCode;
  * }</pre>
@@ -113,13 +113,13 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Password",
- *     required = true,
- *     validation = @Validation(
- *         minLength = 8,
- *         maxLength = 128,
- *         pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
- *         message = "Password must be 8+ characters with uppercase, lowercase, number, and special character"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     minLength = 8,
+ *     maxLength = 128,
+ *     pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+ *     message = "Password must be 8+ characters with uppercase, lowercase, number, and special character"
  * )
  * private String password;
  * }</pre>
@@ -456,15 +456,15 @@ public @interface Validation {
      * <p><strong>Example:</strong>
      * <pre>{@code
      * @Field(
-     *     required = true,
-     *     validation = @Validation(groups = {"BasicInfo", "FullProfile"})
+     *     required = true
      * )
+     * @Validation(groups = {"BasicInfo", "FullProfile"})
      * private String name;
      *
      * @Field(
-     *     required = true,
-     *     validation = @Validation(groups = {"FullProfile"})
+     *     required = true
      * )
+     * @Validation(groups = {"FullProfile"})
      * private String bio;
      * }</pre>
      *
@@ -484,12 +484,12 @@ public @interface Validation {
      * <p><strong>Example:</strong>
      * <pre>{@code
      * @Field(
-     *     label = "Email",
-     *     validation = @Validation(
-     *         email = true,
-     *         asyncValidator = "uniqueEmailValidator",
-     *         message = "Email already exists"
-     *     )
+     *     label = "Email"
+     * )
+     * @Validation(
+     *     email = true,
+     *     asyncValidator = "uniqueEmailValidator",
+     *     message = "Email already exists"
      * )
      * private String email;
      * }</pre>

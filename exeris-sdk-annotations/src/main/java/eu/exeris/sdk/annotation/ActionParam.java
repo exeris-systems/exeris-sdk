@@ -15,9 +15,9 @@ import java.lang.annotation.*;
  *     @ActionParam(
  *         name = "reason",
  *         label = "Rejection Reason",
- *         required = true,
- *         ui = @UI(componentType = UI.ComponentType.TEXT_AREA)
+ *         required = true
  *     )
+ *     @UI(componentType = UI.ComponentType.TEXT_AREA)
  *     String reason,
  *
  *     @ActionParam(
@@ -36,16 +36,16 @@ import java.lang.annotation.*;
  * @ActionParam(
  *     name = "amount",
  *     label = "Refund Amount",
- *     required = true,
- *     validation = @Validation(
- *         positive = true,
- *         max = 10000,
- *         message = "Amount must be between 0 and 10,000"
- *     ),
- *     ui = @UI(
- *         componentType = UI.ComponentType.NUMBER_INPUT,
- *         format = "currency"
- *     )
+ *     required = true
+ * )
+ * @Validation(
+ *     positive = true,
+ *     max = 10000,
+ *     message = "Amount must be between 0 and 10,000"
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.NUMBER_INPUT,
+ *     format = "currency"
  * )
  * BigDecimal amount
  * }</pre>
@@ -68,17 +68,26 @@ import java.lang.annotation.*;
  * @ActionParam(
  *     name = "assigneeId",
  *     label = "Assign To",
- *     required = true,
- *     relationship = @Relationship(
- *         targetEntity = User.class,
- *         displayField = "fullName",
- *         display = Relationship.Display.AUTOCOMPLETE,
- *         filter = "active = true AND role = 'AGENT'"
- *     )
+ *     required = true
+ * )
+ * @Relationship(
+ *     targetEntity = User.class,
+ *     displayField = "fullName",
+ *     display = Relationship.Display.AUTOCOMPLETE,
+ *     filter = "active = true AND role = 'AGENT'"
  * )
  * UUID assigneeId
  * }</pre>
  *
+ *
+ * <p><strong>Siblings beside a parameter are not carried.</strong> The examples above write
+ * {@code @Validation} / {@code @UI} / {@code @Relationship} as siblings because that is the
+ * form this package mandates everywhere — but for an action <em>parameter</em> none of them
+ * reaches the AST. {@code ActionParamMetadata} declares bound components
+ * ({@code pattern}, {@code minLength}, {@code maxLength}, {@code min}, {@code max}) and the
+ * processor never fills them: it carries {@code name}, {@code type}, {@code displayName},
+ * {@code description} and {@code required}, and nothing else. Constraint enforcement on an
+ * action parameter is hand-written today.
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code ActionParamMetadata} and read by
  * {@code KernelHandlerGenerator} and the TypeScript service emitter. {@link #description()}

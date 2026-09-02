@@ -19,11 +19,11 @@ import java.lang.annotation.*;
  * @Field(
  *     label = "Customer",
  *     searchable = true,
- *     filterable = true,
- *     ui = @UI(
- *         componentType = UI.ComponentType.SELECT,
- *         displayInList = true
- *     )
+ *     filterable = true
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.SELECT,
+ *     displayInList = true
  * )
  * @Relationship(
  *     targetEntity = Customer.class,
@@ -38,12 +38,12 @@ import java.lang.annotation.*;
  * <pre>{@code
  * @Field(
  *     label = "Product",
- *     required = true,
- *     ui = @UI(
- *         componentType = UI.ComponentType.AUTOCOMPLETE,
- *         displayInList = true,
- *         displayOrder = 2
- *     )
+ *     required = true
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.AUTOCOMPLETE,
+ *     displayInList = true,
+ *     displayOrder = 2
  * )
  * @Relationship(
  *     targetEntity = Product.class,
@@ -71,11 +71,11 @@ import java.lang.annotation.*;
  * <h2>Many-to-Many Relationship:</h2>
  * <pre>{@code
  * @Field(
- *     label = "Tags",
- *     ui = @UI(
- *         componentType = UI.ComponentType.MULTI_SELECT,
- *         displayInDetail = true
- *     )
+ *     label = "Tags"
+ * )
+ * @UI(
+ *     componentType = UI.ComponentType.MULTI_SELECT,
+ *     displayInDetail = true
  * )
  * @Relationship(
  *     targetEntity = Tag.class,
