@@ -127,6 +127,40 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Two annotation attributes documented an effect they do not have — and one of them documented the
+  opposite of what happens.** Both reported by the Stellar Tactics dog-food (T29, T38) and verified
+  against the tooling source rather than taken on report, which changed what one of the fixes had to
+  say.
+
+  **`@ExerisDomain.dataScope = UNIVERSE` said "no generated effect today". Declaring it fails the
+  build.** The tier is reserved pending the `exeris-tooling` transcription onto the kernel's
+  `sharedScopeKey` carrier, and "reserved" was written as though it meant "inert" — the posture the
+  streaming attributes had before ADR-043. It never did. Without the transcription the tier falls
+  through to the `TENANT` emission (owner column, owner-pinned policy, a repository binding
+  `getTenantId()`), and a shared-world row is exactly the row with no owner property, so the
+  archetypal `UNIVERSE` entity failed with `cannot find symbol` inside generated code its author is
+  told not to edit. Tooling replaced that with a refusal at the declaration site — a warning until
+  0.8.0, an unconditional error since. So the sentence a reader trusts before trying the tier was
+  wrong when written and is further from the truth now: the honest reading of "reserved" here is
+  *rejected*, not *ignored*. Corrected on `dataScope()`, on the `UNIVERSE` constant, in
+  `MIGRATION.md`, and in the `ROADMAP.md` bullet that still described the warning.
+
+  **`@ExerisDomain.apiVersion` said "used in URL path: `/api/{version}/{path}`". Nothing serves that
+  prefix.** The generated router registers routes at the derived domain path and the OpenAPI document
+  publishes the same; the generated typed client used to prepend `/api/<version>` and therefore could
+  not reach the router it was generated beside — every cross-service call answered 404 until the
+  client was aligned. Two streaming TypeScript emitters were still folding the version into their SSE
+  routes and were aligned in the same batch, and `-Aexeris.strict` now reports the attribute inert.
+  The value does still reach `DomainMetadata.apiVersion()`, unlike `@Action.path` which reaches no AST
+  component at all, so the javadoc says that too — carried on the wire, read by no generator, and not
+  a statement about where an endpoint is served. Whether the router *should* serve a versioned route
+  is a real design question; it is left open rather than answered in a javadoc.
+
+  Same defect class as `@Action.path`, fixed in 0.11.0: an attribute describing a route nobody serves.
+  It matters more this release than last, because `annotation-catalog.json` ships for the first time in
+  0.12.0 and carries this prose verbatim — a false status note now propagates into the first
+  machine-readable copy of the SDK's own contract, and into every agent that reads it.
+
 - **Dark mode ran on two signals; the `.dark` class the README documents now drives both halves.**
   The `--exeris-*` design tokens took their dark values from a `.dark` *class*. The `.exeris-*`
   component classes took theirs from `dark:` variants, which fall back to

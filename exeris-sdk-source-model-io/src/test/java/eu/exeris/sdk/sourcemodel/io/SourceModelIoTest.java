@@ -161,9 +161,12 @@ class SourceModelIoTest {
 
         @Test
         void readsReservedUniverseTier() {
-            // UNIVERSE is reserved, not rejected: the reader's job is to report what
-            // the source says. Refusing it here would make the AST disagree with the
-            // processor, which extracts it and lets the emitters decide.
+            // The reader reports UNIVERSE rather than refusing it, and that stays true
+            // even though the processor now rejects the tier outright: the two answer
+            // different questions. The reader's job is to say what the source declares,
+            // so a tool round-tripping a file must see the author's tier — refusing it
+            // here would silently rewrite their intent. Deciding whether the tier can be
+            // *emitted* belongs to the build that emits.
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
