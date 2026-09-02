@@ -171,8 +171,10 @@ for per-version upgrade steps.
 
   Rewritten to lead with the behaviour and follow with what to do instead: `@ExerisDomain.dataScope`
   and `apiVersion`, the `UNIVERSE` constant, the AST package-info's Jackson-inclusion obligations,
-  `@Action.path`, `MIGRATION.md`'s `UNIVERSE` entry, and the ui-kit's `theme.css` header and preset
-  comment. Version history stays wherever it changes what a reader writes — "mandatory until 0.11.0,
+  `@Action.path`, `@SagaSteps`, `CapManifest`'s mapper-posture bullet, `MIGRATION.md`'s `UNIVERSE`
+  entry, and the ui-kit's `theme.css` header and preset comment. The last two were missed by the
+  first sweep, whose pattern looked for "used to say" and not for this repo's own
+  `Corrected <date>:` convention — the sweep now runs on both. Version history stays wherever it changes what a reader writes — "mandatory until 0.11.0,
   so existing sources carry a value here" is a fact about the API; "we used to describe this wrongly"
   is not.
 
