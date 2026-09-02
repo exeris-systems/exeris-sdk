@@ -49,12 +49,16 @@ export default {
 ```
 
 **Tailwind v4** — CSS-first (v4 removed JS presets, so the preset above does not
-apply). Import the `@theme` entry next to Tailwind:
+apply). Import both of this package's entries next to Tailwind:
 
 ```css
 @import "tailwindcss";
-@import "@exeris-systems/ui-kit/theme";
+@import "@exeris-systems/ui-kit/theme";   /* token namespace + the `dark` variant */
+@import "@exeris-systems/ui-kit/styles";  /* the .exeris-* component classes */
 ```
+
+Both are required on v4 — see [Import Base Styles](#import-base-styles) for what
+each one carries and what a build missing `…/theme` loses.
 
 Both entries declare the same tokens and both resolve them through the same
 `--exeris-*` custom properties, so a utility follows a runtime override on either
@@ -77,21 +81,30 @@ The kit already does this for its own `.dark`, so dark mode needs nothing from y
 
 ### Import Base Styles
 
-In your main CSS file:
+In your main CSS file. **On v3 this one import is the whole story; on v4 it is half of it** —
+copy the block for your major rather than the first one you see:
 
 ```css
+/* Tailwind v3 — the preset in tailwind.config.js carries the token namespace */
 @import '@exeris-systems/ui-kit/styles';
 ```
 
-This works on both majors. The file is written against v3 — it opens with the `@tailwind`
+```css
+/* Tailwind v4 — both entries, every time */
+@import "tailwindcss";
+@import "@exeris-systems/ui-kit/theme";
+@import "@exeris-systems/ui-kit/styles";
+```
+
+`styles` works on both majors. The file is written against v3 — it opens with the `@tailwind`
 directives, which are no-ops under v4 — and every `.exeris-*` component class it declares is
 emitted by a v4 build too, checked by compiling it with each major on every CI run.
 
-> On v4 you need both entries: `…/theme` for the `bg-exeris-*` utility namespace (only
-> `theme.css` carries the v4 `@theme` mapping, and v4 has no JS preset to read it from) and
-> `…/styles` for the component classes. `theme.css` also carries the `dark` variant definition,
-> so a v4 build without it falls back to the OS setting for component dark styling — see
-> [Dark Mode](#dark-mode). The `--exeris-*` design tokens come along either way — both files
+> **Why v4 needs `…/theme` as well**, even if you never write a `bg-exeris-*` utility: only
+> `theme.css` carries the v4 `@theme` mapping (v4 has no JS preset to read it from) **and** the
+> `dark` variant definition. Drop it and the component classes silently fall back to the
+> operating system's dark setting while your `.dark` toggle moves the tokens — see
+> [Dark Mode](#dark-mode). The `--exeris-*` design tokens come along either way: both files
 > declare them, with identical values, which is harmless and guarded by a test.
 
 Or in Angular's `angular.json`:
