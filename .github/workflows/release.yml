@@ -312,6 +312,16 @@ jobs:
         # The half GPG does not cover: a GPG signature says the artifact was signed by whoever
         # holds the key; provenance says which workflow, at which commit, on which runner produced
         # it. Verify with `gh attestation verify <file> --repo exeris-systems/exeris-sdk`.
+        #
+        # Gated on the upload path, and this is the one step where that is not obvious. GPG signing
+        # is local and reversible — a stray .asc dies with the runner. An attestation is neither:
+        # it is written to the repository through the GitHub API and, because `id-token: write` is
+        # granted for keyless signing, published as a Sigstore entry in the public Rekor
+        # transparency log, which has no delete path. Ungated it would fire on every dry run,
+        # permanently attesting jars that were never released — and the header above sells the dry
+        # run as touching nothing remote. Every other remote action here is already gated the same
+        # way (the `gh api compare` call, and the deploy-vs-verify branch).
+        if: ${{ steps.rel.outputs.upload == 'true' }}
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
