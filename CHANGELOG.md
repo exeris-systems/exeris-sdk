@@ -19,9 +19,35 @@ for per-version upgrade steps.
 
 ### Added
 
+- **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
+  marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
+  `SystemFieldsMetadata.sharedScopeField`. It is the exact twin of `@TenantId`: a
+  tenant-partitioned entity's generated RLS policy compares its `@TenantId` column against the
+  session variable the kernel publishes as `ConnectionInterceptor.SESSION_KEY_TENANT_ID`, and a
+  `DataScope.UNIVERSE` entity's policy has to compare *some* column against
+  `SESSION_KEY_SHARED_SCOPE` — with no way to say which one. The annotation catalog is the shortest
+  statement of the gap: 953 lines, zero occurrences of "shared".
+
+  **It accompanies `@TenantId` rather than replacing it.** The kernel's shared tier is an
+  orthogonal row-visibility dimension, not a fourth isolation strategy — a universe row is owned by
+  a tenant *and* readable across the tenants sharing its scope, so read-widening and owner-pinned
+  writes are two predicates over two columns. This also resolves the RFC-2026-06-24 open question
+  that had stood since 2026-07-02, and corrects its framing: it asked whether the SDK must name the
+  *owning* field, and the answer is that `@TenantId` already does. The unnameable half was the
+  scope key. No `@UniverseOwner` marker is added — it would be a second spelling of `@TenantId` for
+  one tier.
+
+  A bare marker with no attributes, deliberately: `@TenantId`'s four attributes are all inert, and
+  reproducing them on a new annotation would manufacture surface with nothing to be inert against.
+  **Reserved**, on the same footing as the ten markers already in that package — the processor does
+  not scan fields for any of them — and `dataScope = UNIVERSE` is still refused at the declaration
+  site, so there is no build today in which the field would be read. It lands now because the other
+  two thirds are in place: the kernel published both session-variable constants in v0.12.0, and the
+  only remaining piece for a transcription was the SDK saying which column to compare.
+
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
-  attached to the GitHub Release.** Every `@interface` the module declares — 72 as this release
-  stands, 52 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  attached to the GitHub Release.** Every `@interface` the module declares — 73 as this release
+  stands, 53 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
   required-ness / admissible enum values, deprecations with their canonical replacement, and
   the javadoc prose. Written during the annotations module's own compilation by the new
   build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,

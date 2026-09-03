@@ -774,6 +774,16 @@ class AstJsonRoundTripTest {
     @DisplayName("SystemFieldsMetadata round-trips (defaults factory)")
     void systemFieldsMetadataRoundTrips() {
         assertRoundTrip(SystemFieldsMetadata.defaults(), SystemFieldsMetadata.class);
+
+        // sharedScopeField (0.12.0) is null on defaults() and on every entity that
+        // declares no shared tier, so the round trip above never exercises it. A
+        // universe entity carries both it and tenantIdField — read-widening and
+        // owner-pinned writes are two predicates over two columns — so the case
+        // worth pinning is the pair, not the field alone.
+        assertRoundTrip(new SystemFieldsMetadata(
+                "id", "createdAt", "createdBy", "updatedAt", "updatedBy",
+                "organizationId", "version", null, null, null,
+                "worldId"), SystemFieldsMetadata.class);
     }
 
     @Test

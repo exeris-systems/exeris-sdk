@@ -5,6 +5,8 @@
  * <p>This package contains annotations for:
  * <ul>
  *   <li>{@link eu.exeris.sdk.annotation.system.TenantId @TenantId} - Tenant isolation key</li>
+ *   <li>{@link eu.exeris.sdk.annotation.system.SharedScope @SharedScope} - Shared-scope key of a
+ *       {@code DataScope.UNIVERSE} entity; accompanies {@code @TenantId} rather than replacing it</li>
  *   <li>{@link eu.exeris.sdk.annotation.system.PrimaryKey @PrimaryKey} - Primary key field</li>
  *   <li>{@link eu.exeris.sdk.annotation.system.Version @Version} - Optimistic-locking version</li>
  *   <li>{@link eu.exeris.sdk.annotation.system.SoftDelete @SoftDelete} - Soft-delete flag</li>
