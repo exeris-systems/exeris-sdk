@@ -1,0 +1,330 @@
+name: release to maven central
+
+# Two triggers, and the split is what each one is for.
+#
+# **A tag is the release.** `v0.12.0` on a commit that is on `main` builds, signs, gates, attests
+# and uploads. That makes a release a property of the tag rather than of somebody remembering to
+# fill in a form. A push to a BRANCH fires this not at all, so a CI fix landing on `main` releases
+# nothing.
+#
+# **The dispatch is the dry run.** With `upload` unchecked it builds, signs and runs every gate
+# while touching nothing remote, from any branch — the cheap way to find out whether a change broke
+# the release path *before* a tag depends on it.
+#
+# A mistyped tag costs a dropped deployment rather than a permanent artifact: `autoPublish=false`
+# in the root POM's `release` profile means this uploads a DEPLOYMENT that a human still has to
+# Publish in the portal, and an unpublished deployment can be Dropped. What does need guarding is
+# WHICH COMMIT a tag points at and WHETHER ITS VERSION AGREES WITH THE POM — both checked below
+# rather than assumed.
+#
+# Ported from exeris-kernel/.github/workflows/release.yml, which is the reference for this flow in
+# the ecosystem. Deliberately NOT ported: its JDK-tarball pinning (this repo's other two workflows
+# use setup-java's temurin distribution, and a third spelling here would be the odd one out), its
+# SBOM and preview-bytecode gates (this reactor has neither), and its two-build digest assertion —
+# see the build step for why that one cannot hold here.
+
+on:
+  push:
+    tags:
+      # Permissive on purpose: the strict check is a step, not this filter. A filter decides what
+      # runs; it is not a guard.
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build for a DRY RUN (e.g. 0.12.0) — must not end in -SNAPSHOT'
+        required: true
+        type: string
+      upload:
+        description: 'Upload to Central. Normally leave UNCHECKED — a real release is a tag.'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    name: build, sign, gate, publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # SLSA provenance signing (Sigstore, keyless)
+      attestations: write   # writing the attestation back to the repository
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the version and refuse an unreleasable one
+        id: rel
+        # Every `${{ }}` this step needs is bound here and read as a shell variable below rather
+        # than substituted into the script text: `inputs.version` is free-form text a dispatcher
+        # types, and textual substitution would place it inside the script rather than pass it to
+        # it. Binding all of them keeps that one rule instead of a judgement per expression.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          IN_VERSION: ${{ inputs.version }}
+          IN_UPLOAD: ${{ inputs.upload }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "push" ]; then
+            tag="${GITHUB_REF#refs/tags/}"
+            # The strict half of the permissive trigger filter. A release tag is exactly
+            # vMAJOR.MINOR.PATCH; `v0.12.0-rc1` and `ui-kit-v*` are not releases and must not
+            # become one by matching a glob. (ui-kit publishes from its own workflow on its own
+            # tag prefix, and this repo versions it independently — so it must never land here.)
+            if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::$tag is not a release tag (expected vMAJOR.MINOR.PATCH). Nothing released." >&2
+              exit 1
+            fi
+            version="${tag#v}"
+            upload=true
+          else
+            version="${IN_VERSION:-}"
+            upload="${IN_UPLOAD:-}"
+          fi
+
+          case "$version" in
+            *-SNAPSHOT) echo "::error::Central refuses SNAPSHOT release versions." >&2; exit 1 ;;
+          esac
+
+          # Releases are cut from main. On a dispatch that is a branch check; on a tag it cannot
+          # be, because a tag ref says nothing about which branch its commit is on. Comparing
+          # against main answers the question that matters, and `behind` / `identical` are exactly
+          # the two answers meaning "yes, this commit is on main".
+          if [ "$upload" = "true" ]; then
+            if [ "$EVENT_NAME" = "push" ]; then
+              contained="$(gh api "repos/$GITHUB_REPOSITORY/compare/main...$GITHUB_SHA" --jq .status)"
+              case "$contained" in
+                identical|behind) echo "tag $tag points at a commit on main ($contained)" ;;
+                *) echo "::error::tag $tag points at a commit that is NOT on main (compare: $contained)." >&2
+                   echo "::error::Delete the tag, cut it from main, tag again. Nothing was uploaded." >&2
+                   exit 1 ;;
+              esac
+            elif [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Upload from a dispatch is allowed on main only; this ref is $GITHUB_REF." >&2
+              echo "::error::Re-run with upload unchecked to exercise the release path from here." >&2
+              exit 1
+            fi
+          fi
+
+          { echo "version=$version"; echo "upload=$upload"; } >> "$GITHUB_OUTPUT"
+          echo "resolved: version=$version upload=$upload"
+
+      - name: Refuse a ref that cannot build a release
+        # `workflow_dispatch` only registers a workflow present on the DEFAULT branch, so this file
+        # has to reach `main` before the release that needs it — and a ref can therefore carry the
+        # workflow while lacking the profile it drives. Maven treats `-P release` for an absent
+        # profile as a WARNING and builds on, producing UNSIGNED artifacts that fail much later
+        # with a message naming neither the profile nor the cause. This refuses in ten seconds.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          missing=""
+          add() { missing="${missing:+$missing; }$1"; }
+          grep -q '<id>release</id>' pom.xml || add "the 'release' profile in pom.xml"
+          [ -f .github/maven-settings.xml ] || add ".github/maven-settings.xml (Central credentials)"
+
+          if [ -n "$missing" ]; then
+            echo "::error::Ref $GITHUB_REF cannot build a release — missing: $missing" >&2
+            if [ "$EVENT_NAME" = "push" ]; then
+              echo "::error::The tagged commit does not carry the release machinery. Delete the tag," >&2
+              echo "::error::land the release tooling on that branch, and cut the tag again." >&2
+            else
+              echo "::error::Dispatch against a branch that carries the release machinery." >&2
+            fi
+            exit 1
+          fi
+          echo "ok — this ref carries the release profile and the settings file"
+
+      # 25 is the release-bearing row (ADR-069) — the same toolchain every gate ran against.
+      - name: Set up JDK 25 and import the signing key
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          # This input is the env var NAME, not the passphrase, and what setup-java writes into
+          # settings.xml is precisely what DECIDES which variable maven-gpg-plugin reads. Omitting
+          # it does not fall back to a plugin default — the action still configures the plugin,
+          # using its own default name `GPG_PASSPHRASE`, while the build step below exports
+          # `MAVEN_GPG_PASSPHRASE`, and the plugin then reads a variable nobody set. In the kernel
+          # that surfaced as `gpg: signing failed: No pinentry` — a message about the agent that
+          # names nothing about a passphrase.
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Set the release version — or, on a tag, check it
+        # On a dispatch the tree is a -SNAPSHOT development line and setting the version is the
+        # point of the dry run. On a tag it is the opposite: the release ritual bumps the poms on
+        # `main` and tags THAT commit, so a tag whose version disagrees with the pom it points at
+        # is a tag on the wrong commit — and `versions:set` would overwrite the evidence of that.
+        # Read rather than resolved through a plugin: no network, no plugin version to guess.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WANT: ${{ steps.rel.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "push" ]; then
+            have="$(python3 -c "import xml.etree.ElementTree as E; print(E.parse('pom.xml').getroot().find('{http://maven.apache.org/POM/4.0.0}version').text.strip())")"
+            if [ "$have" != "$WANT" ]; then
+              echo "::error::tag says $WANT, the pom at this commit says $have — the tag is on the wrong commit." >&2
+              exit 1
+            fi
+            echo "pom version $have matches the tag"
+          else
+            mvn -B -ntp versions:set -DnewVersion="$WANT" -DgenerateBackupPoms=false
+          fi
+
+      - name: Build, sign, gate — and upload when this is a release
+        # ONE Maven invocation, and that is a deliberate departure from the kernel's two.
+        #
+        # The kernel gates with `verify`, then deploys in a second run, then asserts the two builds
+        # produced byte-identical artifacts. That assertion is what makes the split safe, and it
+        # holds there because `project.build.outputTimestamp` makes its jars reproducible. This
+        # reactor sets no such property, so two builds here differ in every jar's entry timestamps
+        # and the assertion could not be written. A split without it would gate one set of bytes
+        # and upload another with nothing checking the difference — strictly worse than not
+        # splitting. So the gates and the upload run in the same lifecycle.
+        #
+        # (Setting `outputTimestamp` and adopting the kernel's shape is the better end state. It
+        # changes every published jar's bytes, so it belongs to its own slice with its own
+        # reproducibility check — not to the change that first makes publishing possible.)
+        #
+        # `-Djapicmp.skip=true` for the reason the root POM's japicmp comment gives in full: 0.12.0
+        # is the first version to reach Central, so the 0.11.0 baseline is resolvable on a
+        # developer machine and nowhere on a runner. This flag comes off with build.yml's, one
+        # milestone from now, when a Central-resolvable baseline exists.
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          UPLOAD: ${{ steps.rel.outputs.upload }}
+        run: |
+          set -euo pipefail
+          if [ "$UPLOAD" = "true" ]; then
+            # autoPublish=false, so this uploads a deployment and stops; waitUntil=validated makes
+            # it block until Central has validated, so a missing sources jar, javadoc jar or
+            # signature fails HERE rather than silently sitting in the portal. Review the results
+            # and press Publish there. Until you do it can be Dropped; after you do, nothing about
+            # it can ever be changed.
+            mvn -B -ntp -P release clean deploy -Djapicmp.skip=true --settings .github/maven-settings.xml
+          else
+            mvn -B -ntp -P release clean verify -Djapicmp.skip=true
+          fi
+
+      - name: Release-readiness check
+        # Every jar this reactor deploys must carry a sources jar and a javadoc jar beside it, and
+        # every published file — jar, sources, javadoc, pom — must carry a good detached signature.
+        # Central validates the equivalent on the upload path (waitUntil=validated above), so there
+        # this is a second opinion with a clearer message; on the dry-run path, where nothing
+        # reaches Central, it is the only one.
+        #
+        # Driven off what the build actually produced rather than off a list, so a new module is
+        # covered the day it is added — minus the modules that hold themselves back with
+        # maven.deploy.skip, which are read from their own poms for the same reason.
+        #
+        # That subtraction is measured, not assumed. maven.deploy.skip stops `deploy`; it does NOT
+        # stop maven-gpg-plugin, which signs at `verify`. So exeris-sdk-annotation-catalog emerges
+        # from a release build with a signed jar and no sources or javadoc jar beside it — exactly
+        # the shape this check rejects — and a readiness check that did not subtract it would fail
+        # every release on a module Central never receives.
+        run: |
+          set -euo pipefail
+          fail=0
+
+          # Modules Central never receives, read from the poms that hold them back.
+          skipped=$(grep -l '<maven.deploy.skip>true<' exeris-sdk-*/pom.xml 2>/dev/null \
+                    | xargs -r -n1 dirname | sort -u)
+          [ -n "$skipped" ] && echo "not deployed (maven.deploy.skip): $(echo $skipped)"
+          deployable() { for s in $skipped; do [ "$1" = "$s" ] && return 1; done; return 0; }
+
+          # Two settings, two plugins, one fact — so assert they agree rather than trusting them
+          # to. maven.deploy.skip holds a module back from maven-deploy-plugin;
+          # <excludeArtifacts> holds it back from central-publishing-maven-plugin, which REPLACES
+          # that plugin and does not read its property. A module in one list and not the other is
+          # either uploaded when it should not be (Central then rejects a coordinate with no
+          # sources or javadoc jar, failing the whole deployment) or held back from a release it
+          # belongs in. Neither is visible until a deploy, which is why it is checked here.
+          excluded=$(python3 -c "
+          import xml.etree.ElementTree as E
+          ns={'m':'http://maven.apache.org/POM/4.0.0'}
+          r=E.parse('pom.xml').getroot()
+          out=[]
+          for ex in r.iter('{http://maven.apache.org/POM/4.0.0}excludeArtifacts'):
+              out += [c.text.strip() for c in ex if c.text]
+          print('\n'.join(sorted(set(out))))")
+          if [ "$(echo "$skipped" | tr ' ' '\n' | sort)" != "$(echo "$excluded" | sort)" ]; then
+            echo "::error::maven.deploy.skip and <excludeArtifacts> disagree about which modules ship." >&2
+            echo "::error::  maven.deploy.skip : $(echo $skipped)" >&2
+            echo "::error::  excludeArtifacts  : $(echo $excluded)" >&2
+            echo "::error::Both must name the same modules — they govern different plugins and neither implies the other." >&2
+            fail=1
+          else
+            echo "deploy-skip and excludeArtifacts agree: $(echo $excluded)"
+          fi
+
+          for main in $(ls -1 exeris-sdk-*/target/*.jar 2>/dev/null \
+                        | grep -Ev -- '-(sources|javadoc|tests)\.jar$' | sort); do
+            mod="${main%%/*}"
+            deployable "$mod" || continue
+            base="${main%.jar}"
+            for want in "$base.jar" "$base-sources.jar" "$base-javadoc.jar"; do
+              if [ ! -f "$want" ]; then
+                echo "::error::$mod is missing $(basename "$want") — Central rejects a coordinate without it" >&2
+                fail=1
+              fi
+            done
+          done
+
+          for f in $(ls -1 exeris-sdk-*/target/*.jar exeris-sdk-*/target/*.pom 2>/dev/null | sort); do
+            case "$f" in *-tests.jar) continue ;; esac
+            deployable "${f%%/*}" || continue
+            if [ ! -f "$f.asc" ]; then
+              echo "::error::$f has no detached signature" >&2; fail=1
+            elif ! gpg --verify "$f.asc" "$f" 2>/dev/null; then
+              echo "::error::$f.asc is not a good signature" >&2; fail=1
+            fi
+          done
+
+          # `|| true` on every count, and it is not defensive noise. Under `set -euo pipefail` a
+          # bare `ls` of a directory that does not exist fails the pipeline, fails the assignment,
+          # and exits the step — so this summary used to abort the job on exeris-sdk-ui-kit, which
+          # has no target/ because it is an npm package outside the Maven reactor. A reporting loop
+          # must not be able to fail a release that passed.
+          total=$(ls -1 exeris-sdk-*/target/*.asc 2>/dev/null | wc -l || true)
+          echo "release-readiness: $total signed files"
+          for m in exeris-sdk-*/; do
+            [ -d "${m}target" ] || continue
+            n=$(ls -1 "${m}target"/*.asc 2>/dev/null | wc -l || true)
+            if [ "$n" = "0" ]; then
+              echo "  ${m%/} — no signed artifacts"
+            elif deployable "${m%/}"; then
+              echo "  ${m%/} — $n signed"
+            else
+              echo "  ${m%/} — $n signed, not deployed"
+            fi
+          done
+          [ "$fail" = "0" ] || { echo "::error::release-readiness failed; if a deployment was uploaded, DROP it in the portal." >&2; exit 1; }
+
+      - name: Attest build provenance (SLSA)
+        # The half GPG does not cover: a GPG signature says the artifact was signed by whoever
+        # holds the key; provenance says which workflow, at which commit, on which runner produced
+        # it. Verify with `gh attestation verify <file> --repo exeris-systems/exeris-sdk`.
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            exeris-sdk-*/target/*.jar
+
+      - name: Upload the signed artifacts as a run artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.rel.outputs.version }}
+          path: |
+            exeris-sdk-*/target/*.jar
+            exeris-sdk-*/target/*.asc
+            exeris-sdk-*/target/*.pom
+          if-no-files-found: warn
+          retention-days: 90
