@@ -439,6 +439,73 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("channel round-trips on DomainMetadata, with and without its components (0.12.0)")
+    void channelRoundTrips() {
+        assertRoundTrip(DomainMetadata.builder("Article", "com.example.cms")
+                .module("cms")
+                .path("/articles")
+                .channel(ChannelMetadata.of("ArticleEdit"))
+                .build(), DomainMetadata.class);
+
+        assertRoundTrip(DomainMetadata.builder("Article", "com.example.cms")
+                .module("cms")
+                .path("/articles")
+                .channel(new ChannelMetadata("ArticleEdit", "exeris.edit.v1"))
+                .build(), DomainMetadata.class);
+
+        assertRoundTrip(DomainMetadata.builder("Article", "com.example.cms")
+                .module("cms")
+                .path("/articles")
+                .channel(ChannelMetadata.declared())
+                .build(), DomainMetadata.class);
+    }
+
+    @Test
+    @DisplayName("a channel declaring nothing survives as {} — the state a boolean could not hold")
+    void emptyChannelSurvivesAsAnObject() {
+        // The measurement the whole facet rests on, and the reason it is a record
+        // rather than a second boolean beside realTimeApi. Three states have to be
+        // distinguishable on the wire: no channel, a channel that says nothing more,
+        // and a channel with components. If Jackson dropped the empty object — which
+        // NON_EMPTY would do and NON_NULL does not — the middle state would collapse
+        // into the first, and an entity whose author declared a channel would read
+        // back as one that never mentioned it.
+        String json;
+        try {
+            json = mapper.writeValueAsString(DomainMetadata.builder("Article", "p")
+                    .module("cms").path("/articles")
+                    .channel(ChannelMetadata.declared())
+                    .build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        assertThat(json).contains("\"channel\":{}");
+
+        DomainMetadata back;
+        try {
+            back = mapper.readValue(json, DomainMetadata.class);
+        } catch (Exception e) {
+            throw new AssertionError("deserialization failed: " + e.getMessage(), e);
+        }
+        assertThat(back.channel()).isNotNull();
+        assertThat(back.channel().hasMessageType()).isFalse();
+        assertThat(back.channel().hasSubprotocol()).isFalse();
+    }
+
+    @Test
+    @DisplayName("an absent channel stays absent on the wire")
+    void absentChannelStaysAbsent() {
+        String json;
+        try {
+            json = mapper.writeValueAsString(
+                    DomainMetadata.builder("Order", "p").module("m").path("/o").build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        assertThat(json).doesNotContain("channel");
+    }
+
+    @Test
     @DisplayName("an absent schedule / blob facet stays absent on the wire")
     void absentReservedFacetsStayAbsent() {
         // The common case: neither facet declared. Both carriers are nullable and
