@@ -165,7 +165,30 @@ When adding a new Maven module that's intended for publish, mirror the `attach-s
 
 ## Distribution: Maven Central, not GitHub Packages
 
-> **Status (2026-07-21):** Central publishing is deliberately **not wired yet** — the SDK does not move to Central before the kernel does (ecosystem-wide sequencing decision). Releases ship as git tag + GitHub Release; there are no `eu.exeris` artifacts on Maven Central, and downstream repos resolve SDK artifacts from a local `mvn install`. The wiring (Central Portal plugin + GPG release profile + publish workflow) is prepared on the parked branch `feat/0.9.0-central-publish-wiring`; the Central flow below is the target state once the ecosystem switches, kernel first.
+> **Status (2026-09-03):** Central publishing is **wired**, and 0.12.0 is the first SDK version to
+> reach Central. Until now it was deliberately deferred: the SDK does not move to Central before the
+> kernel does (ecosystem-wide sequencing), so releases shipped as git tag + GitHub Release and
+> downstream repos resolved from a local `mvn install`.
+>
+> That rule is about **ordering, not about waiting for a finished kernel release** — `ROADMAP.md`
+> draws the line as "sequenced behind the kernel *publishing*, not behind the kernel *wiring*". The
+> two publish together: kernel v0.12.0 is cut and ready, and it reaches Central with SDK 0.12.0
+> rather than a release ahead of it. Nothing at or below 0.11.0 is backfilled.
+>
+> The `release` profile at the foot of the root `pom.xml` (maven-gpg-plugin +
+> central-publishing-maven-plugin, `autoPublish=false`, `waitUntil=validated`) and
+> `.github/workflows/release.yml` carry it, ported from `exeris-kernel`. (The status note used to
+> say the wiring sat on a parked branch, `feat/0.9.0-central-publish-wiring`; no such branch exists
+> in any ref, so it was written rather than rebased. The deferral itself was real and was the
+> decision — only the pointer was wrong.)
+>
+> **Two release-path facts that are easy to get wrong**, both measured rather than assumed: a module
+> setting `maven.deploy.skip` is **still uploaded** by central-publishing-maven-plugin (it replaces
+> maven-deploy-plugin and does not read that property), so a build-time module such as
+> `exeris-sdk-annotation-catalog` needs an `<excludeArtifacts>` entry as well — the readiness step in
+> `release.yml` asserts the two lists agree. And the semver gate stays CI-skipped for one more
+> milestone: 0.12.0 is the first version on Central, so the 0.11.0 baseline japicmp names is not
+> resolvable there. Drop `-Djapicmp.skip=true` from `build.yml` when 0.13.0 opens.
 
 The parent `exeris-systems/CLAUDE.md` describes a `GITHUB_TOKEN` / `PACKAGES_READ_TOKEN` flow for cross-repo `eu.exeris:*` resolution. **That does not apply here.** The SDK publishes to Sonatype Central Portal (see `<distributionManagement>` in root `pom.xml`):
 
