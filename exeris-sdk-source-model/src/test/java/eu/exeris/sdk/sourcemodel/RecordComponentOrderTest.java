@@ -96,6 +96,18 @@ class RecordComponentOrderTest {
                         + "removal of an existing component is a break — see "
                         + "MIGRATION-0.x-to-1.0.md §3.")
                         .formatted(record, before, now));
+            } else if (now.size() > before.size()) {
+                // Appending is legal, and this is not a complaint about the record. It is a
+                // complaint about the snapshot: the prefix comparison above accepts a tail the
+                // file never recorded, so the file silently records less than it claims to.
+                // Both DomainMetadata and ActionMetadata had drifted exactly this way — the
+                // 0.12.0 routeAccess component grew past a snapshot that still ended at
+                // dataScope, with the class javadoc above telling authors to append and nothing
+                // making them. A snapshot that goes stale unnoticed is a gate that is green
+                // about a shape it is not holding.
+                violations.add(("%s grew legally but the snapshot was not updated. Append the new "
+                        + "component(s) to its line in record-components.txt:%n    %s=%s")
+                        .formatted(record, record, String.join(",", now)));
             }
         }
 
