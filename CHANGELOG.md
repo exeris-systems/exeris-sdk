@@ -19,9 +19,40 @@ for per-version upgrade steps.
 
 ### Added
 
+- **`@Channel` — the SDK can state that an entity's clients also speak.** `@Target(TYPE)`, two
+  optional attributes (`messageType()`, `subprotocol()`), carried by the new nullable
+  `DomainMetadata.channel` → `ChannelMetadata`. It closes the Entity-First gap kernel ADR-084
+  opened in v0.12.0: the kernel gained a duplex wire (`eu.exeris.kernel.spi.websocket`, RFC 6455
+  codec in Core, Community binding, `AbstractWebSocketExchangeTck`), and nothing here could declare
+  one. This is **not** a fourth spelling of the streaming attributes — `@ExerisDomain.realTimeApi`
+  and `@Action.streaming` are SSE, one-directional *by construction*, so a subscribed client has no
+  channel back. The kernel added a separate SPI rather than widening `HttpStreamExchange` for that
+  reason (ADR-084 §2, echoing ADR-043), and the SDK mirrors the split.
+
+  **The carrier is a record rather than a boolean**, because three states must stay
+  distinguishable: no channel, a channel that declares nothing further, and a channel with
+  components. Measured, not assumed — class-level `NON_NULL` keeps the object while omitting unset
+  components, so a bare channel reaches the wire as `"channel":{}`, and `AstJsonRoundTripTest`
+  asserts exactly that (`NON_EMPTY` would drop it and turn a declared channel into one nobody
+  mentioned). Blank normalises to `null`, the `streamEventType` treatment.
+
+  Four things it deliberately does not declare, each a decision rather than an omission: no
+  message-size limit (an operational limit with a kernel configuration path, ADR-071 — the
+  `@Blob.maxSizeBytes` argument unchanged), no origin allowlist (the kernel filters origins before
+  any handler runs and refuses by default; a per-entity attribute could only widen that quietly),
+  no frame format (the application surface is text only), and nothing about reconnection
+  (connection identity does not survive one, by kernel decision).
+
+  **Reserved**, on ADR-072's three-part test and therefore outside the 1.0.0 freeze: no processor
+  extracts it, no generator opens an endpoint from it, `-io` does not read it, and the kernel holds
+  `…spi.websocket` at tier `preview`. Read that `preview` precisely — ADR-084 §10 gates promotion
+  on benchmark evidence a TCK cannot supply, so what is unproven is durability under load, not the
+  shape. `SchemaVersion.CURRENT` stays `"0.12.0"`: `@RouteAccess` already moved it there in this
+  same unreleased milestone.
+
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
-  attached to the GitHub Release.** Every `@interface` the module declares — 72 as this release
-  stands, 52 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  attached to the GitHub Release.** Every `@interface` the module declares — 73 as this release
+  stands, 53 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
   required-ness / admissible enum values, deprecations with their canonical replacement, and
   the javadoc prose. Written during the annotations module's own compilation by the new
   build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,
@@ -31,7 +62,8 @@ for per-version upgrade steps.
   and a deprecation's replacement lives in `@deprecated` prose because `@Deprecated` has only
   `since` and `forRemoval`. No timestamp, so two builds of one commit produce identical bytes.
   The count is the catalog's own `annotationCount` field and moves with the surface — it was 71 /
-  51 / 20 when this entry was first written, and `@RouteAccess` below has landed since. What is
+  51 / 20 when this entry was first written, and `@RouteAccess` and `@Channel` below have landed
+  since. What is
   gated is coverage, not the number: the guard derives the expected set from the sources rather
   than restating it, so an annotation cannot go missing, only uncounted in this sentence.
   `.github/workflows/release-assets.yml` attaches it on a `v*` tag and refuses when the
@@ -126,6 +158,16 @@ for per-version upgrade steps.
   suite all pass on it.
 
 ### Fixed
+
+- **The record-growth snapshot could go stale without anything noticing, and had.**
+  `RecordComponentOrderTest` compares each AST record against `record-components.txt` as a
+  *prefix* — legal growth appends, and the comparison accepted a tail the file had never recorded.
+  The class javadoc told authors to append the new component in the same commit and nothing made
+  them, so the snapshot silently recorded less than it claimed. Measured: `DomainMetadata` and
+  `ActionMetadata` had both drifted, each by the 0.12.0 `routeAccess` component, against a file
+  still ending at `dataScope`. Both lines are brought current and the gate now fails on a
+  legally-grown record whose snapshot was not updated, quoting the line to paste. Verified in both
+  directions — reverting one line makes it exit 1.
 
 - **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
   `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
