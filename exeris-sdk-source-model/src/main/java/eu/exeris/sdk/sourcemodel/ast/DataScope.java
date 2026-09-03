@@ -48,9 +48,15 @@ public enum DataScope {
      * "is {@code TENANT}" test would have routed {@code UNIVERSE} down the
      * {@link #GLOBAL} path and published rows the author scoped to an owner.
      * The processor emits a build warning naming exactly this on every entity
-     * that declares the tier ({@code ExerisDomainProcessor.java:817-826}). See
-     * the Open-Core status note on {@code @ExerisDomain.dataScope()}, and
-     * ADR-059.
+     * that declares the tier ({@code ExerisDomainProcessor.java:817-826}).
+     *
+     * <p>What the untranscribed half waits on is a kernel contract distinct from
+     * the carrier: an emitted RLS policy writes a PostgreSQL session-variable
+     * name into SQL, and that name is published as
+     * {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE} from kernel v0.12.0.
+     * {@code StorageContext.sharedScopeKey()} — the accessor an application reads
+     * — has existed since 0.11 and is a different contract. See the Open-Core
+     * status note on {@code @ExerisDomain.dataScope()}, and ADR-059.
      */
     UNIVERSE
 }

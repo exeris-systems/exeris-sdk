@@ -127,6 +127,27 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **Five files said the `UNIVERSE` transcription was unblocked on the kernel 0.11 pin. It was not,
+  and the reason is that the claim was measured against the wrong contract.** `ADR-059`, the
+  `RFC-2026-06-24` status block, the `ROADMAP` bullet, and the `@ExerisDomain.dataScope` /
+  `DataScope.UNIVERSE` javadoc all cited `StorageContext.sharedScopeKey()` and
+  `AbstractSharedScopeAccessMatrixTck` — both genuinely present on the 0.11 line, and both the
+  contract an **application** uses. A transcription is a **generator**, and an emitted RLS policy
+  reads neither the accessor nor the carrier: it writes a PostgreSQL session-variable *name* into
+  SQL. Grepped at kernel `v0.11.0`, `exeris.tenant_id` appeared in SPI (4 files), Core, TCK and
+  Community; `exeris.shared_scope` appeared in **Community only** — zero SPI, zero Core, zero TCK.
+  A generator emitting a shared-scope policy would have transcribed a string no published kernel
+  surface defined, resolving only because one Community driver set it and nothing promised it
+  would keep doing so.
+
+  Kernel v0.12.0 closes it — `ConnectionInterceptor` publishes `SESSION_KEY_SHARED_SCOPE` beside
+  `SESSION_KEY_TENANT_ID` (kernel `5b45dbd2`) — so the claim is **re-pinned to 0.12 rather than
+  withdrawn**: the accessor and the variable name are two contracts met one release apart, and
+  these files conflated them. Nothing about the shipped surface changes; `UNIVERSE` stays refused
+  at the declaration site and the tooling transcription stays unbuilt. Found from the tooling side
+  and reported upstream, where the kernel's release notes had the same gap and now carry the fact
+  (kernel `db115106`).
+
 - **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
   `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
   Exeris metadata that silently does nothing" — and the canonical example on `@Validation` itself
