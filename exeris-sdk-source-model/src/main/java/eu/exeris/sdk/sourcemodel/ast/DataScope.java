@@ -32,23 +32,30 @@ public enum DataScope {
      * Shared world — rows owned by a tenant but readable across tenants; reads
      * widen beyond the owning tenant, writes stay pinned to it.
      *
-     * <p><strong>Open-Core status — consumed today, but narrower than
-     * declared:</strong> this tier is not inert, and reading it as "declared
-     * and does nothing" is the dangerous misreading. Every emitter asks one
-     * predicate — {@code DataScopeSupport.isTenantPartitioned}, which answers
+     * <p><strong>Open-Core status — declarable, and refused:</strong> declaring
+     * this tier fails the build at the declaration site. {@code exeris-tooling}'s
+     * {@code ExerisDomainProcessor.errorReservedUniverseTier} raises an error
+     * naming the tier and the reason, instead of emitting for it. The refusal is
+     * unconditional on the tier, suppressed only when the declaration is already
+     * contradicted by {@code tenantScoped} — one line does not raise two errors.
+     *
+     * <p>It replaced a warning at {@code exeris-tooling} 0.8.0, and what the
+     * warning missed is worth carrying, because it is also why the fail-closed
+     * predicate below stays. Every emitter asks one question —
+     * {@code DataScopeSupport.isTenantPartitioned}, which answers
      * {@code effectiveDataScope() != GLOBAL} and is therefore {@code true} for
-     * {@code UNIVERSE} ({@code exeris-tooling}
-     * {@code exeris-codegen-java/.../support/DataScopeSupport.java:48-50}) — so
-     * a {@code UNIVERSE} entity generates the full {@link #TENANT} shape:
-     * owner column, owner-pinned RLS policy, owner index, tenant migration
-     * tier. The untranscribed half is only the cross-tenant read-widening, i.e.
-     * the mapping onto the kernel {@code sharedScopeKey} /
-     * {@code SHARED_WORLD} carrier. Output is thus strictly narrower than
-     * declared and never wider, which is the deliberate choice: an
-     * "is {@code TENANT}" test would have routed {@code UNIVERSE} down the
-     * {@link #GLOBAL} path and published rows the author scoped to an owner.
-     * The processor emits a build warning naming exactly this on every entity
-     * that declares the tier ({@code ExerisDomainProcessor.java:817-826}).
+     * {@code UNIVERSE} — so the shape this tier would emit is the full
+     * {@link #TENANT} one: owner column, owner-pinned RLS policy, owner index,
+     * tenant migration tier. That predicate is correct and stays: an
+     * "is {@code TENANT}" test would have routed the tier down the
+     * {@link #GLOBAL} path and published rows the author scoped to an owner. But
+     * an output strictly narrower than declared is not thereby a usable one. A
+     * shared-world row is precisely one with no tenant property, and the
+     * {@code TENANT} shape binds {@code getTenantId()} in the emitted repository,
+     * so the archetypal entity for this tier did not merely under-deliver — it
+     * failed to compile, with {@code cannot find symbol} inside generated code
+     * its author is told not to edit. A diagnostic at the declaration is strictly
+     * better than a compile error two artefacts downstream.
      *
      * <p>What the untranscribed half waits on is a kernel contract distinct from
      * the carrier: an emitted RLS policy writes a PostgreSQL session-variable

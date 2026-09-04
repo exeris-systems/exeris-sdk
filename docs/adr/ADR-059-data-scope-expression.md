@@ -32,6 +32,14 @@ RFC-2026-06-24 settled the SDK-side shape in July and then deliberately **shippe
 
 **`@ExerisDomain.dataScope` — a single mutually-exclusive `DataScope { GLOBAL, TENANT, UNIVERSE }` discriminator — becomes the canonical expression of an entity's data-scope tier, and `@ExerisDomain.tenantScoped` is deprecated for removal at 1.0.0 with the standard fallback window (`true → TENANT`, `false → GLOBAL`). `UNIVERSE` ships reserved: the kernel enforces the tier on its 0.11 line, but the `exeris-tooling` transcription that maps the tier onto the kernel carrier is not built, so declaring `UNIVERSE` has no generated effect yet and the annotation says so.**
 
+> **Correction (2026-09-04, `exeris-tooling` 0.8.0).** The Decision's closing clause — "declaring `UNIVERSE` has no generated effect yet" — was wrong when written and is wrong now, in opposite directions, and obligation 5's closing sentence inherits the same correction.
+>
+> It was never inert. Every emitter asks `DataScopeSupport.isTenantPartitioned`, which answers `effectiveDataScope() != GLOBAL` and is therefore true for `UNIVERSE`, so a declaration emitted the full **TENANT** shape — owner column, owner-pinned RLS policy, owner index, migration tier — under a build warning. That was deliberate and fail-closed: an "is `TENANT`" test would have routed the tier down the `GLOBAL` path and published rows the author scoped to an owner. The streaming analogy is what carried the "no effect" wording across, and it does not hold — a streaming attribute is read by nobody, whereas this tier falls through to a live predicate.
+>
+> Since tooling 0.8.0 a declaration has no generated effect, but not because the tier is inert: the processor **refuses it at the declaration site** (`ExerisDomainProcessor.errorReservedUniverseTier`). What the warning missed is that the narrowing does not merely under-deliver — a shared-world row is precisely one with no tenant property, and the TENANT shape binds `getTenantId()` in the emitted repository, so the archetypal entity for this tier failed with `cannot find symbol` inside generated code its author is told not to edit.
+>
+> **The reservation is unchanged** — only the account of what declaring it does. Reported by the Stellar dog-food as T29.
+
 Two shape rulings, both following existing precedent rather than inventing:
 
 - **The enum is duplicated, not shared.** `@ExerisDomain.DataScope` (annotation module) and `eu.exeris.sdk.sourcemodel.ast.DataScope` (source-model) are two independent types mapped by name at extraction time — the `SagaStep.StepKind` / `UI.ComponentType` precedent. The annotation side carries an extra `UNSPECIFIED` constant because annotation attributes cannot default to `null`; the AST expresses that same state as an absent field and therefore has no `UNSPECIFIED`. This preserves the annotations module's zero-dependency contract in the direction that matters — the annotation never imports the AST.

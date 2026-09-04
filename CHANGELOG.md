@@ -174,6 +174,23 @@ for per-version upgrade steps.
   and reported upstream, where the kernel's release notes had the same gap and now carry the fact
   (kernel `db115106`).
 
+- **Four files gave three different accounts of what declaring `UNIVERSE` does, and only one was
+  current.** `@ExerisDomain.dataScope()` said the processor refuses it (right);
+  `ast.DataScope.UNIVERSE` and the annotation `package-info` said the processor warns and emits the
+  full `TENANT` shape (right until `exeris-tooling` 0.8.0, wrong since); ADR-059's Decision said
+  declaring it "has no generated effect yet" (never right — the tier always fell through to
+  `DataScopeSupport.isTenantPartitioned`, which answers `effectiveDataScope() != GLOBAL`). A reader
+  stopping at the enum walked away expecting a build that warns and then emits owner-pinned
+  artefacts; what they meet is a compile error at the declaration. Checked against
+  `exeris-tooling` `origin/main` rather than against our own notes — which is how the disagreement
+  surfaced, since the ROADMAP already claimed all of it corrected in a 2026-09-02 pass that in fact
+  moved one of the four sites. The enum and `package-info` javadoc now state the refusal and keeps the part that is
+  still load-bearing (the fail-closed predicate, and why refusing beats narrowing: a shared-world
+  row has no tenant property, so the `TENANT` shape's `getTenantId()` binding fails to compile
+  inside generated code its author is told not to edit); ADR-059 and the ROADMAP carry dated
+  corrections. It also cites the tooling method by name instead of by line — both line references
+  it carried had gone stale.
+
 - **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
   `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
   Exeris metadata that silently does nothing" — and the canonical example on `@Validation` itself

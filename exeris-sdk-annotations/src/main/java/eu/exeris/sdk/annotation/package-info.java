@@ -294,10 +294,11 @@
  *       {@code tenantScoped = true}. Emits the tenant column, the RLS policy and
  *       the query filter.</li>
  *   <li>{@code UNIVERSE} — the cross-tenant shared-world tier. <strong>Read the
- *       status note on {@code dataScope()} before using it:</strong> the generator
- *       currently emits the full {@code TENANT} shape for {@code UNIVERSE}, which
- *       is strictly narrower than what the tier declares. It is fail-closed, not
- *       complete.</li>
+ *       status note on {@code dataScope()} before using it:</strong> declaring it
+ *       fails the build. The processor refuses the tier at the declaration site
+ *       rather than emitting the {@code TENANT} shape for it — that shape binds
+ *       {@code getTenantId()}, and a shared-world row is precisely one with no
+ *       tenant property.</li>
  * </ul>
  * <p>{@code UNSPECIFIED} defers to {@code tenantScoped} for the remainder of the
  * deprecation window, which closes at 1.0.0. Declaring both with contradicting
