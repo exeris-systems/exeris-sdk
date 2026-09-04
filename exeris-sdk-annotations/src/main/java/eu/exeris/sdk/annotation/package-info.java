@@ -245,7 +245,8 @@
  *       the kernel-preview facets
  *       {@link eu.exeris.sdk.annotation.Blob @Blob},
  *       {@link eu.exeris.sdk.annotation.Schedule @Schedule},
- *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess};
+ *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess},
+ *       {@link eu.exeris.sdk.annotation.Channel @Channel};
  *       the layout annotations
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
@@ -418,6 +419,36 @@
  * {@code exeris-tooling} slice that emits a URL-to-policy table, and the kernel
  * holds route authorization at tier {@code preview}. So this surface does
  * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
+ *
+ * <h2>Duplex channel ({@code @Channel}) — RESERVED</h2>
+ * <p>{@link eu.exeris.sdk.annotation.Channel} declares that an entity exposes a
+ * connection its clients may <em>write</em> to, not only read from. It is the
+ * Entity-First expression of the kernel's WebSocket seam (kernel ADR-084,
+ * {@code eu.exeris.kernel.spi.websocket}, v0.12.0).
+ *
+ * <p><strong>It is not a fourth spelling of the streaming attributes.</strong>
+ * {@link eu.exeris.sdk.annotation.ExerisDomain#realTimeApi()} and
+ * {@link eu.exeris.sdk.annotation.Action#streaming()} describe server push over
+ * SSE, which is one-directional <em>by construction</em> — a subscribed client has
+ * no channel back. The difference is structural rather than one of degree, which is
+ * why the kernel added a separate SPI instead of widening the streaming one, and
+ * why this is a separate annotation instead of a flag on those.
+ *
+ * <p><strong>Entity-level, and the carrier is a record rather than a boolean.</strong>
+ * Three states have to stay distinguishable: no channel, a channel that declares
+ * nothing further, and a channel with a message type or subprotocol. A boolean
+ * collapses the middle one into the first, so {@code DomainMetadata.channel} is a
+ * nullable {@code ChannelMetadata} whose mere presence is the declaration.
+ *
+ * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape once more: the
+ * kernel side shipped with {@code AbstractWebSocketExchangeTck}, the remaining gap
+ * is the {@code exeris-tooling} slice that opens an endpoint from the declaration,
+ * and the kernel holds {@code …spi.websocket} at tier {@code preview} — so this
+ * surface does <strong>not</strong> enter the 1.0.0 freeze; see
+ * {@code docs/adr/ADR-072}. Read that {@code preview} precisely: kernel ADR-084 §10
+ * gates promotion on benchmark evidence a TCK cannot supply (concurrent connections,
+ * throughput, a slow reader, a dead peer), not on the contract still being in
+ * question. What is unproven is durability under load, not the shape.
  *
  * <p>It also records the one combination the platform refuses:
  * {@code @RouteAccess(PUBLIC)} beside a non-empty {@code permissions}. A permit-all

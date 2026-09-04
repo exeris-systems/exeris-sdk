@@ -436,6 +436,28 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   Central move, and with it the japicmp orphan pass in the GA list below, are
   sequenced behind the kernel *publishing*, not behind the kernel *wiring*
 
+- [x] **Kernel 0.12 re-check — one new facet, `@Channel`** (ADR-072 amendment
+  2026-09-03). Kernel v0.12 shipped a WebSocket SPI (ADR-084) at tier `preview`,
+  and it is the one item in that release's *Added* list that reaches the
+  design-time surface. `@Channel` + `DomainMetadata.channel` land reserved, on the
+  same three-part test that admitted `@Blob` / `@Schedule` / `@RouteAccess`, and
+  outside the 1.0.0 freeze. The rest of the list was checked rather than assumed:
+  `TimeSource` (ADR-082), fault attribution (ADR-083), the schema history ledger
+  (ADR-073) and `KernelWebClient.withAuthority` (ADR-074) have nothing an entity
+  declares. **`FlowDefinitionBuilder.version(int)` (ADR-064) looked like a gap and
+  is not one** — `@Saga` has declared `int version() default 1` since the early
+  surface and `SagaMetadata` carries it, so the SDK can already state the version
+  ADR-064 made load-bearing.
+
+  *Recorded because the reasoning failed once first:* this was initially argued as
+  "no SDK surface", on the ground that `exeris-tooling` mentions WebSocket nowhere.
+  That is not the test ADR-072 applies, and measurement shows it never was —
+  tooling's only references to `@Blob` and `@Schedule` are `INERT_ANNOTATIONS`
+  entries recording that it deliberately does *not* process them, and
+  `@RouteAccess` has zero tooling references. The test would have failed all three
+  approved surfaces, and it inverts the dependency direction: a processor cannot be
+  written against an annotation that does not exist.
+
 
 ## 1.0.0 GA — frozen contract
 

@@ -94,6 +94,13 @@ import java.util.List;
  *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator emits a route
  *        policy from it, and it is outside the 1.0.0 freeze (ADR-072)
  *
+ * @param channel the duplex channel this entity exposes, or absent if it exposes none. Present
+ *        with no components set is a channel that declares nothing further — which is why this
+ *        is a record rather than a second boolean beside {@link #realTimeApi()}
+ *
+ *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator opens an
+ *        endpoint from it, and it is outside the 1.0.0 freeze (ADR-072)
+ *
  * @author Exeris SDK Team
  * @since 0.1.0
  */
@@ -187,7 +194,16 @@ public record DomainMetadata(
         // decides — there is no UNSPECIFIED constant, by design. Reserved: no processor
         // writes it and no generator reads it, and the kernel holds route authorization
         // at tier preview, so it is outside the 1.0.0 freeze. See ADR-072.
-        @JsonProperty("routeAccess") RouteAccess routeAccess
+        @JsonProperty("routeAccess") RouteAccess routeAccess,
+
+        // Duplex channel (0.12.0): the one shape the SSE surface above cannot express,
+        // because SSE is one-directional by construction and this entity's clients also
+        // speak. Absent ⇒ no channel; present with nothing set ⇒ a channel that declares
+        // nothing further, which a boolean could not distinguish from the first.
+        // Reserved: no processor writes it and no generator reads it, and the kernel holds
+        // …spi.websocket at tier preview — benchmark-gated, not shape-gated (kernel
+        // ADR-084 §10) — so it is outside the 1.0.0 freeze. See ADR-072.
+        @JsonProperty("channel") ChannelMetadata channel
 ) {
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -474,6 +490,7 @@ public record DomainMetadata(
         private SystemFieldsMetadata systemFields = null;
         private DataScope dataScope = null;
         private RouteAccess routeAccess = null;
+        private ChannelMetadata channel = null;
 
         private Builder(String entityName, String packageName) {
             this.entityName = entityName;
@@ -518,6 +535,7 @@ public record DomainMetadata(
         public Builder systemFields(SystemFieldsMetadata v) { this.systemFields = v; return this; }
         public Builder dataScope(DataScope v) { this.dataScope = v; return this; }
         public Builder routeAccess(RouteAccess v) { this.routeAccess = v; return this; }
+        public Builder channel(ChannelMetadata v) { this.channel = v; return this; }
 
         /**
          * Builds the {@code DomainMetadata} from this builder's current state.
@@ -535,7 +553,7 @@ public record DomainMetadata(
                     tableName,
                     fields, actions, events, relationships, projections, eventHandlers,
                     uiMetadata, graphMetadata, sagaMetadata, eventSourced, internalApi, systemFields,
-                    rules, dataScope, routeAccess
+                    rules, dataScope, routeAccess, channel
             );
         }
     }
