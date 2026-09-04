@@ -104,7 +104,16 @@ public final class SchemaVersion {
      *       0.11.0 pair, so a {@code "0.11.0"} baseline loses no information in
      *       practice — and the bump is taken anyway, for the same reason it was
      *       taken then. A {@code "0.11.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}.</li>
+     *       {@code SCHEMA_VERSION_SKEW}. The 0.12.0 schema likewise also covers
+     *       the shared-scope key that landed within the same 0.12.0 release:
+     *       {@code SystemFieldsMetadata.sharedScopeField}, the AST twin of
+     *       {@code @SharedScope} (RFC-2026-06-24 / ADR-059) — trailing, additive
+     *       and by-name, so no further bump within 0.12.0. It is reserved on the
+     *       same terms as the facets above, with one difference worth knowing:
+     *       the kernel half it names is not pending. A {@code DataScope.UNIVERSE}
+     *       policy compares this column against the session variable kernel
+     *       v0.12.0 publishes as {@code SESSION_KEY_SHARED_SCOPE}; what is still
+     *       missing is only the tooling emitter that reads the component.</li>
      * </ul>
      */
     public static final String CURRENT = currentVersion();
