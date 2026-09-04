@@ -229,7 +229,21 @@ public @interface ExerisDomain {
      * {@code SHARED_WORLD} row-visibility mode composing with the physical
      * isolation strategy, read-widen + owner-scoped write) is fixed by the kernel
      * ADR-012 §4b amendment and implemented with its read-widen/write-pin TCK on
-     * the kernel 0.11 line. The {@code exeris-tooling} transcription mapping
+     * the kernel 0.11 line.
+     *
+     * <p><strong>Two kernel contracts stand behind this tier, and a transcription
+     * needs the second one.</strong> {@code StorageContext.sharedScopeKey()} is
+     * what an application reads, and it has existed since the kernel 0.11 line.
+     * An emitted RLS policy reads neither the accessor nor the carrier — it
+     * writes a PostgreSQL session-variable <em>name</em> into SQL. That name
+     * became referenceable rather than retyped only in kernel v0.12.0, which
+     * publishes it as {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE}
+     * beside {@code SESSION_KEY_TENANT_ID}. Before that a generator emitting a
+     * shared-scope policy was transcribing a string no published kernel surface
+     * defined; it resolved only because a Community driver happened to set it.
+     * The transcription is therefore pinned to kernel v0.12.0, not to 0.11.
+     *
+     * <p>The {@code exeris-tooling} transcription mapping
      * {@code UNIVERSE} onto that carrier is not built, and without it the tier is
      * not inert: it falls through to the {@code TENANT} emission — owner column,
      * owner-pinned policy, a repository binding {@code getTenantId()}. A

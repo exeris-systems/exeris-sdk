@@ -23,9 +23,22 @@ RFC-2026-06-24 settled the SDK-side shape in July and then deliberately **shippe
 
 **Trigger (2) is now met.** The kernel 0.11 line carries the ADR-012 §4b amendment end-to-end: the `sharedScopeKey` carrier plus the `KernelIsolationClaims` shared-scope claim with fail-closed mapping, the persistence side publishing `exeris.shared_scope` so RLS widens reads while writes stay pinned to the owning tenant, a type-check of the claim during token validation, and `AbstractSharedScopeAccessMatrixTck` covering the access matrix. The SDK build gate is open, and this ADR records the transcription.
 
+
+> **Correction (2026-09-03, kernel v0.12.0).** The paragraph above is accurate about the carrier and the TCK, and wrong about what it unblocks. It measures `StorageContext.sharedScopeKey()` and `AbstractSharedScopeAccessMatrixTck` — both real on the 0.11 line, and both the contract an *application* uses. A transcription is a **generator**, and an emitted RLS policy reads neither: it writes a PostgreSQL session-variable *name* into SQL. Grepped at `v0.11.0`, the two variables had very different reach — `exeris.tenant_id` in SPI (4 files), Core, TCK and Community; `exeris.shared_scope` in **Community only**, with zero SPI, zero Core, zero TCK. A generator emitting a shared-scope policy against a 0.11 kernel would therefore have transcribed a string no published surface defined, resolving only because one Community driver set it and nothing promised it would keep doing so.
+>
+> Kernel v0.12.0 closes it: `ConnectionInterceptor` now publishes `SESSION_KEY_SHARED_SCOPE` beside `SESSION_KEY_TENANT_ID` (kernel commit `5b45dbd2`, v0.12 S29), so the name is referenceable rather than retyped. **The trigger-(2) claim is re-pinned to kernel v0.12.0, not withdrawn** — the accessor and the variable name are two contracts, the first met at 0.11 and the second at 0.12, and this ADR conflated them. What is still not built is the `exeris-tooling` transcription itself; the reservation below is unchanged.
+
 ## 🏁 The Decision
 
 **`@ExerisDomain.dataScope` — a single mutually-exclusive `DataScope { GLOBAL, TENANT, UNIVERSE }` discriminator — becomes the canonical expression of an entity's data-scope tier, and `@ExerisDomain.tenantScoped` is deprecated for removal at 1.0.0 with the standard fallback window (`true → TENANT`, `false → GLOBAL`). `UNIVERSE` ships reserved: the kernel enforces the tier on its 0.11 line, but the `exeris-tooling` transcription that maps the tier onto the kernel carrier is not built, so declaring `UNIVERSE` has no generated effect yet and the annotation says so.**
+
+> **Correction (2026-09-04, `exeris-tooling` 0.8.0).** The Decision's closing clause — "declaring `UNIVERSE` has no generated effect yet" — was wrong when written and is wrong now, in opposite directions, and obligation 5's closing sentence inherits the same correction.
+>
+> It was never inert. Every emitter asks `DataScopeSupport.isTenantPartitioned`, which answers `effectiveDataScope() != GLOBAL` and is therefore true for `UNIVERSE`, so a declaration emitted the full **TENANT** shape — owner column, owner-pinned RLS policy, owner index, migration tier — under a build warning. That was deliberate and fail-closed: an "is `TENANT`" test would have routed the tier down the `GLOBAL` path and published rows the author scoped to an owner. The streaming analogy is what carried the "no effect" wording across, and it does not hold — a streaming attribute is read by nobody, whereas this tier falls through to a live predicate.
+>
+> Since tooling 0.8.0 a declaration has no generated effect, but not because the tier is inert: the processor **refuses it at the declaration site** (`ExerisDomainProcessor.errorReservedUniverseTier`). What the warning missed is that the narrowing does not merely under-deliver — a shared-world row is precisely one with no tenant property, and the TENANT shape binds `getTenantId()` in the emitted repository, so the archetypal entity for this tier failed with `cannot find symbol` inside generated code its author is told not to edit.
+>
+> **The reservation is unchanged** — only the account of what declaring it does. Reported by the Stellar dog-food as T29.
 
 Two shape rulings, both following existing precedent rather than inventing:
 

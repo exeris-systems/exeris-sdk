@@ -105,16 +105,23 @@ public final class SchemaVersion {
      *       practice — and the bump is taken anyway, for the same reason it was
      *       taken then. A {@code "0.11.0"} baseline reads as
      *       {@code SCHEMA_VERSION_SKEW}. The 0.12.0 schema likewise also covers
-     *       the duplex-channel facet that landed within the same 0.12.0 release:
-     *       {@code DomainMetadata.channel}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.ChannelMetadata}), the AST twin
-     *       of {@code @Channel} (kernel ADR-084; ADR-072 as amended) — trailing,
-     *       additive, by-name and reserved on the same terms, so no further bump
-     *       within 0.12.0. It does carry one wire shape the earlier reserved
-     *       facets do not: a declared channel with neither attribute set
-     *       serializes as an empty object ({@code "channel":{}}) rather than
-     *       being dropped, which is what keeps "declared, nothing further"
-     *       distinguishable from "not declared".</li>
+     *       two further additions that landed within the same 0.12.0 release,
+     *       both trailing, additive, by-name and reserved on the same terms, so
+     *       neither took a further bump.
+     *       <p>{@code DomainMetadata.channel}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.ChannelMetadata}) is the AST
+     *       twin of {@code @Channel} (kernel ADR-084; ADR-072 as amended). It
+     *       carries one wire shape the earlier reserved facets do not: a declared
+     *       channel with neither attribute set serializes as an empty object
+     *       ({@code "channel":{}}) rather than being dropped, which is what keeps
+     *       "declared, nothing further" distinguishable from "not declared".
+     *       <p>{@code SystemFieldsMetadata.sharedScopeField} is the AST twin of
+     *       {@code @SharedScope} (RFC-2026-06-24 / ADR-059), and differs from
+     *       every reserved facet listed beside it in one way worth knowing: the
+     *       kernel half it names is not pending. A {@code DataScope.UNIVERSE}
+     *       policy compares this column against the session variable kernel
+     *       v0.12.0 publishes as {@code SESSION_KEY_SHARED_SCOPE}; what is still
+     *       missing is only the tooling emitter that reads the component.</li>
      * </ul>
      */
     public static final String CURRENT = currentVersion();

@@ -75,9 +75,35 @@ for per-version upgrade steps.
   one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
   resolvable from Central; `-Djapicmp.skip=true` comes off `build.yml` when 0.13.0 opens.
 
+- **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
+  marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
+  `SystemFieldsMetadata.sharedScopeField`. It is the exact twin of `@TenantId`: a
+  tenant-partitioned entity's generated RLS policy compares its `@TenantId` column against the
+  session variable the kernel publishes as `ConnectionInterceptor.SESSION_KEY_TENANT_ID`, and a
+  `DataScope.UNIVERSE` entity's policy has to compare *some* column against
+  `SESSION_KEY_SHARED_SCOPE` — with no way to say which one. The annotation catalog is the shortest
+  statement of the gap: 953 lines, zero occurrences of "shared".
+
+  **It accompanies `@TenantId` rather than replacing it.** The kernel's shared tier is an
+  orthogonal row-visibility dimension, not a fourth isolation strategy — a universe row is owned by
+  a tenant *and* readable across the tenants sharing its scope, so read-widening and owner-pinned
+  writes are two predicates over two columns. This also resolves the RFC-2026-06-24 open question
+  that had stood since 2026-07-02, and corrects its framing: it asked whether the SDK must name the
+  *owning* field, and the answer is that `@TenantId` already does. The unnameable half was the
+  scope key. No `@UniverseOwner` marker is added — it would be a second spelling of `@TenantId` for
+  one tier.
+
+  A bare marker with no attributes, deliberately: `@TenantId`'s four attributes are all inert, and
+  reproducing them on a new annotation would manufacture surface with nothing to be inert against.
+  **Reserved**, on the same footing as the ten markers already in that package — the processor does
+  not scan fields for any of them — and `dataScope = UNIVERSE` is still refused at the declaration
+  site, so there is no build today in which the field would be read. It lands now because the other
+  two thirds are in place: the kernel published both session-variable constants in v0.12.0, and the
+  only remaining piece for a transcription was the SDK saying which column to compare.
+
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
-  attached to the GitHub Release.** Every `@interface` the module declares — 73 as this release
-  stands, 53 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  attached to the GitHub Release.** Every `@interface` the module declares — 74 as this release
+  stands, 54 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
   required-ness / admissible enum values, deprecations with their canonical replacement, and
   the javadoc prose. Written during the annotations module's own compilation by the new
   build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,
@@ -87,10 +113,10 @@ for per-version upgrade steps.
   and a deprecation's replacement lives in `@deprecated` prose because `@Deprecated` has only
   `since` and `forRemoval`. No timestamp, so two builds of one commit produce identical bytes.
   The count is the catalog's own `annotationCount` field and moves with the surface — it was 71 /
-  51 / 20 when this entry was first written, and `@RouteAccess` and `@Channel` below have landed
-  since. What is
-  gated is coverage, not the number: the guard derives the expected set from the sources rather
-  than restating it, so an annotation cannot go missing, only uncounted in this sentence.
+  51 / 20 when this entry was first written, and `@RouteAccess`, `@Channel` and `@SharedScope`
+  below have landed since. What is gated is coverage, not the number: the guard derives the
+  expected set from the sources rather than restating it, so an annotation cannot go missing, only
+  uncounted in this sentence.
   `.github/workflows/release-assets.yml` attaches it on a `v*` tag and refuses when the
   catalog's `sdkVersion` disagrees with the tag. This unblocks `exeris-ai-bridge`'s `sdk:*`
   family, whose whole content had no producer.
@@ -193,6 +219,44 @@ for per-version upgrade steps.
   still ending at `dataScope`. Both lines are brought current and the gate now fails on a
   legally-grown record whose snapshot was not updated, quoting the line to paste. Verified in both
   directions — reverting one line makes it exit 1.
+
+- **Five files said the `UNIVERSE` transcription was unblocked on the kernel 0.11 pin. It was not,
+  and the reason is that the claim was measured against the wrong contract.** `ADR-059`, the
+  `RFC-2026-06-24` status block, the `ROADMAP` bullet, and the `@ExerisDomain.dataScope` /
+  `DataScope.UNIVERSE` javadoc all cited `StorageContext.sharedScopeKey()` and
+  `AbstractSharedScopeAccessMatrixTck` — both genuinely present on the 0.11 line, and both the
+  contract an **application** uses. A transcription is a **generator**, and an emitted RLS policy
+  reads neither the accessor nor the carrier: it writes a PostgreSQL session-variable *name* into
+  SQL. Grepped at kernel `v0.11.0`, `exeris.tenant_id` appeared in SPI (4 files), Core, TCK and
+  Community; `exeris.shared_scope` appeared in **Community only** — zero SPI, zero Core, zero TCK.
+  A generator emitting a shared-scope policy would have transcribed a string no published kernel
+  surface defined, resolving only because one Community driver set it and nothing promised it
+  would keep doing so.
+
+  Kernel v0.12.0 closes it — `ConnectionInterceptor` publishes `SESSION_KEY_SHARED_SCOPE` beside
+  `SESSION_KEY_TENANT_ID` (kernel `5b45dbd2`) — so the claim is **re-pinned to 0.12 rather than
+  withdrawn**: the accessor and the variable name are two contracts met one release apart, and
+  these files conflated them. Nothing about the shipped surface changes; `UNIVERSE` stays refused
+  at the declaration site and the tooling transcription stays unbuilt. Found from the tooling side
+  and reported upstream, where the kernel's release notes had the same gap and now carry the fact
+  (kernel `db115106`).
+
+- **Four files gave three different accounts of what declaring `UNIVERSE` does, and only one was
+  current.** `@ExerisDomain.dataScope()` said the processor refuses it (right);
+  `ast.DataScope.UNIVERSE` and the annotation `package-info` said the processor warns and emits the
+  full `TENANT` shape (right until `exeris-tooling` 0.8.0, wrong since); ADR-059's Decision said
+  declaring it "has no generated effect yet" (never right — the tier always fell through to
+  `DataScopeSupport.isTenantPartitioned`, which answers `effectiveDataScope() != GLOBAL`). A reader
+  stopping at the enum walked away expecting a build that warns and then emits owner-pinned
+  artefacts; what they meet is a compile error at the declaration. Checked against
+  `exeris-tooling` `origin/main` rather than against our own notes — which is how the disagreement
+  surfaced, since the ROADMAP already claimed all of it corrected in a 2026-09-02 pass that in fact
+  moved one of the four sites. The enum and `package-info` javadoc now state the refusal and keep the part that is
+  still load-bearing (the fail-closed predicate, and why refusing beats narrowing: a shared-world
+  row has no tenant property, so the `TENANT` shape's `getTenantId()` binding fails to compile
+  inside generated code its author is told not to edit); ADR-059 and the ROADMAP carry dated
+  corrections. It also cites the tooling method by name instead of by line — both line references
+  it carried had gone stale.
 
 - **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
   `package-info` names `@Field(validation = @Validation(...))` "the single most common way to write
