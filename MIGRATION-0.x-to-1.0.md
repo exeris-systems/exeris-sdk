@@ -52,21 +52,32 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
   system/security field markers, `@ExerisDomain.validationMode`) — frozen as
   declared; extraction/generation lands additively in 1.x.
-- **`@Blob` / `@Schedule` / `@RouteAccess` and their AST carriers are the one
-  exception: NOT frozen**
+- **`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and their AST carriers are
+  the one exception: NOT frozen**
   ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md), as
-  amended 2026-08-28). Every other reserved surface above is frozen as declared,
-  because what it waits on is downstream work against a settled premise. These
-  three encode kernel SPI surfaces the kernel itself holds at tier **`preview`**
-  in its `docs/stability-matrix.md` — a shape with a scheduled change still in
-  flight. Freezing an SDK annotation against that would make the SDK's 1.0
-  promise stronger than the surface it describes, which is the wrong way round.
-  Route authorization is the clearest case: the kernel moved it twice inside one
-  minor.
+  amended 2026-08-28 and 2026-09-03). Every other reserved surface above is frozen
+  as declared, because what it waits on is downstream work against a settled
+  premise. These four encode kernel SPI surfaces the kernel itself holds at tier
+  **`preview`** in its `docs/stability-matrix.md`. Freezing an SDK annotation
+  against that would make the SDK's 1.0 promise stronger than the surface it
+  describes, which is the wrong way round. Route authorization is the clearest
+  case: the kernel moved it twice inside one minor.
 
-  So `@Blob`, `@Schedule`, `@RouteAccess`, `FieldMetadata.blob`,
-  `ActionMetadata.schedule`, `DomainMetadata.routeAccess` and
-  `ActionMetadata.routeAccess` may be changed, or dropped, in a 1.x minor. They
+  The four are not `preview` for the same reason, and the difference is worth
+  carrying because it decides what may still be built against them. Blob,
+  scheduling and route authorization are `preview` with their shape still open.
+  WebSocket is not: kernel ADR-084 §10 gates promotion on benchmark evidence a TCK
+  structurally cannot supply — concurrent connections, throughput, a slow reader, a
+  dead peer — so what is unproven there is durability under load. That still bars
+  freezing (the kernel may yet change the contract, and a 1.0 promise over it would
+  invert the ordering), which is why `@Channel` is on this list; it does not bar
+  shaping a design-time carrier against a settled contract, which is why the
+  surface exists at all.
+
+  So `@Blob`, `@Schedule`, `@RouteAccess`, `@Channel`, `FieldMetadata.blob`,
+  `ActionMetadata.schedule`, `DomainMetadata.routeAccess`,
+  `ActionMetadata.routeAccess` and `DomainMetadata.channel` may be changed, or
+  dropped, in a 1.x minor. They
   are promoted into the frozen surface when the kernel moves each surface to
   `stable` **and** the `exeris-tooling` transcription exists — at which point
   this bullet moves up into the list above. Consumers should treat them as
@@ -194,12 +205,14 @@ freeze or is explicitly re-dispositioned here.
   - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
     last released jar and no `eu.exeris` artifact is published anywhere yet.
     An absent baseline is configured to fail, not to pass quietly, so the skip
-    is explicit in the workflow rather than implicit in the plugin. Drop the
-    flag when the Central wiring lands — which is **not a pre-freeze SDK item**
-    and cannot be made one: the SDK does not move to Central before the kernel
-    and `exeris-tooling` do, so until then no published baseline exists for the
-    gate to compare against. Dropping the flag is the whole task and it belongs
-    to whichever change turns Central on.
+    is explicit in the workflow rather than implicit in the plugin.
+    **Corrected 2026-09-03:** this used to say the flag comes off "when the
+    Central wiring lands". It does not, and the difference is one milestone.
+    The wiring landed in 0.12.0, and 0.12.0 is the *first* version to reach
+    Central — so the baseline japicmp names, `0.11.0`, predates the move and is
+    not resolvable there either. The flag comes off when the 0.13.0 line opens
+    against a Central-resolvable `0.12.0` baseline. Turning Central on and
+    giving the gate something to resolve are two changes, not one.
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it

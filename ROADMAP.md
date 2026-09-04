@@ -71,7 +71,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 ### 0.9.0 — planned scope (release plan 2026-07-21)
 
-- [ ] **Wire Maven Central publishing** *(deferred — gated on the kernel moving to Central first; the SDK does not publish ahead of the ecosystem)* — Sonatype Central Portal plugin + GPG signing in a release profile + a release workflow; namespace verification; first actual Central publish (0.6.0–0.8.0 shipped as git tag + GitHub Release only). Wiring is prepared and parked on `feat/0.9.0-central-publish-wiring`; 0.9.0 ships as git tag + GitHub Release
+- [x] **Wire Maven Central publishing** *(deferred at 0.9.0 — gated on the kernel moving to Central first; the SDK does not publish ahead of the ecosystem)* — Sonatype Central Portal plugin + GPG signing in a release profile + a release workflow; namespace verification; first actual Central publish (0.6.0–0.11.0 shipped as git tag + GitHub Release only). **Landed in 0.12.0**, when the gate opened: the rule is an ordering rather than a wait for a finished kernel release, and kernel v0.12.0 reaches Central alongside SDK 0.12.0. This entry previously said the wiring was "prepared and parked on `feat/0.9.0-central-publish-wiring`" — no such branch exists in any ref, so it was written rather than rebased. Nothing at or below 0.11.0 is backfilled
 - [x] **Field/Validation `min`/`max`/`pattern` overlap** — landed (ADR-054, PRs #81–#83): `@Validation` sole declaration site, `FieldMetadata` sole AST carrier, `ValidationMetadata` removed outright, boxed-zero fixed via per-component `NON_NULL`, reader parity restored, schema bumped to `"0.9.0"`
 - [x] **Final deprecation sweep before 1.0.0** — anything slated for 1.0.0 removal must be `@Deprecated(forRemoval = true)` in 0.9.0 (≥ 1-minor fallback window). **Landed (closed empty):** zero new deprecations — the only `forRemoval` surface remains `@Validation.required`/`validateOn` (deprecated 0.2.0, removal 1.0.0). Every other unconsumed annotation/attribute is reserved-by-design (honesty-noted or AST-twin roadmap-tracked), gated on external work (kernel SPI / tooling consumer), or standard contract-first vocabulary (e.g. the 17 `DOCUMENTED_UNEXTRACTED` `@Validation` attributes institutionalized by the parity guard test). Dispositions + javadoc honesty refresh recorded (this PR)
 - [x] **`@SagaTransition` annotation + `@SagaStep` `kind` attribute** — the SDK half of the 0.7.0 saga-graph records; may ship reserved. **Landed (0.9.0, shipped reserved):** `@SagaTransition` / `@SagaTransitions` (repeatable, saga-class-level: `from`/`to`/`on`/SpEL `guard`, blank `to` = terminal edge) + `@SagaStep.kind` (`UNSPECIFIED` default = absent AST kind, deferring to `effectiveKind()` inference; await kinds always explicit), with annotation-side `TransitionOutcome`/`StepKind` enum mirrors of the AST-owned types (zero-coupling, the `ComponentType` precedent). Extraction = the coordinated tooling processor + `-io` reader flip (ADR-042)
@@ -435,6 +435,28 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   Central publication path and states it has "produced nothing yet". The SDK's
   Central move, and with it the japicmp orphan pass in the GA list below, are
   sequenced behind the kernel *publishing*, not behind the kernel *wiring*
+
+- [x] **Kernel 0.12 re-check — one new facet, `@Channel`** (ADR-072 amendment
+  2026-09-03). Kernel v0.12 shipped a WebSocket SPI (ADR-084) at tier `preview`,
+  and it is the one item in that release's *Added* list that reaches the
+  design-time surface. `@Channel` + `DomainMetadata.channel` land reserved, on the
+  same three-part test that admitted `@Blob` / `@Schedule` / `@RouteAccess`, and
+  outside the 1.0.0 freeze. The rest of the list was checked rather than assumed:
+  `TimeSource` (ADR-082), fault attribution (ADR-083), the schema history ledger
+  (ADR-073) and `KernelWebClient.withAuthority` (ADR-074) have nothing an entity
+  declares. **`FlowDefinitionBuilder.version(int)` (ADR-064) looked like a gap and
+  is not one** — `@Saga` has declared `int version() default 1` since the early
+  surface and `SagaMetadata` carries it, so the SDK can already state the version
+  ADR-064 made load-bearing.
+
+  *Recorded because the reasoning failed once first:* this was initially argued as
+  "no SDK surface", on the ground that `exeris-tooling` mentions WebSocket nowhere.
+  That is not the test ADR-072 applies, and measurement shows it never was —
+  tooling's only references to `@Blob` and `@Schedule` are `INERT_ANNOTATIONS`
+  entries recording that it deliberately does *not* process them, and
+  `@RouteAccess` has zero tooling references. The test would have failed all three
+  approved surfaces, and it inverts the dependency direction: a processor cannot be
+  written against an annotation that does not exist.
 
 
 ## 1.0.0 GA — frozen contract

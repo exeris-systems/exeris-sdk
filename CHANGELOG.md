@@ -19,6 +19,62 @@ for per-version upgrade steps.
 
 ### Added
 
+- **`@Channel` — the SDK can state that an entity's clients also speak.** `@Target(TYPE)`, two
+  optional attributes (`messageType()`, `subprotocol()`), carried by the new nullable
+  `DomainMetadata.channel` → `ChannelMetadata`. It closes the Entity-First gap kernel ADR-084
+  opened in v0.12.0: the kernel gained a duplex wire (`eu.exeris.kernel.spi.websocket`, RFC 6455
+  codec in Core, Community binding, `AbstractWebSocketExchangeTck`), and nothing here could declare
+  one. This is **not** a fourth spelling of the streaming attributes — `@ExerisDomain.realTimeApi`
+  and `@Action.streaming` are SSE, one-directional *by construction*, so a subscribed client has no
+  channel back. The kernel added a separate SPI rather than widening `HttpStreamExchange` for that
+  reason (ADR-084 §2, echoing ADR-043), and the SDK mirrors the split.
+
+  **The carrier is a record rather than a boolean**, because three states must stay
+  distinguishable: no channel, a channel that declares nothing further, and a channel with
+  components. Measured, not assumed — class-level `NON_NULL` keeps the object while omitting unset
+  components, so a bare channel reaches the wire as `"channel":{}`, and `AstJsonRoundTripTest`
+  asserts exactly that (`NON_EMPTY` would drop it and turn a declared channel into one nobody
+  mentioned). Blank normalises to `null`, the `streamEventType` treatment.
+
+  Four things it deliberately does not declare, each a decision rather than an omission: no
+  message-size limit (an operational limit with a kernel configuration path, ADR-071 — the
+  `@Blob.maxSizeBytes` argument unchanged), no origin allowlist (the kernel filters origins before
+  any handler runs and refuses by default; a per-entity attribute could only widen that quietly),
+  no frame format (the application surface is text only), and nothing about reconnection
+  (connection identity does not survive one, by kernel decision).
+
+  **Reserved**, on ADR-072's three-part test and therefore outside the 1.0.0 freeze: no processor
+  extracts it, no generator opens an endpoint from it, `-io` does not read it, and the kernel holds
+  `…spi.websocket` at tier `preview`. Read that `preview` precisely — ADR-084 §10 gates promotion
+  on benchmark evidence a TCK cannot supply, so what is unproven is durability under load, not the
+  shape. `SchemaVersion.CURRENT` stays `"0.12.0"`: `@RouteAccess` already moved it there in this
+  same unreleased milestone.
+  
+- **The SDK publishes to Maven Central, and 0.12.0 is the first version to get there.** A `release`
+  profile in the root POM (maven-gpg-plugin + `central-publishing-maven-plugin` with
+  `autoPublish=false` and `waitUntil=validated`) plus `.github/workflows/release.yml`, where a `v*`
+  tag is the release and a dispatch with `upload` unchecked is a dry run that touches nothing
+  remote. This closes a deliberate deferral rather than a gap: the sequencing rule was that the SDK
+  does not move to Central before the kernel — an ordering, not a wait for a finished kernel
+  release — and the two publish together, kernel v0.12.0 alongside this one. `exeris-platform` — which pins `exeris.sdk.version` and resolves from a local
+  `mvn install` today — is the consumer waiting on both. Everything at or below 0.11.0 remains a git
+  tag + GitHub Release only; nothing is backfilled.
+
+  Ported from `exeris-kernel`, minus three things it carries for reasons this repo does not share:
+  its source/javadoc executions (every publishable module here already attaches both, and its
+  `doclint=none` would switch off a gate this repo passes clean), its SBOM, and its two-build digest
+  assertion (which depends on `project.build.outputTimestamp`, unset here — so the gates and the
+  upload run in one lifecycle instead of two).
+
+  Two behaviours were measured rather than assumed, and both had been asserted the other way:
+  `maven.deploy.skip` does **not** hold a module back from Central — `central-publishing-maven-plugin`
+  replaces maven-deploy-plugin and does not read that property, so the build-time
+  `exeris-sdk-annotation-catalog` was being staged for upload and needed an `<excludeArtifacts>`
+  entry (the readiness step now asserts the two lists agree, and fails when they do not). It does
+  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate stays CI-skipped for
+  one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
+  resolvable from Central; `-Djapicmp.skip=true` comes off `build.yml` when 0.13.0 opens.
+
 - **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
   marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
   `SystemFieldsMetadata.sharedScopeField`. It is the exact twin of `@TenantId`: a
@@ -46,8 +102,8 @@ for per-version upgrade steps.
   only remaining piece for a transcription was the SDK saying which column to compare.
 
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
-  attached to the GitHub Release.** Every `@interface` the module declares — 73 as this release
-  stands, 53 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
+  attached to the GitHub Release.** Every `@interface` the module declares — 74 as this release
+  stands, 54 top-level and 20 nested — with `@Target`, `@Retention`, per-attribute type / default /
   required-ness / admissible enum values, deprecations with their canonical replacement, and
   the javadoc prose. Written during the annotations module's own compilation by the new
   build-only `exeris-sdk-annotation-catalog` module, on the javac annotation processor path,
@@ -57,9 +113,10 @@ for per-version upgrade steps.
   and a deprecation's replacement lives in `@deprecated` prose because `@Deprecated` has only
   `since` and `forRemoval`. No timestamp, so two builds of one commit produce identical bytes.
   The count is the catalog's own `annotationCount` field and moves with the surface — it was 71 /
-  51 / 20 when this entry was first written, and `@RouteAccess` below has landed since. What is
-  gated is coverage, not the number: the guard derives the expected set from the sources rather
-  than restating it, so an annotation cannot go missing, only uncounted in this sentence.
+  51 / 20 when this entry was first written, and `@RouteAccess`, `@Channel` and `@SharedScope`
+  below have landed since. What is gated is coverage, not the number: the guard derives the
+  expected set from the sources rather than restating it, so an annotation cannot go missing, only
+  uncounted in this sentence.
   `.github/workflows/release-assets.yml` attaches it on a `v*` tag and refuses when the
   catalog's `sdkVersion` disagrees with the tag. This unblocks `exeris-ai-bridge`'s `sdk:*`
   family, whose whole content had no producer.
@@ -153,6 +210,16 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **The record-growth snapshot could go stale without anything noticing, and had.**
+  `RecordComponentOrderTest` compares each AST record against `record-components.txt` as a
+  *prefix* — legal growth appends, and the comparison accepted a tail the file had never recorded.
+  The class javadoc told authors to append the new component in the same commit and nothing made
+  them, so the snapshot silently recorded less than it claimed. Measured: `DomainMetadata` and
+  `ActionMetadata` had both drifted, each by the 0.12.0 `routeAccess` component, against a file
+  still ending at `dataScope`. Both lines are brought current and the gate now fails on a
+  legally-grown record whose snapshot was not updated, quoting the line to paste. Verified in both
+  directions — reverting one line makes it exit 1.
+
 - **Five files said the `UNIVERSE` transcription was unblocked on the kernel 0.11 pin. It was not,
   and the reason is that the claim was measured against the wrong contract.** `ADR-059`, the
   `RFC-2026-06-24` status block, the `ROADMAP` bullet, and the `@ExerisDomain.dataScope` /
@@ -184,7 +251,7 @@ for per-version upgrade steps.
   artefacts; what they meet is a compile error at the declaration. Checked against
   `exeris-tooling` `origin/main` rather than against our own notes — which is how the disagreement
   surfaced, since the ROADMAP already claimed all of it corrected in a 2026-09-02 pass that in fact
-  moved one of the four sites. The enum and `package-info` javadoc now state the refusal and keeps the part that is
+  moved one of the four sites. The enum and `package-info` javadoc now state the refusal and keep the part that is
   still load-bearing (the fail-closed predicate, and why refusing beats narrowing: a shared-world
   row has no tenant property, so the `TENANT` shape's `getTenantId()` binding fails to compile
   inside generated code its author is told not to edit); ADR-059 and the ROADMAP carry dated
