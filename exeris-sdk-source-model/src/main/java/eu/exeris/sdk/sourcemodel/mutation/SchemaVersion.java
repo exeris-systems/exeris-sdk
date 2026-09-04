@@ -104,7 +104,17 @@ public final class SchemaVersion {
      *       0.11.0 pair, so a {@code "0.11.0"} baseline loses no information in
      *       practice — and the bump is taken anyway, for the same reason it was
      *       taken then. A {@code "0.11.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}.</li>
+     *       {@code SCHEMA_VERSION_SKEW}. The 0.12.0 schema likewise also covers
+     *       the duplex-channel facet that landed within the same 0.12.0 release:
+     *       {@code DomainMetadata.channel}
+     *       ({@link eu.exeris.sdk.sourcemodel.ast.ChannelMetadata}), the AST twin
+     *       of {@code @Channel} (kernel ADR-084; ADR-072 as amended) — trailing,
+     *       additive, by-name and reserved on the same terms, so no further bump
+     *       within 0.12.0. It does carry one wire shape the earlier reserved
+     *       facets do not: a declared channel with neither attribute set
+     *       serializes as an empty object ({@code "channel":{}}) rather than
+     *       being dropped, which is what keeps "declared, nothing further"
+     *       distinguishable from "not declared".</li>
      * </ul>
      */
     public static final String CURRENT = currentVersion();
