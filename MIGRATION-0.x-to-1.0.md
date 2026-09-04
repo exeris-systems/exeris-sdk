@@ -205,12 +205,14 @@ freeze or is explicitly re-dispositioned here.
   - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
     last released jar and no `eu.exeris` artifact is published anywhere yet.
     An absent baseline is configured to fail, not to pass quietly, so the skip
-    is explicit in the workflow rather than implicit in the plugin. Drop the
-    flag when the Central wiring lands — which is **not a pre-freeze SDK item**
-    and cannot be made one: the SDK does not move to Central before the kernel
-    and `exeris-tooling` do, so until then no published baseline exists for the
-    gate to compare against. Dropping the flag is the whole task and it belongs
-    to whichever change turns Central on.
+    is explicit in the workflow rather than implicit in the plugin.
+    **Corrected 2026-09-03:** this used to say the flag comes off "when the
+    Central wiring lands". It does not, and the difference is one milestone.
+    The wiring landed in 0.12.0, and 0.12.0 is the *first* version to reach
+    Central — so the baseline japicmp names, `0.11.0`, predates the move and is
+    not resolvable there either. The flag comes off when the 0.13.0 line opens
+    against a Central-resolvable `0.12.0` baseline. Turning Central on and
+    giving the gate something to resolve are two changes, not one.
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it

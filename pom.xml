@@ -108,11 +108,21 @@
              MIGRATION-0.x-to-1.0.md §3, and a gate written after the freeze would
              be written against whatever the code already did.
 
-             The baseline is the last released version. Releases currently ship as
-             git tag + GitHub Release with downstream consumers resolving from a
-             local `mvn install` (Central publishing is deliberately unwired until
-             the kernel moves first), so the baseline resolves locally but not in
-             CI — see japicmp.skip below. -->
+             The baseline is the last released version, and where it can be
+             resolved FROM is what decides whether this gate runs in CI. Until
+             0.12.0 the answer was nowhere: releases shipped as git tag + GitHub
+             Release, consumers resolved from a local `mvn install`, and the
+             baseline was therefore present on a developer machine and absent on a
+             runner — hence japicmp.skip below.
+
+             The `release` profile at the foot of this file changes that going
+             forward but not retroactively. 0.12.0 is the first version to reach
+             Central, so the 0.11.0 baseline named here will never be resolvable
+             there and this gate stays CI-skipped for exactly one more milestone.
+             It goes live when the 0.13.0 line opens against a 0.12.0 baseline
+             Central can serve — at which point the -Djapicmp.skip=true in
+             .github/workflows/build.yml comes off, and that flag is the thing to
+             delete rather than this comment. -->
         <japicmp.version>0.23.1</japicmp.version>
         <japicmp.baseline.version>0.11.0</japicmp.baseline.version>
         <!-- Overridden to true where no baseline artifact can be resolved. -->
@@ -195,4 +205,124 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <!--
+        Everything a Maven Central release needs, and NOTHING the ordinary build touches.
+        Activated only by `-P release`.
+
+        The isolation is not tidiness. central-publishing-maven-plugin declares
+        <extensions>true</extensions>, which makes it TAKE OVER the `deploy` phase. Declared
+        outside this profile it would own every `mvn deploy` this reactor runs, and the takeover
+        is silent — the symptom is an artifact not arriving where <distributionManagement> says
+        it goes. Profile-scoped, the two channels stay separate by construction.
+
+        Ported from exeris-kernel/pom.xml's `release` profile, which paid for the GPG comment
+        below in a dry run. Two things are deliberately NOT ported:
+
+        - maven-source-plugin / maven-javadoc-plugin. The kernel attaches both here because its
+          modules do not. Every publishable module in this reactor already attaches them in its
+          own pom, and this repo's javadoc build is strict — the annotations module has no
+          dependencies, so an unresolved {@link} fails it. The kernel's block sets doclint=none
+          and failOnError=false to get past ~160 findings it carries; importing it would switch
+          off a gate this repo currently passes clean.
+
+        - The cyclonedx SBOM. The kernel ships one, this reactor has never produced one, and
+          adding it is its own slice rather than a rider on the change that first makes
+          publishing possible. The trap to read before adding it is the kernel's own
+          `skipNotDeployed` comment: <extensions>true</extensions> sets maven.deploy.skip, the
+          SBOM goal skips on that by default, and a release build therefore produces none while
+          the ordinary CI SBOM gate stays green.
+
+        OSSRH shut down on 2025-06-30. nexus-staging-maven-plugin and the oss.sonatype.org URLs
+        it needs no longer exist; anything describing that flow describes a dead system.
+    -->
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!--
+                        Central verifies a detached GPG signature on every file it accepts — jar,
+                        sources, javadoc and pom alike.
+
+                        No `gpgArguments`, and the absence is the point. The kernel's block used to
+                        pass a loopback pinentry argument described as "what lets the passphrase
+                        arrive from the environment instead of a terminal prompt", and its first
+                        dry run showed the argument was dead in both directions: with a passphrase
+                        available the plugin already emits loopback pinentry and a passphrase file
+                        descriptor of its own accord, and without one it appends its own pinentry
+                        mode of `error` AFTER the supplied argument, which gpg honours as the last
+                        occurrence. Configuration that is redundant when it works and ignored when
+                        it does not is worse than none, because it reads as the thing making
+                        signing work.
+
+                        What carries the passphrase is the environment variable named by
+                        `passphraseEnvName`, and that name is chosen by actions/setup-java's
+                        `gpg-passphrase` input, not here. The two have to agree; when they did not,
+                        the kernel's failure surfaced as "gpg: signing failed: No pinentry" — a
+                        message about the agent that says nothing about a name mismatch.
+                    -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.8</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!--
+                        autoPublish=false is not a placeholder to flip later without thinking. A
+                        deployment sitting in the portal can be DROPPED; a published one cannot be
+                        touched, ever. The first release goes through manual review of the portal's
+                        validation results, and waitUntil=validated makes the build block until
+                        there is something to review rather than exiting green on an upload.
+
+                        <excludeArtifacts> is required, and this comment used to say the opposite.
+                        exeris-sdk-annotation-catalog is a build-time generator nobody resolves and
+                        must not reach Central; it holds itself back from `deploy` with
+                        <maven.deploy.skip>true</maven.deploy.skip> in its own pom, and the first
+                        draft here reasoned that naming it a second time would put one fact in two
+                        places that can disagree.
+
+                        A dry run refuted that. maven.deploy.skip governs maven-deploy-plugin, and
+                        this plugin is not maven-deploy-plugin: it REPLACES it, and does not read
+                        that property. In the log, `central-publishing:0.11.0:publish` ran on the
+                        module and then reported "Installing" for all four of its files (jar, pom
+                        and both signatures) into `target/central-deferred` — the staging directory
+                        whose contents become the upload.
+
+                        Left alone it would upload a coordinate with no sources jar and no javadoc
+                        jar, which Central rejects per artifact — so one build-time module would
+                        fail the validation of every other module's release.
+
+                        The two settings are therefore not duplicates: they address different
+                        plugins, and neither implies the other. Because that is exactly the kind of
+                        pair that drifts, the release-readiness step in release.yml asserts the two
+                        lists agree rather than trusting them to.
+                    -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.11.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>false</autoPublish>
+                            <waitUntil>validated</waitUntil>
+                            <excludeArtifacts>
+                                <artifact>exeris-sdk-annotation-catalog</artifact>
+                            </excludeArtifacts>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

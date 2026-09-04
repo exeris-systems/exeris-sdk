@@ -49,6 +49,31 @@ for per-version upgrade steps.
   on benchmark evidence a TCK cannot supply, so what is unproven is durability under load, not the
   shape. `SchemaVersion.CURRENT` stays `"0.12.0"`: `@RouteAccess` already moved it there in this
   same unreleased milestone.
+  
+- **The SDK publishes to Maven Central, and 0.12.0 is the first version to get there.** A `release`
+  profile in the root POM (maven-gpg-plugin + `central-publishing-maven-plugin` with
+  `autoPublish=false` and `waitUntil=validated`) plus `.github/workflows/release.yml`, where a `v*`
+  tag is the release and a dispatch with `upload` unchecked is a dry run that touches nothing
+  remote. This closes a deliberate deferral rather than a gap: the sequencing rule was that the SDK
+  does not move to Central before the kernel — an ordering, not a wait for a finished kernel
+  release — and the two publish together, kernel v0.12.0 alongside this one. `exeris-platform` — which pins `exeris.sdk.version` and resolves from a local
+  `mvn install` today — is the consumer waiting on both. Everything at or below 0.11.0 remains a git
+  tag + GitHub Release only; nothing is backfilled.
+
+  Ported from `exeris-kernel`, minus three things it carries for reasons this repo does not share:
+  its source/javadoc executions (every publishable module here already attaches both, and its
+  `doclint=none` would switch off a gate this repo passes clean), its SBOM, and its two-build digest
+  assertion (which depends on `project.build.outputTimestamp`, unset here — so the gates and the
+  upload run in one lifecycle instead of two).
+
+  Two behaviours were measured rather than assumed, and both had been asserted the other way:
+  `maven.deploy.skip` does **not** hold a module back from Central — `central-publishing-maven-plugin`
+  replaces maven-deploy-plugin and does not read that property, so the build-time
+  `exeris-sdk-annotation-catalog` was being staged for upload and needed an `<excludeArtifacts>`
+  entry (the readiness step now asserts the two lists agree, and fails when they do not). It does
+  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate stays CI-skipped for
+  one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
+  resolvable from Central; `-Djapicmp.skip=true` comes off `build.yml` when 0.13.0 opens.
 
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
   attached to the GitHub Release.** Every `@interface` the module declares — 73 as this release
