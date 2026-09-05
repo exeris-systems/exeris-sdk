@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-routing-planner/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-routing-planner
 description: Execution-planning skill for exeris-sdk — use after exeris-sdk-task-classifier, or whenever an SDK task spans multiple modules/agents. Produces the primary agent, ordered secondary handoffs, a 3–5 step execution plan, validation gates, and the minimal next action.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-routing-planner/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Routing Planner
 
 ## Purpose

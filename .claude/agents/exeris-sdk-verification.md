@@ -1,10 +1,12 @@
 ---
+# DO NOT EDIT — generated from .agents/agents/exeris-sdk-verification.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-verification
 description: Verification agent for exeris-sdk. Owns `AnnotationContractTest`, `AstJsonRoundTripTest`, JaCoCo 85% gate, Vitest 85% per-file gate, and the "what would catch this regression?" question for wire-format and contract changes.
 tools: Read, Edit, Write, Bash, Grep, Glob, TodoWrite
 model: inherit
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-verification.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Verification
 
 ## Role

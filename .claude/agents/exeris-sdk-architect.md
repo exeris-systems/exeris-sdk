@@ -1,10 +1,12 @@
 ---
+# DO NOT EDIT — generated from .agents/agents/exeris-sdk-architect.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-architect
 description: Architectural reviewer for exeris-sdk. Use for zero-runtime-coupling enforcement, AST wire-format contract, stability + deprecation policy, Field/Validation canonical scoping, Entity-First alignment (ADR-003), the JDK baseline (ADR-069), Maven Central publish-readiness. Read-only — does not edit code.
 tools: Read, Grep, Glob, WebFetch
 model: inherit
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-architect.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Architect
 
 ## Role

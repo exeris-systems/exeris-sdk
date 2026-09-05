@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-deprecation-pipeline-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-deprecation-pipeline-review
 description: Deprecation pipeline review for exeris-sdk. Use whenever public API (annotation, AST record, attribute, public method) is removed, renamed, or moved between canonical annotations (e.g. `@Validation.X` → `@Field.X`).
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-deprecation-pipeline-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Deprecation Pipeline Review
 
 ## Purpose

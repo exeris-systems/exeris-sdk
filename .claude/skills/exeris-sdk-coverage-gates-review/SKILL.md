@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-coverage-gates-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-coverage-gates-review
 description: Coverage-gate review for exeris-sdk. Use whenever you add new code/branches to `exeris-sdk-source-model` (`ast.*`, `mutation.*`) or `exeris-sdk-ui-kit`, add or restructure a test, or hit a JaCoCo (85% BUNDLE) / Vitest (85% per-file) failure — enforces where new tests belong.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-coverage-gates-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Coverage-Gate Review
 
 ## Purpose

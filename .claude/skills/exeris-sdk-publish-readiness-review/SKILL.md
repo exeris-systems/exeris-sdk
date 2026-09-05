@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-publish-readiness-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-publish-readiness-review
 description: Maven Central publish-readiness review for exeris-sdk. Use whenever you bump a module version, touch `<distributionManagement>` or required POM metadata (`<url>`, `<licenses>`, `<developers>`, `<scm>`, `<issueManagement>`, `<organization>`), or add a new publishable Maven module — before a release goes out.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-publish-readiness-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Maven Central Publish-Readiness Review
 
 ## Purpose

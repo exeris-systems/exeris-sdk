@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-ast-jackson-contract-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-ast-jackson-contract-review
 description: AST + Jackson 3 wire-format contract review for exeris-sdk. Use whenever you add/change/remove an AST record under `eu.exeris.sdk.sourcemodel.ast.*`, touch Jackson config (`@JsonInclude`, serializers/deserializers), or bump `jackson-annotations` / `jackson.version` in the BOM — during editing, not only at PR review.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-ast-jackson-contract-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK AST + Jackson 3 Wire-Format Contract Review
 
 ## Purpose
