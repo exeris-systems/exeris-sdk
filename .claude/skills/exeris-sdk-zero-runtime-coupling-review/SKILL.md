@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-zero-runtime-coupling-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-zero-runtime-coupling-review
 description: Zero runtime coupling review for exeris-sdk. Use whenever you add a dependency to any module pom (annotations / source-model / bom / parent) or add a new import in any Java/TS source file — catches kernel / tooling / platform / framework leakage into the upstream-most repo.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-zero-runtime-coupling-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Zero Runtime Coupling Review
 
 ## Purpose

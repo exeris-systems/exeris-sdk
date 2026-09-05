@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-annotation-contract-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-annotation-contract-review
 description: Annotation contract review for exeris-sdk. Use whenever you add, change, or remove a public `@interface` in `exeris-sdk-annotations` (any package — root, `system`, `security`, or a newly introduced subpackage) — enforces `@Retention(SOURCE)` + `@Target`, the invariant every downstream consumer depends on.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-annotation-contract-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Annotation Contract Review
 
 ## Purpose

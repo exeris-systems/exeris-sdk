@@ -1,10 +1,12 @@
 ---
+# DO NOT EDIT — generated from .agents/agents/exeris-sdk-docs-adr.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-docs-adr
 description: Documentation integrity agent for exeris-sdk. Use for `MIGRATION.md` entries, `ROADMAP.md` milestone bookkeeping, package-info sync (Field/Validation canonical scoping rationale), ADR-003 alignment, downstream-impact docs.
 tools: Read, Edit, Write, Grep, Glob, WebFetch, TodoWrite
 model: inherit
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-docs-adr.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Docs/ADR
 
 ## Role
@@ -34,7 +36,7 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
 - Public API removal → confirm deprecation pipeline ran for ≥ 1 minor release; `MIGRATION.md` removal note.
 - Version bump → `ROADMAP.md` tick + `MIGRATION.md` section header.
 - Distribution-pipeline change (Sonatype Central Portal, POM metadata) → `CLAUDE.md` update.
-- JDK floor change → `CLAUDE.md` + `README.md` + `ROADMAP.md` aligned (currently 26 non-negotiable).
+- JDK floor change → `CLAUDE.md` + `README.md` + `ROADMAP.md` aligned (currently 25 LTS non-negotiable, ADR-069).
 
 ## Non-goals
 - Do not rewrite docs without code-backed need.

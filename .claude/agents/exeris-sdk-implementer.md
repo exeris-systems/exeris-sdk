@@ -1,10 +1,12 @@
 ---
+# DO NOT EDIT — generated from .agents/agents/exeris-sdk-implementer.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-implementer
 description: Delivery agent for exeris-sdk. Use to implement annotation `@interface` code, AST record code, UI kit TS/CSS, BOM/parent pom changes while preserving zero runtime coupling, AST wire-format contract, and the JDK baseline (ADR-069).
 tools: Read, Edit, Write, Bash, Grep, Glob, WebFetch, TodoWrite
 model: inherit
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-implementer.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Implementer
 
 ## Role
@@ -32,7 +34,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 - `mvn clean install` (full reactor; runs JaCoCo + 85% gate on source-model).
 - `mvn -pl exeris-sdk-source-model -am test` (module + deps).
 - `mvn -pl exeris-sdk-source-model test -Dtest=AstJsonRoundTripTest` (wire-format guard).
-- `mvn -pl exeris-sdk-annotations -am test` runs `AnnotationContractTest` (SOURCE + @Target invariants).
+- `mvn -pl exeris-sdk-annotations -am test` runs `AnnotationContractTest` (SOURCE + @Target invariants; requires `exeris-sdk-annotation-catalog` installed first on clean checkout).
 - `cd exeris-sdk-ui-kit && npm ci && npm test` (Vitest); `npm run test:coverage` for the 85% per-file gate.
 
 ## Handoff Contract
@@ -44,7 +46,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 ## Non-goals
 - Do not introduce kernel / framework deps anywhere in this repo.
 - Do not import from `exeris-tooling` / `exeris-platform` (downstream).
-- Do not change `maven.compiler.release` to anything below 26.
+- Do not change `maven.compiler.release` to anything below 25 (ADR-069).
 
 ## Response Template
 

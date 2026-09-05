@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-task-classifier/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-task-classifier
 description: Triage skill for exeris-sdk — use FIRST on any non-trivial SDK task, before editing annotations, AST records, UI kit, poms, or docs. Classifies task type (annotation contract / AST wire-format / UI kit / stability / docs / publish-readiness), scope, and severity, and routes to the right specialist agent.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-task-classifier/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Task Classifier
 
 ## Purpose

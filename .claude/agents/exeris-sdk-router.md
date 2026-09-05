@@ -1,10 +1,12 @@
 ---
+# DO NOT EDIT — generated from .agents/agents/exeris-sdk-router.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-router
 description: Entry router for exeris-sdk. Use proactively for triage to classify a task (annotation contract / AST records / UI kit / stability / docs / pre-publish) and recommend a specialist agent.
 tools: Read, Grep, Glob, WebFetch, TodoWrite
 model: inherit
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-router.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Router
 
 ## Role

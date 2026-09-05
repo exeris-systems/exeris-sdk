@@ -39,6 +39,7 @@ coverage/
 
 # Claude Code — local-only settings (shared agents/skills/commands ARE tracked)
 .claude/settings.local.json
+.claude/worktrees/
 
 # Build-classpath dumps produced by `mvn dependency:build-classpath`; never source.
 cp.txt

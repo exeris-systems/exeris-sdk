@@ -1,8 +1,10 @@
 ---
+# DO NOT EDIT — generated from .agents/skills/exeris-sdk-field-validation-scoping-review/SKILL.md (agents-md-schema.md rule 7). Edit the source.
 name: exeris-sdk-field-validation-scoping-review
 description: Field/Validation canonical scoping review for exeris-sdk. Use whenever `@Field` or `@Validation` attributes (or the `FieldMetadata` AST record) are touched, or when generator-derived NOT NULL / not-blank semantics (from `FieldMetadata.required`) are in scope.
 ---
-
+<!-- DO NOT EDIT. Generated from .agents/skills/exeris-sdk-field-validation-scoping-review/SKILL.md by the AGENTS.md adapter step
+     (agents-md-schema.md rule 7). Edit the source, not this file. -->
 # Exeris SDK Field/Validation Canonical Scoping Review
 
 ## Purpose
