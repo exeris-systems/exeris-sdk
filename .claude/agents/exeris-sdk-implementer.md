@@ -34,7 +34,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 - `mvn clean install` (full reactor; runs JaCoCo + 85% gate on source-model).
 - `mvn -pl exeris-sdk-source-model -am test` (module + deps).
 - `mvn -pl exeris-sdk-source-model test -Dtest=AstJsonRoundTripTest` (wire-format guard).
-- `mvn -pl exeris-sdk-annotations -am test` runs `AnnotationContractTest` (SOURCE + @Target invariants).
+- `mvn -pl exeris-sdk-annotations -am test` runs `AnnotationContractTest` (SOURCE + @Target invariants; requires `exeris-sdk-annotation-catalog` installed first on clean checkout).
 - `cd exeris-sdk-ui-kit && npm ci && npm test` (Vitest); `npm run test:coverage` for the 85% per-file gate.
 
 ## Handoff Contract

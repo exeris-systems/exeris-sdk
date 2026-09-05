@@ -27,12 +27,12 @@ Given a classified task (see `exeris-sdk-task-classifier`), produce a minimal, r
 - `STABILITY_DEPRECATION` → `exeris-sdk-architect` primary (deprecation pipeline policy); `docs-adr` mandatory (`MIGRATION.md` entry); `implementer` for code.
 - `DOCS_ADR` → `exeris-sdk-docs-adr` primary; `architect` if scoping rationale shifts.
 - `PUBLISH_READINESS` → `exeris-sdk-architect` primary (run `exeris-sdk-publish-readiness-review`); `implementer` for pom changes; `verification` for full reactor build green.
-- `BUILD_INVARIANTS` → `exeris-sdk-architect` primary (run `exeris-sdk-build-invariants-review`); `implementer` for the pom/plugin change; `docs-adr` if the JDK-26 rationale in `README.md`/`ROADMAP.md` shifts.
+- `BUILD_INVARIANTS` → `exeris-sdk-architect` primary (run `exeris-sdk-build-invariants-review`); `implementer` for the pom/plugin change; `docs-adr` if the JDK baseline (25 LTS, ADR-069) in `README.md`/`ROADMAP.md` shifts.
 - `MULTI_DOMAIN` → start with `architect`, list all dominant handoffs.
 
 ## Default Validation Gates
 - `AnnotationContractTest` green (annotations module); new `@interface` is `@Retention(SOURCE)` + `@Target` (`exeris-sdk-annotation-contract-review`).
-- `AstJsonRoundTripTest` green; new AST records have new test cases (source-model module).
+- `AstJsonRoundTripTest` and `MutationWireFormatTest` green; new AST/mutation records have test cases (source-model module).
 - JaCoCo 85% instruction + line gate on `exeris-sdk-source-model` (BUNDLE-level).
 - Vitest 85% per-file gate on `exeris-sdk-ui-kit` (lines / statements / functions / branches).
 - Zero runtime coupling: no new compile-scope dep in annotations module; no kernel/tooling/platform imports anywhere.

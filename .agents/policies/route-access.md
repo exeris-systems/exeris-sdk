@@ -12,7 +12,10 @@
    - The unstated/unspecified condition is represented structurally by the absence of the annotation (producing a `null` value in `DomainMetadata.routeAccess` and `ActionMetadata.routeAccess`).
 3. **`PUBLIC` cannot combine with non-empty permissions:**
    - An unauthenticated (public) route has no authenticated principal bound to the execution context.
-   - A route marked `PUBLIC` that simultaneously specifies required `permissions` is logically contradictory and must be rejected at compile time.
+   - A route marked `PUBLIC` that simultaneously specifies required `permissions` is logically contradictory. Rejecting this pair is a build-time verification job for downstream `exeris-tooling` (the SDK annotation documents this constraint so the combination is not authored in the first place).
+4. **Open-Core status — RESERVED, extraction pending tooling:**
+   - Declared shape, not yet an enforced route. Downstream `exeris-tooling` does not yet extract `@RouteAccess` and the `-io` reader does not read it.
+   - Excluded from the 1.0.0 freeze while the kernel holds route authorization at tier `preview` (ADR-072).
 
 ## References
 

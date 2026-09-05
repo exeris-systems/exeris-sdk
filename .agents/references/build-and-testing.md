@@ -10,11 +10,14 @@ mvn clean install
 
 # Targeted module build with dependencies
 mvn -pl exeris-sdk-source-model -am verify
-mvn -pl exeris-sdk-annotations -am test
+mvn -pl exeris-sdk-annotations -am test    # requires catalog module installed once first
 
 # Run UI kit tests and coverage (npm-only)
 cd exeris-sdk-ui-kit && npm ci && npm run test:coverage
 ```
+
+> **Build wrinkle:** `annotationProcessorPaths` is not a Maven dependency edge. On a clean checkout, a partial build like `mvn -pl exeris-sdk-annotations -am ...` fails to resolve `AnnotationCatalogProcessor` until `exeris-sdk-annotation-catalog` has been installed at least once. Run the full reactor `mvn clean install` first (or `mvn -pl exeris-sdk-annotation-catalog install`).
+
 
 ## Module Coverage & Quality Gates
 

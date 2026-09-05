@@ -25,6 +25,7 @@
 - Extracted directly from AST sources, preserving `@param` prose, nested `@interface` declarations, and `@deprecated` replacement pointers.
 - Strictly deterministic: contains no timestamps, ensuring reproducible jar hashes.
 - Guarded by `AnnotationCatalogProcessorTest` and `AnnotationCatalogContractTest`.
+- **Build wrinkle:** `annotationProcessorPaths` is not a Maven dependency edge. In a partial build, `mvn -pl exeris-sdk-annotations -am ...` fails on a clean checkout until `exeris-sdk-annotation-catalog` has been installed once. Full `mvn clean install` succeeds because declaration order in `<modules>` places catalog first.
 
 ## AST JSON Schema Emitter
 

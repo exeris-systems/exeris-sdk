@@ -19,7 +19,7 @@ Protect the non-negotiable build floor. The most tempting "fix" for a build fail
 
 ## Canonical Rules (per repo `CLAUDE.md`)
 - **`maven.compiler.release=25` across the reactor (ADR-069).** The baseline follows the kernel's GA line (kernel ADR-066), and the rule runs both ways: never raise it above the kernel's baseline — these jars sit on a consumer's compile classpath and a major-70 class is refused outright by `javac` on JDK 25, locking out the LTS deployments the kernel admitted — and never lower it below what the sources need (records / sealed, 21-era). `ClassFileBaselineTest` asserts the emitted class-file major ≤ 69, so an override that re-raises the target fails even when the property looks right.
-- **Do NOT "fix" a build failure by lowering `maven.compiler.release`.** The answer to a 21-LTS failure is "build on 26 and consume over the wire," not a backport. Rationale lives in `README.md` + `ROADMAP.md` — keep aligned if it ever changes.
+- **Do NOT "fix" a build failure by lowering `maven.compiler.release`.** The answer to a 21-LTS failure is "build on the supported baseline (25 LTS, ADR-069) and consume over the wire," not a backport. Rationale lives in `README.md` + `ROADMAP.md` — keep aligned if it ever changes.
 - **`jacoco-maven-plugin` ≥ 0.8.14** — earlier versions reject Java 26 class file v70; the baseline emits v69 since 0.10.0, so this is no longer load-bearing, but a downgrade buys nothing. See [[exeris-sdk-coverage-gates-review]].
 - **`exeris-sdk-ui-kit` is npm-only** — excluded from the Maven reactor (despite the README listing it). Don't re-add it to `<modules>`. See [[exeris-sdk-publish-readiness-review]].
 
