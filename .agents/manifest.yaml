@@ -1,0 +1,57 @@
+# Composition and delivery metadata for this repository's agent material.
+# agents-md-schema.md rules 5 and 8: profiles and workflows compose by reference, and any imported
+# bundle is version-pinned. This repository imports nothing — the organisation bundle does not exist
+# as a published artefact yet, and a floating import would be a rule-8 violation, not a shortcut.
+version: 1
+repository: exeris-sdk
+imports: []
+
+policies:
+  - policies/ast-wire-format.md
+  - policies/field-validation-scoping.md
+  - policies/javadoc-and-contract-emitters.md
+  - policies/jdk-baseline.md
+  - policies/route-access.md
+  - policies/stability-and-deprecation.md
+  - policies/ui-kit.md
+  - policies/zero-runtime-coupling.md
+
+references:
+  - references/build-and-testing.md
+  - references/downstream-consumers.md
+  - references/maven-central-distribution.md
+
+skills:
+  - skills/exeris-sdk-annotation-contract-review
+  - skills/exeris-sdk-ast-jackson-contract-review
+  - skills/exeris-sdk-build-invariants-review
+  - skills/exeris-sdk-coverage-gates-review
+  - skills/exeris-sdk-deprecation-pipeline-review
+  - skills/exeris-sdk-field-validation-scoping-review
+  - skills/exeris-sdk-publish-readiness-review
+  - skills/exeris-sdk-routing-planner
+  - skills/exeris-sdk-task-classifier
+  - skills/exeris-sdk-zero-runtime-coupling-review
+
+agents:
+  - agents/exeris-sdk-architect.md
+  - agents/exeris-sdk-docs-adr.md
+  - agents/exeris-sdk-implementer.md
+  - agents/exeris-sdk-router.md
+  - agents/exeris-sdk-verification.md
+
+workflows:
+  - workflows/annotation-contract-audit.md
+  - workflows/ast-wire-format-review.md
+  - workflows/field-validation-scoping-audit.md
+  - workflows/publish-readiness-audit.md
+
+adapters:
+  claude:
+    target: .claude
+    generated: true
+    renderer: tools/agent-adapter-check/agent-adapter-render.sh
+    map:
+      skills: .claude/skills
+      agents: .claude/agents
+      workflows: .claude/commands
