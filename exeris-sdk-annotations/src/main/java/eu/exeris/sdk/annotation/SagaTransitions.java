@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * holds is, and {@link SagaTransition @SagaTransition} is not extracted.
  * Compiler-synthesized; authors write repeated {@code @SagaTransition} directly and never
  * this type.
- * @since 0.9.0
+ * @since 0.9
  * @see SagaTransition
  */
 @Target(ElementType.TYPE)

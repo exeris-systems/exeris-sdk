@@ -20,9 +20,7 @@ import java.lang.annotation.Target;
  * leaf-field facet ({@code @UI}'s field-level render detail) — until it lands,
  * field-level presentation stays on {@code @UI}.
  *
- * @author Exeris SDK Team
- * @version 0.8.0
- * @since 0.8.0
+ * @since 0.8
  * @see View
  * @see Region
  * @see Bind

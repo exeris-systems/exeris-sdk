@@ -149,9 +149,7 @@ import java.lang.annotation.*;
  * side by the guard and action-stream client emitters. Not every attribute is live with it:
  * {@link #path()}, {@link #roles()} and {@link #permissions()} are extracted by nobody and
  * carry their own notes below.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  * @see UI
  * @see ExerisDomain
@@ -550,22 +548,22 @@ public @interface Action {
      * Button variant enum for visual styling.
      */
     enum Variant {
-        /** Primary action (main CTA) - typically blue/brand color */
+        /** Primary action (main CTA) - typically blue/brand color. */
         PRIMARY,
 
-        /** Secondary action - typically gray/neutral */
+        /** Secondary action - typically gray/neutral. */
         SECONDARY,
 
-        /** Success action - typically green (approve, confirm) */
+        /** Success action - typically green (approve, confirm). */
         SUCCESS,
 
-        /** Warning action - typically orange/yellow (needs attention) */
+        /** Warning action - typically orange/yellow (needs attention). */
         WARNING,
 
-        /** Danger action - typically red (delete, reject) */
+        /** Danger action - typically red (delete, reject). */
         DANGER,
 
-        /** Ghost/text action - minimal styling, low emphasis */
+        /** Ghost/text action - minimal styling, low emphasis. */
         GHOST
     }
 
@@ -573,16 +571,16 @@ public @interface Action {
      * Button location enum (matches task specification).
      */
     enum Location {
-        /** Show in detail page */
+        /** Show in detail page. */
         DETAIL,
 
-        /** Show in list view for each row */
+        /** Show in list view for each row. */
         LIST_ROW,
 
-        /** Show for bulk operations (multiple selected rows) */
+        /** Show for bulk operations (multiple selected rows). */
         LIST_BULK,
 
-        /** Show in list header/toolbar */
+        /** Show in list header/toolbar. */
         LIST_HEADER
     }
 

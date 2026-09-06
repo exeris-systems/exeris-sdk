@@ -51,9 +51,7 @@ import java.lang.annotation.*;
  * this short of LIVE: only one of the two readers handles it. Its three nested property types are not extracted — see
  * their own notes — so an edge reaches the writer with its endpoints and without its
  * properties.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Graph
  * @see GraphProperty
  */
@@ -427,13 +425,13 @@ public @interface GraphEdge {
      * Edge direction in the graph.
      */
     enum Direction {
-        /** Edge goes from this node to target */
+        /** Edge goes from this node to target. */
         OUTGOING,
 
-        /** Edge comes from target to this node */
+        /** Edge comes from target to this node. */
         INCOMING,
 
-        /** Edge direction doesn't matter (query both ways) */
+        /** Edge direction doesn't matter (query both ways). */
         BOTH
     }
 

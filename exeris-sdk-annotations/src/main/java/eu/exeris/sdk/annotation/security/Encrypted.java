@@ -74,9 +74,7 @@ import java.lang.annotation.*;
  * extract this marker, so writing it changes nothing in the emitted output. See the package
  * javadoc for the live path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see RowLevelSecurity
  */
 @Target(ElementType.FIELD)
@@ -88,13 +86,13 @@ public @interface Encrypted {
      * Encryption algorithm to use.
      */
     enum Algorithm {
-        /** AES-256 with Galois/Counter Mode (default, recommended) */
+        /** AES-256 with Galois/Counter Mode (default, recommended). */
         AES_256_GCM,
-        /** AES-256 with CBC mode */
+        /** AES-256 with CBC mode. */
         AES_256_CBC,
-        /** ChaCha20-Poly1305 (alternative to AES) */
+        /** ChaCha20-Poly1305 (alternative to AES). */
         CHACHA20_POLY1305,
-        /** RSA-OAEP for asymmetric encryption */
+        /** RSA-OAEP for asymmetric encryption. */
         RSA_OAEP
     }
 

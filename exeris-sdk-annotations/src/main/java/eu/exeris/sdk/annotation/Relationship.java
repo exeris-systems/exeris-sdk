@@ -139,9 +139,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: LIVE</strong> — extracted into {@code RelationshipMetadata} and read
  * by the repository, Flyway and application generators — the foreign key, its constraint
  * and the query path all come from here.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  * @see UI
  */
@@ -480,25 +478,25 @@ public @interface Relationship {
      * Display mode enum for relationships.
      */
     enum Display {
-        /** Auto-select based on dataset size and relationship type */
+        /** Auto-select based on dataset size and relationship type. */
         AUTO,
 
-        /** Dropdown select (best for small datasets &lt; 100 items) */
+        /** Dropdown select (best for small datasets &lt; 100 items). */
         SELECT,
 
-        /** Autocomplete/typeahead (best for large datasets) */
+        /** Autocomplete/typeahead (best for large datasets). */
         AUTOCOMPLETE,
 
-        /** Radio button group (best for 2-5 options) */
+        /** Radio button group (best for 2-5 options). */
         RADIO,
 
-        /** Checkbox group (for multi-select with 2-10 options) */
+        /** Checkbox group (for multi-select with 2-10 options). */
         CHECKBOX,
 
-        /** Data table with selection (for many-to-many or large datasets) */
+        /** Data table with selection (for many-to-many or large datasets). */
         TABLE,
 
-        /** Modal dialog with search and filters (for complex selection) */
+        /** Modal dialog with search and filters (for complex selection). */
         MODAL
     }
 
@@ -506,16 +504,16 @@ public @interface Relationship {
      * Relationship type enum.
      */
     enum RelationshipType {
-        /** Many entities reference one entity (e.g., many orders → one customer) */
+        /** Many entities reference one entity (e.g., many orders → one customer). */
         MANY_TO_ONE,
 
-        /** One entity references one entity (e.g., user → profile) */
+        /** One entity references one entity (e.g., user → profile). */
         ONE_TO_ONE,
 
-        /** One entity has many related entities (e.g., order → order items) */
+        /** One entity has many related entities (e.g., order → order items). */
         ONE_TO_MANY,
 
-        /** Many entities reference many entities (e.g., products ↔ tags) */
+        /** Many entities reference many entities (e.g., products ↔ tags). */
         MANY_TO_MANY
     }
 
@@ -523,10 +521,10 @@ public @interface Relationship {
      * Fetch type enum.
      */
     enum FetchType {
-        /** Load related data immediately with parent entity */
+        /** Load related data immediately with parent entity. */
         EAGER,
 
-        /** Load related data on-demand when accessed */
+        /** Load related data on-demand when accessed. */
         LAZY
     }
 }

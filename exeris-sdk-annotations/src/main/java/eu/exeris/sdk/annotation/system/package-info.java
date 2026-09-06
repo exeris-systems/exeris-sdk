@@ -31,8 +31,6 @@
  * {@code createdAt}, …) when unset. The markers gain effect when processor
  * field-scanning lands; until then they ship as a reserved surface.
  *
- * @author Exeris SDK Team
- * @version 0.9.0
- * @since 0.9.0
+ * @since 0.9
  */
 package eu.exeris.sdk.annotation.system;

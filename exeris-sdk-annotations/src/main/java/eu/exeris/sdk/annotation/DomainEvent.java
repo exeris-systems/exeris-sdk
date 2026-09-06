@@ -70,9 +70,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: LIVE</strong> — extracted into {@code DomainEventMetadata} and read by
  * the kernel event, event-handler, stream-handler and request-handler generators, plus the
  * TypeScript event emitter. The repeatable container is unwrapped with it; {@link Header @Header} is not — see its own note.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -697,31 +695,31 @@ public @interface DomainEvent {
      * Event trigger types.
      */
     enum Trigger {
-        /** Published on entity creation */
+        /** Published on entity creation. */
         CREATE,
 
-        /** Published on entity update (any field change) */
+        /** Published on entity update (any field change). */
         UPDATE,
 
-        /** Published on entity deletion (including soft delete) */
+        /** Published on entity deletion (including soft delete). */
         DELETE,
 
-        /** Published when specific action is executed */
+        /** Published when specific action is executed. */
         ACTION,
 
-        /** Published when specific field changes value */
+        /** Published when specific field changes value. */
         FIELD_CHANGED,
 
-        /** Published on state machine transition */
+        /** Published on state machine transition. */
         STATE_TRANSITION,
 
-        /** Published on scheduled interval */
+        /** Published on scheduled interval. */
         SCHEDULED,
 
-        /** Published manually via code */
+        /** Published manually via code. */
         MANUAL,
 
-        /** Published on aggregate snapshot */
+        /** Published on aggregate snapshot. */
         SNAPSHOT
     }
 
@@ -729,16 +727,16 @@ public @interface DomainEvent {
      * Event priority levels.
      */
     enum Priority {
-        /** Low priority - process when resources available */
+        /** Low priority - process when resources available. */
         LOW,
 
-        /** Normal priority - standard processing */
+        /** Normal priority - standard processing. */
         NORMAL,
 
-        /** High priority - process before normal events */
+        /** High priority - process before normal events. */
         HIGH,
 
-        /** Critical priority - process immediately */
+        /** Critical priority - process immediately. */
         CRITICAL
     }
 
@@ -746,16 +744,16 @@ public @interface DomainEvent {
      * Schema serialization formats.
      */
     enum SchemaFormat {
-        /** Inherit from module/global configuration */
+        /** Inherit from module/global configuration. */
         INHERIT,
 
-        /** JSON with JSON Schema */
+        /** JSON with JSON Schema. */
         JSON,
 
-        /** Apache Avro */
+        /** Apache Avro. */
         AVRO,
 
-        /** MessagePack */
+        /** MessagePack. */
         MSGPACK
     }
 
@@ -763,25 +761,25 @@ public @interface DomainEvent {
      * Schema compatibility modes.
      */
     enum SchemaCompatibility {
-        /** No compatibility checking */
+        /** No compatibility checking. */
         NONE,
 
-        /** New schema can read old data */
+        /** New schema can read old data. */
         BACKWARD,
 
-        /** Old schema can read new data */
+        /** Old schema can read new data. */
         FORWARD,
 
-        /** Both backward and forward compatible */
+        /** Both backward and forward compatible. */
         FULL,
 
-        /** Backward compatible with all previous versions */
+        /** Backward compatible with all previous versions. */
         BACKWARD_TRANSITIVE,
 
-        /** Forward compatible with all previous versions */
+        /** Forward compatible with all previous versions. */
         FORWARD_TRANSITIVE,
 
-        /** Fully compatible with all previous versions */
+        /** Fully compatible with all previous versions. */
         FULL_TRANSITIVE
     }
 
@@ -789,13 +787,13 @@ public @interface DomainEvent {
      * Message processing guarantees.
      */
     enum ProcessingGuarantee {
-        /** Message may be lost */
+        /** Message may be lost. */
         AT_MOST_ONCE,
 
-        /** Message may be processed multiple times */
+        /** Message may be processed multiple times. */
         AT_LEAST_ONCE,
 
-        /** Message processed exactly once */
+        /** Message processed exactly once. */
         EXACTLY_ONCE
     }
 
@@ -803,16 +801,16 @@ public @interface DomainEvent {
      * Outbox aggregation strategies.
      */
     enum OutboxAggregation {
-        /** No aggregation */
+        /** No aggregation. */
         NONE,
 
-        /** Keep only last event per key */
+        /** Keep only last event per key. */
         LAST_WINS,
 
-        /** Keep only first event per key */
+        /** Keep only first event per key. */
         FIRST_WINS,
 
-        /** Merge events with same key */
+        /** Merge events with same key. */
         MERGE
     }
 
@@ -820,17 +818,17 @@ public @interface DomainEvent {
      * Log levels for event processing.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 

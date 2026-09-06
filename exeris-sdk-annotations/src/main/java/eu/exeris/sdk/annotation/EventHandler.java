@@ -50,9 +50,7 @@ import java.lang.annotation.*;
  * reserved for the event-reaction verb, which is design-gated on the behavioural corpus.
  * Not to be confused with {@link DomainEvent @DomainEvent}, which is extracted and does
  * reach the emitters.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Projection
  * @see Saga
  * @see DomainEvent
@@ -251,15 +249,15 @@ public @interface EventHandler {
      * Event handler execution priority.
      */
     enum Priority {
-        /** Lowest priority (executes last) */
+        /** Lowest priority (executes last). */
         LOWEST,
-        /** Low priority */
+        /** Low priority. */
         LOW,
-        /** Normal priority (default) */
+        /** Normal priority (default). */
         NORMAL,
-        /** High priority */
+        /** High priority. */
         HIGH,
-        /** Highest priority (executes first) */
+        /** Highest priority (executes first). */
         HIGHEST
     }
 
@@ -267,16 +265,16 @@ public @interface EventHandler {
      * Transaction propagation mode for event handlers.
      */
     enum TransactionMode {
-        /** Require existing transaction */
+        /** Require existing transaction. */
         REQUIRED,
 
-        /** Create new transaction */
+        /** Create new transaction. */
         REQUIRES_NEW,
 
-        /** No transaction */
+        /** No transaction. */
         NONE,
 
-        /** Support existing, but don't require */
+        /** Support existing, but don't require. */
         SUPPORTS
     }
 
@@ -284,17 +282,17 @@ public @interface EventHandler {
      * Log levels for event handler logging.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 

@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
  * <p><strong>Status: PARTIAL</strong> — one of the two readers handles this
  * container, and it admits only one edge. Compiler-synthesized; authors write
  * repeated {@code @GraphEdge} directly and never this type.
- * @since 0.10.0
+ * @since 0.10
  * @see GraphEdge
  * @see Graph
  */

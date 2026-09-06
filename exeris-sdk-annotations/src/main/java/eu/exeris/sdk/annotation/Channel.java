@@ -84,7 +84,7 @@ import java.lang.annotation.Target;
  * (see {@code studio/docs/cms-strategy.md} §4) and the migration that gives them
  * real-time editing is the one this channel describes.
  *
- * @since 0.12.0
+ * @since 0.12
  * @see ExerisDomain#realTimeApi()
  * @see Action#streaming()
  * @see RouteAccess

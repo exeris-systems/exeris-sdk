@@ -481,7 +481,7 @@
  *       what is emitted and how to run it.</li>
  * </ul>
  *
- * @since 0.1.0
+ * @since 0.1
  */
 package eu.exeris.sdk.annotation;
 

@@ -38,7 +38,7 @@ import java.lang.annotation.Target;
  * lock-step parity), and the codegen consumer are wired; see {@code ROADMAP.md}
  * and the declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
  *
- * @since 0.7.0
+ * @since 0.7
  * @see Derived
  * @see Rules
  */

@@ -24,9 +24,7 @@ import java.lang.annotation.*;
  *
  *
  * <p><strong>Status: RESERVED</strong> — action parameters are extracted through {@link ActionParam @ActionParam} only. A parameter carrying just this annotation reaches {@code ActionMetadata} as if it were unannotated.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see GraphQuery
  */
 @Target(ElementType.PARAMETER)

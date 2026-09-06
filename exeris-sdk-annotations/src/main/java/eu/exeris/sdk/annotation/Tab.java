@@ -76,9 +76,7 @@ import java.lang.annotation.*;
  *
  * <p><strong>Status: RESERVED</strong> — presentation grouping is emitted from {@link View @View} — its regions and blocks — and, at the leaf level, from {@link UI @UI}. This
  * annotation feeds neither, so a tab declared here appears in no generated template.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see UIGroup
  * @see UI
  */

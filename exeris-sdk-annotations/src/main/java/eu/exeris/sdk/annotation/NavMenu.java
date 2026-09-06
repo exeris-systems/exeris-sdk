@@ -83,9 +83,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: RESERVED</strong> — no navigation artefact is emitted from this
  * annotation on either side. The generated TypeScript app shell builds its sidebar from the
  * entity list and the {@link View @View} routes, never from a menu declared here.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see ExerisDomain
  */
 @Target(ElementType.TYPE)
@@ -258,11 +256,11 @@ public @interface NavMenu {
      * Divider placement relative to this menu item.
      */
     enum Divider {
-        /** No divider */
+        /** No divider. */
         NONE,
-        /** Divider line before this item */
+        /** Divider line before this item. */
         BEFORE,
-        /** Divider line after this item */
+        /** Divider line after this item. */
         AFTER
     }
 

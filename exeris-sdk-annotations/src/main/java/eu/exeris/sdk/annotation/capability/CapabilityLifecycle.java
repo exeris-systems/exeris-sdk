@@ -44,9 +44,7 @@ import java.lang.annotation.Target;
  * presence on the module class and records the result on {@code CapabilityModuleMetadata},
  * which the capability graph consumes. Presence is the whole signal — the annotation
  * carries no attribute the pipeline reads.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see CapabilityModule
  * @see Requires
  */

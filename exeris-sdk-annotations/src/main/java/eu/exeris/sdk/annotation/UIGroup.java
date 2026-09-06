@@ -59,9 +59,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: RESERVED</strong> — the same gap as {@link Tab @Tab}: {@link UI @UI}
  * is extracted per field, this grouping annotation is not. A group declared here appears in
  * no generated template.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Tab
  * @see UI
  */

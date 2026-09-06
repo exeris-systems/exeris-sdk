@@ -71,7 +71,7 @@ import java.lang.annotation.Target;
  * jobs. It is open, it is tracked in ADR-072, and it is one of the reasons this
  * surface ships reserved rather than live.
  *
- * @since 0.11.0
+ * @since 0.11
  * @see Action
  * @see EventHandler
  */

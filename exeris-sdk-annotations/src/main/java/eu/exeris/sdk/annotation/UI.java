@@ -102,9 +102,7 @@ import java.lang.annotation.*;
  *   <li>{@code AUTO} - SDK chooses based on field type</li>
  * </ul>
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target({ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.SOURCE)
@@ -513,45 +511,45 @@ public @interface UI {
      * Enum representing available UI component types.
      */
     enum ComponentType {
-        /** Auto-detect based on field type */
+        /** Auto-detect based on field type. */
         AUTO,
-        /** Standard single-line text input */
+        /** Standard single-line text input. */
         TEXT_INPUT,
-        /** Multi-line text area */
+        /** Multi-line text area. */
         TEXT_AREA,
-        /** Numeric input with increment/decrement controls */
+        /** Numeric input with increment/decrement controls. */
         NUMBER_INPUT,
-        /** Date picker (calendar) */
+        /** Date picker (calendar). */
         DATE_PICKER,
-        /** Date and time picker */
+        /** Date and time picker. */
         DATETIME_PICKER,
-        /** Boolean checkbox */
+        /** Boolean checkbox. */
         CHECKBOX,
-        /** Single-select dropdown */
+        /** Single-select dropdown. */
         SELECT,
-        /** Multi-select dropdown */
+        /** Multi-select dropdown. */
         MULTI_SELECT,
-        /** Radio button group */
+        /** Radio button group. */
         RADIO_GROUP,
-        /** File upload component */
+        /** File upload component. */
         FILE_UPLOAD,
-        /** Rich text WYSIWYG editor */
+        /** Rich text WYSIWYG editor. */
         RICH_TEXT_EDITOR,
-        /** Color picker */
+        /** Color picker. */
         COLOR_PICKER,
-        /** Password input (masked) */
+        /** Password input (masked). */
         PASSWORD,
-        /** Email input with validation */
+        /** Email input with validation. */
         EMAIL,
-        /** URL input with validation */
+        /** URL input with validation. */
         URL,
-        /** Phone number input with formatting */
+        /** Phone number input with formatting. */
         PHONE,
-        /** Slider for numeric ranges */
+        /** Slider for numeric ranges. */
         SLIDER,
-        /** Toggle switch (alternative to checkbox) */
+        /** Toggle switch (alternative to checkbox). */
         TOGGLE,
-        /** Autocomplete/typeahead input */
+        /** Autocomplete/typeahead input. */
         AUTOCOMPLETE,
         /**
          * Application-supplied custom component (escape hatch out of this closed

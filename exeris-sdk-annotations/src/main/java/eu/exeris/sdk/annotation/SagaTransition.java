@@ -61,7 +61,7 @@ import java.lang.annotation.Target;
  * the codegen consumer that turns the graph into the generated body. Until that
  * coordinated flip, declaring transitions has no generated effect.
  *
- * @since 0.9.0
+ * @since 0.9
  * @see Saga
  * @see SagaStep
  * @see SagaTransitions
@@ -114,7 +114,7 @@ public @interface SagaTransition {
      * {@code UI.ComponentType} precedent), never an import of the AST type,
      * preserving the annotation module's zero-dependency contract.
      *
-     * @since 0.9.0
+     * @since 0.9
      */
     enum TransitionOutcome {
         /** The step completed successfully. */

@@ -40,9 +40,7 @@ import java.lang.annotation.Target;
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code CapabilityModuleMetadata} and
  * consumed by the capability graph and module descriptor, which resolve the {@code @Requires}→{@code @Provides} edges and emit {@code cap-manifest.json}.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see Provides
  * @see Requires
  * @see CapabilityLifecycle

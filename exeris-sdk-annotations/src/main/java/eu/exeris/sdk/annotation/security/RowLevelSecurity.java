@@ -71,9 +71,7 @@ import java.lang.annotation.*;
  * extract this marker, so writing it changes nothing in the emitted output. See the package
  * javadoc for the live path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Encrypted
  */
 @Target(ElementType.TYPE)
@@ -269,11 +267,11 @@ public @interface RowLevelSecurity {
      * Audit log level for policy violations.
      */
     enum AuditLevel {
-        /** No audit logging */
+        /** No audit logging. */
         NONE,
-        /** Log only violations */
+        /** Log only violations. */
         VIOLATIONS,
-        /** Log all access attempts */
+        /** Log all access attempts. */
         ALL
     }
 

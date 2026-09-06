@@ -47,9 +47,7 @@ import java.lang.annotation.Target;
  * public final class ProductLanding { }
  * }</pre>
  *
- * @author Exeris SDK Team
- * @version 0.8.0
- * @since 0.8.0
+ * @since 0.8
  * @see Region
  * @see Block
  * @see Bind

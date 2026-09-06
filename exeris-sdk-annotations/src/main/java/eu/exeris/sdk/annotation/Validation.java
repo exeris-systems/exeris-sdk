@@ -144,9 +144,7 @@ import java.lang.annotation.*;
  * Flyway, entity-schema, OpenAPI and validation-rule generators, and by the TypeScript form
  * and type emitters. Only the bounds carry: {@link #min()}, {@link #max()}, {@link #minLength()}, {@link #maxLength()} and {@link #pattern()}. The flag constraints ({@link #email()}, {@link #url()}, {@link #future()}, {@link #past()}, …) are declared here and
  * extracted by nobody.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  */
 @Target(ElementType.FIELD)

@@ -64,7 +64,7 @@ import java.lang.annotation.Target;
  * Rejecting it is a build-time job for {@code exeris-tooling}; it is recorded here so
  * the combination is not written in the first place.
  *
- * @since 0.11.0
+ * @since 0.11
  * @see Field
  * @see ExerisDomain#dataScope()
  */

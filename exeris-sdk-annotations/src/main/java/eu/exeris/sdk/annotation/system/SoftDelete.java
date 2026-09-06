@@ -40,9 +40,7 @@ import java.lang.annotation.Target;
  * field-name override attributes choosing its name. See the package javadoc for the live
  * path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see SoftDeleteTimestamp
  * @see SoftDeletedBy
  * @see eu.exeris.sdk.annotation.ExerisDomain#softDelete()

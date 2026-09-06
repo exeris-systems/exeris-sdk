@@ -31,9 +31,7 @@
  * ({@code tenantScoped = true} is the deprecated spelling of the same tier; see
  * ADR-059.) They ship as a reserved surface until a consumer lands.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 package eu.exeris.sdk.annotation.security;
 

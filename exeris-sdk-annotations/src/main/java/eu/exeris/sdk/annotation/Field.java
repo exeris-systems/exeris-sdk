@@ -192,9 +192,7 @@ import java.lang.annotation.*;
  *   <li>Combine with {@code @Validation} for data integrity</li>
  * </ul>
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see UI
  * @see Validation
  * @see Relationship

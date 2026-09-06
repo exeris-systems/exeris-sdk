@@ -32,9 +32,7 @@ import java.lang.annotation.Target;
  * <p><strong>Status: LIVE</strong> — extracted into {@code ProvidesMetadata} and consumed
  * by the capability graph and the composition stamp — this is one half of the edge set
  * behind {@code cap-manifest.json}.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see Requires
  * @see CapabilityModule
  */
