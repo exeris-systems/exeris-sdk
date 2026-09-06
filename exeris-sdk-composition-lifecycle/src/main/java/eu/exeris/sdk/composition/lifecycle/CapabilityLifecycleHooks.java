@@ -49,7 +49,7 @@ import java.time.Duration;
  * lifecycle participant, not a service-wiring container — resolve collaborators inside the phase
  * methods (or via the cap's own wiring), never through constructor parameters.
  *
- * @since 0.9.0
+ * @since 0.9
  */
 public interface CapabilityLifecycleHooks {
 

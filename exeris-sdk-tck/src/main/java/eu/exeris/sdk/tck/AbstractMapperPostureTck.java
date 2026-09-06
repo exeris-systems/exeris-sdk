@@ -13,14 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * type in its binding API on purpose: the subject <em>is</em> the consumer's mapper configuration,
  * so handing them a working one would answer the question by assuming it.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * class MyMapperTckTest extends AbstractMapperPostureTck {
  *     private final ObjectMapper mapper = myProductionMapper();
  *     protected <T> T readValue(String json, Class<T> type) {
  *         return mapper.readValue(json, type);
  *     }
  * }
- * }</pre>
+ * }
  *
  * <p>Bind the mapper the application actually ships, not one built for the test. A mapper
  * configured correctly beside a production one that is not proves nothing about the read path that

@@ -37,14 +37,12 @@ import java.util.List;
  * binding normalizes a null version to the empty string (see {@link CompositionBinding}), and a
  * consumer's well-formedness check must treat it as legal-unversioned, never a hard reject.
  *
- * @since 0.8.0
-  *
  * @param schemaVersion the manifest format's version. A missing value reads back as {@code 0} under a
  *                      stock Jackson 3 mapper; an explicit null throws
- *
  * @param stamp the composition stamp the SKU boots against
  * @param modules the capability modules this SKU composes
  * @param initOrder the order the modules are initialized in, by module name
+ * @since 0.8
  */
 public record CapManifest(
         int schemaVersion,

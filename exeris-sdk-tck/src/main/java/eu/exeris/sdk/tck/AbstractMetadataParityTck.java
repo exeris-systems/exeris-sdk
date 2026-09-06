@@ -32,12 +32,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Bind both halves and it runs:
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * class MyParityTckTest extends AbstractMetadataParityTck {
  *     protected String produce(String src) { return MyProcessor.emitJson(src); }
  *     protected DomainMetadata read(String src) { return new MyReader().read(src); }
  * }
- * }</pre>
+ * }
  *
  * <p>A facet the producer does not extract yet is declared through {@link #unsupportedFacets()} —
  * reading ahead of a producer manufactures exactly the drift this suite exists to catch, so an
@@ -210,6 +210,8 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
     }
 
     /**
+     * Records a gap when the producer's value and the reader's value differ.
+     *
      * @param path the facet path being compared
      * @param produced the producer's value
      * @param wasRead the reader's value

@@ -45,6 +45,6 @@
  * {@code AbstractMapperPostureTck}, each of which asserted something true that no binding could get
  * wrong, and would have shipped as coverage that covered nothing.
  *
- * @since 0.11.0
+ * @since 0.11
  */
 package eu.exeris.sdk.tck;

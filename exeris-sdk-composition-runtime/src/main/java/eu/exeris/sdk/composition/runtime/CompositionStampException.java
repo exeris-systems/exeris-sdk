@@ -7,7 +7,7 @@ package eu.exeris.sdk.composition.runtime;
  * schema handshake, version drift, or binding mismatch) — an early, legible refusal instead of a
  * confusing mid-boot crash.
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public final class CompositionStampException extends RuntimeException {
 

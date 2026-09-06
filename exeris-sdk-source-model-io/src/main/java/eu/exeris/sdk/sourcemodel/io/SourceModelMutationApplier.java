@@ -43,7 +43,7 @@ import java.util.Objects;
  * user drift — non-trivial semantics that warrant their own treatment. The
  * caller applies ops one at a time against the evolving source.
  *
- * @since 0.5.0
+ * @since 0.5
  */
 public final class SourceModelMutationApplier {
 
