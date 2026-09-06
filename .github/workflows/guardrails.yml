@@ -1,0 +1,88 @@
+# The per-repo footprint of ADR-085 §C.11. Every check it runs is defined in
+# exeris-systems/.github; this file only says which gates apply here and how strictly.
+#
+# Until this landed, the documentation standards were binding and unenforced: a pull request could
+# contradict a standard and merge green, and the L2 documentation review existed only inside a
+# Cowork session. The Javadoc half is the sharper case — `maven-javadoc-plugin` has run with
+# failOnWarnings=true on the publishable modules for several releases and passes clean, which is
+# why ADR-085 chose this repository as the Javadoc pilot. That measured one half of the gate. The
+# Checkstyle half of javadoc-gate.yml had never been run here at all; when it first was, it
+# reported 890 findings across 126 of 132 sources.
+name: guardrails
+on:
+  pull_request:
+    # labeled/unlabeled matter: adr-conventions rule 9 requires the `adr` label on a PR that
+    # amends an ADR, so adding the label after a red run has to re-run the gate.
+    types: [opened, edited, synchronize, ready_for_review, labeled, unlabeled]
+concurrency:
+  group: guardrails-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+# A called workflow can only NARROW what the caller grants, never raise it, so this block is the
+# union of what every called workflow declares — not a wish list and not a minimum. Omitting a
+# permission one of them declares does not run that job with less; it makes the whole file an
+# invalid workflow. The last two are docs-review's: `id-token: write` for the OIDC exchange
+# claude-code-action performs, `issues: read` so the routine can see the debt issues that
+# issue-conventions.md rule 6 says a review finding becomes.
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  id-token: write
+
+# Referenced by branch, not by commit SHA, and that is a choice rather than an oversight.
+# exeris-kernel pins these by SHA because SonarCloud is a required check there and enforces it,
+# and because its Dependabot configuration is what keeps the pins current. This repository has
+# neither: every `uses:` here is tag-referenced (`actions/checkout@v4`) and there is no
+# dependabot.yml. A SHA pinned by hand in a repository with nothing to advance it does not buy
+# immutability, it buys a gate frozen at whatever the bundle looked like on the day someone typed
+# it — silently, since a SHA tells a reader nothing. `@main` is the form the bundle's own install
+# instructions give, and it is honest about what this repository actually tracks. Revisit together
+# with adopting Dependabot, not before.
+
+jobs:
+  docs:
+    uses: exeris-systems/.github/.github/workflows/docs-lint.yml@main
+    with:
+      # strict, not ramp. The bundle's default is ramp — fail only on files the pull request
+      # touches — because most repositories carry a frontmatter backlog the current author did not
+      # create. That reasoning does not apply by the time this file merges: the backfill lands
+      # first and this caller lands last, so there is no backlog left for ramp to shield. If a
+      # backfill PR slips out of the 0.12 window, drop this to `ramp` rather than dropping the job.
+      mode: strict
+      # Off, and it stays off: the check enforces ## Contract / ## Hot path / ## Failure modes /
+      # ## Owning ADRs on pages typed `subsystem` or `module`, and docs/ here holds only adr/ and
+      # rfc/. Turning it on would assert something about a page set that does not exist.
+      section-check: false
+      # No path list: docs-lint reads the whole repository and skips what is not documentation
+      # (generated output, agent trees, "_"-prefixed working directories). Nothing here needs
+      # taking out of that.
+  commits:
+    uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
+  pr-body:
+    uses: exeris-systems/.github/.github/workflows/pr-body-check.yml@main
+  # The L2 review of ADR-085 §J.33, and not the same thing as claude-code-review.yml: that
+  # workflow reviews the change, this one checks the change against the documentation standards.
+  # Skips itself when no Markdown or Java changed.
+  docs-review:
+    uses: exeris-systems/.github/.github/workflows/docs-review.yml@main
+    # Named, not `secrets: inherit`. This repository publishes to Maven Central as of 0.12.0, so
+    # its secret set now includes a GPG signing key and a Central portal token; `inherit` would
+    # hand all of them to a job that needs exactly one.
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+  # ADR-085 §F.21. Two halves, and both have to be green before 0.12.0 ships, because a Javadoc
+  # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
+  #
+  # The module list is every jar this reactor publishes. `exeris-sdk-annotation-catalog` is absent
+  # because it holds itself back from deploy (maven.deploy.skip in its own pom) — it is a
+  # build-time generator nobody resolves, so §F.21's "every module published to Maven Central"
+  # does not reach it. `exeris-sdk-bom` and `exeris-sdk-parent` are pom-packaged.
+  #
+  # No `extra-maven-args` and no dedicated profile: unlike the kernel, the strict Javadoc settings
+  # here live unconditionally in each module's own pom and the `release` profile deliberately does
+  # not relax them, so the gate runs exactly the configuration a release runs. The one thing that
+  # had to change for this job to work is in the root pom — see the jacoco.skip comment there.
+  javadoc:
+    uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
+    with:
+      modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck

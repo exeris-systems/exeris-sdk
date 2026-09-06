@@ -101,6 +101,25 @@
         <jacoco.version>0.8.14</jacoco.version>
         <jacoco.line.coverage.minimum>0.85</jacoco.line.coverage.minimum>
         <jacoco.instruction.coverage.minimum>0.85</jacoco.instruction.coverage.minimum>
+        <!--
+            A coverage check with no tests behind it measures nothing, and jacoco:check is bound
+            to `verify`, so any `install -DskipTests` fails on 0% rather than on whatever the
+            build was actually asked to prove.
+
+            This is not hypothetical tidiness. The shared javadoc gate
+            (exeris-systems/.github → .github/workflows/javadoc-gate.yml) resolves the reactor with
+            `mvn -pl <modules> -am -DskipTests -Dcheckstyle.skip=true install`, and that step —
+            unlike the two after it — takes no `extra-maven-args`, so there is no way to pass
+            `-Djacoco.skip=true` in from the caller. Without this line the gate dies on
+            `exeris-sdk-source-model` with "Coverage checks have not been met", which reads as a
+            coverage regression and is nothing of the sort.
+
+            Tying the two properties together says the intended thing directly: skipping the tests
+            skips the gate that grades them. `mvn verify` and `mvn install` are unaffected, and the
+            85% BUNDLE gate keeps its teeth on every build that runs tests at all.
+        -->
+        <skipTests>false</skipTests>
+        <jacoco.skip>${skipTests}</jacoco.skip>
         <maven.enforcer.version>3.5.0</maven.enforcer.version>
 
         <!-- Semver gate (1.0.0 GA prerequisite). Configured before the freeze on
@@ -149,6 +168,50 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.11.2</version>
+                    <configuration>
+                        <!--
+                            The three OpenJDK contract tags (JDK-8008632), registered here so that
+                            javadoc-conventions.md rule 6 can be followed at all.
+
+                            Registration is a precondition, not a claim about the code: across this
+                            reactor there is currently no @apiNote, no @implSpec and no @implNote.
+                            An unregistered custom tag is itself a doclint error, and every module
+                            that matters here builds with failOnWarnings=true — so the first comment
+                            to adopt the vocabulary would break the build that is supposed to be
+                            enforcing it. Registering them makes writing the tags possible; writing
+                            them is review-level work no gate measures.
+
+                            In pluginManagement rather than in each module: the seven gated poms
+                            configure this plugin themselves, and their <configuration> merges with
+                            this one instead of replacing it, so the vocabulary is declared once.
+                        -->
+                        <tags>
+                            <tag><name>apiNote</name><placement>a</placement><head>API Note:</head></tag>
+                            <tag><name>implSpec</name><placement>a</placement><head>Implementation Requirements:</head></tag>
+                            <tag><name>implNote</name><placement>a</placement><head>Implementation Note:</head></tag>
+                        </tags>
+                    </configuration>
+                </plugin>
+                <!--
+                    Checkstyle is never bound to a lifecycle phase here; it exists for one caller,
+                    the shared Javadoc gate (exeris-systems/.github → javadoc-gate.yml), which
+                    invokes `checkstyle:check` as a CLI goal and points it at the organisation
+                    ruleset with -Dcheckstyle.config.location. This block exists only to pin the
+                    version, so the gate cannot silently change what it enforces when a new plugin
+                    release lands.
+
+                    Deliberately absent: <configLocation>. It is the plugin's documented user
+                    property, but a literal <configLocation> in a pom overrides the command line
+                    SILENTLY — a bogus path passed with -D does not even fail, it is just ignored.
+                    exeris-kernel hit exactly this: the shared gate ran the repository's own ruleset
+                    instead of the organisation one and reported clean. If a repository-local
+                    ruleset is ever wanted here, express it as a ${checkstyle.config.location}
+                    property, never as a literal, so the caller can still win.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
