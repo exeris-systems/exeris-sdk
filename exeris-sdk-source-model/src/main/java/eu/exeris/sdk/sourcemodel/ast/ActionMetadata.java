@@ -142,9 +142,9 @@ public record ActionMetadata(
     public ActionMetadata {
         Objects.requireNonNull(name, "name is required");
         if (httpMethod == null) httpMethod = "POST";
-        params = params != null ? List.copyOf(params) : List.of();
-        permissions = permissions != null ? List.copyOf(permissions) : List.of();
-        producesEvents = producesEvents != null ? List.copyOf(producesEvents) : List.of();
+        params = AstLists.copyOfNoNulls(params, "params");
+        permissions = AstLists.copyOfNoNulls(permissions, "permissions");
+        producesEvents = AstLists.copyOfNoNulls(producesEvents, "producesEvents");
         if (streamEventType != null && streamEventType.isBlank()) streamEventType = null;
     }
 
