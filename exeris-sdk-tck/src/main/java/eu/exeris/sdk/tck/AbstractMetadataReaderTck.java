@@ -18,13 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that reads from compiled elements rather than source text (an annotation processor, say) can
  * implement the method by driving javac over the given text — the kit never assumes how.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * class MyReaderTckTest extends AbstractMetadataReaderTck {
  *     protected DomainMetadata read(String entitySource) {
  *         return new MyReader().read(entitySource);
  *     }
  * }
- * }</pre>
+ * }
  *
  * <p>The cases are not a wish list. Each one is a defect this ecosystem actually shipped: a reader
  * inventing an entity name from an attribute the annotation never declared, constraint values
@@ -171,6 +171,8 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     /**
+     * Returns the named field, failing the test when it was not read.
+     *
      * @param metadata the entity to look in
      * @param fieldName the field to find
      * @return that field's metadata

@@ -64,13 +64,13 @@ import tools.jackson.databind.json.JsonMapper;
  * DAG. Shutdown is SKU-entrypoint-driven: the entrypoint calls {@code shutdown()} (caps drain and
  * terminate in reverse {@code initOrder}), then stops the kernel.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * try (var conductor = CompositionConductor.from(Path.of("cap-manifest.json")).start()) {
  *     // serve until the SKU entrypoint decides to stop
  * } // close() == shutdown(): reverse drain within the budget, then unconditional terminate
- * }</pre>
+ * }
  *
- * @since 0.9.0
+ * @since 0.9
  */
 public final class CompositionConductor implements AutoCloseable {
 
@@ -107,7 +107,7 @@ public final class CompositionConductor implements AutoCloseable {
      * {@link Builder#start()}, with the same mapper posture and failure class as
      * {@link CompositionStampAssertion#assertConsistent(Path)} — an unreadable or unparseable
      * manifest is a {@link CompositionStampException} before any effect.
-          *
+     *
      * @param manifestPath the manifest to read
      * @return a builder seeded from it
      */
@@ -327,7 +327,7 @@ public final class CompositionConductor implements AutoCloseable {
         /**
          * The class loader lifecycle owners are loaded from. Default: the thread context class
          * loader at {@code start()} time (falling back to this class's own loader if unset).
-                  *
+         *
          * @param loader the loader the capability classes are resolved through
          * @return this builder
          */
@@ -352,13 +352,11 @@ public final class CompositionConductor implements AutoCloseable {
          * Boot the composition: stamp assertion → discovery → {@code initialize*} →
          * {@code ready*} (see the {@link CompositionConductor} javadoc for the full semantics).
          *
+         * @return the running conductor, with every capability past its start phase
          * @throws CompositionStampException if the manifest is unreadable, unparseable, or fails
          *         the ADR-024 stamp assertion (before any effect)
-         *
          * @throws CompositionBootException  if hook discovery or a cap's initialize/ready fails
          *         (touched caps are unwound first)
-         *
-                  * @return the running conductor, with every capability past its start phase
                   */
         public CompositionConductor start() {
             CapManifest resolved = resolveManifest();

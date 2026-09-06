@@ -57,6 +57,6 @@
  * {@code STALE_DIGEST} check rather than failing it. Conflict-aware
  * <em>batch</em> apply remains deferred.
  *
- * @since 0.3.0
+ * @since 0.3
  */
 package eu.exeris.sdk.sourcemodel.io;

@@ -72,7 +72,7 @@ import java.util.Optional;
  * different entity). The full {@code VALIDATION_ERROR} trigger set, and
  * conflict-aware application, are slice 4.
  *
- * @since 0.5.0
+ * @since 0.5
  */
 public final class SourceModelConflictDetector {
 
@@ -107,14 +107,13 @@ public final class SourceModelConflictDetector {
      * {@code current} (the live source model) against {@code baseline} (what the
      * op was computed against).
      *
+     * @param op the mutation being attempted
+     * @param baseline the metadata the mutation was authored against
+     * @param current the metadata as it stands now
      * @return {@link MutationResult.Success} when the op applies without colliding
      *         with a non-convergent user edit; {@link MutationResult.Conflict}
      *         when it does; {@link MutationResult.ValidationError} when the op is
      *         structurally inapplicable to this comparison.
-     *
-          * @param op the mutation being attempted
-     * @param baseline the metadata the mutation was authored against
-     * @param current the metadata as it stands now
      */
     public MutationResult detect(MutationOp op, DomainMetadata baseline, DomainMetadata current) {
         Objects.requireNonNull(op, "op is required");
