@@ -257,11 +257,8 @@ public record DomainEventMetadata(
         public Builder aggregateType(String v) { this.aggregateType = v; return this; }
         public Builder payloadFields(List<String> v) { this.payloadFields = v; return this; }
         public Builder sensitiveFields(List<String> v) { this.sensitiveFields = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder trigger(Trigger v) { this.trigger = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder actionName(String v) { this.actionName = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder fieldName(String v) { this.fieldName = v; return this; }
 
         /**
