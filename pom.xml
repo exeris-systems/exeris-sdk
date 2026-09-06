@@ -212,6 +212,34 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>3.6.0</version>
+                    <!--
+                        The Checkstyle ENGINE is pinned separately from the plugin, and this is the
+                        line that makes the gate able to read the code it is gating.
+
+                        maven-checkstyle-plugin 3.6.0 ships Checkstyle 9.3 by default — released in
+                        early 2022, months before JDK 18 introduced `{@snippet}`. Its Javadoc grammar
+                        has never seen the tag, so every `{@snippet}` block produces
+
+                            Javadoc comment at column 0 has parse error.
+                            Details: mismatched input ' *' expecting JAVADOC_INLINE_TAG_END
+
+                        Measured on exeris-sdk-annotations the moment rule 8 was actually followed:
+                        77 such errors on 9.3, 0 on 13.8.0, with every other finding identical. The
+                        standard mandates `{@snippet}` and the default engine cannot parse it, so on
+                        9.3 the gate punishes compliance — and the errors name MissingDeprecated,
+                        a check that has nothing to do with any of it.
+
+                        Pinning it also stops the engine drifting under a plugin bump, which for a
+                        gate matters more than being current: what it enforces should change when
+                        someone decides to change it.
+                    -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>13.8.0</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
