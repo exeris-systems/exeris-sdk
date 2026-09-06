@@ -20,13 +20,13 @@ import java.lang.annotation.Target;
  *
  * <p>Repeatable: a cap may require several services from a single module class.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * @CapabilityModule
  * @Requires(service = KernelTransport.class)
  * @Requires(service = RouteRegistry.class, versionRange = "[1.0.0,2.0.0)")
  * @Requires(service = MetricsSink.class, optional = true)
  * public final class GatewayEdgeModule { }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code RequiresMetadata} and consumed

@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * to maintain eventual consistency when spanning multiple aggregates/services.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "OrderFulfillmentSaga",
  *     description = "Orchestrates order placement, payment, and shipping",
@@ -25,10 +25,10 @@ import java.lang.annotation.*;
  *     @SagaStep(order = 2, name = "processPayment", ...)
  *     public SagaAction processPayment() { ... }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Event Trigger:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "SubscriptionRenewalSaga",
  *     trigger = @SagaTrigger(
@@ -38,10 +38,10 @@ import java.lang.annotation.*;
  *     )
  * )
  * public class SubscriptionRenewalSaga implements Saga<RenewalState> {}
- * }</pre>
+ * }
  *
  * <h2>With Compensation Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "TransferMoneySaga",
  *     compensationOrder = CompensationOrder.REVERSE,
@@ -49,7 +49,7 @@ import java.lang.annotation.*;
  *     compensationTimeout = "PT10M"
  * )
  * public class TransferMoneySaga implements Saga<TransferState> {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
@@ -843,7 +843,7 @@ public @interface Saga {
         /** Redis. */
         REDIS,
 
-        /** Event store (EventStoreDB, etc.) */
+        /** Event store (EventStoreDB, etc.). */
         EVENT_STORE,
 
         /** In-memory (testing only). */

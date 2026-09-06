@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically updated on every modification.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Updated At", readOnly = true)
  * @AuditUpdatedAt
  * private Instant updatedAt;
- * }</pre>
+ * }
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
  * fields for this marker, so writing it changes nothing in the emitted output. What

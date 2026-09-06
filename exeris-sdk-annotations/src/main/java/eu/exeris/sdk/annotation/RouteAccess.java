@@ -21,11 +21,11 @@ import java.lang.annotation.Target;
  * meaning the surface already published.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(name = "login", label = "Log in", httpMethod = "POST", path = "/login")
  * @RouteAccess(RouteAccess.Level.PUBLIC)
  * public AuthToken login(@ActionParam(name = "credentials") Credentials credentials) { ... }
- * }</pre>
+ * }
  *
  * <h2>Absence is the third state — deliberately</h2>
  * <p>There is no {@code UNSPECIFIED} constant. An element that carries no

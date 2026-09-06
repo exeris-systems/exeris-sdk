@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * timer, at a distance from the action it fires.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(name = "reconcile", httpMethod = "POST")
  * @Schedule(cron = "0 3 * * *")          // 03:00 daily
  * public void reconcile() { ... }
@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * @Action(name = "refreshQuotes")
  * @Schedule(every = "PT15M")             // every 15 minutes
  * public void refreshQuotes() { ... }
- * }</pre>
+ * }
  *
  * <h2>Exactly one attribute may be set</h2>
  * <p>{@link #cron()}, {@link #every()} and {@link #at()} are mutually exclusive —

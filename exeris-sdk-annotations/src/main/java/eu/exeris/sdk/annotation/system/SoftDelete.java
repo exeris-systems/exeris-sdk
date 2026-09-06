@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * must be annotated with {@code @SoftDelete} OR {@code softDeleteField} must be specified.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders", softDelete = true)
  * public class Order {
  *
@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
  *     @SoftDeleteTimestamp
  *     private Instant archivedAt;
  * }
- * }</pre>
+ * }
  *
  * <h2>Target design — not emitted today:</h2>
  * <ul>

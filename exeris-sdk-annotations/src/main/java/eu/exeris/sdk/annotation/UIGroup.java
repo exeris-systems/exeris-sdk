@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * with a shared header.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "crm", path = "/customers")
  * public class Customer {
  *
@@ -28,10 +28,10 @@ import java.lang.annotation.*;
  *     @UIGroup(name = "contactInfo")
  *     private String phone;
  * }
- * }</pre>
+ * }
  *
  * <h2>Collapsible Groups:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Billing Address")
  * @UIGroup(
  *     name = "billing",
@@ -41,10 +41,10 @@ import java.lang.annotation.*;
  *     icon = "payment"
  * )
  * private Address billingAddress;
- * }</pre>
+ * }
  *
  * <h2>Target design — the template this would emit:</h2>
- * <pre>{@code
+ * {@snippet lang="html" :
  * <mat-expansion-panel [expanded]="!collapsed">
  *   <mat-expansion-panel-header>
  *     <mat-panel-title>
@@ -53,7 +53,7 @@ import java.lang.annotation.*;
  *   </mat-expansion-panel-header>
  *   <!-- Fields in this group -->
  * </mat-expansion-panel>
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the same gap as {@link Tab @Tab}: {@link UI @UI}
@@ -150,11 +150,11 @@ public @interface UIGroup {
      * <p>When expression evaluates to false, the entire group is hidden.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * visibleWhen = "type == 'BUSINESS'"        // Show for business customers
      * visibleWhen = "hasRole('ADMIN')"          // Show for admins only
      * visibleWhen = "premiumFeatures"           // Show when premium enabled
-     * }</pre>
+     * }
      *
      * @return visibility condition expression
      */

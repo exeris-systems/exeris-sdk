@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * and can be consumed by projections, sagas, and external systems.
  *
  * <h2>Basic Usage (Entity Lifecycle):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.CREATE,
  *     topic = "orders.created",
@@ -23,10 +23,10 @@ import java.lang.annotation.*;
  *     UUID customerId,
  *     BigDecimal totalAmount
  * ) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Action-Triggered Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.ACTION,
  *     action = "approve",
@@ -42,10 +42,10 @@ import java.lang.annotation.*;
  *     OrderStatus previousStatus,
  *     OrderStatus newStatus
  * ) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Field Change Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.FIELD_CHANGED,
  *     field = "status",
@@ -53,10 +53,10 @@ import java.lang.annotation.*;
  *     includePreviousValues = true
  * )
  * public record OrderStatusChangedEvent(...) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Conditional Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.UPDATE,
  *     topic = "orders.high-value-updated",
@@ -64,7 +64,7 @@ import java.lang.annotation.*;
  *     priority = Priority.HIGH
  * )
  * public record HighValueOrderUpdatedEvent(...) implements DomainEvent {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code DomainEventMetadata} and read by
@@ -292,9 +292,9 @@ public @interface DomainEvent {
      * Specify to limit payload size or hide internal fields.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * includeFields = {"id", "status", "amount", "customerId"}
-     * }</pre>
+     * }
      *
      * @return array of field names to include
      */
@@ -305,9 +305,9 @@ public @interface DomainEvent {
      * <p>Applied after includeFields.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * excludeFields = {"password", "internalNotes", "auditLog"}
-     * }</pre>
+     * }
      *
      * @return array of field names to exclude
      */
@@ -336,9 +336,9 @@ public @interface DomainEvent {
      * <p>List of computed fields to calculate and include.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * includeComputed = {"totalWithTax", "formattedAddress", "fullName"}
-     * }</pre>
+     * }
      *
      * @return array of computed field names
      */
@@ -349,9 +349,9 @@ public @interface DomainEvent {
      * <p>Values are masked/hashed before publishing.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * sensitiveFields = {"email", "phone", "ssn", "creditCard"}
-     * }</pre>
+     * }
      *
      * @return array of sensitive field names
      */
@@ -370,14 +370,14 @@ public @interface DomainEvent {
      * <p>Must implement {@code EventPayloadTransformer<E, P>}.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Component
      * public class OrderEventTransformer implements EventPayloadTransformer<Order, OrderEventPayload> {
      *     public OrderEventPayload transform(Order entity, DomainEvent event) {
      *         return new OrderEventPayload(...);
      *     }
      * }
-     * }</pre>
+     * }
      *
      * @return transformer class
      */
@@ -455,12 +455,12 @@ public @interface DomainEvent {
      * <p>Key-value pairs added to every event message.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * headers = {
      *     @Header(name = "source", value = "billing-service"),
      *     @Header(name = "content-type", value = "application/avro")
      * }
-     * }</pre>
+     * }
      *
      * @return array of headers
      */
@@ -560,9 +560,9 @@ public @interface DomainEvent {
      * <p>Documentation for event consumers.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * consumers = {"notification-service", "analytics-service", "audit-service"}
-     * }</pre>
+     * }
      *
      * @return array of consumer names
      */
@@ -873,12 +873,12 @@ public @interface DomainEvent {
      * Container annotation for multiple {@link DomainEvent} annotations.
      *
      * <p>This allows declaring multiple domain events on a single entity class:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
      * @DomainEvent(trigger = Trigger.UPDATE, topic = "orders.updated")
      * @DomainEvent(trigger = Trigger.DELETE, topic = "orders.deleted")
      * public class Order { ... }
-     * }</pre>
+     * }
      *
      *
      * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the

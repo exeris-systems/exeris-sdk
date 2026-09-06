@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * and edge properties.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(type = "BELONGS_TO", target = Category.class)
  * private Category category;
  *
@@ -20,10 +20,10 @@ import java.lang.annotation.*;
  *     direction = Direction.INCOMING
  * )
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>Weighted Edge:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(
  *     type = "RATED",
  *     target = Product.class,
@@ -32,17 +32,17 @@ import java.lang.annotation.*;
  *     properties = {"rating", "reviewDate"}
  * )
  * private Product ratedProduct;
- * }</pre>
+ * }
  *
  * <h2>Bidirectional:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(
  *     type = "FRIEND_OF",
  *     target = User.class,
  *     bidirectional = true
  * )
  * private List<User> friends;
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code GraphEdgeMetadata} by the
@@ -476,11 +476,11 @@ public @interface GraphEdge {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface StaticProperty {
-        /** Property name
+        /** Property name.
          * @return the name */
         String name();
 
-        /** Property value
+        /** Property value.
          * @return the value */
         String value();
     }
@@ -494,11 +494,11 @@ public @interface GraphEdge {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface ComputedProperty {
-        /** Property name
+        /** Property name.
          * @return the name */
         String name();
 
-        /** SpEL expression to compute value
+        /** SpEL expression to compute value.
          * @return the expression */
         String expression();
     }

@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically populated from security context.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Created By", readOnly = true)
  * @AuditCreatedBy
  * private UUID createdBy;
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>

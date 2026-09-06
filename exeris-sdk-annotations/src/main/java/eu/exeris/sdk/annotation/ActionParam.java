@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * default values, and UI configuration for generated forms.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(name = "reject", label = "Reject Order")
  * public void reject(
  *     @ActionParam(
@@ -29,10 +29,10 @@ import java.lang.annotation.*;
  * ) {
  *     // action logic
  * }
- * }</pre>
+ * }
  *
  * <h2>With Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ActionParam(
  *     name = "amount",
  *     label = "Refund Amount",
@@ -48,10 +48,10 @@ import java.lang.annotation.*;
  *     format = "currency"
  * )
  * BigDecimal amount
- * }</pre>
+ * }
  *
  * <h2>With Options (Enum/Select):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ActionParam(
  *     name = "priority",
  *     label = "Priority Level",
@@ -61,10 +61,10 @@ import java.lang.annotation.*;
  *     defaultValue = "MEDIUM"
  * )
  * String priority
- * }</pre>
+ * }
  *
  * <h2>With Relationship (Entity Selection):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ActionParam(
  *     name = "assigneeId",
  *     label = "Assign To",
@@ -77,7 +77,7 @@ import java.lang.annotation.*;
  *     filter = "active = true AND role = 'AGENT'"
  * )
  * UUID assigneeId
- * }</pre>
+ * }
  *
  *
  * <p><strong>Siblings beside a parameter are not carried.</strong> The examples above write
@@ -207,9 +207,9 @@ public @interface ActionParam {
      * <p>Array of option values (used when parameter is not an enum).
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * options = {"LOW", "MEDIUM", "HIGH"}
-     * }</pre>
+     * }
      *
      * @return array of option values
      */
@@ -220,10 +220,10 @@ public @interface ActionParam {
      * <p>Must match length of {@code options} array.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * options = {"LOW", "MEDIUM", "HIGH"},
      * optionLabels = {"Low Priority", "Medium Priority", "High Priority"}
-     * }</pre>
+     * }
      *
      * @return array of option labels
      */
@@ -242,9 +242,9 @@ public @interface ActionParam {
      * <p>Returns list of option objects.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * optionsExpression = "@categoryService.findActiveCategories()"
-     * }</pre>
+     * }
      *
      * @return SpEL expression returning options
      */
@@ -375,9 +375,9 @@ public @interface ActionParam {
      * <p>Dynamic required validation based on other values.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * requiredWhen = "params.immediate == true"
-     * }</pre>
+     * }
      *
      * @return required condition
      */
@@ -451,9 +451,9 @@ public @interface ActionParam {
      * <p>MIME types or extensions.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * allowedFileTypes = {"image/*", "application/pdf", ".docx"}
-     * }</pre>
+     * }
      *
      * @return allowed file types
      */

@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * optimized for specific query patterns. They enable the Query side of CQRS.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "account-balance",
  *     description = "Real-time account balance view",
@@ -23,10 +23,10 @@ import java.lang.annotation.*;
  *         // Update read model
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Partitioning:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "order-summary",
  *     events = {"OrderCreatedEvent", "OrderUpdatedEvent"},
@@ -36,10 +36,10 @@ import java.lang.annotation.*;
  *     partitionCount = 12
  * )
  * public class OrderSummaryProjection implements Projection {}
- * }</pre>
+ * }
  *
  * <h2>With Rebuild Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "monthly-report",
  *     events = {"*"}, // All events
@@ -49,7 +49,7 @@ import java.lang.annotation.*;
  *     rebuildParallelism = 8
  * )
  * public class MonthlyReportProjection implements Projection {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the processor performs no extraction, so a

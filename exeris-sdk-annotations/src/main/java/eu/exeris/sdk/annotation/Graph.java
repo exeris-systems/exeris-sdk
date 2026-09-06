@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * Neo4j, etc.) enabling graph traversals, similarity searches, and recommendations.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "pfm")
  * @Graph(
  *     nodeClass = "Transaction",
@@ -24,10 +24,10 @@ import java.lang.annotation.*;
  *     @GraphEdge(type = "BELONGS_TO", target = Category.class)
  *     private Category category;
  * }
- * }</pre>
+ * }
  *
  * <h2>With Similarity Search:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Graph(
  *     nodeClass = "Product",
  *     syncToGraph = true,
@@ -37,10 +37,10 @@ import java.lang.annotation.*;
  *     similarityAlgorithm = SimilarityAlgorithm.COSINE
  * )
  * public class Product { }
- * }</pre>
+ * }
  *
  * <h2>With GraphQL Extensions:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Graph(
  *     nodeClass = "User",
  *     syncToGraph = true,
@@ -51,7 +51,7 @@ import java.lang.annotation.*;
  *     }
  * )
  * public class User { }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — the type-level annotation is extracted into {@code GraphMetadata} and read by {@code KernelGraphSyncGenerator}. The detail annotations
@@ -525,7 +525,7 @@ public @interface Graph {
         /** Event projection-based sync (eventual). */
         PROJECTION,
 
-        /** CDC-based sync (Debezium, etc.) */
+        /** CDC-based sync (Debezium, etc.). */
         CDC,
 
         /** Manual sync via API. */
@@ -706,23 +706,23 @@ public @interface Graph {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface QueryArg {
-        /** Argument name
+        /** Argument name.
          * @return the name */
         String name();
 
-        /** Argument type
+        /** Argument type.
          * @return the type */
         String type();
 
-        /** Default value
+        /** Default value.
          * @return the default value */
         String defaultValue() default "";
 
-        /** Whether argument is required
+        /** Whether argument is required.
          * @return true if required */
         boolean required() default false;
 
-        /** Argument description
+        /** Argument description.
          * @return the description */
         String description() default "";
     }

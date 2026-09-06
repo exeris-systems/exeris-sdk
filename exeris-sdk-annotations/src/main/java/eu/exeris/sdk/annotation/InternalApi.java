@@ -9,14 +9,14 @@ import java. lang.annotation.*;
  * and require internal service authentication.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @InternalApi(
  *     consumers = {"billing-service", "notification-service"},
  *     rateLimit = 1000
  * )
  * @Action(name = "sync-balance", ...)
  * public void syncBalance() { ... }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code InternalApiMetadata}, so it

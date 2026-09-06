@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * The aggregate state is reconstructed by replaying events from the event store.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "billing")
  * @EventSourced(
  *     snapshotThreshold = 50,
@@ -18,10 +18,10 @@ import java.lang.annotation.*;
  * public class BillingSubscription extends EventSourcedAggregate {
  *     // Aggregate implementation
  * }
- * }</pre>
+ * }
  *
  * <h2>With Custom Snapshot Strategy:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @EventSourced(
  *     snapshotThreshold = 100,
  *     snapshotStrategy = SnapshotStrategy.HYBRID,
@@ -29,10 +29,10 @@ import java.lang.annotation.*;
  *     snapshotOnEvents = {"OrderCompletedEvent", "OrderCancelledEvent"}
  * )
  * public class Order extends EventSourcedAggregate {}
- * }</pre>
+ * }
  *
  * <h2>With Caching:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @EventSourced(
  *     cacheAggregates = true,
  *     cacheTtlSeconds = 300,
@@ -40,7 +40,7 @@ import java.lang.annotation.*;
  *     cacheEviction = CacheEviction.LRU
  * )
  * public class Account extends EventSourcedAggregate {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code EventSourcedMetadata}, so it
@@ -149,9 +149,9 @@ public @interface EventSourced {
      * <p>Snapshot is created after these event types.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * snapshotOnEvents = {"OrderCompletedEvent", "OrderCancelledEvent"}
-     * }</pre>
+     * }
      *
      * @return event names that trigger snapshot
      */
@@ -634,7 +634,7 @@ public @interface EventSourced {
         /** Pessimistic database locking. */
         PESSIMISTIC,
 
-        /** Distributed lock (Redis, etc.) */
+        /** Distributed lock (Redis, etc.). */
         DISTRIBUTED,
 
         /** No locking (single writer assumption). */
@@ -710,31 +710,31 @@ public @interface EventSourced {
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
     @interface RetryPolicy {
-        /** Maximum number of retry attempts
+        /** Maximum number of retry attempts.
          * @return max attempts */
         int maxAttempts() default 3;
 
-        /** Initial delay in milliseconds
+        /** Initial delay in milliseconds.
          * @return initial delay */
         long initialDelayMs() default 100;
 
-        /** Backoff multiplier for exponential backoff
+        /** Backoff multiplier for exponential backoff.
          * @return multiplier */
         double multiplier() default 2.0;
 
-        /** Maximum delay in milliseconds
+        /** Maximum delay in milliseconds.
          * @return max delay */
         long maxDelayMs() default 5000;
 
-        /** Exception types that should trigger a retry
+        /** Exception types that should trigger a retry.
          * @return exception types to retry on */
         Class<? extends Throwable>[] retryOn() default {};
 
-        /** Exception types that should NOT trigger a retry
+        /** Exception types that should NOT trigger a retry.
          * @return exception types to not retry on */
         Class<? extends Throwable>[] noRetryOn() default {};
 
-        /** Whether to retry on concurrency failures
+        /** Whether to retry on concurrency failures.
          * @return true if should retry on concurrency failures */
         boolean retryOnConcurrencyFailure() default true;
     }
@@ -748,11 +748,11 @@ public @interface EventSourced {
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
     @interface StreamMetadata {
-        /** Metadata key
+        /** Metadata key.
          * @return the key */
         String key();
 
-        /** Metadata value
+        /** Metadata value.
          * @return the value */
         String value();
     }

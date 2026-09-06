@@ -42,10 +42,10 @@ import java.lang.annotation.Target;
  * {@code ViewFieldMetadata}); until the processor populates it, field-level
  * presentation stays on {@code @UI}.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * @View(name = "ProductLanding", kind = View.Kind.PAGE, route = "/products")
  * public final class ProductLanding { }
- * }</pre>
+ * }
  *
  * @since 0.8
  * @see Region

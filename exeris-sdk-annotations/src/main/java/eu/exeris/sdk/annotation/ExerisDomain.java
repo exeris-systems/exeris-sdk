@@ -25,7 +25,7 @@ import java.lang.annotation.*;
  * {@link #graphqlApi()} reaches the AST and is read by no generator.
  *
  * <h2>Minimal Example:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders")
  * public class Order {
  *     @Field(label = "ID")
@@ -34,7 +34,7 @@ import java.lang.annotation.*;
  *     @Field(label = "Status")
  *     private OrderStatus status;
  * }
- * }</pre>
+ * }
  *
  * <h2>Full Example with System Fields:</h2>
  * <p>System columns are derived from the <em>entity-level flags</em> below. The
@@ -43,7 +43,7 @@ import java.lang.annotation.*;
  * RESERVED — no reader extracts them, so adding them changes nothing. They are
  * omitted here deliberately, so that the example shows what actually generates
  * the columns:
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(
  *     module = "sales",
  *     path = "/orders",
@@ -63,7 +63,7 @@ import java.lang.annotation.*;
  *     @Field(label = "Status", filterable = true)
  *     private OrderStatus status;
  * }
- * }</pre>
+ * }
  * <p>The class needs no superclass — the SDK ships no base entity type.
  *
  * @since 0.1

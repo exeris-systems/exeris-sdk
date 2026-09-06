@@ -21,14 +21,14 @@ import java.lang.annotation.Target;
  * shape, and the difference is structural rather than a matter of degree.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(name = "Article", dataScope = DataScope.TENANT)
  * @Channel(messageType = "ArticleEdit")
  * public class Article {
  *     @Field(required = true) private String title;
  *     @Field private String body;
  * }
- * }</pre>
+ * }
  *
  * <h2>Entity-level, and deliberately not per action</h2>
  * <p>The channel belongs to the entity, the way {@code realTimeApi} does. A per-action

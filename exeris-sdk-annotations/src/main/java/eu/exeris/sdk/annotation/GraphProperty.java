@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * and whether it participates in similarity calculations.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphProperty(indexed = true)
  * private String name;
  *
@@ -18,17 +18,17 @@ import java.lang.annotation.*;
  *
  * @GraphProperty(indexed = true, fullText = true)
  * private String content;
- * }</pre>
+ * }
  *
  * <h2>With Custom Name and Type:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphProperty(
  *     name = "amt",
  *     graphType = GraphType.DOUBLE,
  *     indexed = true
  * )
  * private BigDecimal amount;
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the type-level {@link Graph @Graph} is read, and

@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * must be annotated with {@code @TenantId} OR {@code tenantIdField} must be specified.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
  * public class Order {
  *
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
  *     @TenantId
  *     private UUID organizationId;
  * }
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>

@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * trigger saga steps, or perform other side effects.
  *
  * <h2>In Projection:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(name = "order-summary", ...)
  * public class OrderSummaryProjection {
  *
@@ -27,10 +27,10 @@ import java.lang.annotation.*;
  *         // Update read model
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>In Saga:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(name = "OrderFulfillmentSaga", ...)
  * public class OrderFulfillmentSaga {
  *
@@ -42,7 +42,7 @@ import java.lang.annotation.*;
  *         return nextStep("shipOrder");
  *     }
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
@@ -309,27 +309,27 @@ public @interface EventHandler {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface RetryPolicy {
-        /** Maximum number of retry attempts
+        /** Maximum number of retry attempts.
          * @return max attempts */
         int maxAttempts() default 3;
 
-        /** Initial delay between retries (ISO-8601 duration)
+        /** Initial delay between retries (ISO-8601 duration).
          * @return delay duration */
         String delay() default "PT1S";
 
-        /** Backoff multiplier for exponential backoff
+        /** Backoff multiplier for exponential backoff.
          * @return backoff multiplier */
         double backoff() default 2.0;
 
-        /** Maximum delay between retries (ISO-8601 duration)
+        /** Maximum delay between retries (ISO-8601 duration).
          * @return max delay */
         String maxDelay() default "PT1M";
 
-        /** Exception types that should trigger a retry
+        /** Exception types that should trigger a retry.
          * @return exception types to retry on */
         Class<? extends Throwable>[] retryOn() default {};
 
-        /** Exception types that should NOT trigger a retry
+        /** Exception types that should NOT trigger a retry.
          * @return exception types to not retry on */
         Class<? extends Throwable>[] noRetryOn() default {};
     }
@@ -342,11 +342,11 @@ public @interface EventHandler {
      * Container annotation for multiple {@link EventHandler} annotations.
      *
      * <p>Allows declaring multiple event handlers on a single class or method:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @EventHandler(event = "OrderCreated", topic = "orders.created")
      * @EventHandler(event = "OrderCancelled", topic = "orders.cancelled")
      * public class OrderProcessor { ... }
-     * }</pre>
+     * }
      *
      *
      * <p><strong>Status: RESERVED</strong> — a container is read only when the annotation

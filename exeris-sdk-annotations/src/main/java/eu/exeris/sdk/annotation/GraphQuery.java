@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * path finding, and other graph algorithms.
  *
  * <h2>Similar Items Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.SIMILAR,
  *     maxResults = 5,
@@ -18,10 +18,10 @@ import java.lang.annotation.*;
  * public List<Product> findSimilarProducts() {
  *     return List.of(); // Implementation generated
  * }
- * }</pre>
+ * }
  *
  * <h2>Connected Nodes Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.CONNECTED,
  *     edgeTypes = {"PURCHASED", "VIEWED"},
@@ -31,10 +31,10 @@ import java.lang.annotation.*;
  * public List<Product> findRelatedProducts() {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  * <h2>Shortest Path Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.PATH,
  *     edgeTypes = {"FRIEND_OF", "FOLLOWS"},
@@ -44,10 +44,10 @@ import java.lang.annotation.*;
  * public GraphPath findPathTo(UUID targetUserId) {
  *     return null;
  * }
- * }</pre>
+ * }
  *
  * <h2>Recommendations Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.RECOMMEND,
  *     recommendationAlgorithm = RecommendationAlgorithm.COLLABORATIVE_FILTERING,
@@ -57,10 +57,10 @@ import java.lang.annotation.*;
  * public List<ProductRecommendation> getRecommendations() {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  * <h2>Custom Cypher Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.CUSTOM,
  *     cypher = """
@@ -78,7 +78,7 @@ import java.lang.annotation.*;
  * ) {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — not extracted by the {@code exeris-tooling}
@@ -745,7 +745,7 @@ public @interface GraphQuery {
         /** Hybrid approach. */
         HYBRID,
 
-        /** Graph-based (PageRank, etc.) */
+        /** Graph-based (PageRank, etc.). */
         GRAPH_BASED,
 
         /** Matrix factorization. */

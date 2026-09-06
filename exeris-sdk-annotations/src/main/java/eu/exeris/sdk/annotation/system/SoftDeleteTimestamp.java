@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically populated when entity is soft-deleted.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Deleted At")
  * @SoftDeleteTimestamp
  * private Instant deletedAt;
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>

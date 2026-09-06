@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * </ul>
  *
  * <h2>Basic Usage (Many-to-One):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Customer",
  *     searchable = true,
@@ -32,10 +32,10 @@ import java.lang.annotation.*;
  * @ManyToOne
  * @JoinColumn(name = "customer_id")
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>With Autocomplete (Large Dataset):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Product",
  *     required = true
@@ -53,10 +53,10 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private Product product;
- * }</pre>
+ * }
  *
  * <h2>With Cascade Delete:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order Items")
  * @Relationship(
  *     targetEntity = OrderItem.class,
@@ -66,10 +66,10 @@ import java.lang.annotation.*;
  * )
  * @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
  * private List<OrderItem> items = new ArrayList<>();
- * }</pre>
+ * }
  *
  * <h2>Many-to-Many Relationship:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Tags"
  * )
@@ -89,10 +89,10 @@ import java.lang.annotation.*;
  *     inverseJoinColumns = @JoinColumn(name = "tag_id")
  * )
  * private Set<Tag> tags = new HashSet<>();
- * }</pre>
+ * }
  *
  * <h2>Composite Display Field:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Customer")
  * @Relationship(
  *     targetEntity = Customer.class,
@@ -102,10 +102,10 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>Dependent Relationship:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * // City dropdown depends on selected Country
  * @Field(label = "Country")
  * @Relationship(
@@ -124,7 +124,7 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private City city;
- * }</pre>
+ * }
  *
  * <h2>Target design — the UI this would drive:</h2>
  * <p>The SDK generates appropriate UI components based on relationship configuration:
@@ -153,10 +153,10 @@ public @interface Relationship {
      * <p>Specifies the related entity type.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(targetEntity = Customer.class)
      * private Customer customer;
-     * }</pre>
+     * }
      *
      * @return target entity class
      */
@@ -202,13 +202,13 @@ public @interface Relationship {
      * Used in autocomplete components and search filters.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = Customer.class,
      *     displayField = "name",
      *     searchFields = {"name", "email", "phone", "company"}
      * )
-     * }</pre>
+     * }
      *
      * @return array of searchable field names
      */
@@ -274,7 +274,7 @@ public @interface Relationship {
      * bidirectional mapping.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * // In Order.java
      * @Relationship(
      *     targetEntity = OrderItem.class,
@@ -287,7 +287,7 @@ public @interface Relationship {
      * @ManyToOne
      * @JoinColumn(name = "order_id")
      * private Order order;
-     * }</pre>
+     * }
      *
      * @return field name in target entity
      */
@@ -299,7 +299,7 @@ public @interface Relationship {
      * on another field's value.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = City.class,
      *     displayField = "name",
@@ -307,7 +307,7 @@ public @interface Relationship {
      *     dependsOnField = "country.id"
      * )
      * private City city;
-     * }</pre>
+     * }
      *
      * @return field name this depends on
      */
@@ -318,10 +318,10 @@ public @interface Relationship {
      * <p>Specifies which field in target entity should match the dependent field value.
      *
      * <p><strong>Example:</strong> For city filtering by country:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * dependsOn = "country",          // Field in current entity
      * dependsOnField = "country.id"   // Field in City entity to filter by
-     * }</pre>
+     * }
      *
      * @return field path for filtering
      */
@@ -461,14 +461,14 @@ public @interface Relationship {
      * <p>Used in TABLE and MODAL display modes to show multiple columns.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = Customer.class,
      *     displayField = "name",
      *     displayFields = {"email", "phone", "company"},
      *     display = Display.TABLE
      * )
-     * }</pre>
+     * }
      *
      * @return array of additional field names to display
      */

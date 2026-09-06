@@ -12,11 +12,11 @@ import java.lang.annotation.Target;
  * Use this annotation to customize primary key behavior.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order Number")
  * @PrimaryKey(generated = false)
  * private String orderNumber;  // business key as PK
- * }</pre>
+ * }
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
  * fields for this marker, so writing it changes nothing in the emitted output. What

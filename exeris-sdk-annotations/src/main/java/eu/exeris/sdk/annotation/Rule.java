@@ -20,13 +20,13 @@ import java.lang.annotation.Target;
  * (the escape hatch).
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Rule(name = "discountRequiresApproval",
  *       expression = "discount <= 0 or approvedBy != null",
  *       message = "order.rule.discountRequiresApproval",
  *       severity = "ERROR")
  * public class Order { ... }
- * }</pre>
+ * }
  *
  * <h2>Open-Core status — RESERVED, generation pending tooling</h2>
  * <p>This is a declared shape, not yet an enforced rule. The annotation is

@@ -18,10 +18,10 @@ import java.lang.annotation.Target;
  * hatch).
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Derived(expression = "lineItems.sum(i -> i.amount)", dependsOn = {"lineItems"})
  * public BigDecimal total() { ... }   // body is the manual fallback until generated
- * }</pre>
+ * }
  *
  * <p>Cross-aggregate derivations are allowed — a {@link #dependsOn()} entry may
  * be a related-entity path (e.g. {@code "customer.tier"}), not only a sibling
