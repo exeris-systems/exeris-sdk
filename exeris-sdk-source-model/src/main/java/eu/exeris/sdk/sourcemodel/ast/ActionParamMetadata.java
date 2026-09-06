@@ -21,8 +21,7 @@ import java.util.Objects;
  * @param maxLength the maximum string length; absent means no bound
  * @param min the inclusive numeric floor; absent means no bound
  * @param max the inclusive numeric ceiling; absent means no bound
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

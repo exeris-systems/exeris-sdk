@@ -15,7 +15,7 @@ package eu.exeris.sdk.sourcemodel.mutation;
  * against {@link #CURRENT} and refuses a mismatch
  * ({@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}).
  *
- * @since 0.5.0
+ * @since 0.5
  */
 public final class SchemaVersion {
 
@@ -166,7 +166,7 @@ public final class SchemaVersion {
      * Whether a baseline's stamped schema version is the one this build reads.
      * A {@code null} or absent stamp (e.g. a pre-0.5.0 baseline) is <em>not</em>
      * current — the safe posture is to refuse, not to assume compatibility.
-          *
+     *
      * @param schemaVersion the version stamped on a baseline
      * @return whether it is the version this build reads
      */

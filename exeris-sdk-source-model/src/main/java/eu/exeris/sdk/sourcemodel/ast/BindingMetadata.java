@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * @param path the path into that thing, when the binding reaches inside it
  * @param expression the expression producing the value, when the binding computes one
  * @param language the language {@link #expression()} is written in
- * @since 0.8.0
+ * @since 0.8
  * @see ComponentNodeMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

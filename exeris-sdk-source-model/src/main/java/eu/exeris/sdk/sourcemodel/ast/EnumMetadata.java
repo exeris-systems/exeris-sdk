@@ -13,8 +13,7 @@ import java.util.List;
  * @param packageName the package the enum is declared in
  * @param description the enum's own javadoc, carried through for generated documentation
  * @param values the constants, in declaration order
- * @author Exeris SDK Team
- * @since 0.2.0
+ * @since 0.2
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record EnumMetadata(

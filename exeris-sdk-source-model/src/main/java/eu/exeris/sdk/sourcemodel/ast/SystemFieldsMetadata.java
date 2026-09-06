@@ -21,8 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *        shared-scope session variable, widening reads while {@code tenantIdField} keeps
  *        writes pinned. Added in 0.12.0; {@code null} on every entity that declares no
  *        shared tier
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

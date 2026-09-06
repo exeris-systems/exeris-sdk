@@ -7,7 +7,7 @@ package eu.exeris.sdk.sourcemodel.ast;
  * applies the {@link #PAGE} default. Part of the reserved presentation IR surface
  * (RFC-2026-06-25).
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public enum ViewKind {
     /** A route-bearing page. */

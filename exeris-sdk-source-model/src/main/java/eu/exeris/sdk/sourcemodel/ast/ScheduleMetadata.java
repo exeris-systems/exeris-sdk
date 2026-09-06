@@ -43,7 +43,7 @@ import java.util.Objects;
  * @param expression the trigger itself, read according to {@link #kind()}: a five-field cron
  *        expression, an ISO-8601 duration, or an ISO-8601 instant
  *
- * @since 0.11.0
+ * @since 0.11
  * @see ActionMetadata#schedule()
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

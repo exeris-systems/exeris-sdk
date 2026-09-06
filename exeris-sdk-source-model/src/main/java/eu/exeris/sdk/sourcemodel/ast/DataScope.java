@@ -21,7 +21,7 @@ package eu.exeris.sdk.sourcemodel.ast;
  * strategy — is never represented here; mapping the tier onto that carrier is
  * {@code exeris-tooling}'s transcription. See RFC-2026-06-24 and ADR-059.
  *
- * @since 0.10.0
+ * @since 0.10
  */
 public enum DataScope {
     /** Not tenant-partitioned — a global singleton or reference table. */

@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @param slot the layout slot the region fills
  * @param components the component nodes placed in the region, in order
- * @since 0.8.0
+ * @since 0.8
  * @see ComponentNodeMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

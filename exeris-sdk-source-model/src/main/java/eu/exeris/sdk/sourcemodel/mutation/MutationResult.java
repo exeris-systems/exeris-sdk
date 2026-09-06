@@ -37,8 +37,7 @@ import java.util.Objects;
  * the round-trip guard is {@code MutationWireFormatTest}. The conflict-value
  * fields are the rendered values at the path — the detection slice produces them.
  *
- * @author Exeris SDK Team
- * @since 0.5.0
+ * @since 0.5
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "outcome")
 @JsonSubTypes({
@@ -81,7 +80,7 @@ public sealed interface MutationResult {
      * The op collides with a user edit that drifted from the baseline.
      * Each value is the rendered form at {@code path}; {@code null} means
      * "absent at that side" (e.g. the field did not exist in the baseline).
-          *
+     *
      * @param path the mutation path naming what is being changed
      * @param baselineValue the value the mutation was authored against
      * @param currentValue the value found now
