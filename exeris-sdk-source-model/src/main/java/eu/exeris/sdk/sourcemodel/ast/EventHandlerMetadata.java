@@ -92,10 +92,10 @@ public record EventHandlerMetadata(
         timeout = blankToNull(timeout);
         transactionMode = blankToNull(transactionMode);
         triggerStep = blankToNull(triggerStep);
-        events = (events == null) ? List.of() : List.copyOf(events);
-        eventClassNames = (eventClassNames == null) ? List.of() : List.copyOf(eventClassNames);
-        expectedEvents = (expectedEvents == null) ? List.of() : List.copyOf(expectedEvents);
-        failureEvents = (failureEvents == null) ? List.of() : List.copyOf(failureEvents);
+        events = AstLists.copyOfNoNulls(events, "events");
+        eventClassNames = AstLists.copyOfNoNulls(eventClassNames, "eventClassNames");
+        expectedEvents = AstLists.copyOfNoNulls(expectedEvents, "expectedEvents");
+        failureEvents = AstLists.copyOfNoNulls(failureEvents, "failureEvents");
     }
 
     private static String blankToNull(String v) {

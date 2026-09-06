@@ -38,7 +38,7 @@ public record RegionMetadata(
         if (slot != null && slot.isBlank()) {
             slot = null;
         }
-        components = components == null ? List.of() : List.copyOf(components);
+        components = AstLists.copyOfNoNulls(components, "components");
     }
 
     /**

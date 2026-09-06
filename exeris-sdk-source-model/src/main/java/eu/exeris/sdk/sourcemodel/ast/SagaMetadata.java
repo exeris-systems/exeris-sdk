@@ -59,7 +59,7 @@ public record SagaMetadata(
      * Compact constructor; applies this record's normalization rules.
      */
     public SagaMetadata {
-        transitions = transitions == null ? List.of() : List.copyOf(transitions);
+        transitions = AstLists.copyOfNoNulls(transitions, "transitions");
     }
 
     /**

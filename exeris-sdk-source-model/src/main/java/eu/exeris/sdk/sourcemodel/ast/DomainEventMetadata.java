@@ -134,8 +134,8 @@ public record DomainEventMetadata(
      * defensive copies (deterministic, immutable carriers).
      */
     public DomainEventMetadata {
-        payloadFields = (payloadFields == null) ? List.of() : List.copyOf(payloadFields);
-        sensitiveFields = (sensitiveFields == null) ? List.of() : List.copyOf(sensitiveFields);
+        payloadFields = AstLists.copyOfNoNulls(payloadFields, "payloadFields");
+        sensitiveFields = AstLists.copyOfNoNulls(sensitiveFields, "sensitiveFields");
         // trigger is deliberately NOT defaulted here. See the class javadoc: a null
         // trigger means "this baseline predates trigger extraction", which is not the
         // same claim as "fires on CREATE", and a generator must be able to tell them

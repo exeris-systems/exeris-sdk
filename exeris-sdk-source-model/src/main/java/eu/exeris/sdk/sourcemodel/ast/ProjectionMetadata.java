@@ -79,10 +79,10 @@ public record ProjectionMetadata(
         topicPattern = blankToNull(topicPattern);
         model = blankToNull(model);
         schema = blankToNull(schema);
-        aggregateTypes = (aggregateTypes == null) ? List.of() : List.copyOf(aggregateTypes);
-        events = (events == null) ? List.of() : List.copyOf(events);
-        eventClassNames = (eventClassNames == null) ? List.of() : List.copyOf(eventClassNames);
-        fields = (fields == null) ? List.of() : List.copyOf(fields);
+        aggregateTypes = AstLists.copyOfNoNulls(aggregateTypes, "aggregateTypes");
+        events = AstLists.copyOfNoNulls(events, "events");
+        eventClassNames = AstLists.copyOfNoNulls(eventClassNames, "eventClassNames");
+        fields = AstLists.copyOfNoNulls(fields, "fields");
     }
 
     private static String blankToNull(String v) {

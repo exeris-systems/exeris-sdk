@@ -63,7 +63,7 @@ public record ComponentNodeMetadata(
         if (props != null && props.isBlank()) {
             props = null;
         }
-        children = children == null ? List.of() : List.copyOf(children);
+        children = AstLists.copyOfNoNulls(children, "children");
     }
 
     /**
