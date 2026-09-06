@@ -1,0 +1,32 @@
+# The issue-side footprint of issue-conventions.md rules 3 and 5 (ADR-085 §E.17a).
+#
+# Separate from guardrails.yml because it is not pull-request-triggered and needs `issues: write`,
+# which the pull-request gates deliberately do not have. The label sync is additive — it adds the
+# organisation taxonomy and never deletes — so any label this repository already uses survives it.
+name: issues
+on:
+  schedule:
+    - cron: "17 4 * * 1"     # Monday, early. Label drift and stale evidence are not urgent.
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Report label changes without making them"
+        type: boolean
+        default: false
+permissions:
+  issues: write
+
+# Referenced by branch rather than by commit SHA, for the reason set out at length in
+# guardrails.yml: this repository tag-references its actions and runs no Dependabot, so a
+# hand-typed SHA would freeze the gate rather than pin it.
+
+jobs:
+  labels:
+    uses: exeris-systems/.github/.github/workflows/labels-sync.yml@main
+    with:
+      # `inputs.dry-run` is null on the scheduled run — only workflow_dispatch supplies it — and a
+      # null would be coerced to false anyway. Written as an explicit comparison so the scheduled
+      # behaviour (apply the taxonomy) is readable rather than inferred.
+      dry-run: ${{ inputs.dry-run == true }}
+  hygiene:
+    uses: exeris-systems/.github/.github/workflows/issue-hygiene.yml@main
