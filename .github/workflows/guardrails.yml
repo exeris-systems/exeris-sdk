@@ -73,10 +73,27 @@ jobs:
   # ADR-085 §F.21. Two halves, and both have to be green before 0.12.0 ships, because a Javadoc
   # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
   #
-  # The module list is every jar this reactor publishes. `exeris-sdk-annotation-catalog` is absent
-  # because it holds itself back from deploy (maven.deploy.skip in its own pom) — it is a
-  # build-time generator nobody resolves, so §F.21's "every module published to Maven Central"
-  # does not reach it. `exeris-sdk-bom` and `exeris-sdk-parent` are pom-packaged.
+  # The module list is every jar this reactor publishes, plus one that does not.
+  # `exeris-sdk-bom` and `exeris-sdk-parent` are pom-packaged and have nothing to document.
+  #
+  # `exeris-sdk-annotation-catalog` is the exception, and it is here because the gate cannot build
+  # without it rather than because §F.21 asks for it — the module holds itself back from deploy
+  # (maven.deploy.skip in its own pom), so "every module published to Maven Central" does not reach
+  # it. `exeris-sdk-annotations` consumes it as an annotation processor through
+  # <annotationProcessorPaths>, and Maven does not treat that as a reactor dependency edge — the
+  # root pom's <modules> comment says so, and orders the declaration to compensate. Declaration
+  # order only helps a full reactor build. This gate runs `-pl <modules> -am`, where the catalog is
+  # neither selected nor reachable, so the first CI run died in the install step with "Could not
+  # find artifact eu.exeris:exeris-sdk-annotation-catalog:jar:0.12.0-SNAPSHOT" before reaching a
+  # single doc comment. It passed locally only because a previous full build had left the jar in
+  # ~/.m2; reproduced by deleting it, fixed by naming the module here.
+  #
+  # The cost of naming it is that the gate also checks it: two Checkstyle findings, both in
+  # JavadocText.java, both a <pre> written inside prose about `<pre>{@code}` blocks. Being stricter
+  # with a build-time module than the standard requires is a fair price for a gate that runs at all.
+  # The narrower fix belongs upstream — a `build-modules` input on javadoc-gate.yml, separate from
+  # the set it checks — and is worth proposing to exeris-systems/.github rather than working around
+  # twice.
   #
   # No `extra-maven-args` and no dedicated profile: unlike the kernel, the strict Javadoc settings
   # here live unconditionally in each module's own pom and the `release` profile deliberately does
@@ -85,4 +102,4 @@ jobs:
   javadoc:
     uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
     with:
-      modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
+      modules: exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
