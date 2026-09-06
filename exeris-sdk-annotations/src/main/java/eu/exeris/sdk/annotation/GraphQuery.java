@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * path finding, and other graph algorithms.
  *
  * <h2>Similar Items Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.SIMILAR,
  *     maxResults = 5,
@@ -18,10 +18,10 @@ import java.lang.annotation.*;
  * public List<Product> findSimilarProducts() {
  *     return List.of(); // Implementation generated
  * }
- * }</pre>
+ * }
  *
  * <h2>Connected Nodes Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.CONNECTED,
  *     edgeTypes = {"PURCHASED", "VIEWED"},
@@ -31,10 +31,10 @@ import java.lang.annotation.*;
  * public List<Product> findRelatedProducts() {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  * <h2>Shortest Path Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.PATH,
  *     edgeTypes = {"FRIEND_OF", "FOLLOWS"},
@@ -44,10 +44,10 @@ import java.lang.annotation.*;
  * public GraphPath findPathTo(UUID targetUserId) {
  *     return null;
  * }
- * }</pre>
+ * }
  *
  * <h2>Recommendations Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.RECOMMEND,
  *     recommendationAlgorithm = RecommendationAlgorithm.COLLABORATIVE_FILTERING,
@@ -57,10 +57,10 @@ import java.lang.annotation.*;
  * public List<ProductRecommendation> getRecommendations() {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  * <h2>Custom Cypher Query:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.CUSTOM,
  *     cypher = """
@@ -78,15 +78,13 @@ import java.lang.annotation.*;
  * ) {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — not extracted by the {@code exeris-tooling}
  * processor — {@code GraphMetadata.queries} is passed as an empty list. There is also no
  * GraphQL emitter anywhere in the toolchain, so both hops are missing rather than one.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Graph
  * @see GraphProperty
  * @see GraphEdge
@@ -635,37 +633,37 @@ public @interface GraphQuery {
      * The shape of the traversal this query performs.
      */
     enum QueryType {
-        /** Find similar nodes */
+        /** Find similar nodes. */
         SIMILAR,
 
-        /** Find connected/related nodes */
+        /** Find connected/related nodes. */
         CONNECTED,
 
-        /** Find shortest path between nodes */
+        /** Find shortest path between nodes. */
         PATH,
 
-        /** Aggregate data over graph */
+        /** Aggregate data over graph. */
         AGGREGATE,
 
-        /** Pattern matching query */
+        /** Pattern matching query. */
         PATTERN,
 
-        /** Get recommendations */
+        /** Get recommendations. */
         RECOMMEND,
 
-        /** Detect communities/clusters */
+        /** Detect communities/clusters. */
         COMMUNITY,
 
-        /** Centrality calculations */
+        /** Centrality calculations. */
         CENTRALITY,
 
-        /** Neighbors query */
+        /** Neighbors query. */
         NEIGHBORS,
 
-        /** Subgraph extraction */
+        /** Subgraph extraction. */
         SUBGRAPH,
 
-        /** Custom query (Cypher/Gremlin) */
+        /** Custom query (Cypher/Gremlin). */
         CUSTOM
     }
 
@@ -709,28 +707,28 @@ public @interface GraphQuery {
      * How a path between two nodes is searched for.
      */
     enum PathAlgorithm {
-        /** Dijkstra's shortest path */
+        /** Dijkstra's shortest path. */
         DIJKSTRA,
 
-        /** A* algorithm */
+        /** A* algorithm. */
         A_STAR,
 
-        /** Breadth-first search */
+        /** Breadth-first search. */
         BFS,
 
-        /** Depth-first search */
+        /** Depth-first search. */
         DFS,
 
-        /** Bellman-Ford (handles negative weights) */
+        /** Bellman-Ford (handles negative weights). */
         BELLMAN_FORD,
 
-        /** All shortest paths */
+        /** All shortest paths. */
         ALL_SHORTEST_PATHS,
 
-        /** K shortest paths */
+        /** K shortest paths. */
         K_SHORTEST_PATHS,
 
-        /** Random walk */
+        /** Random walk. */
         RANDOM_WALK
     }
 
@@ -738,25 +736,25 @@ public @interface GraphQuery {
      * How recommendations are derived from the graph.
      */
     enum RecommendationAlgorithm {
-        /** Collaborative filtering */
+        /** Collaborative filtering. */
         COLLABORATIVE_FILTERING,
 
-        /** Content-based filtering */
+        /** Content-based filtering. */
         CONTENT_BASED,
 
-        /** Hybrid approach */
+        /** Hybrid approach. */
         HYBRID,
 
-        /** Graph-based (PageRank, etc.) */
+        /** Graph-based (PageRank, etc.). */
         GRAPH_BASED,
 
-        /** Matrix factorization */
+        /** Matrix factorization. */
         MATRIX_FACTORIZATION,
 
-        /** Association rules */
+        /** Association rules. */
         ASSOCIATION_RULES,
 
-        /** Custom algorithm */
+        /** Custom algorithm. */
         CUSTOM
     }
 

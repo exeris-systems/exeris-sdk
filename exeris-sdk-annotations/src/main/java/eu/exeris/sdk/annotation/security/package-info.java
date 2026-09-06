@@ -7,18 +7,18 @@
  * </ul>
  *
  * <h2>Field-Level Encryption:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "SSN")
  * @Encrypted(pii = true, maskPattern = "XXX-XX-####")
  * private String ssn;
- * }</pre>
+ * }
  *
  * <h2>Row-Level Security:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders")
  * @RowLevelSecurity(policy = Policy.TENANT_ISOLATION)
  * public class Order { }
- * }</pre>
+ * }
  *
  * <h2>Open-Core status — RESERVED, not yet consumed</h2>
  * <p>Both annotations are declared-but-unconsumed: their javadocs promise
@@ -31,9 +31,7 @@
  * ({@code tenantScoped = true} is the deprecated spelling of the same tier; see
  * ADR-059.) They ship as a reserved surface until a consumer lands.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 package eu.exeris.sdk.annotation.security;
 

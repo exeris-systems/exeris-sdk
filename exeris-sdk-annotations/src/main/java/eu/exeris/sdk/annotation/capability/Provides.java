@@ -21,20 +21,18 @@ import java.lang.annotation.Target;
  * <p>Repeatable: a "substrate-aggregate" cap may provide several services from a
  * single module class.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * @CapabilityModule
  * @Provides(service = RouteRegistry.class, version = "1.0.0")
  * @Provides(service = UpstreamPool.class, version = "1.1.0")
  * public final class GatewayCoreModule { }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code ProvidesMetadata} and consumed
  * by the capability graph and the composition stamp — this is one half of the edge set
  * behind {@code cap-manifest.json}.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see Requires
  * @see CapabilityModule
  */

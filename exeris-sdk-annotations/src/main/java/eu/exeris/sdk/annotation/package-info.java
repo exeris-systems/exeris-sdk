@@ -85,18 +85,18 @@
  * switched on before the kernel moves — an ecosystem sequencing decision.
  * Releases ship as a git tag plus a GitHub Release. Until that changes, build the
  * SDK from source and consume the local install:
- * <pre>{@code
+ * {@snippet lang="shell" :
  * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk && mvn -q install
- * }</pre>
+ * }
  * <p>Then depend on it:
- * <pre>{@code
+ * {@snippet lang="xml" :
  * <dependency>
  *     <groupId>eu.exeris</groupId>
  *     <artifactId>exeris-sdk-annotations</artifactId>
  *     <version>0.12.0</version>
  *     <scope>provided</scope>
  * </dependency>
- * }</pre>
+ * }
  * <p>{@code provided} is the honest scope: the annotations are
  * {@code RetentionPolicy.SOURCE}, so they are needed to compile and never at
  * runtime.
@@ -106,7 +106,7 @@
  * of the one it relates to</strong>, never nested inside it. See "The nested-form
  * trap" below; it is the single most common way to write Exeris metadata that
  * silently does nothing.
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(
  *     module = "sales",
  *     aggregate = "Order",
@@ -130,7 +130,7 @@
  *            computedFrom = {"unitPrice", "quantity"})
  *     private BigDecimal total;
  * }
- * }</pre>
+ * }
  * <p>The class needs no superclass. There is no {@code BaseTenantEntity} or any
  * other SDK base type — the SDK ships annotations and records only, and tenant /
  * audit / soft-delete columns are derived by the generator from the
@@ -139,9 +139,9 @@
  * <h3>3. Generate</h3>
  * <p>Codegen runs from {@code exeris-tooling}'s Maven plugin
  * ({@code exeris-codegen-maven-plugin}, goal prefix {@code exeris}):
- * <pre>{@code
+ * {@snippet lang="shell" :
  * mvn exeris:generate
- * }</pre>
+ * }
  * <p>The plugin's own documentation in {@code exeris-tooling} is authoritative
  * for its configuration, the annotation-processor wiring, and the JDK it runs
  * under.
@@ -154,7 +154,7 @@
  * Both the {@code exeris-tooling} processor and the SDK's own {@code -io} reader
  * find related annotations by walking the element's <em>directly present</em>
  * annotations, so only the sibling form is seen:
- * <pre>{@code
+ * {@snippet lang="java" :
  * // NO-OP — compiles clean, reaches no AST, produces nothing:
  * @Field(label = "Email", validation = @Validation(email = true))
  * private String email;
@@ -163,7 +163,7 @@
  * @Field(label = "Email")
  * @Validation(email = true)
  * private String email;
- * }</pre>
+ * }
  * <p>The nested members are RESERVED surface kept for a possible future reader.
  * Until one exists, treat them as traps and always write siblings.
  *
@@ -481,7 +481,7 @@
  *       what is emitted and how to run it.</li>
  * </ul>
  *
- * @since 0.1.0
+ * @since 0.1
  */
 package eu.exeris.sdk.annotation;
 

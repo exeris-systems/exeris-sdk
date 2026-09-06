@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * The aggregate state is reconstructed by replaying events from the event store.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "billing")
  * @EventSourced(
  *     snapshotThreshold = 50,
@@ -18,10 +18,10 @@ import java.lang.annotation.*;
  * public class BillingSubscription extends EventSourcedAggregate {
  *     // Aggregate implementation
  * }
- * }</pre>
+ * }
  *
  * <h2>With Custom Snapshot Strategy:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @EventSourced(
  *     snapshotThreshold = 100,
  *     snapshotStrategy = SnapshotStrategy.HYBRID,
@@ -29,10 +29,10 @@ import java.lang.annotation.*;
  *     snapshotOnEvents = {"OrderCompletedEvent", "OrderCancelledEvent"}
  * )
  * public class Order extends EventSourcedAggregate {}
- * }</pre>
+ * }
  *
  * <h2>With Caching:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @EventSourced(
  *     cacheAggregates = true,
  *     cacheTtlSeconds = 300,
@@ -40,7 +40,7 @@ import java.lang.annotation.*;
  *     cacheEviction = CacheEviction.LRU
  * )
  * public class Account extends EventSourcedAggregate {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code EventSourcedMetadata}, so it
@@ -48,9 +48,7 @@ import java.lang.annotation.*;
  * implemented yet. This is a tooling gap rather than a kernel one — the kernel line ships
  * the replayable read and the optimistic-concurrency write with both Community bindings and
  * a TCK.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see DomainEvent
  */
 @Target(ElementType.TYPE)
@@ -151,9 +149,9 @@ public @interface EventSourced {
      * <p>Snapshot is created after these event types.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * snapshotOnEvents = {"OrderCompletedEvent", "OrderCancelledEvent"}
-     * }</pre>
+     * }
      *
      * @return event names that trigger snapshot
      */
@@ -554,22 +552,22 @@ public @interface EventSourced {
      * Strategy for creating snapshots of aggregate state.
      */
     enum SnapshotStrategy {
-        /** Snapshot after N events */
+        /** Snapshot after N events. */
         COUNT_BASED,
 
-        /** Snapshot after time interval */
+        /** Snapshot after time interval. */
         TIME_BASED,
 
-        /** Combination of count and time */
+        /** Combination of count and time. */
         HYBRID,
 
-        /** Snapshot on specific events */
+        /** Snapshot on specific events. */
         EVENT_BASED,
 
-        /** Manual snapshots only */
+        /** Manual snapshots only. */
         MANUAL,
 
-        /** No snapshots */
+        /** No snapshots. */
         NONE
     }
 
@@ -577,19 +575,19 @@ public @interface EventSourced {
      * Serialization format for snapshots.
      */
     enum SnapshotFormat {
-        /** JSON serialization */
+        /** JSON serialization. */
         JSON,
 
-        /** Binary Java serialization */
+        /** Binary Java serialization. */
         BINARY,
 
-        /** Protocol Buffers */
+        /** Protocol Buffers. */
         PROTOBUF,
 
-        /** MessagePack */
+        /** MessagePack. */
         MSGPACK,
 
-        /** Custom serializer */
+        /** Custom serializer. */
         CUSTOM
     }
 
@@ -597,16 +595,16 @@ public @interface EventSourced {
      * Storage backend for snapshots.
      */
     enum SnapshotStorage {
-        /** Store in event store */
+        /** Store in event store. */
         EVENT_STORE,
 
-        /** Separate snapshot table/collection */
+        /** Separate snapshot table/collection. */
         DEDICATED_TABLE,
 
-        /** Redis or similar cache */
+        /** Redis or similar cache. */
         CACHE,
 
-        /** S3/Blob storage */
+        /** S3/Blob storage. */
         OBJECT_STORAGE
     }
 
@@ -614,15 +612,15 @@ public @interface EventSourced {
      * Compression algorithm for event data.
      */
     enum Compression {
-        /** No compression */
+        /** No compression. */
         NONE,
-        /** GZIP compression */
+        /** GZIP compression. */
         GZIP,
-        /** LZ4 compression */
+        /** LZ4 compression. */
         LZ4,
-        /** Snappy compression */
+        /** Snappy compression. */
         SNAPPY,
-        /** Zstandard compression */
+        /** Zstandard compression. */
         ZSTD
     }
 
@@ -630,16 +628,16 @@ public @interface EventSourced {
      * Locking strategy for concurrent access.
      */
     enum LockStrategy {
-        /** Optimistic locking with version */
+        /** Optimistic locking with version. */
         OPTIMISTIC,
 
-        /** Pessimistic database locking */
+        /** Pessimistic database locking. */
         PESSIMISTIC,
 
-        /** Distributed lock (Redis, etc.) */
+        /** Distributed lock (Redis, etc.). */
         DISTRIBUTED,
 
-        /** No locking (single writer assumption) */
+        /** No locking (single writer assumption). */
         NONE
     }
 
@@ -647,16 +645,16 @@ public @interface EventSourced {
      * Policy for retaining old events.
      */
     enum RetentionPolicy {
-        /** Keep all events forever */
+        /** Keep all events forever. */
         KEEP_ALL,
 
-        /** Keep events for N days */
+        /** Keep events for N days. */
         TIME_BASED,
 
-        /** Keep only N most recent events */
+        /** Keep only N most recent events. */
         COUNT_BASED,
 
-        /** Keep events since last snapshot + buffer */
+        /** Keep events since last snapshot + buffer. */
         SNAPSHOT_BASED
     }
 
@@ -664,19 +662,19 @@ public @interface EventSourced {
      * Cache eviction strategy for aggregate cache.
      */
     enum CacheEviction {
-        /** Least Recently Used */
+        /** Least Recently Used. */
         LRU,
 
-        /** Least Frequently Used */
+        /** Least Frequently Used. */
         LFU,
 
-        /** First In First Out */
+        /** First In First Out. */
         FIFO,
 
-        /** Time-based expiration */
+        /** Time-based expiration. */
         TIME_BASED,
 
-        /** Size-based eviction */
+        /** Size-based eviction. */
         SIZE_BASED
     }
 
@@ -684,17 +682,17 @@ public @interface EventSourced {
      * Log levels for event sourcing operations.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 
@@ -712,31 +710,31 @@ public @interface EventSourced {
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
     @interface RetryPolicy {
-        /** Maximum number of retry attempts
+        /** Maximum number of retry attempts.
          * @return max attempts */
         int maxAttempts() default 3;
 
-        /** Initial delay in milliseconds
+        /** Initial delay in milliseconds.
          * @return initial delay */
         long initialDelayMs() default 100;
 
-        /** Backoff multiplier for exponential backoff
+        /** Backoff multiplier for exponential backoff.
          * @return multiplier */
         double multiplier() default 2.0;
 
-        /** Maximum delay in milliseconds
+        /** Maximum delay in milliseconds.
          * @return max delay */
         long maxDelayMs() default 5000;
 
-        /** Exception types that should trigger a retry
+        /** Exception types that should trigger a retry.
          * @return exception types to retry on */
         Class<? extends Throwable>[] retryOn() default {};
 
-        /** Exception types that should NOT trigger a retry
+        /** Exception types that should NOT trigger a retry.
          * @return exception types to not retry on */
         Class<? extends Throwable>[] noRetryOn() default {};
 
-        /** Whether to retry on concurrency failures
+        /** Whether to retry on concurrency failures.
          * @return true if should retry on concurrency failures */
         boolean retryOnConcurrencyFailure() default true;
     }
@@ -750,11 +748,11 @@ public @interface EventSourced {
     @Retention(java.lang.annotation.RetentionPolicy.SOURCE)
     @Target({})
     @interface StreamMetadata {
-        /** Metadata key
+        /** Metadata key.
          * @return the key */
         String key();
 
-        /** Metadata value
+        /** Metadata value.
          * @return the value */
         String value();
     }

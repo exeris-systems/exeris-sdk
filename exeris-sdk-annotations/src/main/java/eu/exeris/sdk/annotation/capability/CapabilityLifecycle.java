@@ -32,21 +32,19 @@ import java.lang.annotation.Target;
  * be expressed as a Java type constraint. The annotated class may be distinct
  * from the {@link CapabilityModule} class.
  *
- * <pre>{@code
+ * {@snippet lang="java" :
  * @CapabilityLifecycle
  * public final class GatewayLifecycle implements CapabilityLifecycleHooks {
  *     // initialize / ready / drain / terminate — interface from exeris-sdk-composition-lifecycle
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor tests for its
  * presence on the module class and records the result on {@code CapabilityModuleMetadata},
  * which the capability graph consumes. Presence is the whole signal — the annotation
  * carries no attribute the pipeline reads.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see CapabilityModule
  * @see Requires
  */

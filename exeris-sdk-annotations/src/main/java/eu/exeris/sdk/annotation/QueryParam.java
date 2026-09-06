@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * <p>Used with @GraphQuery to bind method parameters to query variables.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphQuery(
  *     type = QueryType.CUSTOM,
  *     cypher = "MATCH (n:Product) WHERE n.price >= $minPrice AND n.price <= $maxPrice RETURN n LIMIT $limit"
@@ -20,13 +20,11 @@ import java.lang.annotation.*;
  * ) {
  *     return List.of();
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — action parameters are extracted through {@link ActionParam @ActionParam} only. A parameter carrying just this annotation reaches {@code ActionMetadata} as if it were unannotated.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see GraphQuery
  */
 @Target(ElementType.PARAMETER)

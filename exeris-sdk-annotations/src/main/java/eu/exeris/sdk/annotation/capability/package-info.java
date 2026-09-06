@@ -73,8 +73,6 @@
  * hand-written SKU entrypoint invokes the conductor directly — the library
  * contract is identical in both cases.
  *
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  */
 package eu.exeris.sdk.annotation.capability;

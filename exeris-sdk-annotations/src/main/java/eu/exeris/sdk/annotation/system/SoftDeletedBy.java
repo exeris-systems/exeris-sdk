@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically populated from security context.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Deleted By")
  * @SoftDeletedBy
  * private UUID deletedBy;
- * }</pre>
+ * }
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
  * fields for this marker, so writing it changes nothing in the emitted output. What
@@ -23,9 +23,7 @@ import java.lang.annotation.Target;
  * field-name override attributes choosing its name. See the package javadoc for the live
  * path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see SoftDelete
  */
 @Target(ElementType.FIELD)

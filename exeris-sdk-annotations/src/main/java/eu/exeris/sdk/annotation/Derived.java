@@ -18,10 +18,10 @@ import java.lang.annotation.Target;
  * hatch).
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Derived(expression = "lineItems.sum(i -> i.amount)", dependsOn = {"lineItems"})
  * public BigDecimal total() { ... }   // body is the manual fallback until generated
- * }</pre>
+ * }
  *
  * <p>Cross-aggregate derivations are allowed — a {@link #dependsOn()} entry may
  * be a related-entity path (e.g. {@code "customer.tier"}), not only a sibling
@@ -38,7 +38,7 @@ import java.lang.annotation.Target;
  * lock-step parity), and the codegen consumer are wired; see {@code ROADMAP.md}
  * and the declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
  *
- * @since 0.7.0
+ * @since 0.7
  * @see Rule
  */
 @Target({ElementType.FIELD, ElementType.METHOD})

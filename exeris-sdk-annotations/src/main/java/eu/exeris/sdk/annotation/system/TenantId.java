@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * must be annotated with {@code @TenantId} OR {@code tenantIdField} must be specified.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
  * public class Order {
  *
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
  *     @TenantId
  *     private UUID organizationId;
  * }
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>
@@ -43,9 +43,7 @@ import java.lang.annotation.Target;
  * field-name override attributes choosing its name. See the package javadoc for the live
  * path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see eu.exeris.sdk.annotation.ExerisDomain#tenantScoped()
  */
 @Target(ElementType.FIELD)

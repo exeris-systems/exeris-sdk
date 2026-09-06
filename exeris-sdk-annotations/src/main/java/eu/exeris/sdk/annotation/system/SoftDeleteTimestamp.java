@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically populated when entity is soft-deleted.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Deleted At")
  * @SoftDeleteTimestamp
  * private Instant deletedAt;
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>
@@ -31,9 +31,7 @@ import java.lang.annotation.Target;
  * field-name override attributes choosing its name. See the package javadoc for the live
  * path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see SoftDelete
  */
 @Target(ElementType.FIELD)

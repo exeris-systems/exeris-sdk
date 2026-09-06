@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * trigger saga steps, or perform other side effects.
  *
  * <h2>In Projection:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(name = "order-summary", ...)
  * public class OrderSummaryProjection {
  *
@@ -27,10 +27,10 @@ import java.lang.annotation.*;
  *         // Update read model
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>In Saga:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(name = "OrderFulfillmentSaga", ...)
  * public class OrderFulfillmentSaga {
  *
@@ -42,7 +42,7 @@ import java.lang.annotation.*;
  *         return nextStep("shipOrder");
  *     }
  * }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
@@ -50,9 +50,7 @@ import java.lang.annotation.*;
  * reserved for the event-reaction verb, which is design-gated on the behavioural corpus.
  * Not to be confused with {@link DomainEvent @DomainEvent}, which is extracted and does
  * reach the emitters.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Projection
  * @see Saga
  * @see DomainEvent
@@ -251,15 +249,15 @@ public @interface EventHandler {
      * Event handler execution priority.
      */
     enum Priority {
-        /** Lowest priority (executes last) */
+        /** Lowest priority (executes last). */
         LOWEST,
-        /** Low priority */
+        /** Low priority. */
         LOW,
-        /** Normal priority (default) */
+        /** Normal priority (default). */
         NORMAL,
-        /** High priority */
+        /** High priority. */
         HIGH,
-        /** Highest priority (executes first) */
+        /** Highest priority (executes first). */
         HIGHEST
     }
 
@@ -267,16 +265,16 @@ public @interface EventHandler {
      * Transaction propagation mode for event handlers.
      */
     enum TransactionMode {
-        /** Require existing transaction */
+        /** Require existing transaction. */
         REQUIRED,
 
-        /** Create new transaction */
+        /** Create new transaction. */
         REQUIRES_NEW,
 
-        /** No transaction */
+        /** No transaction. */
         NONE,
 
-        /** Support existing, but don't require */
+        /** Support existing, but don't require. */
         SUPPORTS
     }
 
@@ -284,17 +282,17 @@ public @interface EventHandler {
      * Log levels for event handler logging.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 
@@ -311,27 +309,27 @@ public @interface EventHandler {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface RetryPolicy {
-        /** Maximum number of retry attempts
+        /** Maximum number of retry attempts.
          * @return max attempts */
         int maxAttempts() default 3;
 
-        /** Initial delay between retries (ISO-8601 duration)
+        /** Initial delay between retries (ISO-8601 duration).
          * @return delay duration */
         String delay() default "PT1S";
 
-        /** Backoff multiplier for exponential backoff
+        /** Backoff multiplier for exponential backoff.
          * @return backoff multiplier */
         double backoff() default 2.0;
 
-        /** Maximum delay between retries (ISO-8601 duration)
+        /** Maximum delay between retries (ISO-8601 duration).
          * @return max delay */
         String maxDelay() default "PT1M";
 
-        /** Exception types that should trigger a retry
+        /** Exception types that should trigger a retry.
          * @return exception types to retry on */
         Class<? extends Throwable>[] retryOn() default {};
 
-        /** Exception types that should NOT trigger a retry
+        /** Exception types that should NOT trigger a retry.
          * @return exception types to not retry on */
         Class<? extends Throwable>[] noRetryOn() default {};
     }
@@ -344,11 +342,11 @@ public @interface EventHandler {
      * Container annotation for multiple {@link EventHandler} annotations.
      *
      * <p>Allows declaring multiple event handlers on a single class or method:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @EventHandler(event = "OrderCreated", topic = "orders.created")
      * @EventHandler(event = "OrderCancelled", topic = "orders.cancelled")
      * public class OrderProcessor { ... }
-     * }</pre>
+     * }
      *
      *
      * <p><strong>Status: RESERVED</strong> — a container is read only when the annotation

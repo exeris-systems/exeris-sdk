@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * with optional compensation for rollback on failure.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @SagaStep(
  *     order = 1,
  *     name = "reserveInventory",
@@ -22,10 +22,10 @@ import java.lang.annotation.*;
  *         new ReserveInventoryCommand(state.getProductId(), state.getQuantity())
  *     );
  * }
- * }</pre>
+ * }
  *
  * <h2>Parallel Execution — declared, not yet executed:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @SagaStep(order = 2, name = "notifyWarehouse", parallel = true, ...)
  * public SagaAction notifyWarehouse() { ... }
  *
@@ -34,10 +34,10 @@ import java.lang.annotation.*;
  * // Declares that these two may run together. Today they do not: the generated
  * // flow is a strict linear chain, so notifyShipping runs after notifyWarehouse.
  * // See parallel() for why, and for what has to change first.
- * }</pre>
+ * }
  *
  * <h2>Conditional Step:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @SagaStep(
  *     order = 3,
  *     name = "applyDiscount",
@@ -45,10 +45,10 @@ import java.lang.annotation.*;
  *     skipOnConditionFalse = true
  * )
  * public SagaAction applyDiscount() { ... }
- * }</pre>
+ * }
  *
  * <h2>With Dependencies:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @SagaStep(
  *     order = 4,
  *     name = "finalizeOrder",
@@ -56,16 +56,14 @@ import java.lang.annotation.*;
  *     required = true
  * )
  * public SagaAction finalizeOrder() { ... }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaStepMetadata} and read by
  * {@code KernelSagaGenerator} and the TypeScript saga emitter. Its four nested mapping
  * types are not extracted — see their own notes — so a step reaches the generator as a
  * named, ordered unit without its command headers, input/output mappings or metric tags.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Saga
  * @see DomainEvent
  */
@@ -168,7 +166,7 @@ public @interface SagaStep {
      *
      * @return the step kind, or {@link StepKind#UNSPECIFIED} to defer to
      *         structural inference
-     * @since 0.9.0
+     * @since 0.9
      */
     StepKind kind() default StepKind.UNSPECIFIED;
 
@@ -771,7 +769,7 @@ public @interface SagaStep {
      * {@link #UNSPECIFIED}, which exists only on this side because annotation
      * attributes cannot default to {@code null}.
      *
-     * @since 0.9.0
+     * @since 0.9
      */
     enum StepKind {
         /**
@@ -799,25 +797,25 @@ public @interface SagaStep {
      * Which service instance a step's command is routed to.
      */
     enum InstanceSelection {
-        /** Any available instance */
+        /** Any available instance. */
         ANY,
 
-        /** Same instance as previous step */
+        /** Same instance as previous step. */
         STICKY,
 
-        /** Round-robin selection */
+        /** Round-robin selection. */
         ROUND_ROBIN,
 
-        /** Least loaded instance */
+        /** Least loaded instance. */
         LEAST_LOADED,
 
-        /** Consistent hashing by key */
+        /** Consistent hashing by key. */
         CONSISTENT_HASH,
 
-        /** Specific instance by ID */
+        /** Specific instance by ID. */
         SPECIFIC,
 
-        /** Local instance (in-process) */
+        /** Local instance (in-process). */
         LOCAL
     }
 

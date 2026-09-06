@@ -25,7 +25,7 @@ import java.lang.annotation.*;
  * {@link #graphqlApi()} reaches the AST and is read by no generator.
  *
  * <h2>Minimal Example:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders")
  * public class Order {
  *     @Field(label = "ID")
@@ -34,7 +34,7 @@ import java.lang.annotation.*;
  *     @Field(label = "Status")
  *     private OrderStatus status;
  * }
- * }</pre>
+ * }
  *
  * <h2>Full Example with System Fields:</h2>
  * <p>System columns are derived from the <em>entity-level flags</em> below. The
@@ -43,7 +43,7 @@ import java.lang.annotation.*;
  * RESERVED — no reader extracts them, so adding them changes nothing. They are
  * omitted here deliberately, so that the example shows what actually generates
  * the columns:
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(
  *     module = "sales",
  *     path = "/orders",
@@ -63,11 +63,10 @@ import java.lang.annotation.*;
  *     @Field(label = "Status", filterable = true)
  *     private OrderStatus status;
  * }
- * }</pre>
+ * }
  * <p>The class needs no superclass — the SDK ships no base entity type.
  *
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -258,7 +257,7 @@ public @interface ExerisDomain {
      *
      * @return the data-scope tier, or {@link DataScope#UNSPECIFIED} to defer to
      *         {@link #tenantScoped()}
-     * @since 0.10.0
+     * @since 0.10
      * @see DataScope
      */
     DataScope dataScope() default DataScope.UNSPECIFIED;
@@ -269,7 +268,7 @@ public @interface ExerisDomain {
      * <p>A mirror of the AST-owned {@code DataScope} — see {@link #dataScope()}
      * for why the two types are separate — plus {@link #UNSPECIFIED}.
      *
-     * @since 0.10.0
+     * @since 0.10
      */
     enum DataScope {
         /**
@@ -573,11 +572,11 @@ public @interface ExerisDomain {
      * Validation mode for system field requirements.
      */
     enum ValidationMode {
-        /** Missing required fields cause compilation error */
+        /** Missing required fields cause compilation error. */
         STRICT,
-        /** Missing required fields cause warning, defaults are used */
+        /** Missing required fields cause warning, defaults are used. */
         LENIENT,
-        /** No validation, fields are optional */
+        /** No validation, fields are optional. */
         NONE
     }
 

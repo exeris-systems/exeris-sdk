@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * improving user experience in Enterprise applications.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "hr", path = "/employees")
  * public class Employee {
  *
@@ -32,10 +32,10 @@ import java.lang.annotation.*;
  *     @Tab(name = "emergency", label = "Emergency", order = 3, icon = "emergency")
  *     private String emergencyContact;
  * }
- * }</pre>
+ * }
  *
  * <h2>Tabs with Badges:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Notes")
  * @Tab(
  *     name = "notes",
@@ -45,10 +45,10 @@ import java.lang.annotation.*;
  *     badgeColor = "primary"
  * )
  * private List<Note> notes;
- * }</pre>
+ * }
  *
  * <h2>Lazy-Loaded Tabs:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order History")
  * @Tab(
  *     name = "history",
@@ -57,10 +57,10 @@ import java.lang.annotation.*;
  *     icon = "history"
  * )
  * private List<Order> orderHistory;
- * }</pre>
+ * }
  *
  * <h2>Target design — the template this would emit:</h2>
- * <pre>{@code
+ * {@snippet lang="html" :
  * <mat-tab-group>
  *   <mat-tab label="Basic Info">
  *     <mat-icon>person</mat-icon>
@@ -71,14 +71,12 @@ import java.lang.annotation.*;
  *     <!-- Fields in 'compensation' tab -->
  *   </mat-tab>
  * </mat-tab-group>
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — presentation grouping is emitted from {@link View @View} — its regions and blocks — and, at the leaf level, from {@link UI @UI}. This
  * annotation feeds neither, so a tab declared here appears in no generated template.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see UIGroup
  * @see UI
  */
@@ -134,9 +132,9 @@ public @interface Tab {
      * <p>Shows a numeric badge on the tab header.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Tab(name = "comments", badgeField = "commentCount")
-     * }</pre>
+     * }
      * Result: Tab shows "Comments (5)" where 5 is value of commentCount
      *
      * @return field name for badge value
@@ -163,10 +161,10 @@ public @interface Tab {
      * SpEL expression determining when this tab is disabled.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * disabledWhen = "status == 'DRAFT'"       // Disable until published
      * disabledWhen = "!hasPermission('VIEW')"  // Disable without permission
-     * }</pre>
+     * }
      *
      * @return disabled condition expression
      */
@@ -177,10 +175,10 @@ public @interface Tab {
      * <p>When expression evaluates to false, the tab is not rendered.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * visibleWhen = "type == 'PREMIUM'"        // Show for premium only
      * visibleWhen = "hasRole('ADMIN')"         // Show for admins only
-     * }</pre>
+     * }
      *
      * @return visibility condition expression
      */

@@ -9,22 +9,20 @@ import java. lang.annotation.*;
  * and require internal service authentication.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @InternalApi(
  *     consumers = {"billing-service", "notification-service"},
  *     rateLimit = 1000
  * )
  * @Action(name = "sync-balance", ...)
  * public void syncBalance() { ... }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code InternalApiMetadata}, so it
  * survives onto the wire, and read by no generator on either side — no emitted artifact
  * changes when you write it.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.SOURCE)

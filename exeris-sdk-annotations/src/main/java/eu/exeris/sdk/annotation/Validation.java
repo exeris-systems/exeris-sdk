@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * frontend (Angular Forms), ensuring consistent data integrity across the stack.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Email Address",
  *     required = true
@@ -18,10 +18,10 @@ import java.lang.annotation.*;
  *     message = "Please enter a valid email address"
  * )
  * private String email;
- * }</pre>
+ * }
  *
  * <h2>String Length Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Username",
  *     required = true
@@ -33,10 +33,10 @@ import java.lang.annotation.*;
  *     message = "Username must be 3-20 characters, alphanumeric and underscore only"
  * )
  * private String username;
- * }</pre>
+ * }
  *
  * <h2>Numeric Range Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Age",
  *     required = true
@@ -47,10 +47,10 @@ import java.lang.annotation.*;
  *     message = "Age must be between 18 and 120"
  * )
  * private Integer age;
- * }</pre>
+ * }
  *
  * <h2>Decimal Precision Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Price",
  *     required = true
@@ -62,10 +62,10 @@ import java.lang.annotation.*;
  *     message = "Price must be between 0.01 and 999,999.99"
  * )
  * private BigDecimal price;
- * }</pre>
+ * }
  *
  * <h2>Pattern (Regex) Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Phone Number"
  * )
@@ -74,10 +74,10 @@ import java.lang.annotation.*;
  *     message = "Please enter a valid international phone number"
  * )
  * private String phoneNumber;
- * }</pre>
+ * }
  *
  * <h2>URL and Email Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Website"
  * )
@@ -95,10 +95,10 @@ import java.lang.annotation.*;
  *     message = "Invalid email format"
  * )
  * private String email;
- * }</pre>
+ * }
  *
  * <h2>Custom Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Coupon Code"
  * )
@@ -107,10 +107,10 @@ import java.lang.annotation.*;
  *     message = "Invalid or expired coupon code"
  * )
  * private String couponCode;
- * }</pre>
+ * }
  *
  * <h2>Multiple Validations:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Password",
  *     required = true
@@ -122,31 +122,29 @@ import java.lang.annotation.*;
  *     message = "Password must be 8+ characters with uppercase, lowercase, number, and special character"
  * )
  * private String password;
- * }</pre>
+ * }
  *
  * <h2>Target design — the code the bounds drive, and the flags do not:</h2>
  * <p>The SDK generates validation code for both backend and frontend:
  *
  * <p><strong>Backend (Spring Validation):</strong>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @NotNull(message = "Email is required")
  * @Email(message = "Please enter a valid email address")
  * private String email;
- * }</pre>
+ * }
  *
  * <p><strong>Frontend (Angular Validators):</strong>
- * <pre>{@code
+ * {@snippet lang="typescript" :
  * email: ['', [Validators.required, Validators.email]],
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code FieldMetadata} and read by the
  * Flyway, entity-schema, OpenAPI and validation-rule generators, and by the TypeScript form
  * and type emitters. Only the bounds carry: {@link #min()}, {@link #max()}, {@link #minLength()}, {@link #maxLength()} and {@link #pattern()}. The flag constraints ({@link #email()}, {@link #url()}, {@link #future()}, {@link #past()}, …) are declared here and
  * extracted by nobody.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  */
 @Target(ElementType.FIELD)
@@ -176,9 +174,9 @@ public @interface Validation {
      * <p>Applies to: Integer, Long, Float, Double, BigDecimal
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(min = 0, message = "Value must be positive")
-     * }</pre>
+     * }
      *
      * @return minimum value
      */
@@ -189,9 +187,9 @@ public @interface Validation {
      * <p>Applies to: Integer, Long, Float, Double, BigDecimal
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(max = 100, message = "Value cannot exceed 100")
-     * }</pre>
+     * }
      *
      * @return maximum value
      */
@@ -202,9 +200,9 @@ public @interface Validation {
      * <p>Use this for {@code BigDecimal} fields where precision matters.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(decimalMin = "0.01", message = "Minimum value is 0.01")
-     * }</pre>
+     * }
      *
      * @return minimum decimal value
      */
@@ -215,9 +213,9 @@ public @interface Validation {
      * <p>Use this for {@code BigDecimal} fields where precision matters.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(decimalMax = "999999.99", message = "Maximum value is 999,999.99")
-     * }</pre>
+     * }
      *
      * @return maximum decimal value
      */
@@ -228,9 +226,9 @@ public @interface Validation {
      * <p>Applies to: String, CharSequence
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(minLength = 3, message = "Minimum 3 characters")
-     * }</pre>
+     * }
      *
      * @return minimum length
      */
@@ -241,9 +239,9 @@ public @interface Validation {
      * <p>Applies to: String, CharSequence
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(maxLength = 255, message = "Maximum 255 characters")
-     * }</pre>
+     * }
      *
      * @return maximum length
      */
@@ -380,16 +378,16 @@ public @interface Validation {
      * with standard validators.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Validation(
      *     customValidator = "uniqueEmailValidator",
      *     message = "Email already exists"
      * )
      * private String email;
-     * }</pre>
+     * }
      *
      * <p>The validator class must implement {@code ConstraintValidator}:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Component("uniqueEmailValidator")
      * public class UniqueEmailValidator implements ConstraintValidator<Validation, String> {
      *     @Override
@@ -398,7 +396,7 @@ public @interface Validation {
      *         return !emailRepository.existsByEmail(value);
      *     }
      * }
-     * }</pre>
+     * }
      *
      * @return custom validator name
      */
@@ -423,9 +421,9 @@ public @interface Validation {
      * </ul>
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * message = "{field} must be between {min} and {max}"
-     * }</pre>
+     * }
      *
      * @return validation error message
      */
@@ -454,7 +452,7 @@ public @interface Validation {
      * validation rules in different contexts.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     required = true
      * )
@@ -466,7 +464,7 @@ public @interface Validation {
      * )
      * @Validation(groups = {"FullProfile"})
      * private String bio;
-     * }</pre>
+     * }
      *
      * @return validation group names
      */
@@ -482,7 +480,7 @@ public @interface Validation {
      * async operations internally.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     label = "Email"
      * )
@@ -492,10 +490,10 @@ public @interface Validation {
      *     message = "Email already exists"
      * )
      * private String email;
-     * }</pre>
+     * }
      *
      * <p>The async validator must implement appropriate interface:
-     * <pre>{@code
+     * {@snippet :
      * // Frontend (Angular)
      * @Injectable()
      * export class UniqueEmailValidator implements AsyncValidator {
@@ -514,7 +512,7 @@ public @interface Validation {
      *         return !emailRepository.existsByEmail(value);
      *     }
      * }
-     * }</pre>
+     * }
      *
      * @return async validator name
      */

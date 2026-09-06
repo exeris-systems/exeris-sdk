@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
  * to say which column that is.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "catalog", path = "/species", dataScope = DataScope.UNIVERSE)
  * public class Species {
  *
@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  *     @SharedScope
  *     private UUID worldId;             // reads widen across tenants sharing this
  * }
- * }</pre>
+ * }
  *
  * <h2>It does not replace {@link TenantId}, it accompanies it</h2>
  * <p>The kernel's shared tier is an <em>orthogonal row-visibility dimension</em>,
@@ -61,7 +61,7 @@ import java.lang.annotation.Target;
  * transcribing a string no kernel surface defined. With both halves published, the one thing
  * still missing for a transcription is the SDK saying which column to compare — which is this.
  *
- * @since 0.12.0
+ * @since 0.12
  * @see TenantId
  * @see eu.exeris.sdk.annotation.ExerisDomain#dataScope()
  */

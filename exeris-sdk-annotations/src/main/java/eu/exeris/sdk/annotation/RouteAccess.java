@@ -21,11 +21,11 @@ import java.lang.annotation.Target;
  * meaning the surface already published.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(name = "login", label = "Log in", httpMethod = "POST", path = "/login")
  * @RouteAccess(RouteAccess.Level.PUBLIC)
  * public AuthToken login(@ActionParam(name = "credentials") Credentials credentials) { ... }
- * }</pre>
+ * }
  *
  * <h2>Absence is the third state — deliberately</h2>
  * <p>There is no {@code UNSPECIFIED} constant. An element that carries no
@@ -81,7 +81,7 @@ import java.lang.annotation.Target;
  * {@code preview} <em>and</em> the tooling transcription exists. See
  * {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
- * @since 0.12.0
+ * @since 0.12
  * @see ExerisDomain#permissions()
  * @see Action#permissions()
  */
@@ -108,7 +108,7 @@ public @interface RouteAccess {
      * deliberately absent: {@code permissions} already declares those, and a second
      * declaration site for one fact is the shape ADR-054 closed.
      *
-     * @since 0.12.0
+     * @since 0.12
      */
     enum Level {
 

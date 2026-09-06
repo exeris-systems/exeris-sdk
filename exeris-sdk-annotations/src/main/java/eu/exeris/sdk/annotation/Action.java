@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * to trigger these actions.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", aggregate = "Order")
  * public class Order {
  *
@@ -29,10 +29,10 @@ import java.lang.annotation.*;
  *         this.approvedAt = LocalDateTime.now();
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Parameters:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(
  *     name = "reject",
  *     label = "Reject Order",
@@ -51,10 +51,10 @@ import java.lang.annotation.*;
  *         sendRejectionEmail();
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Return Value:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(
  *     name = "calculate-total",
  *     label = "Recalculate Total",
@@ -69,10 +69,10 @@ import java.lang.annotation.*;
  *     this.totalAmount = total;
  *     return total;
  * }
- * }</pre>
+ * }
  *
  * <h2>Bulk Action (Multiple Entities):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(
  *     name = "bulk-approve",
  *     label = "Approve Selected",
@@ -92,10 +92,10 @@ import java.lang.annotation.*;
  *         .peek(Order::approve)
  *         .collect(Collectors.toList());
  * }
- * }</pre>
+ * }
  *
  * <h2>Conditional Action (Show/Hide Based on State):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Action(
  *     name = "cancel",
  *     label = "Cancel Order",
@@ -114,12 +114,12 @@ import java.lang.annotation.*;
  *     }
  *     this.status = OrderStatus.CANCELLED;
  * }
- * }</pre>
+ * }
  *
  * <h2>Generated Code:</h2>
  *
  * <p><strong>REST Controller Endpoint:</strong>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @PostMapping("/{id}/approve")
  * @PreAuthorize("hasAnyRole('ROLE_MANAGER', 'ROLE_ADMIN')")
  * public ResponseEntity<OrderResponse> approve(@PathVariable UUID id) {
@@ -129,10 +129,10 @@ import java.lang.annotation.*;
  *     orderRepository.save(order);
  *     return ResponseEntity.ok(mapper.toResponse(order));
  * }
- * }</pre>
+ * }
  *
  * <p><strong>Angular UI Button:</strong>
- * <pre>{@code
+ * {@snippet lang="html" :
  * <button
  *   mat-raised-button
  *   color="primary"
@@ -141,7 +141,7 @@ import java.lang.annotation.*;
  *   <mat-icon>check_circle</mat-icon>
  *   Approve Order
  * </button>
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code ActionMetadata} and read by the
@@ -149,9 +149,7 @@ import java.lang.annotation.*;
  * side by the guard and action-stream client emitters. Not every attribute is live with it:
  * {@link #path()}, {@link #roles()} and {@link #permissions()} are extracted by nobody and
  * carry their own notes below.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  * @see UI
  * @see ExerisDomain
@@ -215,7 +213,9 @@ public @interface Action {
      * <p><strong>Not consumed by any generator, and optional since 0.11.0.</strong> The served route
      * is <em>derived</em> from the domain path and the action name:
      *
-     * <pre>{@code {domainPath}/{id}/actions/{kebab-case-action-name}}</pre>
+     * {@snippet lang="text" :
+     * {domainPath}/{id}/actions/{kebab-case-action-name}
+     * }
      *
      * <p>So an {@code @Action(name = "commandFormation")} on a domain at {@code /fleets} is served at
      * {@code POST /fleets/{id}/actions/command-formation} regardless of what this attribute says.
@@ -384,12 +384,12 @@ public @interface Action {
      * It is the same shape as {@link #path()}: written, compiled, and carried nowhere.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * ui = @UI(
      *     icon = "check_circle",
      *     cssClass = "btn-success"
      * )
-     * }</pre>
+     * }
      *
      * @return UI configuration
      */
@@ -470,14 +470,14 @@ public @interface Action {
      * </ul>
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Action(
      *     name = "generate-report",
      *     streaming = true,
      *     streamEventType = "ReportProgress"
      * )
      * public Flux<ReportProgress> generateReport() { ...  }
-     * }</pre>
+     * }
      *
      * <p><strong>Open-Core status (kernel v0.10.0, ADR-043):</strong>
      * partially live. The kernel server-push affordance (SSE-first
@@ -550,22 +550,22 @@ public @interface Action {
      * Button variant enum for visual styling.
      */
     enum Variant {
-        /** Primary action (main CTA) - typically blue/brand color */
+        /** Primary action (main CTA) - typically blue/brand color. */
         PRIMARY,
 
-        /** Secondary action - typically gray/neutral */
+        /** Secondary action - typically gray/neutral. */
         SECONDARY,
 
-        /** Success action - typically green (approve, confirm) */
+        /** Success action - typically green (approve, confirm). */
         SUCCESS,
 
-        /** Warning action - typically orange/yellow (needs attention) */
+        /** Warning action - typically orange/yellow (needs attention). */
         WARNING,
 
-        /** Danger action - typically red (delete, reject) */
+        /** Danger action - typically red (delete, reject). */
         DANGER,
 
-        /** Ghost/text action - minimal styling, low emphasis */
+        /** Ghost/text action - minimal styling, low emphasis. */
         GHOST
     }
 
@@ -573,16 +573,16 @@ public @interface Action {
      * Button location enum (matches task specification).
      */
     enum Location {
-        /** Show in detail page */
+        /** Show in detail page. */
         DETAIL,
 
-        /** Show in list view for each row */
+        /** Show in list view for each row. */
         LIST_ROW,
 
-        /** Show for bulk operations (multiple selected rows) */
+        /** Show for bulk operations (multiple selected rows). */
         LIST_BULK,
 
-        /** Show in list header/toolbar */
+        /** Show in list header/toolbar. */
         LIST_HEADER
     }
 

@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * and edge properties.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(type = "BELONGS_TO", target = Category.class)
  * private Category category;
  *
@@ -20,10 +20,10 @@ import java.lang.annotation.*;
  *     direction = Direction.INCOMING
  * )
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>Weighted Edge:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(
  *     type = "RATED",
  *     target = Product.class,
@@ -32,17 +32,17 @@ import java.lang.annotation.*;
  *     properties = {"rating", "reviewDate"}
  * )
  * private Product ratedProduct;
- * }</pre>
+ * }
  *
  * <h2>Bidirectional:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphEdge(
  *     type = "FRIEND_OF",
  *     target = User.class,
  *     bidirectional = true
  * )
  * private List<User> friends;
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code GraphEdgeMetadata} by the
@@ -51,9 +51,7 @@ import java.lang.annotation.*;
  * this short of LIVE: only one of the two readers handles it. Its three nested property types are not extracted — see
  * their own notes — so an edge reaches the writer with its endpoints and without its
  * properties.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Graph
  * @see GraphProperty
  */
@@ -427,13 +425,13 @@ public @interface GraphEdge {
      * Edge direction in the graph.
      */
     enum Direction {
-        /** Edge goes from this node to target */
+        /** Edge goes from this node to target. */
         OUTGOING,
 
-        /** Edge comes from target to this node */
+        /** Edge comes from target to this node. */
         INCOMING,
 
-        /** Edge direction doesn't matter (query both ways) */
+        /** Edge direction doesn't matter (query both ways). */
         BOTH
     }
 
@@ -478,11 +476,11 @@ public @interface GraphEdge {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface StaticProperty {
-        /** Property name
+        /** Property name.
          * @return the name */
         String name();
 
-        /** Property value
+        /** Property value.
          * @return the value */
         String value();
     }
@@ -496,11 +494,11 @@ public @interface GraphEdge {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface ComputedProperty {
-        /** Property name
+        /** Property name.
          * @return the name */
         String name();
 
-        /** SpEL expression to compute value
+        /** SpEL expression to compute value.
          * @return the expression */
         String expression();
     }

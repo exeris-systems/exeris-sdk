@@ -18,11 +18,11 @@ import java.lang.annotation.Target;
  * it always had and is not superseded.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(displayName = "Statement PDF")
  * @Blob(contentTypes = {"application/pdf"})
  * private BlobRef statement;
- * }</pre>
+ * }
  *
  * <h2>The reference is tenant-relative — always</h2>
  * <p>{@link #container()} names a container <em>within the caller's namespace</em>.
@@ -64,7 +64,7 @@ import java.lang.annotation.Target;
  * Rejecting it is a build-time job for {@code exeris-tooling}; it is recorded here so
  * the combination is not written in the first place.
  *
- * @since 0.11.0
+ * @since 0.11
  * @see Field
  * @see ExerisDomain#dataScope()
  */
