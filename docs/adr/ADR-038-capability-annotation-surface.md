@@ -1,3 +1,13 @@
+---
+title: "ADR-038: SDK realization of the capability annotation surface — @CapabilityModule / @Provides / @Requires / @CapabilityLifecycle"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-07-21
+slug: adr/ADR-038
+---
+
 # ADR-038: SDK realization of the capability annotation surface — `@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle`
 
 | Attribute       | Value                                                                                          |

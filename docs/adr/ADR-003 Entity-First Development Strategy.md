@@ -1,3 +1,13 @@
+---
+title: "ADR-003: Entity-First Development Strategy"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-03
+slug: adr/ADR-003
+---
+
 # ADR-003: Entity-First Development Strategy
 
 | Attribute      | Value                                                                                                                                                                    |

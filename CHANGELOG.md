@@ -1,3 +1,11 @@
+---
+title: Changelog
+type: changelog
+visibility: public
+owning-repo: exeris-sdk
+last-verified: 2026-09-04
+---
+
 # Changelog
 
 All notable changes to the Exeris SDK are documented here. The format follows

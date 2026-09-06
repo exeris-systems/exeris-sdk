@@ -1,3 +1,13 @@
+---
+title: "ADR-042: 0.5.0 bidirectional mutation surface — MutationOp / MutationResult + AST-level three-way conflict resolution"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+slug: adr/ADR-042
+---
+
 # ADR-042: 0.5.0 bidirectional mutation surface — `MutationOp` / `MutationResult` + AST-level three-way conflict resolution
 
 | Attribute       | Value                                                                                          |

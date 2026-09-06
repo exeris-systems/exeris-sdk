@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-25: Should exeris-sdk introduce a first-class, entity-optional presentation/front model (a framework-neutral presentation IR), and with what shape and commitment?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+---
+
 # RFC-2026-06-25: Should exeris-sdk introduce a first-class, entity-optional presentation/front model (a framework-neutral presentation IR), and with what shape and commitment?
 
 | Field             | Value                                                                 |

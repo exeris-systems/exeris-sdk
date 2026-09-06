@@ -1,3 +1,13 @@
+---
+title: "ADR-037: Isolate the source-model parser/writer in a dedicated exeris-sdk-source-model-io module"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+slug: adr/ADR-037
+---
+
 # ADR-037: Isolate the source-model parser/writer in a dedicated `exeris-sdk-source-model-io` module
 
 | Attribute       | Value                                                                                          |
