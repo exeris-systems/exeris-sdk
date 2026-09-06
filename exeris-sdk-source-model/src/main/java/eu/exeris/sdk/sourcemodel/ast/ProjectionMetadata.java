@@ -166,6 +166,19 @@ public record ProjectionMetadata(
 
         public Builder description(String v) { this.description = v; return this; }
         public Builder aggregateTypes(List<String> v) { this.aggregateTypes = v; return this; }
+        /**
+         * Declares a single source aggregate, replacing whatever {@link #aggregateTypes} holds.
+         *
+         * <p>The convenience for the "expose this subset of <em>this</em> aggregate as a read-only view"
+         * case, and the setter {@link ProjectionMetadata#of(String, String, java.util.List)} forwards to.
+         * It <strong>replaces</strong> rather than appends, so a preceding {@code aggregateTypes(...)} is
+         * discarded and the two are order-dependent.
+         *
+         * @param v the single source aggregate
+         * @return this builder
+         * @throws NullPointerException if {@code v} is {@code null}; unlike {@link #aggregateTypes}, which
+         *         treats a null list as an empty one
+         */
         public Builder aggregateType(String v) { this.aggregateTypes = List.of(v); return this; }
         public Builder events(List<String> v) { this.events = v; return this; }
         public Builder eventClassNames(List<String> v) { this.eventClassNames = v; return this; }
