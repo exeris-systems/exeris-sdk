@@ -1,3 +1,13 @@
+---
+title: "ADR-072: The kernel 0.11 preview SPI gets a design-time surface in 0.11.0 — reserved, and outside the 1.0.0 freeze"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-09-04
+slug: adr/ADR-072
+---
+
 # ADR-072: The kernel 0.11 preview SPI gets a design-time surface in 0.11.0 — reserved, and outside the 1.0.0 freeze
 
 | Attribute       | Value                                                                                                     |

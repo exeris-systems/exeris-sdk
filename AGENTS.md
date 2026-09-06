@@ -20,7 +20,7 @@ canonical AST + an Angular/Tailwind UI kit. It is the most upstream Exeris repos
 depends on the kernel, tooling, or platform. Downstream consumers (`exeris-tooling`,
 `exeris-platform`, `budgetHQ`) depend on it.
 
-The repository serves the **Entity-First** paradigm ([ADR-003](docs/adr/ADR-003%20Entity-First%20Development%20Strategy.md)):
+The repository serves the **Entity-First** paradigm ([ADR-003](docs/adr/ADR-003-entity-first-development-strategy.md)):
 the Java domain class annotated with `@ExerisDomain` is the **single source of truth**; SQL,
 endpoints, DTOs, and UI views are generated artifacts.
 
@@ -55,7 +55,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
 
 ## Architecture and documentation entry points
 
-1. [`docs/adr/`](docs/adr/) for architectural decisions ([ADR-003](docs/adr/ADR-003%20Entity-First%20Development%20Strategy.md),
+1. [`docs/adr/`](docs/adr/) for architectural decisions ([ADR-003](docs/adr/ADR-003-entity-first-development-strategy.md),
    [ADR-024](docs/adr/ADR-024.link.md), [ADR-037](docs/adr/ADR-037-source-model-io-module.md),
    [ADR-054](docs/adr/ADR-054-field-validation-min-max-pattern-cut.md),
    [ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md), [ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),

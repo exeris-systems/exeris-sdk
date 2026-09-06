@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-18: Should exeris-sdk introduce a declarative-behaviour layer (@Derived / @Rule), and with what commitment?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-18
+---
+
 # RFC-2026-06-18: Should exeris-sdk introduce a declarative-behaviour layer (`@Derived` / `@Rule`), and with what commitment?
 
 | Field             | Value                                                                 |

@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-11: How does bidirectional sync tell user edits from tooling mutations — and what happens when they collide?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-14
+---
+
 # RFC-2026-06-11: How does bidirectional sync tell user edits from tooling mutations — and what happens when they collide?
 
 | Field             | Value                                                                 |

@@ -25,7 +25,7 @@ Architect/reviewer for the most upstream Exeris repo. Prioritise wire-format and
 
 ## Preflight
 - Read `CLAUDE.md` for load-bearing facts + drift hazards.
-- Read `docs/adr/ADR-003 Entity-First Development Strategy.md` for the architectural premise.
+- Read `docs/adr/ADR-003-entity-first-development-strategy.md` for the architectural premise.
 - Read `MIGRATION.md` for the deprecation pipeline.
 - Read `ROADMAP.md` for milestone scope.
 - Read package-info files when scoping changes:
