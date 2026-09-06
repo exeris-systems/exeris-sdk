@@ -1,3 +1,13 @@
+---
+title: "ADR-042: 0.5.0 bidirectional mutation surface — MutationOp / MutationResult + AST-level three-way conflict resolution"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+slug: adr/ADR-042
+---
+
 # ADR-042: 0.5.0 bidirectional mutation surface — `MutationOp` / `MutationResult` + AST-level three-way conflict resolution
 
 | Attribute       | Value                                                                                          |
@@ -8,7 +18,7 @@
 | **Scope**       | cross-repo                                                                                     |
 | **Owning Repo** | `exeris-sdk`                                                                                    |
 | **Driven By**   | [RFC-2026-06-11](../rfc/RFC-2026-06-11-source-model-conflict-resolution.md) (ACCEPTED — Option B) |
-| **Builds On**   | [ADR-037](ADR-037-source-model-io-module.md) (records in `source-model`, application in `-io`); [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) Entity-First |
+| **Builds On**   | [ADR-037](ADR-037-source-model-io-module.md) (records in `source-model`, application in `-io`); [ADR-003](ADR-003-entity-first-development-strategy.md) Entity-First |
 | **Compliance**  | Zero runtime coupling invariant (`source-model` pulls only `jackson-annotations`; JavaParser stays in `-io`); AST + Jackson 3 wire-format contract |
 
 > ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md). The gap between ADR-038 and ADR-042 in this repo is expected — 039–041 are owned by other Exeris repos.

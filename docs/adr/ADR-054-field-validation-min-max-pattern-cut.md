@@ -1,3 +1,13 @@
+---
+title: "ADR-054: Field/Validation min/max/pattern cut — @Validation sole declaration site, FieldMetadata sole AST carrier"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-07-22
+slug: adr/ADR-054
+---
+
 # ADR-054: Field/Validation `min`/`max`/`pattern` cut — `@Validation` sole declaration site, `FieldMetadata` sole AST carrier
 
 | Attribute       | Value                                                                                          |

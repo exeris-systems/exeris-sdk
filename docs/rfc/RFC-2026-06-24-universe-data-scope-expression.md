@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-24: How should @ExerisDomain express a shared-world / universe data-scope at design time?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-09-04
+---
+
 # RFC-2026-06-24: How should `@ExerisDomain` express a shared-world / `universe` data-scope at design time?
 
 | Field             | Value                                                                 |

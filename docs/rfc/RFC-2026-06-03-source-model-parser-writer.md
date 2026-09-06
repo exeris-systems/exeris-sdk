@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-03: Where do the 0.3.0 source-model parser & writer live without breaking zero runtime coupling?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-03
+---
+
 # RFC-2026-06-03: Where do the 0.3.0 source-model parser & writer live without breaking zero runtime coupling?
 
 | Field             | Value                                                                 |

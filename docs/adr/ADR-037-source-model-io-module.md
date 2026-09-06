@@ -1,3 +1,13 @@
+---
+title: "ADR-037: Isolate the source-model parser/writer in a dedicated exeris-sdk-source-model-io module"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+slug: adr/ADR-037
+---
+
 # ADR-037: Isolate the source-model parser/writer in a dedicated `exeris-sdk-source-model-io` module
 
 | Attribute       | Value                                                                                          |
@@ -8,7 +18,7 @@
 | **Scope**       | cross-repo                                                                                     |
 | **Owning Repo** | `exeris-sdk`                                                                                    |
 | **Driven By**   | [RFC-2026-06-03](../rfc/RFC-2026-06-03-source-model-parser-writer.md) (ACCEPTED)               |
-| **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) Entity-First |
+| **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003-entity-first-development-strategy.md) Entity-First |
 
 > ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md). The gap between ADR-003 and ADR-037 in this repo is expected — 004–036 are owned by other Exeris repos.
 
@@ -63,7 +73,7 @@ The module is named `-io` (not `-parser`) because it owns both directions of sou
 ## Cross-references
 
 - [RFC-2026-06-03](../rfc/RFC-2026-06-03-source-model-parser-writer.md) — the accepted RFC this ADR locks; full options analysis (A: JavaParser into `source-model`; C: in tooling; D: do nothing) and §ADR prerequisites.
-- [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) — Entity-First: the annotated class is the single source of truth the parser/writer round-trips.
+- [ADR-003](ADR-003-entity-first-development-strategy.md) — Entity-First: the annotated class is the single source of truth the parser/writer round-trips.
 - `exeris-platform/exeris-platform-lsp` — the consuming repo; its custom LSP methods (`exeris/entityModel`, `exeris/applyMutation`) depend on `-io`.
 - `exeris-tooling/exeris-processor` — uses JSR-269 (not JavaParser); confirms the parser/writer is new capability, not a refactor.
 
