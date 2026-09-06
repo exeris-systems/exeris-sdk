@@ -93,9 +93,8 @@ public record ProjectionMetadata(
     /**
      * True when the projection names the aggregate(s) it is a view of.
      *
-     * @since 0.7
-          *
      * @return the {@code boolean}
+     * @since 0.7
      */
     public boolean hasSourceAggregate() {
         return !aggregateTypes.isEmpty();
@@ -104,9 +103,8 @@ public record ProjectionMetadata(
     /**
      * True when the projection exposes an explicit field subset.
      *
-     * @since 0.7
-          *
      * @return the {@code boolean}
+     * @since 0.7
      */
     public boolean hasFields() {
         return !fields.isEmpty();
@@ -115,7 +113,7 @@ public record ProjectionMetadata(
     /**
      * A minimal projection: a named view exposing a field subset, with no source
      * aggregate / subscription declared. Preserves the pre-0.7.0 factory shape.
-          *
+     *
      * @param name the {@code name} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
@@ -128,12 +126,11 @@ public record ProjectionMetadata(
      * A projection of a single source aggregate exposing a field subset — the
      * common "subset of this aggregate as a read-only view" case.
      *
-     * @since 0.7
-          *
      * @param name the {@code name} the result carries
      * @param aggregateType the {@code aggregateType} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
+     * @since 0.7
      */
     public static ProjectionMetadata of(String name, String aggregateType, List<String> fields) {
         return builder(name).aggregateType(aggregateType).fields(fields).build();

@@ -124,7 +124,7 @@ public record EventHandlerMetadata(
     /**
      * A minimal handler reacting to a single named event with the annotation's
      * default ordering / execution semantics.
-          *
+     *
      * @param name the {@code name} the result carries
      * @param event the {@code event} the result carries
      * @return the {@code EventHandlerMetadata}

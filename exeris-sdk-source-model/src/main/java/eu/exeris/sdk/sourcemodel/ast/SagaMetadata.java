@@ -311,7 +311,7 @@ public record SagaMetadata(
          * Whether this edge is terminal (no target step — saga end / abort).
          * The compact constructor normalizes a blank {@code to} to {@code null},
          * so the terminal invariant is exactly {@code to == null}.
-                  *
+         *
          * @return the {@code boolean}
          */
         public boolean isTerminal() { return to == null; }
@@ -320,7 +320,7 @@ public record SagaMetadata(
          * Whether this edge carries a guard condition. The compact constructor
          * normalizes a blank {@code guard} to {@code null}, so a present
          * {@code guard} is always non-blank.
-                  *
+         *
          * @return the {@code boolean}
          */
         public boolean hasGuard() { return guard != null; }

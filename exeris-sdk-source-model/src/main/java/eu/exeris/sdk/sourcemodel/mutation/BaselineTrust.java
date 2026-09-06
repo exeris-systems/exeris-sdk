@@ -30,10 +30,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * predates the trust fields; a {@code null} {@code schemaVersion} is treated as
  * a skew (refuse), never as "compatible."
  *
- * @since 0.5
-  *
  * @param sourceDigest the digest of the source the baseline was taken from
  * @param schemaVersion the AST wire-format version the baseline was written under
+ * @since 0.5
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

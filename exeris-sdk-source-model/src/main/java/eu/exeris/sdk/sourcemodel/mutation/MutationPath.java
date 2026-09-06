@@ -23,11 +23,10 @@ import java.util.Objects;
  * reserved by ADR-042 but out of scope for the 0.5.0 first cut, so it is not
  * modelled here.
  *
- * @since 0.5
-  *
  * @param entity the entity the path starts at
  * @param kind what kind of member the path targets
  * @param member the member's name; {@code null} when the path targets the entity itself
+ * @since 0.5
  */
 public record MutationPath(String entity, TargetKind kind, String member) {
 
@@ -146,9 +145,9 @@ public record MutationPath(String entity, TargetKind kind, String member) {
     /**
      * Parse a path string against the grammar.
      *
-     * @throws IllegalArgumentException if the string is not a structurally valid path
-          * @param path the path in its string form
+     * @param path the path in its string form
      * @return the parsed path
+     * @throws IllegalArgumentException if the string is not a structurally valid path
      */
     public static MutationPath parse(String path) {
         Objects.requireNonNull(path, MutationMessages.PATH_REQUIRED);
@@ -198,7 +197,7 @@ public record MutationPath(String entity, TargetKind kind, String member) {
      * <p>Pure path arithmetic — the ADR-042 "ancestor-or-descendant" conflict
      * rule (obligation 4) is {@code a.isSameOrAncestorOf(b) || b.isSameOrAncestorOf(a)},
      * assembled by the detection slice.
-          *
+     *
      * @param other the path to test
      * @return whether this path targets {@code other} or something containing it
      */

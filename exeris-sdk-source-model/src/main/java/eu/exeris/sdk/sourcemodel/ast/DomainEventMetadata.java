@@ -145,7 +145,7 @@ public record DomainEventMetadata(
      * Pre-EV1 4-tuple constructor — keeps existing call sites compiling and
      * defaults both EV1 payload lists to empty. The grown 6-arg canonical
      * constructor (or {@link #builder(String)}) carries the resolved payload.
-          *
+     *
      * @param name the {@code name} the result carries
      * @param topic the {@code topic} the result carries
      * @param description the {@code description} the result carries
@@ -159,14 +159,13 @@ public record DomainEventMetadata(
      * Pre-EV2 6-arg constructor — keeps the EV1 call sites compiling and leaves the
      * trigger triple unset (i.e. "not extracted", per the class javadoc).
      *
-     * @since 0.11
-          *
      * @param name the {@code name} the result carries
      * @param topic the {@code topic} the result carries
      * @param description the {@code description} the result carries
      * @param aggregateType the {@code aggregateType} the result carries
      * @param payloadFields the {@code payloadFields} the result carries
      * @param sensitiveFields the {@code sensitiveFields} the result carries
+     * @since 0.11
      */
     public DomainEventMetadata(String name, String topic, String description, String aggregateType,
                                List<String> payloadFields, List<String> sensitiveFields) {
@@ -230,9 +229,8 @@ public record DomainEventMetadata(
      * True when this event says <em>when</em> it fires. False means the baseline predates
      * EV2 trigger extraction — <b>not</b> that the event fires on create.
      *
-     * @since 0.11
-          *
      * @return the {@code boolean}
+     * @since 0.11
      */
     public boolean hasTrigger() {
         return trigger != null;

@@ -225,7 +225,7 @@ public record ActionMetadata(
      * The Java method to dispatch to: {@link #methodName()} when known, else the
      * action {@link #name()} as a best-effort fallback (covers hand-built metadata
      * and legacy JSON written before {@code methodName} existed).
-          *
+     *
      * @return the {@code String}
      */
     @JsonIgnore

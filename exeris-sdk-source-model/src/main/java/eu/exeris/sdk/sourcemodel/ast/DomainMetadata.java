@@ -211,7 +211,7 @@ public record DomainMetadata(
 
     /**
      * Fully qualified class name.
-          *
+     *
      * @return the {@code String}
      */
     public String fullyQualifiedName() {
@@ -220,7 +220,7 @@ public record DomainMetadata(
 
     /**
      * Effective table name (explicit or derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String effectiveTableName() {
@@ -229,7 +229,7 @@ public record DomainMetadata(
 
     /**
      * Effective API path (explicit or derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String effectivePath() {
@@ -238,7 +238,7 @@ public record DomainMetadata(
 
     /**
      * Effective aggregate name.
-          *
+     *
      * @return the {@code String}
      */
     public String effectiveAggregate() {
@@ -247,7 +247,7 @@ public record DomainMetadata(
 
     /**
      * Plural name for entity (derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String pluralName() {
@@ -267,7 +267,7 @@ public record DomainMetadata(
 
     /**
      * Display name for entity (same as entityName but can add spaces before capitals).
-          *
+     *
      * @return the {@code String}
      */
     public String displayName() {
@@ -331,7 +331,7 @@ public record DomainMetadata(
 
     /**
      * Find a field by name.
-          *
+     *
      * @param fieldName the {@code fieldName} the result carries
      * @return the {@code java.util.Optional}
      */

@@ -80,7 +80,7 @@ public sealed interface MutationResult {
      * The op collides with a user edit that drifted from the baseline.
      * Each value is the rendered form at {@code path}; {@code null} means
      * "absent at that side" (e.g. the field did not exist in the baseline).
-          *
+     *
      * @param path the mutation path naming what is being changed
      * @param baselineValue the value the mutation was authored against
      * @param currentValue the value found now

@@ -103,7 +103,7 @@ public record RuleMetadata(
      * Whether a violation message was declared. The compact constructor
      * normalizes a blank {@code message} to {@code null}, so a present message
      * is always non-blank.
-          *
+     *
      * @return the {@code boolean}
      */
     @JsonIgnore

@@ -122,9 +122,8 @@ public record SagaStepMetadata(
      * structural fields alone, which is precisely why {@link #kind()} exists.
      * Returns {@code null} when no kind is set and none can be inferred.
      *
-     * @since 0.7
-          *
      * @return the {@code StepKind}
+     * @since 0.7
      */
     public StepKind effectiveKind() {
         if (kind != null) {

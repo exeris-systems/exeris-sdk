@@ -188,7 +188,7 @@ public record UIMetadata(
         /**
          * Field rendered by an application-supplied custom component
          * ({@link ComponentType#CUSTOM}); {@code customComponent} names the control.
-                  *
+         *
          * @param fieldName the {@code fieldName} the result carries
          * @param customComponent the {@code customComponent} the result carries
          * @return the {@code UIFieldMetadata}
