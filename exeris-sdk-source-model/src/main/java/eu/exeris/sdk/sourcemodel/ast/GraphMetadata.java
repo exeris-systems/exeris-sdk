@@ -11,8 +11,7 @@ import java.util.List;
  * @param properties the entity fields carried onto the node
  * @param edges the edges leaving the node
  * @param queries the traversals declared against it
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

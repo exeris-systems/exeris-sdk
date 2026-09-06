@@ -21,8 +21,7 @@ import java.util.List;
  * @param valueField the target's field carried as the stored value
  * @param searchEndpoint the endpoint a generated lookup queries for targets
  * @param joinColumns the columns joining the two tables
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

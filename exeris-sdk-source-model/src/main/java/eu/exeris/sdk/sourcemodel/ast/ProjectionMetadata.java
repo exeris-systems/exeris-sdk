@@ -46,8 +46,7 @@ import java.util.List;
  * @param schema the schema the read model is stored under
  * @param fields the read model's fields
  * @param cacheable whether reads of the projection are cached
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -94,7 +93,7 @@ public record ProjectionMetadata(
     /**
      * True when the projection names the aggregate(s) it is a view of.
      *
-     * @since 0.7.0
+     * @since 0.7
           *
      * @return the {@code boolean}
      */
@@ -105,7 +104,7 @@ public record ProjectionMetadata(
     /**
      * True when the projection exposes an explicit field subset.
      *
-     * @since 0.7.0
+     * @since 0.7
           *
      * @return the {@code boolean}
      */
@@ -129,7 +128,7 @@ public record ProjectionMetadata(
      * A projection of a single source aggregate exposing a field subset — the
      * common "subset of this aggregate as a read-only view" case.
      *
-     * @since 0.7.0
+     * @since 0.7
           *
      * @param name the {@code name} the result carries
      * @param aggregateType the {@code aggregateType} the result carries
@@ -145,7 +144,7 @@ public record ProjectionMetadata(
      *
      * @param name the projection's name
      * @return a new builder
-     * @since 0.7.0
+     * @since 0.7
      */
     public static Builder builder(String name) {
         return new Builder(name);

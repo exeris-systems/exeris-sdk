@@ -32,8 +32,7 @@ import java.util.Objects;
  * @param permissions the permissions required to start the saga
  * @param monitoring the metrics, tracing and alerting configuration
  * @param transitions the state-machine edges between steps
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -106,11 +105,11 @@ public record SagaMetadata(
      * How compensation is driven once a saga step fails.
      */
     public enum CompensationStrategy {
-        /** All steps must be compensated or saga fails */
+        /** All steps must be compensated or saga fails. */
         ALL_OR_NOTHING,
-        /** Best effort - continue compensation even on failures */
+        /** Best effort - continue compensation even on failures. */
         BEST_EFFORT,
-        /** Custom compensation handler decides */
+        /** Custom compensation handler decides. */
         CUSTOM
     }
 
@@ -118,11 +117,11 @@ public record SagaMetadata(
      * The order in which a failed saga's compensations run.
      */
     public enum CompensationOrder {
-        /** Compensate in reverse order of execution */
+        /** Compensate in reverse order of execution. */
         REVERSE,
-        /** Compensate in same order as execution */
+        /** Compensate in same order as execution. */
         FORWARD,
-        /** Parallel compensation */
+        /** Parallel compensation. */
         PARALLEL
     }
 
@@ -234,7 +233,7 @@ public record SagaMetadata(
      * @param to the step the edge enters
      * @param on the outcome that takes this edge
      * @param guard an expression that must hold for the edge to be taken
-     * @since 0.7.0
+     * @since 0.7
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -331,7 +330,7 @@ public record SagaMetadata(
      * The outcome of a step that fires a {@link SagaTransition} edge. AST-owned,
      * independent of any annotation-side type.
      *
-     * @since 0.7.0
+     * @since 0.7
      */
     public enum TransitionOutcome {
         /** The step completed successfully. */

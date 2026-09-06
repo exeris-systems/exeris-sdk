@@ -70,8 +70,7 @@ import java.util.Objects;
  *        <p>Added in 0.11.0. Reserved: no processor populates it and no generator consumes it,
  *        and it is outside the 1.0.0 freeze while the kernel holds {@code …spi.storage.blob} at
  *        tier {@code preview} (ADR-072)
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)

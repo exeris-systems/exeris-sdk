@@ -8,8 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * @param name the property's name on the graph node
  * @param type the property's type in the graph store
  * @param indexed whether the graph store indexes the property
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -110,8 +110,7 @@ import java.util.Objects;
  * @param params the action's parameters, in declaration order
  * @param permissions the permissions required to invoke the action
  * @param producesEvents the events the action publishes on success
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)

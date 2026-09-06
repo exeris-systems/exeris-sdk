@@ -101,8 +101,7 @@ import java.util.List;
  *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator opens an
  *        endpoint from it, and it is outside the 1.0.0 freeze (ADR-072)
  *
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -407,7 +406,7 @@ public record DomainMetadata(
      * always had. Never returns {@code null} — an entity always has a tier.
      *
      * @return the declared tier, or the {@code tenantScoped} fallback
-     * @since 0.10.0
+     * @since 0.10
      */
     public DataScope effectiveDataScope() {
         if (dataScope != null) {

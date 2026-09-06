@@ -37,8 +37,7 @@ import java.util.Objects;
  * the round-trip guard is {@code MutationWireFormatTest}. The conflict-value
  * fields are the rendered values at the path — the detection slice produces them.
  *
- * @author Exeris SDK Team
- * @since 0.5.0
+ * @since 0.5
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "outcome")
 @JsonSubTypes({

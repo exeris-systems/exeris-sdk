@@ -80,8 +80,7 @@ import java.util.List;
  *
  * @param actionName the action the event fires on, when {@link #trigger()} names one
  * @param fieldName the field whose change fires the event, when {@link #trigger()} names one
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -105,7 +104,7 @@ public record DomainEventMetadata(
      * the {@code SagaStepMetadata.StepKind} / {@code DataScope} precedent (ADR-059),
      * which keeps the annotations module free of a source-model dependency.
      *
-     * @since 0.11.0
+     * @since 0.11
      */
     public enum Trigger {
         /** Published after the aggregate is created. */
@@ -160,7 +159,7 @@ public record DomainEventMetadata(
      * Pre-EV2 6-arg constructor — keeps the EV1 call sites compiling and leaves the
      * trigger triple unset (i.e. "not extracted", per the class javadoc).
      *
-     * @since 0.11.0
+     * @since 0.11
           *
      * @param name the {@code name} the result carries
      * @param topic the {@code topic} the result carries
@@ -203,7 +202,7 @@ public record DomainEventMetadata(
      *
      * @param name the event's name
      * @return a new builder
-     * @since 0.8.0 (EV1)
+     * @since 0.8 (EV1)
      */
     public static Builder builder(String name) {
         return new Builder(name);
@@ -231,7 +230,7 @@ public record DomainEventMetadata(
      * True when this event says <em>when</em> it fires. False means the baseline predates
      * EV2 trigger extraction — <b>not</b> that the event fires on create.
      *
-     * @since 0.11.0
+     * @since 0.11
           *
      * @return the {@code boolean}
      */
@@ -260,11 +259,11 @@ public record DomainEventMetadata(
         public Builder aggregateType(String v) { this.aggregateType = v; return this; }
         public Builder payloadFields(List<String> v) { this.payloadFields = v; return this; }
         public Builder sensitiveFields(List<String> v) { this.sensitiveFields = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder trigger(Trigger v) { this.trigger = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder actionName(String v) { this.actionName = v; return this; }
-        /** One of the moments an event can be declared to fire at. @since 0.11.0 */
+        /** One of the moments an event can be declared to fire at. @since 0.11. */
         public Builder fieldName(String v) { this.fieldName = v; return this; }
 
         /**

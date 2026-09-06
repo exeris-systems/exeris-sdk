@@ -15,7 +15,7 @@ package eu.exeris.sdk.sourcemodel.mutation;
  * against {@link #CURRENT} and refuses a mismatch
  * ({@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}).
  *
- * @since 0.5.0
+ * @since 0.5
  */
 public final class SchemaVersion {
 

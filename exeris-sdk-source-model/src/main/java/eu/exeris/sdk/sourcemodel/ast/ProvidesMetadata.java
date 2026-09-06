@@ -18,8 +18,7 @@ import java.util.Objects;
  *
  * @param service the service name offered — a source-written string, not a type reference
  * @param version the version of that service this capability offers
- * @author Exeris SDK Team
- * @since 0.4.0
+ * @since 0.4
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -27,7 +27,7 @@ import java.util.Objects;
  * @param dependsOn the fields the expression reads, which is what tells a generator when to
  *        recompute
  *
- * @since 0.7.0
+ * @since 0.7
  * @see RuleMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -23,8 +23,7 @@ import java.util.Objects;
  * reserved by ADR-042 but out of scope for the 0.5.0 first cut, so it is not
  * modelled here.
  *
- * @author Exeris SDK Team
- * @since 0.5.0
+ * @since 0.5
   *
  * @param entity the entity the path starts at
  * @param kind what kind of member the path targets

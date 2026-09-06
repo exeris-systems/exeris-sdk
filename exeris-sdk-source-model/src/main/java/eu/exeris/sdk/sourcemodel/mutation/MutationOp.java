@@ -30,8 +30,7 @@ import java.util.Objects;
  * {@code FAIL_ON_NULL_FOR_PRIMITIVES=false} (see the {@code ast} package-info);
  * the round-trip guard is {@code MutationWireFormatTest}.
  *
- * @author Exeris SDK Team
- * @since 0.5.0
+ * @since 0.5
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "op")
 @JsonSubTypes({

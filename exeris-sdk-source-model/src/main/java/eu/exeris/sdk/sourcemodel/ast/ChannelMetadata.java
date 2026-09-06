@@ -45,7 +45,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *        {@code messageType} this one has a kernel landing site — the handshake callback may
  *        name the accepted subprotocol
  *
- * @since 0.12.0
+ * @since 0.12
  * @see DomainMetadata#channel()
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

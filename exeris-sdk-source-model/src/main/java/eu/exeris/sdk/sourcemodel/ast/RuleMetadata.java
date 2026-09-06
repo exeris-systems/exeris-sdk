@@ -26,7 +26,7 @@ import java.util.Objects;
  * @param message the text reported when it does not
  * @param severity how a violation is treated
  * @param language the language {@link #expression()} is written in
- * @since 0.7.0
+ * @since 0.7
  * @see DerivedMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
