@@ -78,7 +78,7 @@ Detailed rules are authored once under [`.agents/`](.agents) and nowhere else.
 
 | Path | What it holds |
 |:--|:--|
-| [`.agents/policies/`](.agents/policies) | Non-negotiable boundaries: [zero runtime coupling](.agents/policies/zero-runtime-coupling.md), [AST wire format](.agents/policies/ast-wire-format.md), [field/validation scoping](.agents/policies/field-validation-scoping.md), [route access](.agents/policies/route-access.md), [JDK baseline](.agents/policies/jdk-baseline.md), [UI kit](.agents/policies/ui-kit.md), [stability & deprecation](.agents/policies/stability-and-deprecation.md), [javadoc & emitters](.agents/policies/javadoc-and-contract-emitters.md). |
+| [`.agents/policies/`](.agents/policies) | Non-negotiable boundaries — zero runtime coupling, AST wire format, field/validation scoping, route access, JDK baseline, UI kit, stability & deprecation, javadoc & emitters. Each is linked from the invariant it governs above. |
 | [`.agents/references/`](.agents/references) | Authoritative summaries: [build & testing](.agents/references/build-and-testing.md), [downstream consumers](.agents/references/downstream-consumers.md), [distribution](.agents/references/maven-central-distribution.md). |
 | [`.agents/skills/`](.agents/skills) | Bounded review capabilities: annotation contracts, AST format, build invariants, coverage, deprecations, field scoping, publish readiness, routing, triage, zero coupling. |
 | [`.agents/agents/`](.agents/agents) | Role profiles: router, architect, implementer, verification, docs-adr. |

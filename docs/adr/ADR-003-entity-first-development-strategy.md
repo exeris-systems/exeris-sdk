@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-06-03
+last-verified: 2026-09-07
 slug: adr/ADR-003
 ---
 
@@ -16,8 +16,8 @@ slug: adr/ADR-003
 | **Deciders**   | Arkadiusz Przychocki                                                                                                                                                     |
 | **Date**       | 2025-11-12                                                                                                                                                               |
 | **Owning Repo**| `exeris-sdk`                                                                                                                                                             |
-| **Driven By**  | [2025-11-12 - RFC - Entity-First Development Strategy](https://exeris.atlassian.net/wiki/spaces/ENG/pages/15663105/2025-11-12+-+RFC+-+Entity-First+Development+Strategy) |
-| **Compliance** | [Strategic Pillar: Transparency](https://exeris.atlassian.net/wiki/spaces/HUB/pages/6094854/Strategic+Pillars+Architecture+Principles#Strategic-Pillars)                 |
+| **Driven By**  | RFC "Entity-First Development Strategy", 2025-11-12 — written before this repository had `docs/rfc/`, and not carried over |
+| **Compliance** | Strategic Pillar: Transparency — the Glass Box thesis, carried today by [`exeris-docs/high-level-architecture.md`](https://github.com/exeris-systems/exeris-docs/blob/main/high-level-architecture.md) |
 
 ## Context and Problem Statement
 Traditional high-performance systems often adopt a "Schema-First" approach (defining `.proto` or OpenAPI specs first), leading to boilerplate code, manual synchronization between layers, and a "Black Box" feeling for business developers.
