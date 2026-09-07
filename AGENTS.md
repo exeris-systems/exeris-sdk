@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-05
+last-verified: 2026-09-07
 ---
 
 # exeris-sdk
@@ -52,6 +52,10 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
   and `MIGRATION.md` entry ([policy](.agents/policies/stability-and-deprecation.md)).
 - **Javadoc completeness:** Publish gate to Maven Central. `failOnWarnings=true` on 6 modules;
   `source-model` uses `JavadocCompletenessTest` with builder setters exempt ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
+- **TSDoc + API golden:** `@exeris-systems/ui-kit` is a gated TypeScript surface under ADR-085
+  §F.21a–c. Every export carries a release tag and a doc comment, and `api/ui-kit.api.md` is
+  committed — CI fails on drift, so a removed name is a major for that package's own version
+  ([standard](https://github.com/exeris-systems/exeris-docs/blob/main/standards/tsdoc-conventions.md)).
 
 ## Architecture and documentation entry points
 
