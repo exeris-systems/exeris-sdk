@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-04
+last-verified: 2026-09-07
 ---
 
 # Changelog
@@ -24,6 +24,19 @@ for per-version upgrade steps.
 > links); the earlier entries are milestone labels only.
 
 ## [Unreleased]
+
+### Breaking
+
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.11.0"` → `"0.12.0"`** — a baseline
+  stamped `"0.11.0"` now reads as schema skew, so ADR-042 conflict detection refuses it rather than
+  trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is itself additive
+  (trailing nullable `routeAccess` on `DomainMetadata` and `ActionMetadata`).
+  See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` is no longer a compile-time constant** — it was
+  `static final String` with a literal initialiser, so javac inlined it into every consumer. A
+  consumer compiled against 0.11.0 carries the old literal in its own class file and will compare
+  against it forever. Recompile once against 0.12.0. Invisible to japicmp, which compares signatures
+  rather than the constant pool. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
 
@@ -487,6 +500,18 @@ for per-version upgrade steps.
   all green while breaking every consumer. Snapshot-gated the way `annotation-surface.txt` gates
   the Java surface: additions reported so they get recorded, removals and renames fail. Verified
   against exactly that coordinated rename.
+- **The TypeScript exports get the gate the CSS surface already had.** `tests/public-surface.txt`
+  pins every `--exeris-*` property, every `.exeris-*` class and every Tailwind key; the two
+  TypeScript exports next to them had nothing watching at all. ADR-085 §F.21a–c names this package
+  one of three gated TypeScript surfaces in the ecosystem, so `src/index.ts` now meets
+  `tsdoc-conventions.md` — `@public` and `@since 0.1` on both exports, a doc comment on all 22
+  signatures including the 17 nested tokens, and the banned `@author` gone — behind three checks:
+  the shared ESLint fragment, typedoc's `notDocumented`, and **api-extractor against a committed
+  `api/ui-kit.api.md`**, which is this package's japicmp. A `-` line in that golden removes a name,
+  and names are what its 1.0 freezes. Recorded as Hard Rule 6 in
+  [`.agents/policies/ui-kit.md`](.agents/policies/ui-kit.md). Each check verified non-vacuous:
+  restoring `@author` fails the lint, deleting one nested token's comment fails typedoc, dropping
+  `@public` from `defaultTheme` fails api-extractor with `ae-missing-release-tag`.
   
 - **`defaultTheme` gains `primary-hover`, the token it was missing.** `--exeris-primary-hover`
   exists in `index.css` and as a `primary-hover` key in the Tailwind preset; the JS fallback
@@ -589,6 +614,16 @@ for per-version upgrade steps.
   reflection, and japicmp compared 0.11.0 against this change and reported nothing.
 
 ## [0.11.0] — 2026-08-26
+
+### Breaking
+
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.10.0"` → `"0.11.0"`** — baselines
+  stamped `"0.10.0"` read as skew; regenerate. Driven by two trailing AST components,
+  `FieldMetadata.blob` and `ActionMetadata.schedule`. See [`MIGRATION.md` §0.10.x → 0.11.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `DomainMetadata.isInternal()` answers differently** — the predicate keyed
+  off `InternalApiMetadata.hidden()`, which neither extraction path populates, so it returned `false`
+  for every entity. It now reads `internal`. Code that depended on the old answer changes behaviour.
+  See [`MIGRATION.md` §0.10.x → 0.11.x](MIGRATION.md).
 
 The kernel-0.11-facets milestone. 0.10.0 called itself the last one before the
 1.0.0 freeze; this exists because that framing conflated two things. The ROADMAP
@@ -864,6 +899,14 @@ components are trailing and by-name, and nothing populates either yet.
 
 ## [0.10.0] — 2026-08-12
 
+### Breaking
+
+- **`exeris-sdk-source-model`: `DomainMetadata`'s canonical constructor gained a trailing `DataScope
+  dataScope`** — positional callers of the all-args constructor must add the argument. By-name JSON
+  binding is unaffected. See [`MIGRATION.md` §0.9.x → 0.10.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.9.0"` → `"0.10.0"`** — baselines
+  stamped `"0.9.0"` read as skew; regenerate. See [`MIGRATION.md` §0.9.x → 0.10.x](MIGRATION.md).
+
 The kernel-catch-up milestone, and the last one before the 1.0.0 freeze. Three
 things land together. The **data-scope tier** goes live (ADR-059):
 `@ExerisDomain.dataScope` + an AST-owned `DataScope { GLOBAL, TENANT, UNIVERSE }`
@@ -1017,6 +1060,23 @@ GitHub Release — Central publishing stays deferred until the kernel moves firs
 
 ## [0.9.0] — 2026-07-22
 
+### Breaking
+
+- **`exeris-sdk-source-model`: `ValidationMetadata` is removed** — `FieldMetadata` is the canonical
+  carrier. The record was never populated by the processor or the `-io` reader, never referenced by
+  `DomainMetadata` and never consumed by a generator, so no emitted document loses a field.
+  See [`MIGRATION.md` §0.8.x → 0.9.x](MIGRATION.md).
+- **`exeris-sdk-composition-spec`: `CapManifest.ModuleBody` gained a trailing `lifecycleOwner`** —
+  positional callers must add the argument. See [`MIGRATION.md` §0.8.x → 0.9.x](MIGRATION.md).
+- **Cap authors take a new dependency coordinate** — `CapabilityLifecycleHooks` ships in the new
+  `exeris-sdk-composition-lifecycle` jar. See [`MIGRATION.md` §0.8.x → 0.9.x](MIGRATION.md).
+- **`min = 0` / `max = 0` / `minLength = 0` / `maxLength = 0` became meaningful** — per-component
+  `@JsonInclude(NON_NULL)` stopped eliding zero-valued bounds, so a generator that null-checks bounds
+  now sees them and emits constraints it previously skipped.
+  See [`MIGRATION.md` §0.8.x → 0.9.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.8.0"` → `"0.9.0"`** — baselines
+  stamped `"0.8.0"` read as skew; regenerate. See [`MIGRATION.md` §0.8.x → 0.9.x](MIGRATION.md).
+
 The composition-conductor + contract-truth milestone: the cap lifecycle goes
 live SDK-side — a new zero-dependency `exeris-sdk-composition-lifecycle`
 module (`CapabilityLifecycleHooks`) plus the boot conductor in
@@ -1141,6 +1201,15 @@ deferred until the kernel moves first (wiring parked).
 
 ## [0.8.0] — 2026-07-02
 
+### Breaking
+
+- **`exeris-sdk-source-model`: `ActionMetadata` and `DomainEventMetadata` gained trailing components** —
+  per-action streaming fields on the first, resolved payload framing on the second. Positional callers
+  of either canonical constructor must add the arguments.
+  See [`MIGRATION.md` §0.7.x → 0.8.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.7.0"` → `"0.8.0"`** — baselines
+  stamped `"0.7.0"` read as skew; regenerate. See [`MIGRATION.md` §0.7.x → 0.8.x](MIGRATION.md).
+
 The events + composition milestone, cut in lockstep with kernel v0.10.0: the
 AST grows the per-action streaming twin (ADR-043) and the resolved
 event-payload framing (EV1, pairing with the kernel Event-Payload Codec SPI,
@@ -1219,6 +1288,22 @@ presentation IR seed lands. Schema `"0.7.0"` → `"0.8.0"`.
 
 ## [0.7.0] — 2026-06-18
 
+### Breaking
+
+- **`exeris-sdk-source-model`: `ProjectionMetadata`'s canonical constructor changed arity *and*
+  order** — the record grew the source-aggregate link, the event-subscription framing and the
+  read-model identity, and the components were regrouped (identity → source → subscription → read
+  model → exposed fields → caching). The old and new parameter lists share no common prefix, so a
+  positional `new ProjectionMetadata(…)` does not compile and **cannot be repaired by appending
+  arguments** — rewrite it through `builder(name)`, `of(name, aggregateType, fields)`, or the
+  unchanged `simple(name, fields)`. See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SagaStepMetadata` and `SagaMetadata` gained trailing components** —
+  step `kind` on the first, typed `transitions` on the second. Positional callers of the canonical
+  constructors add the arguments at the end.
+  See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.6.0"` → `"0.7.0"`** — baselines
+  stamped `"0.6.0"` read as skew; regenerate. See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
+
 The AST-expressiveness milestone — the SDK side of behaviour / choreography /
 topology modeling is complete: projection source / read-model framing, the JVM
 method behind `@Action`, the saga state machine, and the declarative
@@ -1270,6 +1355,20 @@ schema; downstream generation of the new surfaces is `exeris-tooling` work.
 
 ## [0.6.0] — 2026-06-17
 
+### Breaking
+
+- **`exeris-sdk-source-model`: `FieldMetadata` and `UIFieldMetadata` canonical constructors changed
+  arity** — `dataType` and the i18n message keys are new record components, so the all-args
+  constructors gained parameters. Positional callers must add the arguments.
+  See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `DomainMetadata`'s canonical constructor gained `eventHandlers`** —
+  inserted in the nested-metadata block after `projections` rather than appended, so a positional
+  `new DomainMetadata(…)` needs the argument in that position, not at the end. `@EventHandler` has
+  shipped since 0.1.0; `EventHandlerMetadata` is the AST record it finally extracts into.
+  See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.5.0"` → `"0.6.0"`** — baselines
+  stamped `"0.5.0"` read as skew; regenerate. See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
+
 Feedback-driven cleanups (the first slices of the 0.6.0–0.9.0 band): annotation
 honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 
@@ -1305,6 +1404,10 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 
 ## 0.5.0 — 2026-06-15 — bidirectional mutation surface
 
+### Breaking
+
+None. `MIGRATION.md` records no upgrade step for this milestone.
+
 ### Added
 - New package `eu.exeris.sdk.sourcemodel.mutation` — `MutationOp` /
   `MutationResult` / `MutationPath` / `SchemaVersion` / `SourceDigest` /
@@ -1315,6 +1418,10 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 
 ## 0.4.0 — 2026-06-13 — capability annotation surface
 
+### Breaking
+
+None. `MIGRATION.md` records no upgrade step for this milestone.
+
 ### Added
 - New package `eu.exeris.sdk.annotation.capability` — `@CapabilityModule` /
   `@Provides` / `@Requires` / `@CapabilityLifecycle` (ADR-024 / ADR-038).
@@ -1323,6 +1430,10 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
 
 ## 0.3.0 — 2026-06-05 — source-model parser + writer
 
+### Breaking
+
+None. `MIGRATION.md` records no upgrade step for this milestone.
+
 ### Added
 - New sibling module `exeris-sdk-source-model-io` (ADR-037): JavaParser-based
   parser (`.java` → `DomainMetadata`) and idempotent writer
@@ -1330,6 +1441,17 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   `source-model` stays dependency-light.
 
 ## 0.2.0 — 2026-06-03 — quality gates + pre-publish hygiene
+
+### Breaking
+
+- **`exeris-sdk-annotations`: `@SoftDeletedBy` retention corrected `RUNTIME` → `SOURCE`** — the
+  annotation is no longer visible to reflection at runtime, which every other SDK annotation already
+  was not. See [`MIGRATION.md` §0.1.x → 0.2.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `ActionParamMetadata` became a record** — it was a `final class` with
+  record-style accessors that Jackson 3 did not recognise as getters, so every field was silently
+  dropped on read. See [`MIGRATION.md` §0.1.x → 0.2.x](MIGRATION.md).
+- **Downstream Jackson consumers must configure their mapper** — reading SDK-emitted JSON into AST
+  records requires the documented mapper posture. See [`MIGRATION.md` §0.1.x → 0.2.x](MIGRATION.md).
 
 ### Added
 - CI (`mvn verify` on JDK 26 + ui-kit Vitest), JaCoCo 85% gate on `source-model`,
@@ -1345,6 +1467,10 @@ honesty, UI-kit gaps, and the start of the AST-expressiveness growth.
   line).
 
 ## 0.1.0 — 2026-05-03 — scaffold
+
+### Breaking
+
+None — the first milestone.
 
 ### Added
 - Maven multi-module reactor (`bom`, `parent`, `annotations`, `source-model`)
