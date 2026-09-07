@@ -1,3 +1,13 @@
+---
+title: "ADR-038: SDK realization of the capability annotation surface — @CapabilityModule / @Provides / @Requires / @CapabilityLifecycle"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-07-21
+slug: adr/ADR-038
+---
+
 # ADR-038: SDK realization of the capability annotation surface — `@CapabilityModule` / `@Provides` / `@Requires` / `@CapabilityLifecycle`
 
 | Attribute       | Value                                                                                          |
@@ -9,7 +19,7 @@
 | **Owning Repo** | `exeris-sdk`                                                                                    |
 | **Driven By**   | [RFC-2026-06-03](../rfc/RFC-2026-06-03-capability-annotation-surface.md) (ACCEPTED)            |
 | **Implements**  | [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md) Capability Composition Model |
-| **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) Entity-First; [ADR-023](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-023-capability-licensing-taxonomy.md) (licensing is a per-cap-repo property, not an annotation field) |
+| **Compliance**  | Zero runtime coupling invariant (the SDK's defining discipline); [ADR-003](ADR-003-entity-first-development-strategy.md) Entity-First; [ADR-023](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-023-capability-licensing-taxonomy.md) (licensing is a per-cap-repo property, not an annotation field) |
 
 > ADR numbers are a **single ecosystem-wide namespace** registered in [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md). The gap between ADR-003 / ADR-037 and ADR-038 in this repo is expected — 004–036 are owned by other Exeris repos.
 
@@ -78,7 +88,7 @@ This mirrors the `@ExerisDomain` → `DomainMetadata` layering the repo already 
 - [ADR-015](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-015-codegen-emission-strategy.md) — Codegen Emission Strategy: the tooling pipeline that owns `cap-manifest.json` emission and the cap discovery format (both kept out of the SDK per "What is NOT in scope").
 - [ADR-037](ADR-037-source-model-io-module.md) — the `-io` module whose round-trip completion is this ADR's sequencing precondition; the same "thin implements" shape.
 - [RFC-2026-06-03](../rfc/RFC-2026-06-03-capability-annotation-surface.md) — the accepted RFC this ADR locks; full options analysis (A: strings; B: `Class<?>` — chosen; C: `Service` marker interface; D: do nothing) and the annotation/AST shapes.
-- [ADR-003](ADR-003%20Entity-First%20Development%20Strategy.md) — Entity-First: the annotated class is the single source of truth, capabilities included.
+- [ADR-003](ADR-003-entity-first-development-strategy.md) — Entity-First: the annotated class is the single source of truth, capabilities included.
 
 ## Engineering Protocol
 

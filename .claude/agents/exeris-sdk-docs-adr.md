@@ -19,7 +19,7 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
   - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
   - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
   Keep them aligned when scoping changes.
-- Maintain `docs/adr/ADR-003 Entity-First Development Strategy.md` link integrity (cross-repo registry at `~/exeris-systems/exeris-docs/adr-index.md`).
+- Maintain `docs/adr/ADR-003-entity-first-development-strategy.md` link integrity (cross-repo registry: `adr-index.md` in `exeris-docs`).
 - Track downstream-consumer impact: when AST shape changes, document the consumer-side migration story in `MIGRATION.md`.
 
 ## Workflow
@@ -40,7 +40,7 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
 
 ## Non-goals
 - Do not rewrite docs without code-backed need.
-- Do not modify ADR-003 substance from here — escalate to `~/exeris-systems/exeris-docs/` for cross-repo registry concerns.
+- Do not modify ADR-003 substance from here — escalate to `exeris-docs` for cross-repo registry concerns.
 - Do not promote refactor-only changes to `MIGRATION.md` — those go in PR descriptions.
 
 ## Response Template
@@ -67,9 +67,9 @@ or `None`
 - `MIGRATION.md` entry: `<diff committed in same PR>`
 
 ### Cross-Repo Coordination
-- `~/exeris-systems/exeris-tooling/exeris-processor/` — when AST shape changes downstream-visibly
-- `~/exeris-systems/exeris-platform/exeris-platform-lsp/` — when AST shape changes downstream-visibly
-- `~/exeris-systems/exeris-docs/adr-index.md` — when ADR registry entry needs refresh
+- `exeris-tooling`, module `exeris-processor/` — when AST shape changes downstream-visibly
+- `exeris-platform`, module `exeris-platform-lsp/` — when AST shape changes downstream-visibly
+- `exeris-docs`, `adr-index.md` — when ADR registry entry needs refresh
 or `None`
 
 ### Merge Recommendation

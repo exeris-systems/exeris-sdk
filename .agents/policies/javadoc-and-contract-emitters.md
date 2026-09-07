@@ -13,10 +13,11 @@
    - `exeris-sdk-composition-runtime`
    - `exeris-sdk-tck`
    Any undocumented public API fails compilation in these modules.
-3. **`source-model` builder-setter exemption:**
+3. **`source-model` builder-setter exemption — trivial setters only:**
    - Enforced by `JavadocCompletenessTest` instead of `failOnWarnings`.
-   - Builder setter methods (`public Builder <name>(...)`) are **deliberately exempt** from Javadoc comments because the record component's `@param` documentation carries the semantics.
-   - Do NOT add Javadoc to builder setters. Do NOT expand this exemption to any other public members.
+   - A setter is exempt when its body *is* the assignment: `public Builder <name>(...) { this.<name> = v; return this; }`, with the assigned field back-referenced to the method name. There the record component's `@param` prose already carries the semantics and a doc comment would only restate it.
+   - A setter that does **anything else** is not exempt and must be documented — a defensive copy, a normalisation, an append, or a name that differs from the component it writes. Those are contracts a caller cannot read off the signature, and several are asymmetric with the compact constructor (the constructor normalises `null` to an empty list; the setter throws on it).
+   - Do NOT widen the exemption past that body shape, and do NOT extend it to any other public members.
 
 ## Annotation Catalog Emitter
 

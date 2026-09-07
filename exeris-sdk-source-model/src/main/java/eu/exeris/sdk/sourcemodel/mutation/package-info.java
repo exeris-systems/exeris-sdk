@@ -40,7 +40,7 @@
  * {@link eu.exeris.sdk.sourcemodel.ast} package-info). The round-trip guard is
  * {@code MutationWireFormatTest}.
  *
- * @since 0.5.0
+ * @since 0.5
  * @see eu.exeris.sdk.sourcemodel.ast
  */
 package eu.exeris.sdk.sourcemodel.mutation;

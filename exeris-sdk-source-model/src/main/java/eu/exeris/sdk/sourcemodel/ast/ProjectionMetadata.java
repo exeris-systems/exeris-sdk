@@ -46,8 +46,7 @@ import java.util.List;
  * @param schema the schema the read model is stored under
  * @param fields the read model's fields
  * @param cacheable whether reads of the projection are cached
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -79,10 +78,10 @@ public record ProjectionMetadata(
         topicPattern = blankToNull(topicPattern);
         model = blankToNull(model);
         schema = blankToNull(schema);
-        aggregateTypes = (aggregateTypes == null) ? List.of() : List.copyOf(aggregateTypes);
-        events = (events == null) ? List.of() : List.copyOf(events);
-        eventClassNames = (eventClassNames == null) ? List.of() : List.copyOf(eventClassNames);
-        fields = (fields == null) ? List.of() : List.copyOf(fields);
+        aggregateTypes = AstLists.copyOfNoNulls(aggregateTypes, "aggregateTypes");
+        events = AstLists.copyOfNoNulls(events, "events");
+        eventClassNames = AstLists.copyOfNoNulls(eventClassNames, "eventClassNames");
+        fields = AstLists.copyOfNoNulls(fields, "fields");
     }
 
     private static String blankToNull(String v) {
@@ -94,9 +93,8 @@ public record ProjectionMetadata(
     /**
      * True when the projection names the aggregate(s) it is a view of.
      *
-     * @since 0.7.0
-          *
      * @return the {@code boolean}
+     * @since 0.7
      */
     public boolean hasSourceAggregate() {
         return !aggregateTypes.isEmpty();
@@ -105,9 +103,8 @@ public record ProjectionMetadata(
     /**
      * True when the projection exposes an explicit field subset.
      *
-     * @since 0.7.0
-          *
      * @return the {@code boolean}
+     * @since 0.7
      */
     public boolean hasFields() {
         return !fields.isEmpty();
@@ -116,7 +113,7 @@ public record ProjectionMetadata(
     /**
      * A minimal projection: a named view exposing a field subset, with no source
      * aggregate / subscription declared. Preserves the pre-0.7.0 factory shape.
-          *
+     *
      * @param name the {@code name} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
@@ -129,12 +126,11 @@ public record ProjectionMetadata(
      * A projection of a single source aggregate exposing a field subset — the
      * common "subset of this aggregate as a read-only view" case.
      *
-     * @since 0.7.0
-          *
      * @param name the {@code name} the result carries
      * @param aggregateType the {@code aggregateType} the result carries
      * @param fields the {@code fields} the result carries
      * @return the {@code ProjectionMetadata}
+     * @since 0.7
      */
     public static ProjectionMetadata of(String name, String aggregateType, List<String> fields) {
         return builder(name).aggregateType(aggregateType).fields(fields).build();
@@ -145,7 +141,7 @@ public record ProjectionMetadata(
      *
      * @param name the projection's name
      * @return a new builder
-     * @since 0.7.0
+     * @since 0.7
      */
     public static Builder builder(String name) {
         return new Builder(name);
@@ -170,6 +166,19 @@ public record ProjectionMetadata(
 
         public Builder description(String v) { this.description = v; return this; }
         public Builder aggregateTypes(List<String> v) { this.aggregateTypes = v; return this; }
+        /**
+         * Declares a single source aggregate, replacing whatever {@link #aggregateTypes} holds.
+         *
+         * <p>The convenience for the "expose this subset of <em>this</em> aggregate as a read-only view"
+         * case, and the setter {@link ProjectionMetadata#of(String, String, List)} forwards to.
+         * It <strong>replaces</strong> rather than appends, so a preceding {@code aggregateTypes(...)} is
+         * discarded and the two are order-dependent.
+         *
+         * @param v the single source aggregate
+         * @return this builder
+         * @throws NullPointerException if {@code v} is {@code null}; unlike {@link #aggregateTypes}, which
+         *         treats a null list as an empty one
+         */
         public Builder aggregateType(String v) { this.aggregateTypes = List.of(v); return this; }
         public Builder events(List<String> v) { this.events = v; return this; }
         public Builder eventClassNames(List<String> v) { this.eventClassNames = v; return this; }

@@ -25,7 +25,11 @@ The Exeris platform operates on the Entity-First paradigm:
 ## Reference-First Lookup Guidelines
 
 Before altering annotation attributes, AST components, or lifecycle hooks, verify how downstream components consume them:
-- **Annotation processing:** `~/exeris-systems/exeris-tooling/exeris-processor/`
-- **Code generation:** `~/exeris-systems/exeris-tooling/exeris-codegen-*/`
-- **IDE sync & diagnostics:** `~/exeris-systems/exeris-platform/exeris-platform-lsp/`
-- **Production entity examples:** `~/exeris-systems/budgetHQ/backend/` and `~/exeris-systems/pbm/`
+- **Annotation processing:** `exeris-tooling`, module `exeris-processor/`
+- **Code generation:** `exeris-tooling`, modules `exeris-codegen-*/`
+- **IDE sync & diagnostics:** `exeris-platform`, module `exeris-platform-lsp/`
+- **Production entity examples:** `budgetHQ` (`backend/`) and `pbm`
+
+These are **sibling repositories in a full ecosystem checkout**, and the paths inside them are
+repository-relative. A clone of `exeris-sdk` alone does not contain them: a grep that finds nothing
+means they are not checked out, not that the pattern is unused.

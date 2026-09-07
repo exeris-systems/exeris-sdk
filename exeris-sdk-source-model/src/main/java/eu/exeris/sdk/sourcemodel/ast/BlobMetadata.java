@@ -34,7 +34,7 @@ import java.util.List;
  * @param contentTypes the media types the generated upload surface accepts; empty means
  *        unrestricted
  *
- * @since 0.11.0
+ * @since 0.11
  * @see FieldMetadata#blob()
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -52,7 +52,7 @@ public record BlobMetadata(
             container = null;
         }
         // Empty contentTypes serializes as [] (the AST's NON_NULL list convention).
-        contentTypes = contentTypes == null ? List.of() : List.copyOf(contentTypes);
+        contentTypes = AstLists.copyOfNoNulls(contentTypes, "contentTypes");
     }
 
     /**

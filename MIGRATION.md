@@ -1,3 +1,11 @@
+---
+title: Migration guide
+type: migration-guide
+visibility: public
+owning-repo: exeris-sdk
+last-verified: 2026-09-02
+---
+
 # Migration guide
 
 This document tracks user-visible changes between Exeris SDK versions and

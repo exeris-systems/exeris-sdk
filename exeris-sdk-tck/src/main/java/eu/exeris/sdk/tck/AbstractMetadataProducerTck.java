@@ -160,6 +160,8 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Produces the entity's metadata JSON and parses it as a tree.
+     *
      * @param entityName one of {@link TckCorpus#entityNames()}
      * @return the producer's JSON for it, parsed
      */
@@ -168,6 +170,8 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Produces the entity's metadata JSON and deserializes it.
+     *
      * @param entityName one of {@link TckCorpus#entityNames()}
      * @return the producer's JSON for it, deserialized through the canonical mapper posture
      */
@@ -177,6 +181,8 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Returns the named field, failing the test when it was not produced.
+     *
      * @param metadata the entity to look in
      * @param fieldName the field to find
      * @return that field's metadata

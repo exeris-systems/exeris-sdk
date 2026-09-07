@@ -27,7 +27,7 @@ import java.util.Objects;
  * @param dependsOn the fields the expression reads, which is what tells a generator when to
  *        recompute
  *
- * @since 0.7.0
+ * @since 0.7
  * @see RuleMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -54,7 +54,7 @@ public record DerivedMetadata(
         }
         // Empty dependsOn serializes as [] (the AST's NON_NULL list convention,
         // as for every other list-valued record) — intentionally not dropped.
-        dependsOn = dependsOn == null ? List.of() : List.copyOf(dependsOn);
+        dependsOn = AstLists.copyOfNoNulls(dependsOn, "dependsOn");
     }
 
     /**

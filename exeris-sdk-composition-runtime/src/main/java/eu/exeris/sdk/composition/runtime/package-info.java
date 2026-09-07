@@ -47,6 +47,6 @@
  * hand-written SKU entrypoint invokes the conductor directly — the library contract is identical in
  * both cases.
  *
- * @since 0.8.0
+ * @since 0.8
  */
 package eu.exeris.sdk.composition.runtime;

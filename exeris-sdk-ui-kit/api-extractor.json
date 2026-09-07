@@ -1,0 +1,37 @@
+/**
+ * Ported from exeris-systems/.github ts/api-extractor.base.json.
+ *
+ * A comment, not a "//" property: this schema is additionalProperties:false at the root, so a
+ * "//" key fails validation before api-extractor reads anything else. api-extractor parses this
+ * file with jju, so real comments are fine.
+ */
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+
+  /**
+   * Root-level, not under apiReport, which is additionalProperties:false too.
+   *
+   * The default is "crlf", and it does not break the gate: api-extractor compares the temp report
+   * with the committed one insensitive to line endings, so a CRLF temp report against an LF golden
+   * still exits 0. What it breaks is the working tree — under core.autocrlf=input, which this
+   * checkout sets, the blob is LF while `npm run api:accept` writes CRLF, and git then reports the
+   * golden as modified when its content has not changed.
+   */
+  "newlineKind": "lf",
+  "mainEntryPointFilePath": "<projectFolder>/dist/index.d.ts",
+  "apiReport": { "enabled": true, "reportFolder": "<projectFolder>/api/", "reportTempFolder": "<projectFolder>/build/api-extractor/" },
+  "docModel": { "enabled": false },
+  "dtsRollup": { "enabled": false },
+  "tsdocMetadata": { "enabled": false },
+  "messages": {
+    "compilerMessageReporting": { "default": { "logLevel": "error" } },
+    "extractorMessageReporting": {
+      "default": { "logLevel": "warning" },
+      "ae-missing-release-tag": { "logLevel": "error" },
+      "ae-forgotten-export": { "logLevel": "error" },
+      "ae-incompatible-release-tags": { "logLevel": "error" },
+      "ae-undocumented": { "logLevel": "warning" }
+    },
+    "tsdocMessageReporting": { "default": { "logLevel": "warning" }, "tsdoc-undefined-tag": { "logLevel": "error" } }
+  }
+}

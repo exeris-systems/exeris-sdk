@@ -47,8 +47,7 @@ import java.util.List;
  * @param triggerStep the saga step this handler advances, when it drives one
  * @param expectedEvents the events that let the saga proceed
  * @param failureEvents the events that put the saga into compensation
- * @author Exeris SDK Team
- * @since 0.6.0
+ * @since 0.6
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -92,10 +91,10 @@ public record EventHandlerMetadata(
         timeout = blankToNull(timeout);
         transactionMode = blankToNull(transactionMode);
         triggerStep = blankToNull(triggerStep);
-        events = (events == null) ? List.of() : List.copyOf(events);
-        eventClassNames = (eventClassNames == null) ? List.of() : List.copyOf(eventClassNames);
-        expectedEvents = (expectedEvents == null) ? List.of() : List.copyOf(expectedEvents);
-        failureEvents = (failureEvents == null) ? List.of() : List.copyOf(failureEvents);
+        events = AstLists.copyOfNoNulls(events, "events");
+        eventClassNames = AstLists.copyOfNoNulls(eventClassNames, "eventClassNames");
+        expectedEvents = AstLists.copyOfNoNulls(expectedEvents, "expectedEvents");
+        failureEvents = AstLists.copyOfNoNulls(failureEvents, "failureEvents");
     }
 
     private static String blankToNull(String v) {
@@ -125,7 +124,7 @@ public record EventHandlerMetadata(
     /**
      * A minimal handler reacting to a single named event with the annotation's
      * default ordering / execution semantics.
-          *
+     *
      * @param name the {@code name} the result carries
      * @param event the {@code event} the result carries
      * @return the {@code EventHandlerMetadata}

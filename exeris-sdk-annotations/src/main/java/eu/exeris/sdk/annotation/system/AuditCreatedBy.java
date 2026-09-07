@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * <p>Automatically populated from security context.
  *
  * <h2>Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Created By", readOnly = true)
  * @AuditCreatedBy
  * private UUID createdBy;
- * }</pre>
+ * }
  *
  * <h2>Supported Types:</h2>
  * <ul>
@@ -29,9 +29,7 @@ import java.lang.annotation.Target;
  * field-name override attributes choosing its name. See the package javadoc for the live
  * path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)

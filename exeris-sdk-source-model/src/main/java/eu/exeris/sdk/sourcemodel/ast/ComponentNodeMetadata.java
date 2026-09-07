@@ -37,7 +37,7 @@ import java.util.List;
  * @param props the node's configuration, carried as serialized properties
  * @param children the nodes nested inside this one
  * @param field the per-field presentation override, when the node renders a field
- * @since 0.8.0
+ * @since 0.8
  * @see BlockType
  * @see BindingMetadata
  * @see UIMetadata.UIFieldMetadata
@@ -63,7 +63,7 @@ public record ComponentNodeMetadata(
         if (props != null && props.isBlank()) {
             props = null;
         }
-        children = children == null ? List.of() : List.copyOf(children);
+        children = AstLists.copyOfNoNulls(children, "children");
     }
 
     /**

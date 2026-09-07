@@ -50,7 +50,7 @@ import java.util.Optional;
  * added grammar an entity-shaped source uses, so those sources parse — revisit
  * when JavaParser ships a level matching the baseline.
  *
- * @since 0.3.0
+ * @since 0.3
  */
 public final class SourceModelWriter {
 
@@ -69,13 +69,12 @@ public final class SourceModelWriter {
      * type, preserving everything else verbatim. No-op (source returned unchanged)
      * if a field of that name already exists.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param type the new field's Java type
      * @param fieldName the new field's name
      * @return the source with the field added
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String addField(String javaSource, String type, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -95,13 +94,12 @@ public final class SourceModelWriter {
      * {@code fromName.equals(toName)} case is therefore also a no-op, since
      * {@code toName} is by definition present.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param fromName the field's current name
      * @param toName the name to give it
      * @return the source with the field renamed
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String renameField(String javaSource, String fromName, String toName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -123,13 +121,12 @@ public final class SourceModelWriter {
      * fully-qualified name where the source writes it unqualified (or vice versa)
      * will rewrite the declaration rather than no-op.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param fieldName the field to retype
      * @param newType the type to give it
      * @return the source with the field's type changed
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String changeFieldType(String javaSource, String fieldName, String newType) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -149,12 +146,11 @@ public final class SourceModelWriter {
      * otherwise just that variable is dropped from a multi-variable declaration.
      * No-op if the field is absent.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param fieldName the field to remove
      * @return the source with the field removed
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String removeField(String javaSource, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -178,16 +174,15 @@ public final class SourceModelWriter {
      * (e.g. {@code "ONE_TO_MANY"}); it is written verbatim into the annotation,
      * not validated against the enum.
      *
-     * @throws IllegalArgumentException if the source is not valid Java, has no
-     *                                  {@code @ExerisDomain} type, or
-     *                                  {@code relationshipType} produces a
-     *                                  malformed annotation
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param fieldName the field holding the association
      * @param targetType the entity on the other end
      * @param relationshipType the association's cardinality
      * @return the source with the relationship added
+     * @throws IllegalArgumentException if the source is not valid Java, has no
+     *                                  {@code @ExerisDomain} type, or
+     *                                  {@code relationshipType} produces a
+     *                                  malformed annotation
      */
     public String addRelationship(String javaSource, String fieldName, String targetType, String relationshipType) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -216,12 +211,11 @@ public final class SourceModelWriter {
      * No-op if the field is absent or is not a relationship. Removal semantics
      * match {@link #removeField} (whole declaration vs. single variable).
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param fieldName the field holding the association
      * @return the source with the relationship removed
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String removeRelationship(String javaSource, String fieldName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -262,14 +256,13 @@ public final class SourceModelWriter {
      * type. No-op if an action of that name already exists (matched by effective
      * action name — {@code @Action.name} or, absent, the method name).
      *
+     * @param javaSource the entity's Java source text
+     * @param actionName the action's name
+     * @return the source with the action added
      * @throws IllegalArgumentException if the source is not valid Java, has no
      *                                  {@code @ExerisDomain} type, or
      *                                  {@code actionName} produces a malformed
      *                                  annotation
-     *
-          * @param javaSource the entity's Java source text
-     * @param actionName the action's name
-     * @return the source with the action added
      */
     public String addAction(String javaSource, String actionName) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -295,12 +288,11 @@ public final class SourceModelWriter {
      * {@code actionName}. Methods without {@code @Action} are never touched.
      * No-op if no such action exists.
      *
-     * @throws IllegalArgumentException if the source is not valid Java or has no
-     *                                  {@code @ExerisDomain} type
-     *
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @param actionName the action to remove
      * @return the source with the action removed
+     * @throws IllegalArgumentException if the source is not valid Java or has no
+     *                                  {@code @ExerisDomain} type
      */
     public String removeAction(String javaSource, String actionName) {
         CompilationUnit cu = parseOrThrow(javaSource);

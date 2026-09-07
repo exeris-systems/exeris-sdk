@@ -1,3 +1,13 @@
+---
+title: "ADR-059: Data-scope expression — DataScope { GLOBAL, TENANT, UNIVERSE } supersedes the tenantScoped boolean"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-09-04
+slug: adr/ADR-059
+---
+
 # ADR-059: Data-scope expression — `DataScope { GLOBAL, TENANT, UNIVERSE }` supersedes the `tenantScoped` boolean
 
 | Attribute       | Value                                                                                          |

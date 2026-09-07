@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @param slot the layout slot the region fills
  * @param components the component nodes placed in the region, in order
- * @since 0.8.0
+ * @since 0.8
  * @see ComponentNodeMetadata
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -38,7 +38,7 @@ public record RegionMetadata(
         if (slot != null && slot.isBlank()) {
             slot = null;
         }
-        components = components == null ? List.of() : List.copyOf(components);
+        components = AstLists.copyOfNoNulls(components, "components");
     }
 
     /**

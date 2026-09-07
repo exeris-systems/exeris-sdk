@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * to maintain eventual consistency when spanning multiple aggregates/services.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "OrderFulfillmentSaga",
  *     description = "Orchestrates order placement, payment, and shipping",
@@ -25,10 +25,10 @@ import java.lang.annotation.*;
  *     @SagaStep(order = 2, name = "processPayment", ...)
  *     public SagaAction processPayment() { ... }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Event Trigger:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "SubscriptionRenewalSaga",
  *     trigger = @SagaTrigger(
@@ -38,10 +38,10 @@ import java.lang.annotation.*;
  *     )
  * )
  * public class SubscriptionRenewalSaga implements Saga<RenewalState> {}
- * }</pre>
+ * }
  *
  * <h2>With Compensation Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(
  *     name = "TransferMoneySaga",
  *     compensationOrder = CompensationOrder.REVERSE,
@@ -49,16 +49,14 @@ import java.lang.annotation.*;
  *     compensationTimeout = "PT10M"
  * )
  * public class TransferMoneySaga implements Saga<TransferState> {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
  * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
  * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
  * order.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see DomainEvent
  * @see EventSourced
  */
@@ -805,16 +803,16 @@ public @interface Saga {
      * The order in which a failed saga's compensations run.
      */
     enum CompensationOrder {
-        /** Execute compensation in reverse order of execution */
+        /** Execute compensation in reverse order of execution. */
         REVERSE,
 
-        /** Execute all compensations in parallel */
+        /** Execute all compensations in parallel. */
         PARALLEL,
 
-        /** Execute compensation in forward order */
+        /** Execute compensation in forward order. */
         FORWARD,
 
-        /** Custom order defined by compensation dependencies */
+        /** Custom order defined by compensation dependencies. */
         CUSTOM
     }
 
@@ -822,16 +820,16 @@ public @interface Saga {
      * How compensation is driven once a step fails.
      */
     enum CompensationStrategy {
-        /** All compensations must succeed or saga remains in failed state */
+        /** All compensations must succeed or saga remains in failed state. */
         ALL_OR_NOTHING,
 
-        /** Best effort - continue on failure, log issues */
+        /** Best effort - continue on failure, log issues. */
         BEST_EFFORT,
 
-        /** Stop compensation on first failure */
+        /** Stop compensation on first failure. */
         STOP_ON_FAILURE,
 
-        /** No automatic compensation - manual intervention required */
+        /** No automatic compensation - manual intervention required. */
         MANUAL
     }
 
@@ -839,19 +837,19 @@ public @interface Saga {
      * Where saga state is kept between steps.
      */
     enum SagaPersistence {
-        /** PostgreSQL/MySQL database */
+        /** PostgreSQL/MySQL database. */
         DATABASE,
 
-        /** Redis */
+        /** Redis. */
         REDIS,
 
-        /** Event store (EventStoreDB, etc.) */
+        /** Event store (EventStoreDB, etc.). */
         EVENT_STORE,
 
-        /** In-memory (testing only) */
+        /** In-memory (testing only). */
         IN_MEMORY,
 
-        /** Custom implementation */
+        /** Custom implementation. */
         CUSTOM
     }
 
@@ -889,22 +887,22 @@ public @interface Saga {
      * How a step's command reaches the service that runs it.
      */
     enum CommandDispatch {
-        /** Apache Kafka */
+        /** Apache Kafka. */
         KAFKA,
 
-        /** RabbitMQ */
+        /** RabbitMQ. */
         RABBITMQ,
 
-        /** HTTP REST calls */
+        /** HTTP REST calls. */
         HTTP,
 
-        /** In-process method calls */
+        /** In-process method calls. */
         IN_PROCESS,
 
-        /** AWS SQS */
+        /** AWS SQS. */
         SQS,
 
-        /** Azure Service Bus */
+        /** Azure Service Bus. */
         AZURE_SERVICE_BUS
     }
 
@@ -912,13 +910,13 @@ public @interface Saga {
      * When a consumed message is acknowledged.
      */
     enum AckMode {
-        /** Automatic acknowledgment */
+        /** Automatic acknowledgment. */
         AUTO,
 
-        /** Manual acknowledgment required */
+        /** Manual acknowledgment required. */
         MANUAL,
 
-        /** Acknowledge after processing */
+        /** Acknowledge after processing. */
         AFTER_PROCESS
     }
 
@@ -938,16 +936,16 @@ public @interface Saga {
      * What happens when the saga's work queue is full.
      */
     enum OverflowBehavior {
-        /** Queue excess requests */
+        /** Queue excess requests. */
         QUEUE,
 
-        /** Reject excess requests */
+        /** Reject excess requests. */
         REJECT,
 
-        /** Drop oldest queued request */
+        /** Drop oldest queued request. */
         DROP_OLDEST,
 
-        /** Process anyway (ignore limit) */
+        /** Process anyway (ignore limit). */
         IGNORE
     }
 
@@ -1084,19 +1082,19 @@ public @interface Saga {
          * What kind of occurrence starts the saga.
          */
         enum TriggerType {
-            /** Started by command */
+            /** Started by command. */
             COMMAND,
 
-            /** Started by domain event */
+            /** Started by domain event. */
             EVENT,
 
-            /** Started on schedule (cron) */
+            /** Started on schedule (cron). */
             SCHEDULE,
 
-            /** Started via HTTP API */
+            /** Started via HTTP API. */
             HTTP,
 
-            /** Started programmatically */
+            /** Started programmatically. */
             MANUAL
         }
 

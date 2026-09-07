@@ -11,7 +11,7 @@ package eu.exeris.sdk.composition.runtime;
  * means "the validated composition failed to start" (effects happened and were unwound). Callers that
  * need to tell them apart can.
  *
- * @since 0.9.0
+ * @since 0.9
  */
 public final class CompositionBootException extends RuntimeException {
 
@@ -54,7 +54,7 @@ public final class CompositionBootException extends RuntimeException {
      * The qualified name of the cap whose phase failed, or {@code null} for a failure not
      * attributable to a single cap (e.g. a hook-bearing manifest with no {@code initOrder},
      * detected before the discovery loop).
-          *
+     *
      * @return the capability that failed
      */
     public String capName() {

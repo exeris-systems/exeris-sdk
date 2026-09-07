@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * ensuring data isolation at the database level (defense in depth).
  *
  * <h2>Basic Tenant Isolation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
  * @RowLevelSecurity(policy = Policy.TENANT_ISOLATION)
  * public class Order {
@@ -16,10 +16,10 @@ import java.lang.annotation.*;
  *     private UUID organizationId;
  *     // ... other fields
  * }
- * }</pre>
+ * }
  *
  * <h2>Owner-Based Access:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "crm", path = "/contacts")
  * @RowLevelSecurity(
  *     policy = Policy.OWNER,
@@ -29,10 +29,10 @@ import java.lang.annotation.*;
  *     private UUID assignedUserId;
  *     // ... other fields
  * }
- * }</pre>
+ * }
  *
  * <h2>Role-Based Access:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "hr", path = "/salaries")
  * @RowLevelSecurity(
  *     policy = Policy.CUSTOM,
@@ -41,20 +41,20 @@ import java.lang.annotation.*;
  *     condition = "department_id IN (SELECT department_id FROM user_departments WHERE user_id = current_user_id())"
  * )
  * public class Salary { }
- * }</pre>
+ * }
  *
  * <h2>Hierarchical Access (Manager sees team):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @RowLevelSecurity(
  *     policy = Policy.HIERARCHY,
  *     hierarchyField = "managerId",
  *     hierarchyDepth = 3  // Up to 3 levels deep
  * )
  * public class Employee { }
- * }</pre>
+ * }
  *
  * <h2>Target design — the policy this would emit:</h2>
- * <pre>{@code
+ * {@snippet lang="sql" :
  * -- Enable RLS on table
  * ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
  *
@@ -65,15 +65,13 @@ import java.lang.annotation.*;
  * -- Owner-based policy
  * CREATE POLICY contacts_owner_access ON contacts
  *     USING (assigned_user_id = current_setting('app.user_id')::uuid);
- * }</pre>
+ * }
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
  * extract this marker, so writing it changes nothing in the emitted output. See the package
  * javadoc for the live path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Encrypted
  */
 @Target(ElementType.TYPE)
@@ -193,9 +191,9 @@ public @interface RowLevelSecurity {
      * </ul>
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * condition = "status = 'PUBLISHED' OR created_by = current_user_id()"
-     * }</pre>
+     * }
      *
      * @return SQL condition expression
      */
@@ -269,11 +267,11 @@ public @interface RowLevelSecurity {
      * Audit log level for policy violations.
      */
     enum AuditLevel {
-        /** No audit logging */
+        /** No audit logging. */
         NONE,
-        /** Log only violations */
+        /** Log only violations. */
         VIOLATIONS,
-        /** Log all access attempts */
+        /** Log all access attempts. */
         ALL
     }
 

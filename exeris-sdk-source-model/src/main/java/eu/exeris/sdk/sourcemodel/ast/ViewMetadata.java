@@ -43,7 +43,7 @@ import java.util.Objects;
  * @param titleKey the message-bundle key for {@link #title()}; the literal is the fallback
  * @param layout the layout the view's regions are arranged in
  * @param regions the view's regions, each holding components
- * @since 0.8.0
+ * @since 0.8
  * @see ViewKind
  * @see RegionMetadata
  */
@@ -79,7 +79,7 @@ public record ViewMetadata(
         if (layout != null && layout.isBlank()) {
             layout = null;
         }
-        regions = regions == null ? List.of() : List.copyOf(regions);
+        regions = AstLists.copyOfNoNulls(regions, "regions");
     }
 
     /**

@@ -101,8 +101,7 @@ import java.util.List;
  *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator opens an
  *        endpoint from it, and it is outside the 1.0.0 freeze (ADR-072)
  *
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -212,7 +211,7 @@ public record DomainMetadata(
 
     /**
      * Fully qualified class name.
-          *
+     *
      * @return the {@code String}
      */
     public String fullyQualifiedName() {
@@ -221,7 +220,7 @@ public record DomainMetadata(
 
     /**
      * Effective table name (explicit or derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String effectiveTableName() {
@@ -230,7 +229,7 @@ public record DomainMetadata(
 
     /**
      * Effective API path (explicit or derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String effectivePath() {
@@ -239,7 +238,7 @@ public record DomainMetadata(
 
     /**
      * Effective aggregate name.
-          *
+     *
      * @return the {@code String}
      */
     public String effectiveAggregate() {
@@ -248,7 +247,7 @@ public record DomainMetadata(
 
     /**
      * Plural name for entity (derived from entityName).
-          *
+     *
      * @return the {@code String}
      */
     public String pluralName() {
@@ -268,7 +267,7 @@ public record DomainMetadata(
 
     /**
      * Display name for entity (same as entityName but can add spaces before capitals).
-          *
+     *
      * @return the {@code String}
      */
     public String displayName() {
@@ -332,7 +331,7 @@ public record DomainMetadata(
 
     /**
      * Find a field by name.
-          *
+     *
      * @param fieldName the {@code fieldName} the result carries
      * @return the {@code java.util.Optional}
      */
@@ -407,7 +406,7 @@ public record DomainMetadata(
      * always had. Never returns {@code null} — an entity always has a tier.
      *
      * @return the declared tier, or the {@code tenantScoped} fallback
-     * @since 0.10.0
+     * @since 0.10
      */
     public DataScope effectiveDataScope() {
         if (dataScope != null) {

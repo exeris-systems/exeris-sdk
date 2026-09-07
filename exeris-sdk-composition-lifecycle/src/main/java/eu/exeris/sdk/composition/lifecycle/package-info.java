@@ -36,6 +36,6 @@
  * invokes the conductor from a hand-written entrypoint — the library contract here is identical in
  * both cases.
  *
- * @since 0.9.0
+ * @since 0.9
  */
 package eu.exeris.sdk.composition.lifecycle;
