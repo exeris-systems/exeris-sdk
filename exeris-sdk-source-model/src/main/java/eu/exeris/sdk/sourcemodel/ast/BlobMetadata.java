@@ -52,7 +52,7 @@ public record BlobMetadata(
             container = null;
         }
         // Empty contentTypes serializes as [] (the AST's NON_NULL list convention).
-        contentTypes = contentTypes == null ? List.of() : List.copyOf(contentTypes);
+        contentTypes = AstLists.copyOfNoNulls(contentTypes, "contentTypes");
     }
 
     /**
