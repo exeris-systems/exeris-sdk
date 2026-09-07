@@ -46,8 +46,24 @@ class JavadocCompletenessTest {
     /** {@code path:line: warning: message}, with the offending declaration on the next line. */
     private static final Pattern WARNING = Pattern.compile("^(\\S+?\\.java):(\\d+): warning: (.+)$");
 
-    /** A builder setter: declared in a {@code Builder}, named for its component, returning the builder. */
-    private static final Pattern BUILDER_SETTER = Pattern.compile("^public Builder \\w+\\(");
+    /**
+     * A <em>trivial</em> builder setter: assigns the component of its own name from {@code v} and
+     * returns the builder, and does nothing else.
+     *
+     * <p>The pattern keys on the BODY, and that is the whole point of it. It used to be
+     * {@code ^public Builder \\w+\\(} — the shape of the signature — which exempted every method
+     * that looked like a setter regardless of what it did. Nine did more: three took a defensive
+     * copy, one appended instead of replacing, four normalised blank or null, and one replaced an
+     * entire list from a single value and threw on {@code null}. Each was silently excused by a
+     * rule whose stated justification — "the component is documented by the record's own
+     * {@code @param}" — was not true of any of them.
+     *
+     * <p>The back-reference is what carries the "named for its component" half of that
+     * justification: {@code addParam} writes {@code params}, so it does not match, and neither
+     * will the next setter that stops being a plain assignment.
+     */
+    private static final Pattern BUILDER_SETTER =
+            Pattern.compile("^public Builder (\\w+)\\([^)]*\\)\\s*\\{\\s*this\\.\\1\\s*=\\s*v;\\s*return this;\\s*}$");
 
     @Test
     @DisplayName("javadoc reports nothing outside the documented exemption")
@@ -86,9 +102,12 @@ class JavadocCompletenessTest {
         }
 
         assertThat(offenders)
-                .as("Document the member, or — if it is a builder setter — make it look like one. "
-                        + "These jars publish to Maven Central and their javadoc is what a consumer "
-                        + "reads instead of the sources.")
+                .as("Document the member. The builder-setter exemption covers only a setter that "
+                        + "assigns the component of its own name from `v` and returns the builder — "
+                        + "a defensive copy, a normalisation, an append or a rename is a contract a "
+                        + "caller cannot guess from the signature, and has to be written down. These "
+                        + "jars publish to Maven Central and their javadoc is what a consumer reads "
+                        + "instead of the sources.")
                 .isEmpty();
     }
 }

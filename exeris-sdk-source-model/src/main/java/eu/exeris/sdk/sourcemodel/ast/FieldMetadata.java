@@ -339,15 +339,43 @@ public record FieldMetadata(
         // Normalize blank -> null so @Field.dataType's "" default does not survive as
         // "dataType":"" under @JsonInclude(NON_DEFAULT) (whose default is null, not "").
         // dataType is the one string here with an empty-string-defaulted annotation source.
+        /**
+         * Sets the presentation hint, normalising a blank value to {@code null}.
+         *
+         * <p>{@code @Field.dataType} defaults to the empty string, and this component is written under
+         * {@code @JsonInclude(NON_DEFAULT)} whose default is {@code null}. Left alone, an unset attribute
+         * would reach the wire as {@code "dataType":""} rather than being omitted.
+         *
+         * @param v the presentation hint, or {@code null} or blank for none
+         * @return this builder
+         */
         public Builder dataType(String v) { this.dataType = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder enumType(String v) { this.enumType = v; return this; }
         public Builder computed(boolean v) { this.computed = v; return this; }
+        /**
+         * Sets the fields a computed value derives from, normalising {@code null} to an empty list.
+         *
+         * @param v the field names, or {@code null} for none
+         * @return this builder
+         */
         public Builder computedFrom(List<String> v) { this.computedFrom = v != null ? v : List.of(); return this; }
         public Builder inCreate(boolean v) { this.inCreate = v; return this; }
         public Builder inUpdate(boolean v) { this.inUpdate = v; return this; }
         // Normalize blank -> null so the @Field.labelKey/descriptionKey "" defaults
         // do not survive as ""-valued keys under @JsonInclude(NON_DEFAULT).
+        /**
+         * Sets the display-name message key, normalising a blank value to {@code null}.
+         *
+         * @param v the message-bundle key, or {@code null} or blank for none
+         * @return this builder
+         */
         public Builder displayNameKey(String v) { this.displayNameKey = (v == null || v.isBlank()) ? null : v; return this; }
+        /**
+         * Sets the description message key, normalising a blank value to {@code null}.
+         *
+         * @param v the message-bundle key, or {@code null} or blank for none
+         * @return this builder
+         */
         public Builder descriptionKey(String v) { this.descriptionKey = (v == null || v.isBlank()) ? null : v; return this; }
         public Builder derived(DerivedMetadata v) { this.derived = v; return this; }
         public Builder blob(BlobMetadata v) { this.blob = v; return this; }
