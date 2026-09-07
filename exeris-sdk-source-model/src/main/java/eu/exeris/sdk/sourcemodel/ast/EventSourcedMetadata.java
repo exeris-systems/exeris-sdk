@@ -21,8 +21,7 @@ import java.util.List;
  * @param projections the read models maintained from the stream
  * @param versionField the field carrying the aggregate's stream version
  * @param conflictResolution how concurrent appends to one stream are reconciled
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -89,15 +88,15 @@ public record EventSourcedMetadata(
      * How snapshots of a rebuilt aggregate are taken.
      */
     public enum SnapshotStrategy {
-        /** Take snapshot every N events */
+        /** Take snapshot every N events. */
         COUNT_BASED,
-        /** Take snapshot every N seconds */
+        /** Take snapshot every N seconds. */
         TIME_BASED,
-        /** Take snapshot when aggregate size exceeds threshold */
+        /** Take snapshot when aggregate size exceeds threshold. */
         SIZE_BASED,
-        /** No automatic snapshots */
+        /** No automatic snapshots. */
         MANUAL,
-        /** Adaptive based on access patterns */
+        /** Adaptive based on access patterns. */
         ADAPTIVE
     }
 
@@ -105,13 +104,13 @@ public record EventSourcedMetadata(
      * How concurrent appends to one aggregate's event stream are reconciled.
      */
     public enum ConflictResolution {
-        /** Optimistic locking with version check */
+        /** Optimistic locking with version check. */
         OPTIMISTIC_LOCK,
-        /** Last write wins */
+        /** Last write wins. */
         LAST_WRITE_WINS,
-        /** Merge conflicting events */
+        /** Merge conflicting events. */
         MERGE,
-        /** Custom resolution handler */
+        /** Custom resolution handler. */
         CUSTOM
     }
 

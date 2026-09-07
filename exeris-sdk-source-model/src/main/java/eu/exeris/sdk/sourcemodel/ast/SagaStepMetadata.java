@@ -43,8 +43,7 @@ import java.util.List;
  * @param kind the step's shape — the discriminator distinguishing an ordinary step from a
  *        compensation or a terminal one
  *
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -123,9 +122,8 @@ public record SagaStepMetadata(
      * structural fields alone, which is precisely why {@link #kind()} exists.
      * Returns {@code null} when no kind is set and none can be inferred.
      *
-     * @since 0.7.0
-          *
      * @return the {@code StepKind}
+     * @since 0.7
      */
     public StepKind effectiveKind() {
         if (kind != null) {
@@ -149,7 +147,7 @@ public record SagaStepMetadata(
      * hand-written. Stored as an AST-owned enum (consistent with the other
      * {@code SagaMetadata} enums), independent of any annotation-side type.
      *
-     * @since 0.7.0
+     * @since 0.7
      */
     public enum StepKind {
         /** Dispatch a forward command to a service. */

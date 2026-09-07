@@ -25,8 +25,7 @@ import java.util.List;
  * @param provides the services this capability offers to others
  * @param requires the services it needs from others
  * @param lifecycleOwner the type implementing the capability's lifecycle hooks
- * @author Exeris SDK Team
- * @since 0.4.0
+ * @since 0.4
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
