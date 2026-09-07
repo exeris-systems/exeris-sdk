@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-04
+last-verified: 2026-09-07
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA
@@ -480,7 +480,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   **What it deliberately did not do.** 326 of 440 public methods carry no javadoc, which sounds alarming and is not: the number decomposes to 220 builder setters, 40 boolean predicates (`hasX` / `isX`), 40 static factories and 26 `build()` / sealed-interface overrides. That surface is mechanical, not contract-ambiguous — the interpretive contract lives in the two package-infos and is documented there — so no pre-freeze javadoc campaign was run. `-io`, both composition modules and the annotation surface are fully documented already.
 
   **Three surfaces are deliberately outside the freeze** — `@Blob` / `@Schedule` / `@RouteAccess` and their AST carriers (`FieldMetadata.blob`, `ActionMetadata.schedule`, `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`), per ADR-072 as amended: they encode kernel packages still at tier `preview`, so freezing them would make the SDK's 1.0 promise stronger than the surface it describes. They may change or be dropped in a 1.x minor, and are promoted into the frozen surface when the kernel moves each package to `stable` and the `exeris-tooling` transcription exists. Recorded in `MIGRATION-0.x-to-1.0.md` §2 — every *other* reserved surface is frozen as declared, and this exception exists for one specific reason rather than as a general escape hatch
-- [ ] `MIGRATION-0.x-to-1.0.md` written and validated against budgetHQ
+- [ ] `MIGRATION-0.x-to-1.0.md` written and validated against the consumers that cross the freeze — the `exeris-tooling` processor and codegen, and `exeris-platform-lsp`. **Not budgetHQ:** it consumes the platform through `exeris-spring-runtime` and authors no `@ExerisDomain` sources, so it exercises none of the surface this guide describes. Its role here is the entity corpus of the 0.3.0 round-trip tests — evidence already collected, not a validation pass still owed
 - [ ] Annotations module hits Maven Central (Apache-2.0, no Commons Clause)
 - [ ] AST records module hits Maven Central
 - [ ] UI kit npm package hits npm registry under `@exeris/ui-kit` — **publication, not version**: the package versions independently of the SDK and gets its own 1.0, freezing the token/class namespace and not the values (`MIGRATION-0.x-to-1.0.md` §2b). Same shape as `@exeris/codegen-ts` at 0.2.0 against `exeris-tooling` 0.8.0. Enforced by `tests/public-surface.txt`
