@@ -170,7 +170,7 @@ public record ProjectionMetadata(
          * Declares a single source aggregate, replacing whatever {@link #aggregateTypes} holds.
          *
          * <p>The convenience for the "expose this subset of <em>this</em> aggregate as a read-only view"
-         * case, and the setter {@link ProjectionMetadata#of(String, String, java.util.List)} forwards to.
+         * case, and the setter {@link ProjectionMetadata#of(String, String, List)} forwards to.
          * It <strong>replaces</strong> rather than appends, so a preceding {@code aggregateTypes(...)} is
          * discarded and the two are order-dependent.
          *

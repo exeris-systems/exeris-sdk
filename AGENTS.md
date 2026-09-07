@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-05
+last-verified: 2026-09-07
 ---
 
 # exeris-sdk
@@ -51,7 +51,9 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
   `@Deprecated(forRemoval = true)`, javadoc replacement pointer, fallback window ≥ 1 minor,
   and `MIGRATION.md` entry ([policy](.agents/policies/stability-and-deprecation.md)).
 - **Javadoc completeness:** Publish gate to Maven Central. `failOnWarnings=true` on 6 modules;
-  `source-model` uses `JavadocCompletenessTest` with builder setters exempt ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
+  `source-model` uses `JavadocCompletenessTest`, which exempts a builder setter only when its body
+  is the bare assignment — one that copies, normalises, appends or renames is documented
+  ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
 
 ## Architecture and documentation entry points
 
