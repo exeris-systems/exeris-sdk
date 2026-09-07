@@ -1,0 +1,6 @@
+# ADR-085 §F.21d: generated trees are marked so a pull request diff collapses them.
+#
+# `api/ui-kit.api.md` is api-extractor's report, not prose. It is committed on purpose — it is that
+# package's japicmp, and a `-` line in it is a major — but it is rewritten wholesale by
+# `npm run api:accept`, so nothing hand-written survives there, frontmatter included.
+exeris-sdk-ui-kit/api/*.api.md linguist-generated=true
