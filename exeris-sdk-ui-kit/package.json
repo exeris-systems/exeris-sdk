@@ -32,6 +32,10 @@
   "scripts": {
     "build": "tsc",
     "build:css": "tailwindcss -i src/styles/index.css -o dist/styles.css",
+    "lint": "eslint --max-warnings=-1 .",
+    "docs:check": "typedoc --emit none",
+    "api:check": "api-extractor run",
+    "api:accept": "api-extractor run --local",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -50,11 +54,17 @@
     "tailwindcss": ">=3.4.0"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.59.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@vitest/coverage-v8": "^4.1.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsdoc": "^50.8.0",
+    "eslint-plugin-tsdoc": "^0.4.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^3.4.0",
+    "typedoc": "^0.28.20",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.69.0",
     "vitest": "^4.1.0"
   }
 }
