@@ -32,7 +32,7 @@ import java.util.List;
  * prefix, the trailing {@code \n}, or the null normalization breaks the hash and false-fails every
  * deploy.
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public final class CompositionBinding {
 
@@ -45,7 +45,7 @@ public final class CompositionBinding {
      * component null, since {@code FAIL_ON_NULL_FOR_PRIMITIVES} guards only primitives) is treated as
      * an empty composition rather than throwing, so a malformed or wrong-schema manifest surfaces as
      * the asserter's descriptive handshake failure, not an opaque {@link NullPointerException} here.
-          *
+     *
      * @param manifest the manifest to bind
      * @return the canonical binding string for its modules
      */
@@ -59,7 +59,7 @@ public final class CompositionBinding {
      * canonical form sorts by {@code qualifiedName} regardless. Modules must have a non-null
      * {@code qualifiedName} and non-null provided {@code service}s; an unversioned provide (null
      * version) is legal and normalizes to {@code "service@"}.
-          *
+     *
      * @param modules the modules to bind, in any order — the binding canonicalizes them
      * @return the canonical binding string
      */

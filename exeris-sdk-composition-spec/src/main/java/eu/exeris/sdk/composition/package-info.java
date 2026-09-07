@@ -28,6 +28,6 @@
  * documented extraction trigger: if an SDK-independent tool ever needs to read
  * {@code cap-manifest.json} directly, extract this into a standalone {@code exeris-composition-spec}.
  *
- * @since 0.8.0
+ * @since 0.8
  */
 package eu.exeris.sdk.composition;

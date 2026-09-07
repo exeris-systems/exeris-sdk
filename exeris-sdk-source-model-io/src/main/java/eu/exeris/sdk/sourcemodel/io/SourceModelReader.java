@@ -114,7 +114,7 @@ import java.util.TreeSet;
  * deps and is out of scope. Instances are <b>not thread-safe</b> (they hold a
  * single {@code JavaParser}); use one per call-site or guard externally.
  *
- * @since 0.3.0
+ * @since 0.3
  */
 public final class SourceModelReader {
 
@@ -150,9 +150,9 @@ public final class SourceModelReader {
      * {@code @ExerisDomain} type, or {@link Optional#empty()} if the source
      * contains no such type.
      *
-     * @throws IllegalArgumentException if the source is not valid Java
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @return the entity's metadata, or empty when the source declares no {@code @ExerisDomain}
+     * @throws IllegalArgumentException if the source is not valid Java
      */
     public Optional<DomainMetadata> read(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -166,9 +166,9 @@ public final class SourceModelReader {
      * {@link EnumMetadata} (name, package, qualified name, constant values),
      * mirroring how the processor emits enum metadata separately from entities.
      *
-     * @throws IllegalArgumentException if the source is not valid Java
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @return the enums the source declares, in declaration order
+     * @throws IllegalArgumentException if the source is not valid Java
      */
     public List<EnumMetadata> readEnums(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -196,10 +196,10 @@ public final class SourceModelReader {
      * service contract and the same-compilation-unit {@code lifecycleOwner}
      * limitation.
      *
-     * @throws IllegalArgumentException if the source is not valid Java
-     * @since 0.4.0
-          * @param javaSource the entity's Java source text
+     * @param javaSource the entity's Java source text
      * @return the capability module's metadata, or empty when the source declares none
+     * @throws IllegalArgumentException if the source is not valid Java
+     * @since 0.4
      */
     public Optional<CapabilityModuleMetadata> readCapabilityModule(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
@@ -239,7 +239,7 @@ public final class SourceModelReader {
      * {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is verified per-slice
      * rather than by this method. Matching is by simple name (no import resolution).
      * Re-parses {@code javaSource} independently of {@link #read}.
-          *
+     *
      * @param javaSource the entity's Java source text
      * @return the names of annotations present in the source that this reader does not model — the honest report of what a round-trip would drop
      */
@@ -913,7 +913,7 @@ public final class SourceModelReader {
      * two enums are independent types (ADR-059), so a value added on the annotation side
      * alone must degrade to "not extracted", not to a broken read.
      *
-     * @since 0.11.0
+     * @since 0.11
      */
     private Optional<DomainEventMetadata.Trigger> eventTrigger(AnnotationExpr annotation) {
         return enumAttr(annotation, "trigger")

@@ -271,9 +271,45 @@ public record ActionMetadata(
         public Builder idempotent(boolean v) { this.idempotent = v; return this; }
         public Builder dangerous(boolean v) { this.dangerous = v; return this; }
         public Builder requiresConfirmation(boolean v) { this.requiresConfirmation = v; return this; }
+        /**
+         * Replaces the parameters with a copy of the given list.
+         *
+         * <p>A copy, not the list itself, because {@link #addParam} appends in place afterwards — storing
+         * the argument would make that append mutate the caller's list.
+         *
+         * @param v the parameters
+         * @return this builder
+         * @throws NullPointerException if {@code v} is {@code null}; the record's own constructor treats a
+         *         null list as an empty one, and this setter does not
+         */
         public Builder params(List<ActionParamMetadata> v) { this.params = new ArrayList<>(v); return this; }
+        /**
+         * Appends one parameter, keeping any already set.
+         *
+         * <p>The only setter here that adds rather than replaces. It works before {@link #params} is
+         * called, the builder starting from an empty list.
+         *
+         * @param p the parameter to append
+         * @return this builder
+         */
         public Builder addParam(ActionParamMetadata p) { this.params.add(p); return this; }
+        /**
+         * Replaces the permissions with a copy of the given list.
+         *
+         * @param v the permissions
+         * @return this builder
+         * @throws NullPointerException if {@code v} is {@code null}; the record's own constructor treats a
+         *         null list as an empty one, and this setter does not
+         */
         public Builder permissions(List<String> v) { this.permissions = new ArrayList<>(v); return this; }
+        /**
+         * Replaces the produced events with a copy of the given list.
+         *
+         * @param v the produced events
+         * @return this builder
+         * @throws NullPointerException if {@code v} is {@code null}; the record's own constructor treats a
+         *         null list as an empty one, and this setter does not
+         */
         public Builder producesEvents(List<String> v) { this.producesEvents = new ArrayList<>(v); return this; }
         public Builder methodName(String v) { this.methodName = v; return this; }
         public Builder streaming(boolean v) { this.streaming = v; return this; }

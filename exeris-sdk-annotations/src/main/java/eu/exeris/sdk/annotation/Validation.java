@@ -155,6 +155,7 @@ public @interface Validation {
     /**
      * Whether the field is required (cannot be null or empty).
      *
+     * @return true if field is required
      * @deprecated Use {@link Field#required()} instead. {@code @Field.required}
      *     is the canonical location for this concept — required-ness is a
      *     field-shape property, not a validation rule.
@@ -164,7 +165,6 @@ public @interface Validation {
      *     attribute. <strong>Removed in 1.0.0</strong>: callers that have not
      *     migrated by then will silently lose required-ness — fix the
      *     warnings during 0.2.x.
-     * @return true if field is required
      */
     @Deprecated(since = "0.2.0", forRemoval = true)
     boolean required() default false;
@@ -432,6 +432,7 @@ public @interface Validation {
     /**
      * Whether to validate only on specific operations.
      *
+     * @return operation type for validation
      * @deprecated Use {@link Field#inCreate()} / {@link Field#inUpdate()}
      *     instead. The form-lifecycle scope of a field belongs on
      *     {@code @Field}, not on {@code @Validation}: a field that isn't
@@ -441,7 +442,6 @@ public @interface Validation {
      *     this attribute and emits a build warning suggesting the
      *     {@code @Field.inCreate} / {@code @Field.inUpdate} replacement.
      *     <strong>Removed in 1.0.0.</strong>
-     * @return operation type for validation
      */
     @Deprecated(since = "0.2.0", forRemoval = true)
     String validateOn() default "";

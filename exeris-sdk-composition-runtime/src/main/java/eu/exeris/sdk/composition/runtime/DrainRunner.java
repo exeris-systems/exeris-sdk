@@ -25,7 +25,7 @@ import java.time.Duration;
  * interruptible operations nor checks the interrupt flag delays shutdown past the budget. Revisit
  * when {@code StructuredTaskScope} finalizes.
  *
- * @since 0.9.0
+ * @since 0.9
  */
 @FunctionalInterface
 interface DrainRunner {

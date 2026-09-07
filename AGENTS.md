@@ -51,7 +51,9 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
   `@Deprecated(forRemoval = true)`, javadoc replacement pointer, fallback window ≥ 1 minor,
   and `MIGRATION.md` entry ([policy](.agents/policies/stability-and-deprecation.md)).
 - **Javadoc completeness:** Publish gate to Maven Central. `failOnWarnings=true` on 6 modules;
-  `source-model` uses `JavadocCompletenessTest` with builder setters exempt ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
+  `source-model` uses `JavadocCompletenessTest`, which exempts a builder setter only when its body
+  is the bare assignment — one that copies, normalises, appends or renames is documented
+  ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
 - **TSDoc + API golden:** `@exeris-systems/ui-kit` is a gated TypeScript surface under ADR-085
   §F.21a–c. Every export carries a release tag and a doc comment, and `api/ui-kit.api.md` is
   committed — CI fails on drift, so a removed name is a major for that package's own version

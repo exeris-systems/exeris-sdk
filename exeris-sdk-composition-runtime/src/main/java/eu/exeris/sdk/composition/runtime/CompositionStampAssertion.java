@@ -46,7 +46,7 @@ import tools.jackson.databind.json.JsonMapper;
  * The open kernel stays cap-blind (obligation 9): nothing here lives in or is called from a kernel
  * package, and this module carries no kernel or codegen dependency.
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public final class CompositionStampAssertion {
 
@@ -102,7 +102,7 @@ public final class CompositionStampAssertion {
      * Assert a parsed manifest, additionally checking each provided service's version against
      * {@code classpathServiceVersions} (service → version actually loaded). An empty map skips the
      * version-match (self-consistent single-bundled case).
-          *
+     *
      * @param manifest the manifest to check
      * @param classpathServiceVersions the service versions actually on the classpath, by service name
      */
@@ -249,7 +249,7 @@ public final class CompositionStampAssertion {
      * entry NPEs, by design; this is a post-assertion helper, not an entry validator. (A null service
      * would map to a {@code null} key; {@link #assertConsistent} rejects a null service before this is
      * ever reached, so a post-assertion caller never hits it.)
-          *
+     *
      * @param manifest the manifest to read
      * @return the version each service is provided at, by service name
      */
