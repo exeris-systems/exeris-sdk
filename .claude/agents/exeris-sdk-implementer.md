@@ -28,7 +28,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 - ui-kit: TS strict, Vitest tests; 85% per-file coverage on lines / statements / functions / branches.
 - Source-model: 85% BUNDLE-level instruction + line gate via JaCoCo (`jacoco-maven-plugin` ≥ 0.8.14).
 - When removing / renaming public API: apply deprecation pipeline (`@Deprecated(forRemoval = true)` + javadoc replacement pointer + processor fallback-with-warning ≥ 1 minor release + `MIGRATION.md` entry).
-- Reference-first: grep `~/exeris-systems/exeris-tooling/exeris-processor/` for how an annotation is read at compile time before designing a new attribute.
+- Reference-first: grep `exeris-tooling`'s `exeris-processor/` for how an annotation is read at compile time before designing a new attribute — a sibling repository, present only in a full ecosystem checkout.
 
 ## Verification
 - `mvn clean install` (full reactor; runs JaCoCo + 85% gate on source-model).

@@ -28,7 +28,7 @@ Enforce: removing or renaming public API requires `@Deprecated(forRemoval = true
 - For removal / rename in `0.x`:
   1. Apply `@Deprecated(forRemoval = true)` to the deprecated surface.
   2. Name the canonical replacement in javadoc.
-  3. Give the processor (`~/exeris-systems/exeris-tooling/exeris-processor/`) a fallback-with-warning window of ≥ 1 minor release.
+  3. Give the processor (`exeris-tooling`, module `exeris-processor/`) a fallback-with-warning window of ≥ 1 minor release.
   4. Add a `MIGRATION.md` section with code diff + window + removal milestone (typically 1.0.0).
 - Removing an already-deprecated surface: confirm the fallback window of ≥ 1 minor release has elapsed.
 
