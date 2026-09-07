@@ -1278,9 +1278,16 @@ presentation IR seed lands. Schema `"0.7.0"` → `"0.8.0"`.
 
 ### Breaking
 
-- **`exeris-sdk-source-model`: `ProjectionMetadata`, `SagaStepMetadata` and `SagaMetadata` gained
-  trailing components** — source/read-model framing on the first, step `kind` and typed transitions on
-  the other two. Positional callers of the canonical constructors must add the arguments.
+- **`exeris-sdk-source-model`: `ProjectionMetadata`'s canonical constructor changed arity *and*
+  order** — the record grew the source-aggregate link, the event-subscription framing and the
+  read-model identity, and the components were regrouped (identity → source → subscription → read
+  model → exposed fields → caching). The old and new parameter lists share no common prefix, so a
+  positional `new ProjectionMetadata(…)` does not compile and **cannot be repaired by appending
+  arguments** — rewrite it through `builder(name)`, `of(name, aggregateType, fields)`, or the
+  unchanged `simple(name, fields)`. See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `SagaStepMetadata` and `SagaMetadata` gained trailing components** —
+  step `kind` on the first, typed `transitions` on the second. Positional callers of the canonical
+  constructors add the arguments at the end.
   See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.6.0"` → `"0.7.0"`** — baselines
   stamped `"0.6.0"` read as skew; regenerate. See [`MIGRATION.md` §0.6.x → 0.7.x](MIGRATION.md).
@@ -1341,6 +1348,11 @@ schema; downstream generation of the new surfaces is `exeris-tooling` work.
 - **`exeris-sdk-source-model`: `FieldMetadata` and `UIFieldMetadata` canonical constructors changed
   arity** — `dataType` and the i18n message keys are new record components, so the all-args
   constructors gained parameters. Positional callers must add the arguments.
+  See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `DomainMetadata`'s canonical constructor gained `eventHandlers`** —
+  inserted in the nested-metadata block after `projections` rather than appended, so a positional
+  `new DomainMetadata(…)` needs the argument in that position, not at the end. `@EventHandler` has
+  shipped since 0.1.0; `EventHandlerMetadata` is the AST record it finally extracts into.
   See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.5.0"` → `"0.6.0"`** — baselines
   stamped `"0.5.0"` read as skew; regenerate. See [`MIGRATION.md` §0.5.x → 0.6.x](MIGRATION.md).
