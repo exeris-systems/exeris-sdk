@@ -7,7 +7,7 @@ package eu.exeris.sdk.sourcemodel.ast;
  * the {@link #NONE} default. Part of the reserved presentation IR surface
  * (RFC-2026-06-25).
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public enum BindSource {
     /** Bound to an {@code @ExerisDomain} entity, by name. */

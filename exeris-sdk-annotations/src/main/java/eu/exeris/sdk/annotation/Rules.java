@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
  * <p><strong>Status: RESERVED</strong> — a container is read exactly when the annotation it
  * holds is, and {@link Rule @Rule} is not extracted. Compiler-synthesized; authors write
  * repeated {@code @Rule} directly and never this type.
- * @since 0.7.0
+ * @since 0.7
  * @see Rule
  */
 @Target({ElementType.TYPE, ElementType.FIELD})

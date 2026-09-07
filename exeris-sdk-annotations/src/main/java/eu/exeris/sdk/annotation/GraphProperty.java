@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * and whether it participates in similarity calculations.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphProperty(indexed = true)
  * private String name;
  *
@@ -18,25 +18,23 @@ import java.lang.annotation.*;
  *
  * @GraphProperty(indexed = true, fullText = true)
  * private String content;
- * }</pre>
+ * }
  *
  * <h2>With Custom Name and Type:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @GraphProperty(
  *     name = "amt",
  *     graphType = GraphType.DOUBLE,
  *     indexed = true
  * )
  * private BigDecimal amount;
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the type-level {@link Graph @Graph} is read, and
  * so is {@link GraphEdge @GraphEdge}; this one is not. {@code GraphMetadata.properties} is
  * passed as null in consequence, so a property declared here reaches no graph-sync writer.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Graph
  */
 @Target(ElementType.FIELD)
@@ -318,35 +316,35 @@ public @interface GraphProperty {
      * Graph property data types.
      */
     enum GraphType {
-        /** Auto-detect from Java type */
+        /** Auto-detect from Java type. */
         AUTO,
-        /** String type */
+        /** String type. */
         STRING,
-        /** Integer type */
+        /** Integer type. */
         INTEGER,
-        /** Long type */
+        /** Long type. */
         LONG,
-        /** Double type */
+        /** Double type. */
         DOUBLE,
-        /** Float type */
+        /** Float type. */
         FLOAT,
-        /** Boolean type */
+        /** Boolean type. */
         BOOLEAN,
-        /** Date type */
+        /** Date type. */
         DATE,
-        /** DateTime type */
+        /** DateTime type. */
         DATETIME,
-        /** Timestamp type */
+        /** Timestamp type. */
         TIMESTAMP,
-        /** JSON type */
+        /** JSON type. */
         JSON,
-        /** Array type */
+        /** Array type. */
         ARRAY,
-        /** Map type */
+        /** Map type. */
         MAP,
-        /** Geographic point type */
+        /** Geographic point type. */
         POINT,
-        /** Vector type (for embeddings) */
+        /** Vector type (for embeddings). */
         VECTOR
     }
 
@@ -354,22 +352,22 @@ public @interface GraphProperty {
      * Index types for graph properties.
      */
     enum IndexType {
-        /** B-tree index (default) */
+        /** B-tree index (default). */
         BTREE,
 
-        /** Hash index */
+        /** Hash index. */
         HASH,
 
-        /** Full-text index */
+        /** Full-text index. */
         FULLTEXT,
 
-        /** Vector/similarity index */
+        /** Vector/similarity index. */
         VECTOR,
 
-        /** Spatial index */
+        /** Spatial index. */
         SPATIAL,
 
-        /** Range index */
+        /** Range index. */
         RANGE
     }
 
@@ -377,28 +375,28 @@ public @interface GraphProperty {
      * How similarity between two vector values is measured.
      */
     enum SimilarityMethod {
-        /** Auto-detect based on type */
+        /** Auto-detect based on type. */
         AUTO,
 
-        /** Exact match */
+        /** Exact match. */
         EXACT,
 
-        /** Fuzzy string matching */
+        /** Fuzzy string matching. */
         FUZZY,
 
-        /** Token/word overlap */
+        /** Token/word overlap. */
         TOKEN,
 
-        /** Numeric difference */
+        /** Numeric difference. */
         NUMERIC,
 
-        /** Date/time proximity */
+        /** Date/time proximity. */
         TEMPORAL,
 
-        /** Vector cosine similarity */
+        /** Vector cosine similarity. */
         VECTOR,
 
-        /** Custom implementation */
+        /** Custom implementation. */
         CUSTOM
     }
 }

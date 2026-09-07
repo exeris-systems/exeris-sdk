@@ -299,7 +299,7 @@
  * dependency DAG, version-range intersection, and the cap manifest are likewise
  * tooling concerns — the AST carries only the declared shape. See ADR-038.
  *
- * @since 0.1.0
+ * @since 0.1
  * @see eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata
  */
 package eu.exeris.sdk.sourcemodel.ast;

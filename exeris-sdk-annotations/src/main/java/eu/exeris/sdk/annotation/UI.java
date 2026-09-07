@@ -48,7 +48,7 @@ import java.lang.annotation.*;
  *
  * <h2>Entity-Level Usage — sibling of the annotated type</h2>
  * <p>The flags reach {@code UIMetadata}; no emitter gates on them yet.
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", aggregate = "Order", path = "/orders")
  * @UI(                        // sibling — NOT @ExerisDomain(ui = @UI(...))
  *     listView = true,        // intent: generate list/table view
@@ -60,7 +60,7 @@ import java.lang.annotation.*;
  *     exportable = true
  * )
  * public class Order { }
- * }</pre>
+ * }
  * <p>Note the reader convention: when a standalone {@code @UI} is present, the
  * four view flags default to {@code true} and {@code exportable} to
  * {@code false} — "you added {@code @UI}, so the views are on" — which is
@@ -69,7 +69,7 @@ import java.lang.annotation.*;
  * <h2>Field-Level Usage — RESERVED, no reader</h2>
  * <p>Shown in the sibling form for when a reader lands. Neither this nor the
  * nested {@code @Field(ui = @UI(...))} form is extracted today:
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order Number")
  * @UI(                                  // sibling — and currently a no-op
  *     displayInList = true,
@@ -81,7 +81,7 @@ import java.lang.annotation.*;
  *     format = "uppercase"
  * )
  * private String orderNumber;
- * }</pre>
+ * }
  *
  * <h2>Component Types:</h2>
  * <p>The {@code componentType} attribute names which Angular component a
@@ -102,9 +102,7 @@ import java.lang.annotation.*;
  *   <li>{@code AUTO} - SDK chooses based on field type</li>
  * </ul>
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target({ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.SOURCE)
@@ -255,10 +253,10 @@ public @interface UI {
      * Can be a simple name (resolved from same package) or fully qualified.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * enumSource = "UserRole"              // Same package
      * enumSource = "com.app.enums.Status"  // Fully qualified
-     * }</pre>
+     * }
      *
      * @return the enum class name
      */
@@ -319,9 +317,9 @@ public @interface UI {
      * registry key). For any built-in {@code ComponentType} it is ignored.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @UI(componentType = ComponentType.CUSTOM, customComponent = "app-geo-point-picker")
-     * }</pre>
+     * }
      *
      * <p>Declaring {@code CUSTOM} without a {@code customComponent} is a
      * generator-side error; the SDK only carries the declared shape.
@@ -464,12 +462,12 @@ public @interface UI {
      * Format: JSON object string.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * props = "{\"rows\": 5, \"cols\": 80}"              // Text area size
      * props = "{\"min\": 0, \"max\": 100, \"step\": 5}" // Slider config
      * props = "{\"multiple\": true, \"max\": 5}"        // File upload
      * props = "{\"dateFormat\": \"YYYY-MM-DD\"}"        // Date picker
-     * }</pre>
+     * }
      *
      * @return JSON configuration string
      */
@@ -481,12 +479,12 @@ public @interface UI {
      * Evaluated against form data or entity state.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * visibleWhen = "type == 'PREMIUM'"           // Show only for premium
      * visibleWhen = "amount > 1000"               // Show if amount exceeds threshold
      * visibleWhen = "country == 'US'"             // Show for specific country
      * visibleWhen = "hasRole('ADMIN')"            // Show for admins only
-     * }</pre>
+     * }
      *
      * @return visibility condition expression
      */
@@ -498,12 +496,12 @@ public @interface UI {
      * When expression evaluates to {@code false}, field becomes read-only.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * enabledWhen = "status == 'DRAFT'"          // Editable only in draft state
      * enabledWhen = "!locked"                     // Disabled when locked
      * enabledWhen = "hasPermission('EDIT')"       // Based on permission
      * enabledWhen = "createdBy == currentUser()"  // Only creator can edit
-     * }</pre>
+     * }
      *
      * @return enabled condition expression
      */
@@ -513,45 +511,45 @@ public @interface UI {
      * Enum representing available UI component types.
      */
     enum ComponentType {
-        /** Auto-detect based on field type */
+        /** Auto-detect based on field type. */
         AUTO,
-        /** Standard single-line text input */
+        /** Standard single-line text input. */
         TEXT_INPUT,
-        /** Multi-line text area */
+        /** Multi-line text area. */
         TEXT_AREA,
-        /** Numeric input with increment/decrement controls */
+        /** Numeric input with increment/decrement controls. */
         NUMBER_INPUT,
-        /** Date picker (calendar) */
+        /** Date picker (calendar). */
         DATE_PICKER,
-        /** Date and time picker */
+        /** Date and time picker. */
         DATETIME_PICKER,
-        /** Boolean checkbox */
+        /** Boolean checkbox. */
         CHECKBOX,
-        /** Single-select dropdown */
+        /** Single-select dropdown. */
         SELECT,
-        /** Multi-select dropdown */
+        /** Multi-select dropdown. */
         MULTI_SELECT,
-        /** Radio button group */
+        /** Radio button group. */
         RADIO_GROUP,
-        /** File upload component */
+        /** File upload component. */
         FILE_UPLOAD,
-        /** Rich text WYSIWYG editor */
+        /** Rich text WYSIWYG editor. */
         RICH_TEXT_EDITOR,
-        /** Color picker */
+        /** Color picker. */
         COLOR_PICKER,
-        /** Password input (masked) */
+        /** Password input (masked). */
         PASSWORD,
-        /** Email input with validation */
+        /** Email input with validation. */
         EMAIL,
-        /** URL input with validation */
+        /** URL input with validation. */
         URL,
-        /** Phone number input with formatting */
+        /** Phone number input with formatting. */
         PHONE,
-        /** Slider for numeric ranges */
+        /** Slider for numeric ranges. */
         SLIDER,
-        /** Toggle switch (alternative to checkbox) */
+        /** Toggle switch (alternative to checkbox). */
         TOGGLE,
-        /** Autocomplete/typeahead input */
+        /** Autocomplete/typeahead input. */
         AUTOCOMPLETE,
         /**
          * Application-supplied custom component (escape hatch out of this closed

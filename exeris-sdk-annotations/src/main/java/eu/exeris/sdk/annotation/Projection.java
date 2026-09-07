@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * optimized for specific query patterns. They enable the Query side of CQRS.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "account-balance",
  *     description = "Real-time account balance view",
@@ -23,10 +23,10 @@ import java.lang.annotation.*;
  *         // Update read model
  *     }
  * }
- * }</pre>
+ * }
  *
  * <h2>With Partitioning:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "order-summary",
  *     events = {"OrderCreatedEvent", "OrderUpdatedEvent"},
@@ -36,10 +36,10 @@ import java.lang.annotation.*;
  *     partitionCount = 12
  * )
  * public class OrderSummaryProjection implements Projection {}
- * }</pre>
+ * }
  *
  * <h2>With Rebuild Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Projection(
  *     name = "monthly-report",
  *     events = {"*"}, // All events
@@ -49,16 +49,14 @@ import java.lang.annotation.*;
  *     rebuildParallelism = 8
  * )
  * public class MonthlyReportProjection implements Projection {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: RESERVED</strong> — the processor performs no extraction, so a
  * projection declared here reaches no read model. Reserved rather than overlooked: its open
  * question is cross-service exposure — the same topology fork the {@link View @View} mesh
  * binding sits on — so it is design-gated on a decision, not on a missing extractor.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see DomainEvent
  * @see EventSourced
  */
@@ -827,16 +825,16 @@ public @interface Projection {
      * Where in the event stream the projection begins reading.
      */
     enum StartPosition {
-        /** Start from beginning of stream */
+        /** Start from beginning of stream. */
         EARLIEST,
 
-        /** Start from current position (new events only) */
+        /** Start from current position (new events only). */
         LATEST,
 
-        /** Start from last checkpoint */
+        /** Start from last checkpoint. */
         LAST_CHECKPOINT,
 
-        /** Start from specific position */
+        /** Start from specific position. */
         SPECIFIC
     }
 
@@ -844,13 +842,13 @@ public @interface Projection {
      * How the projection's writes participate in a transaction.
      */
     enum TransactionMode {
-        /** One transaction per event */
+        /** One transaction per event. */
         PER_EVENT,
 
-        /** One transaction per batch */
+        /** One transaction per batch. */
         PER_BATCH,
 
-        /** No transaction (manual) */
+        /** No transaction (manual). */
         NONE
     }
 
@@ -858,16 +856,16 @@ public @interface Projection {
      * How stream partitions are distributed across instances.
      */
     enum PartitionAssignment {
-        /** Range-based assignment */
+        /** Range-based assignment. */
         RANGE,
 
-        /** Round-robin assignment */
+        /** Round-robin assignment. */
         ROUND_ROBIN,
 
-        /** Sticky assignment */
+        /** Sticky assignment. */
         STICKY,
 
-        /** Cooperative sticky */
+        /** Cooperative sticky. */
         COOPERATIVE_STICKY
     }
 
@@ -875,22 +873,22 @@ public @interface Projection {
      * What happens when applying an event fails.
      */
     enum ErrorStrategy {
-        /** Retry failed events */
+        /** Retry failed events. */
         RETRY,
 
-        /** Skip failed events */
+        /** Skip failed events. */
         SKIP,
 
-        /** Send to dead letter topic */
+        /** Send to dead letter topic. */
         DEAD_LETTER,
 
-        /** Stop projection */
+        /** Stop projection. */
         STOP,
 
-        /** Pause and alert */
+        /** Pause and alert. */
         PAUSE,
 
-        /** Custom handler */
+        /** Custom handler. */
         CUSTOM
     }
 
@@ -898,19 +896,19 @@ public @interface Projection {
      * How the projection is rebuilt from scratch.
      */
     enum RebuildStrategy {
-        /** Delete all and rebuild from scratch */
+        /** Delete all and rebuild from scratch. */
         FULL,
 
-        /** Incremental rebuild from last position */
+        /** Incremental rebuild from last position. */
         INCREMENTAL,
 
-        /** Build new table, then swap (zero downtime) */
+        /** Build new table, then swap (zero downtime). */
         BLUE_GREEN,
 
-        /** Shadow mode - rebuild alongside live */
+        /** Shadow mode - rebuild alongside live. */
         SHADOW,
 
-        /** No automatic rebuild */
+        /** No automatic rebuild. */
         MANUAL
     }
 
@@ -918,16 +916,16 @@ public @interface Projection {
      * How current a read of the projection is guaranteed to be.
      */
     enum Consistency {
-        /** Eventually consistent (async processing) */
+        /** Eventually consistent (async processing). */
         EVENTUAL,
 
-        /** Causal consistency (within partition) */
+        /** Causal consistency (within partition). */
         CAUSAL,
 
-        /** Strong consistency (sync processing) */
+        /** Strong consistency (sync processing). */
         STRONG,
 
-        /** Session consistency */
+        /** Session consistency. */
         SESSION
     }
 
@@ -965,16 +963,16 @@ public @interface Projection {
      * When cached projection reads are discarded.
      */
     enum CacheInvalidation {
-        /** Invalidate single entry */
+        /** Invalidate single entry. */
         ENTRY,
 
-        /** Invalidate by pattern */
+        /** Invalidate by pattern. */
         PATTERN,
 
-        /** Invalidate entire cache */
+        /** Invalidate entire cache. */
         ALL,
 
-        /** Time-based expiration only */
+        /** Time-based expiration only. */
         TTL_ONLY
     }
 

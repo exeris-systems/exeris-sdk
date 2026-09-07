@@ -23,8 +23,7 @@ import java.util.List;
  * @param defaultLayout the layout the generated views start in
  * @param groups the field groupings the generated forms are organised into
  * @param fieldOverrides per-field presentation overrides, keyed by field name
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -189,7 +188,7 @@ public record UIMetadata(
         /**
          * Field rendered by an application-supplied custom component
          * ({@link ComponentType#CUSTOM}); {@code customComponent} names the control.
-                  *
+         *
          * @param fieldName the {@code fieldName} the result carries
          * @param customComponent the {@code customComponent} the result carries
          * @return the {@code UIFieldMetadata}
