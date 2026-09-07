@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-09-04
+last-verified: 2026-09-07
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -13,8 +13,9 @@ last-verified: 2026-09-04
 > public API surface (1.x minors are additive-only, patches bug-fix only —
 > see [`ROADMAP.md`](ROADMAP.md) "Versioning policy"). This document collects,
 > ahead of time, everything a 0.x consumer must do to cross the freeze. It is
-> to be **validated against budgetHQ** before 1.0.0 ships (ROADMAP 1.0.0 GA
-> item) and finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
+> to be **validated against the consumers that cross the freeze** — the
+> `exeris-tooling` processor and codegen, and `exeris-platform-lsp` (ROADMAP
+> 1.0.0 GA item) — and finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
 > in [`MIGRATION.md`](MIGRATION.md).
 
 ---
@@ -354,5 +355,5 @@ freeze or is explicitly re-dispositioned here.
 
 - Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the two
   `@Validation` removals only).
-- budgetHQ validation pass results.
+- Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`).
 - npm `@exeris/ui-kit` public-registry publish notes (GA item).

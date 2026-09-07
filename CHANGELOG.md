@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-04
+last-verified: 2026-09-07
 ---
 
 # Changelog
@@ -500,6 +500,18 @@ for per-version upgrade steps.
   all green while breaking every consumer. Snapshot-gated the way `annotation-surface.txt` gates
   the Java surface: additions reported so they get recorded, removals and renames fail. Verified
   against exactly that coordinated rename.
+- **The TypeScript exports get the gate the CSS surface already had.** `tests/public-surface.txt`
+  pins every `--exeris-*` property, every `.exeris-*` class and every Tailwind key; the two
+  TypeScript exports next to them had nothing watching at all. ADR-085 §F.21a–c names this package
+  one of three gated TypeScript surfaces in the ecosystem, so `src/index.ts` now meets
+  `tsdoc-conventions.md` — `@public` and `@since 0.1` on both exports, a doc comment on all 22
+  signatures including the 17 nested tokens, and the banned `@author` gone — behind three checks:
+  the shared ESLint fragment, typedoc's `notDocumented`, and **api-extractor against a committed
+  `api/ui-kit.api.md`**, which is this package's japicmp. A `-` line in that golden removes a name,
+  and names are what its 1.0 freezes. Recorded as Hard Rule 6 in
+  [`.agents/policies/ui-kit.md`](.agents/policies/ui-kit.md). Each check verified non-vacuous:
+  restoring `@author` fails the lint, deleting one nested token's comment fails typedoc, dropping
+  `@public` from `defaultTheme` fails api-extractor with `ae-missing-release-tag`.
   
 - **`defaultTheme` gains `primary-hover`, the token it was missing.** `--exeris-primary-hover`
   exists in `index.css` and as a `primary-hover` key in the Tailwind preset; the JS fallback

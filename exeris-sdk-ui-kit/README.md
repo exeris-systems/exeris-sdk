@@ -251,3 +251,30 @@ entry. It is not in `index.css` because that file is also v3's entry, and v3 doe
 
 Apache-2.0
 
+
+## Contributing
+
+Three checks guard this package's published surface, and CI runs all three
+(`tsdoc-gate` in `.github/workflows/guardrails.yml`):
+
+```bash
+npm run lint         # TSDoc rules — the shared exeris-systems/.github fragment
+npm run build        # tsc, which the next two read
+npm run docs:check   # typedoc: every export and every token documented
+npm run api:check    # api-extractor: api/ui-kit.api.md matches the built .d.ts
+npm test             # the name-snapshot and drift suites
+```
+
+`npm run lint` needs the shared bundle beside this package, at the same path CI checks
+it out to. Once, from this directory:
+
+```bash
+git -C ~/exeris-systems/.guardrails/orggh worktree add --detach "$PWD/.guardrails" main
+```
+
+A symlink does **not** work: Node resolves the config's real path and then looks for
+`eslint-plugin-jsdoc` next to the bundle rather than next to this package.
+
+When a change to `src/index.ts` alters the surface, accept it deliberately and commit the
+result — `npm run api:accept` rewrites `api/ui-kit.api.md`. A `-` line in that diff removes
+a name, which is a **major** for this package (see [Versioning](#versioning)).
