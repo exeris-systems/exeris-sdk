@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-04
+last-verified: 2026-09-07
 slug: adr/ADR-072
 ---
 
@@ -86,7 +86,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 ## Amendment — 2026-09-03 (0.12.0): a fourth surface, `@Channel`
 
-**A duplex channel joins the reservation, on the same three-part test.** Kernel v0.12.0 shipped `eu.exeris.kernel.spi.websocket` ([kernel ADR-084](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-084-websocket-provider-spi.md)) — provider, engine, exchange, session and config in SPI, an RFC 6455 codec in Core, a Community transport binding, and `AbstractWebSocketExchangeTck` as the merge gate — held at tier `preview` in the kernel's `docs/stability-matrix.md`. Same premise as blob, scheduling and route access, so this is the same decision applied to a fourth facet.
+**A duplex channel joins the reservation, on the same three-part test.** Kernel v0.12.0 shipped `eu.exeris.kernel.spi.websocket` (kernel ADR-084, `exeris-kernel/docs/adr/ADR-084-websocket-provider-spi.md` — on the 0.12.0 train until that merge reaches the kernel's `main`; registered in the [ecosystem ADR index](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md)) — provider, engine, exchange, session and config in SPI, an RFC 6455 codec in Core, a Community transport binding, and `AbstractWebSocketExchangeTck` as the merge gate — held at tier `preview` in the kernel's `docs/stability-matrix.md`. Same premise as blob, scheduling and route access, so this is the same decision applied to a fourth facet.
 
 16. **`@Channel` — an entity-level duplex facet.** `@Target(TYPE)`, root package, alongside `@ExerisDomain`. Two optional attributes: `messageType()` (the name of what crosses the wire) and `subprotocol()` (the negotiated WebSocket subprotocol).
 
