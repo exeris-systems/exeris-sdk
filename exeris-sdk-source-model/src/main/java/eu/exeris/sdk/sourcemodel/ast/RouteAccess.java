@@ -24,7 +24,7 @@ package eu.exeris.sdk.sourcemodel.ast;
  * how a generated table composes with routes the consumer wrote by hand — is
  * {@code exeris-tooling}'s transcription and is not represented here. See ADR-072.
  *
- * @since 0.12.0
+ * @since 0.12
  */
 public enum RouteAccess {
 

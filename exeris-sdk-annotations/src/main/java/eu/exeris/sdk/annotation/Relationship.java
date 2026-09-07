@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * </ul>
  *
  * <h2>Basic Usage (Many-to-One):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Customer",
  *     searchable = true,
@@ -32,10 +32,10 @@ import java.lang.annotation.*;
  * @ManyToOne
  * @JoinColumn(name = "customer_id")
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>With Autocomplete (Large Dataset):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Product",
  *     required = true
@@ -53,10 +53,10 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private Product product;
- * }</pre>
+ * }
  *
  * <h2>With Cascade Delete:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order Items")
  * @Relationship(
  *     targetEntity = OrderItem.class,
@@ -66,10 +66,10 @@ import java.lang.annotation.*;
  * )
  * @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
  * private List<OrderItem> items = new ArrayList<>();
- * }</pre>
+ * }
  *
  * <h2>Many-to-Many Relationship:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Tags"
  * )
@@ -89,10 +89,10 @@ import java.lang.annotation.*;
  *     inverseJoinColumns = @JoinColumn(name = "tag_id")
  * )
  * private Set<Tag> tags = new HashSet<>();
- * }</pre>
+ * }
  *
  * <h2>Composite Display Field:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Customer")
  * @Relationship(
  *     targetEntity = Customer.class,
@@ -102,10 +102,10 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private Customer customer;
- * }</pre>
+ * }
  *
  * <h2>Dependent Relationship:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * // City dropdown depends on selected Country
  * @Field(label = "Country")
  * @Relationship(
@@ -124,7 +124,7 @@ import java.lang.annotation.*;
  * )
  * @ManyToOne
  * private City city;
- * }</pre>
+ * }
  *
  * <h2>Target design — the UI this would drive:</h2>
  * <p>The SDK generates appropriate UI components based on relationship configuration:
@@ -139,9 +139,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: LIVE</strong> — extracted into {@code RelationshipMetadata} and read
  * by the repository, Flyway and application generators — the foreign key, its constraint
  * and the query path all come from here.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see Field
  * @see UI
  */
@@ -155,10 +153,10 @@ public @interface Relationship {
      * <p>Specifies the related entity type.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(targetEntity = Customer.class)
      * private Customer customer;
-     * }</pre>
+     * }
      *
      * @return target entity class
      */
@@ -204,13 +202,13 @@ public @interface Relationship {
      * Used in autocomplete components and search filters.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = Customer.class,
      *     displayField = "name",
      *     searchFields = {"name", "email", "phone", "company"}
      * )
-     * }</pre>
+     * }
      *
      * @return array of searchable field names
      */
@@ -276,7 +274,7 @@ public @interface Relationship {
      * bidirectional mapping.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * // In Order.java
      * @Relationship(
      *     targetEntity = OrderItem.class,
@@ -289,7 +287,7 @@ public @interface Relationship {
      * @ManyToOne
      * @JoinColumn(name = "order_id")
      * private Order order;
-     * }</pre>
+     * }
      *
      * @return field name in target entity
      */
@@ -301,7 +299,7 @@ public @interface Relationship {
      * on another field's value.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = City.class,
      *     displayField = "name",
@@ -309,7 +307,7 @@ public @interface Relationship {
      *     dependsOnField = "country.id"
      * )
      * private City city;
-     * }</pre>
+     * }
      *
      * @return field name this depends on
      */
@@ -320,10 +318,10 @@ public @interface Relationship {
      * <p>Specifies which field in target entity should match the dependent field value.
      *
      * <p><strong>Example:</strong> For city filtering by country:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * dependsOn = "country",          // Field in current entity
      * dependsOnField = "country.id"   // Field in City entity to filter by
-     * }</pre>
+     * }
      *
      * @return field path for filtering
      */
@@ -463,14 +461,14 @@ public @interface Relationship {
      * <p>Used in TABLE and MODAL display modes to show multiple columns.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Relationship(
      *     targetEntity = Customer.class,
      *     displayField = "name",
      *     displayFields = {"email", "phone", "company"},
      *     display = Display.TABLE
      * )
-     * }</pre>
+     * }
      *
      * @return array of additional field names to display
      */
@@ -480,25 +478,25 @@ public @interface Relationship {
      * Display mode enum for relationships.
      */
     enum Display {
-        /** Auto-select based on dataset size and relationship type */
+        /** Auto-select based on dataset size and relationship type. */
         AUTO,
 
-        /** Dropdown select (best for small datasets &lt; 100 items) */
+        /** Dropdown select (best for small datasets &lt; 100 items). */
         SELECT,
 
-        /** Autocomplete/typeahead (best for large datasets) */
+        /** Autocomplete/typeahead (best for large datasets). */
         AUTOCOMPLETE,
 
-        /** Radio button group (best for 2-5 options) */
+        /** Radio button group (best for 2-5 options). */
         RADIO,
 
-        /** Checkbox group (for multi-select with 2-10 options) */
+        /** Checkbox group (for multi-select with 2-10 options). */
         CHECKBOX,
 
-        /** Data table with selection (for many-to-many or large datasets) */
+        /** Data table with selection (for many-to-many or large datasets). */
         TABLE,
 
-        /** Modal dialog with search and filters (for complex selection) */
+        /** Modal dialog with search and filters (for complex selection). */
         MODAL
     }
 
@@ -506,16 +504,16 @@ public @interface Relationship {
      * Relationship type enum.
      */
     enum RelationshipType {
-        /** Many entities reference one entity (e.g., many orders → one customer) */
+        /** Many entities reference one entity (e.g., many orders → one customer). */
         MANY_TO_ONE,
 
-        /** One entity references one entity (e.g., user → profile) */
+        /** One entity references one entity (e.g., user → profile). */
         ONE_TO_ONE,
 
-        /** One entity has many related entities (e.g., order → order items) */
+        /** One entity has many related entities (e.g., order → order items). */
         ONE_TO_MANY,
 
-        /** Many entities reference many entities (e.g., products ↔ tags) */
+        /** Many entities reference many entities (e.g., products ↔ tags). */
         MANY_TO_MANY
     }
 
@@ -523,10 +521,10 @@ public @interface Relationship {
      * Fetch type enum.
      */
     enum FetchType {
-        /** Load related data immediately with parent entity */
+        /** Load related data immediately with parent entity. */
         EAGER,
 
-        /** Load related data on-demand when accessed */
+        /** Load related data on-demand when accessed. */
         LAZY
     }
 }

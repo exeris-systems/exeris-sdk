@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * sidebar navigation, enabling automatic menu generation.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "sales", path = "/orders")
  * @NavMenu(
  *     group = "Sales",
@@ -17,10 +17,10 @@ import java.lang.annotation.*;
  *     order = 1
  * )
  * public class Order { }
- * }</pre>
+ * }
  *
  * <h2>Nested Menu Structure:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * // Parent menu group
  * @ExerisDomain(module = "settings", path = "/settings/general")
  * @NavMenu(
@@ -41,10 +41,10 @@ import java.lang.annotation.*;
  *     order = 2
  * )
  * public class SecuritySettings { }
- * }</pre>
+ * }
  *
  * <h2>Role-Based Menu Visibility:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "admin", path = "/users")
  * @NavMenu(
  *     group = "Administration",
@@ -54,14 +54,14 @@ import java.lang.annotation.*;
  *     order = 1
  * )
  * public class User { }
- * }</pre>
+ * }
  *
  * <h2>Hidden from Menu:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "internal", path = "/audit-logs")
  * @NavMenu(hidden = true)  // Not shown in navigation
  * public class AuditLog { }
- * }</pre>
+ * }
  *
  * <h2>Target design — the menu this would emit:</h2>
  * <pre>
@@ -83,9 +83,7 @@ import java.lang.annotation.*;
  * <p><strong>Status: RESERVED</strong> — no navigation artefact is emitted from this
  * annotation on either side. The generated TypeScript app shell builds its sidebar from the
  * entity list and the {@link View @View} routes, never from a menu declared here.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see ExerisDomain
  */
 @Target(ElementType.TYPE)
@@ -195,11 +193,11 @@ public @interface NavMenu {
      * <p>Can be static text or SpEL expression referencing a service.
      *
      * <p><strong>Examples:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * badge = "NEW"                           // Static text
      * badge = "@orderService.pendingCount()"  // Dynamic count
      * badge = "#{stats.unreadMessages}"       // SpEL expression
-     * }</pre>
+     * }
      *
      * @return badge text or expression
      */
@@ -258,11 +256,11 @@ public @interface NavMenu {
      * Divider placement relative to this menu item.
      */
     enum Divider {
-        /** No divider */
+        /** No divider. */
         NONE,
-        /** Divider line before this item */
+        /** Divider line before this item. */
         BEFORE,
-        /** Divider line after this item */
+        /** Divider line after this item. */
         AFTER
     }
 

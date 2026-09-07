@@ -16,8 +16,7 @@ import java.util.List;
  * @param since the version from which the restriction applies
  * @param disabledActions the actions withheld from the generated surface
  * @param allowedRoles the roles still permitted to reach it
- * @author Exeris SDK Team
- * @since 0.1.0
+ * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

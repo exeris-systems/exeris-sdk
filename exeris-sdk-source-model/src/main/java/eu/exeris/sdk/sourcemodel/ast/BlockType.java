@@ -11,7 +11,7 @@ package eu.exeris.sdk.sourcemodel.ast;
  * tooling processor and emitted by the codegen-ts Angular view generator
  * (RFC-2026-06-28, tooling).
  *
- * @since 0.8.0
+ * @since 0.8
  */
 public enum BlockType {
     /** A hero / banner block. */

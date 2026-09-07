@@ -29,7 +29,7 @@ import java.security.NoSuchAlgorithmException;
  * structural (AST-equal) digest is a possible future refinement, but a textual
  * floor is enough for a concurrency token and avoids the heavy dependency.
  *
- * @since 0.5.0
+ * @since 0.5
  */
 public final class SourceDigest {
 

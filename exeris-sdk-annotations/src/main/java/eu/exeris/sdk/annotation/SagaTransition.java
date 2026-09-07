@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * and is repeatable there, one annotation per edge.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Saga(name = "OrderFulfillmentSaga", ...)
  * @SagaTransition(from = "reserveInventory", to = "processPayment")   // SUCCESS edge (default)
  * @SagaTransition(from = "processPayment", to = "releaseInventory",
@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * @SagaTransition(from = "processPayment", on = TransitionOutcome.TIMEOUT) // terminal: abort
  * @SagaTransition(from = "releaseInventory", on = TransitionOutcome.COMPENSATED) // terminal: rolled back
  * public class OrderFulfillmentSaga { ... }
- * }</pre>
+ * }
  *
  * <h2>Terminal edges and loops</h2>
  * <p>A blank {@link #to()} (the default) marks a <em>terminal</em> edge — the
@@ -61,7 +61,7 @@ import java.lang.annotation.Target;
  * the codegen consumer that turns the graph into the generated body. Until that
  * coordinated flip, declaring transitions has no generated effect.
  *
- * @since 0.9.0
+ * @since 0.9
  * @see Saga
  * @see SagaStep
  * @see SagaTransitions
@@ -114,7 +114,7 @@ public @interface SagaTransition {
      * {@code UI.ComponentType} precedent), never an import of the AST type,
      * preserving the annotation module's zero-dependency contract.
      *
-     * @since 0.9.0
+     * @since 0.9
      */
     enum TransitionOutcome {
         /** The step completed successfully. */

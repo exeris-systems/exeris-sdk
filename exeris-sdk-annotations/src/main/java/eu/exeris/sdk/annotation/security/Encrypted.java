@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * and decrypted when reading. Uses AES-256-GCM by default.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "crm", path = "/customers")
  * public class Customer {
  *
@@ -23,20 +23,20 @@ import java.lang.annotation.*;
  *     @Encrypted(algorithm = Algorithm.AES_256_GCM, keyId = "payment-key")
  *     private String creditCardNumber;
  * }
- * }</pre>
+ * }
  *
  * <h2>Searchable Encrypted Fields:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Email")
  * @Encrypted(
  *     deterministic = true,  // Allows equality search
  *     keyId = "email-key"
  * )
  * private String email;
- * }</pre>
+ * }
  *
  * <h2>PII Data with Masking:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Phone Number")
  * @Encrypted(
  *     pii = true,
@@ -44,23 +44,23 @@ import java.lang.annotation.*;
  *     maskInLogs = true
  * )
  * private String phoneNumber;
- * }</pre>
+ * }
  *
  * <h2>Key Rotation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Encrypted(
  *     keyId = "customer-data-key-v2",
  *     previousKeyIds = {"customer-data-key-v1"}  // For migration
  * )
  * private String sensitiveData;
- * }</pre>
+ * }
  *
  * <h2>Target design — the converter this would emit:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Convert(converter = EncryptedStringConverter.class)
  * @Column(name = "ssn", columnDefinition = "bytea")
  * private String ssn;
- * }</pre>
+ * }
  *
  * <h2>Security Considerations:</h2>
  * <ul>
@@ -74,9 +74,7 @@ import java.lang.annotation.*;
  * extract this marker, so writing it changes nothing in the emitted output. See the package
  * javadoc for the live path.
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see RowLevelSecurity
  */
 @Target(ElementType.FIELD)
@@ -88,13 +86,13 @@ public @interface Encrypted {
      * Encryption algorithm to use.
      */
     enum Algorithm {
-        /** AES-256 with Galois/Counter Mode (default, recommended) */
+        /** AES-256 with Galois/Counter Mode (default, recommended). */
         AES_256_GCM,
-        /** AES-256 with CBC mode */
+        /** AES-256 with CBC mode. */
         AES_256_CBC,
-        /** ChaCha20-Poly1305 (alternative to AES) */
+        /** ChaCha20-Poly1305 (alternative to AES). */
         CHACHA20_POLY1305,
-        /** RSA-OAEP for asymmetric encryption */
+        /** RSA-OAEP for asymmetric encryption. */
         RSA_OAEP
     }
 
