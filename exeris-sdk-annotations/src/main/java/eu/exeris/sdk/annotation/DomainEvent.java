@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * and can be consumed by projections, sagas, and external systems.
  *
  * <h2>Basic Usage (Entity Lifecycle):</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.CREATE,
  *     topic = "orders.created",
@@ -23,10 +23,10 @@ import java.lang.annotation.*;
  *     UUID customerId,
  *     BigDecimal totalAmount
  * ) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Action-Triggered Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.ACTION,
  *     action = "approve",
@@ -42,10 +42,10 @@ import java.lang.annotation.*;
  *     OrderStatus previousStatus,
  *     OrderStatus newStatus
  * ) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Field Change Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.FIELD_CHANGED,
  *     field = "status",
@@ -53,10 +53,10 @@ import java.lang.annotation.*;
  *     includePreviousValues = true
  * )
  * public record OrderStatusChangedEvent(...) implements DomainEvent {}
- * }</pre>
+ * }
  *
  * <h2>Conditional Event:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @DomainEvent(
  *     trigger = Trigger.UPDATE,
  *     topic = "orders.high-value-updated",
@@ -64,15 +64,13 @@ import java.lang.annotation.*;
  *     priority = Priority.HIGH
  * )
  * public record HighValueOrderUpdatedEvent(...) implements DomainEvent {}
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code DomainEventMetadata} and read by
  * the kernel event, event-handler, stream-handler and request-handler generators, plus the
  * TypeScript event emitter. The repeatable container is unwrapped with it; {@link Header @Header} is not — see its own note.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -294,9 +292,9 @@ public @interface DomainEvent {
      * Specify to limit payload size or hide internal fields.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * includeFields = {"id", "status", "amount", "customerId"}
-     * }</pre>
+     * }
      *
      * @return array of field names to include
      */
@@ -307,9 +305,9 @@ public @interface DomainEvent {
      * <p>Applied after includeFields.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * excludeFields = {"password", "internalNotes", "auditLog"}
-     * }</pre>
+     * }
      *
      * @return array of field names to exclude
      */
@@ -338,9 +336,9 @@ public @interface DomainEvent {
      * <p>List of computed fields to calculate and include.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * includeComputed = {"totalWithTax", "formattedAddress", "fullName"}
-     * }</pre>
+     * }
      *
      * @return array of computed field names
      */
@@ -351,9 +349,9 @@ public @interface DomainEvent {
      * <p>Values are masked/hashed before publishing.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * sensitiveFields = {"email", "phone", "ssn", "creditCard"}
-     * }</pre>
+     * }
      *
      * @return array of sensitive field names
      */
@@ -372,14 +370,14 @@ public @interface DomainEvent {
      * <p>Must implement {@code EventPayloadTransformer<E, P>}.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Component
      * public class OrderEventTransformer implements EventPayloadTransformer<Order, OrderEventPayload> {
      *     public OrderEventPayload transform(Order entity, DomainEvent event) {
      *         return new OrderEventPayload(...);
      *     }
      * }
-     * }</pre>
+     * }
      *
      * @return transformer class
      */
@@ -457,12 +455,12 @@ public @interface DomainEvent {
      * <p>Key-value pairs added to every event message.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * headers = {
      *     @Header(name = "source", value = "billing-service"),
      *     @Header(name = "content-type", value = "application/avro")
      * }
-     * }</pre>
+     * }
      *
      * @return array of headers
      */
@@ -562,9 +560,9 @@ public @interface DomainEvent {
      * <p>Documentation for event consumers.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * consumers = {"notification-service", "analytics-service", "audit-service"}
-     * }</pre>
+     * }
      *
      * @return array of consumer names
      */
@@ -697,31 +695,31 @@ public @interface DomainEvent {
      * Event trigger types.
      */
     enum Trigger {
-        /** Published on entity creation */
+        /** Published on entity creation. */
         CREATE,
 
-        /** Published on entity update (any field change) */
+        /** Published on entity update (any field change). */
         UPDATE,
 
-        /** Published on entity deletion (including soft delete) */
+        /** Published on entity deletion (including soft delete). */
         DELETE,
 
-        /** Published when specific action is executed */
+        /** Published when specific action is executed. */
         ACTION,
 
-        /** Published when specific field changes value */
+        /** Published when specific field changes value. */
         FIELD_CHANGED,
 
-        /** Published on state machine transition */
+        /** Published on state machine transition. */
         STATE_TRANSITION,
 
-        /** Published on scheduled interval */
+        /** Published on scheduled interval. */
         SCHEDULED,
 
-        /** Published manually via code */
+        /** Published manually via code. */
         MANUAL,
 
-        /** Published on aggregate snapshot */
+        /** Published on aggregate snapshot. */
         SNAPSHOT
     }
 
@@ -729,16 +727,16 @@ public @interface DomainEvent {
      * Event priority levels.
      */
     enum Priority {
-        /** Low priority - process when resources available */
+        /** Low priority - process when resources available. */
         LOW,
 
-        /** Normal priority - standard processing */
+        /** Normal priority - standard processing. */
         NORMAL,
 
-        /** High priority - process before normal events */
+        /** High priority - process before normal events. */
         HIGH,
 
-        /** Critical priority - process immediately */
+        /** Critical priority - process immediately. */
         CRITICAL
     }
 
@@ -746,16 +744,16 @@ public @interface DomainEvent {
      * Schema serialization formats.
      */
     enum SchemaFormat {
-        /** Inherit from module/global configuration */
+        /** Inherit from module/global configuration. */
         INHERIT,
 
-        /** JSON with JSON Schema */
+        /** JSON with JSON Schema. */
         JSON,
 
-        /** Apache Avro */
+        /** Apache Avro. */
         AVRO,
 
-        /** MessagePack */
+        /** MessagePack. */
         MSGPACK
     }
 
@@ -763,25 +761,25 @@ public @interface DomainEvent {
      * Schema compatibility modes.
      */
     enum SchemaCompatibility {
-        /** No compatibility checking */
+        /** No compatibility checking. */
         NONE,
 
-        /** New schema can read old data */
+        /** New schema can read old data. */
         BACKWARD,
 
-        /** Old schema can read new data */
+        /** Old schema can read new data. */
         FORWARD,
 
-        /** Both backward and forward compatible */
+        /** Both backward and forward compatible. */
         FULL,
 
-        /** Backward compatible with all previous versions */
+        /** Backward compatible with all previous versions. */
         BACKWARD_TRANSITIVE,
 
-        /** Forward compatible with all previous versions */
+        /** Forward compatible with all previous versions. */
         FORWARD_TRANSITIVE,
 
-        /** Fully compatible with all previous versions */
+        /** Fully compatible with all previous versions. */
         FULL_TRANSITIVE
     }
 
@@ -789,13 +787,13 @@ public @interface DomainEvent {
      * Message processing guarantees.
      */
     enum ProcessingGuarantee {
-        /** Message may be lost */
+        /** Message may be lost. */
         AT_MOST_ONCE,
 
-        /** Message may be processed multiple times */
+        /** Message may be processed multiple times. */
         AT_LEAST_ONCE,
 
-        /** Message processed exactly once */
+        /** Message processed exactly once. */
         EXACTLY_ONCE
     }
 
@@ -803,16 +801,16 @@ public @interface DomainEvent {
      * Outbox aggregation strategies.
      */
     enum OutboxAggregation {
-        /** No aggregation */
+        /** No aggregation. */
         NONE,
 
-        /** Keep only last event per key */
+        /** Keep only last event per key. */
         LAST_WINS,
 
-        /** Keep only first event per key */
+        /** Keep only first event per key. */
         FIRST_WINS,
 
-        /** Merge events with same key */
+        /** Merge events with same key. */
         MERGE
     }
 
@@ -820,17 +818,17 @@ public @interface DomainEvent {
      * Log levels for event processing.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 
@@ -875,12 +873,12 @@ public @interface DomainEvent {
      * Container annotation for multiple {@link DomainEvent} annotations.
      *
      * <p>This allows declaring multiple domain events on a single entity class:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @DomainEvent(trigger = Trigger.CREATE, topic = "orders.created")
      * @DomainEvent(trigger = Trigger.UPDATE, topic = "orders.updated")
      * @DomainEvent(trigger = Trigger.DELETE, topic = "orders.deleted")
      * public class Order { ... }
-     * }</pre>
+     * }
      *
      *
      * <p><strong>Status: LIVE</strong> — the processor unwraps this container to reach the

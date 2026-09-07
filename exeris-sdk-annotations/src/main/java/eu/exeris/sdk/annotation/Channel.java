@@ -21,14 +21,14 @@ import java.lang.annotation.Target;
  * shape, and the difference is structural rather than a matter of degree.
  *
  * <h2>Basic usage</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(name = "Article", dataScope = DataScope.TENANT)
  * @Channel(messageType = "ArticleEdit")
  * public class Article {
  *     @Field(required = true) private String title;
  *     @Field private String body;
  * }
- * }</pre>
+ * }
  *
  * <h2>Entity-level, and deliberately not per action</h2>
  * <p>The channel belongs to the entity, the way {@code realTimeApi} does. A per-action
@@ -84,7 +84,7 @@ import java.lang.annotation.Target;
  * (see {@code studio/docs/cms-strategy.md} §4) and the migration that gives them
  * real-time editing is the one this channel describes.
  *
- * @since 0.12.0
+ * @since 0.12
  * @see ExerisDomain#realTimeApi()
  * @see Action#streaming()
  * @see RouteAccess

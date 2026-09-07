@@ -65,7 +65,7 @@ import java.lang.annotation.*;
  * silent on the whole third group.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Order Number",
  *     description = "Unique identifier for the order",
@@ -76,10 +76,10 @@ import java.lang.annotation.*;
  *     order = 1
  * )
  * private String orderNumber;
- * }</pre>
+ * }
  *
  * <h2>With UI Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Total Amount",
  *     description = "Total order amount in USD",
@@ -92,10 +92,10 @@ import java.lang.annotation.*;
  *     displayOrder = 3
  * )
  * private BigDecimal totalAmount;
- * }</pre>
+ * }
  *
  * <h2>With Validation:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Email Address",
  *     description = "Customer's email for notifications",
@@ -110,10 +110,10 @@ import java.lang.annotation.*;
  *     placeholder = "customer@example.com"
  * )
  * private String email;
- * }</pre>
+ * }
  *
  * <h2>Search and Filter Configuration:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Status",
  *     searchable = false,  // Don't include in text search
@@ -126,10 +126,10 @@ import java.lang.annotation.*;
  * )
  * @Enumerated(EnumType.STRING)
  * private OrderStatus status;
- * }</pre>
+ * }
  *
  * <h2>Visibility Control:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Created At",
  *     inList = true,      // Show in list view
@@ -143,12 +143,12 @@ import java.lang.annotation.*;
  *     format = "date:long"
  * )
  * private LocalDateTime createdAt;
- * }</pre>
+ * }
  *
  * <h2>Display Ordering:</h2>
  * <p>The {@code order} attribute controls field display position across all views.
  * Lower numbers appear first:
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(label = "Order Number", order = 1)  // First
  * private String orderNumber;
  *
@@ -157,10 +157,10 @@ import java.lang.annotation.*;
  *
  * @Field(label = "Total", order = 3)         // Third
  * private BigDecimal total;
- * }</pre>
+ * }
  *
  * <h2>Integration with Relationships:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Field(
  *     label = "Customer",
  *     description = "Order customer",
@@ -178,7 +178,7 @@ import java.lang.annotation.*;
  *     displayField = "name"
  * )
  * private UUID customerId;
- * }</pre>
+ * }
  *
  * <h2>Best Practices:</h2>
  * <ul>
@@ -192,9 +192,7 @@ import java.lang.annotation.*;
  *   <li>Combine with {@code @Validation} for data integrity</li>
  * </ul>
  *
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  * @see UI
  * @see Validation
  * @see Relationship
@@ -230,9 +228,9 @@ public @interface Field {
      * When empty, {@link #label()} is used verbatim.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(label = "Order Number", labelKey = "order.field.orderNumber.label")
-     * }</pre>
+     * }
      *
      * @return the message key, or {@code ""} to use the literal label
      */
@@ -442,13 +440,13 @@ public @interface Field {
      * </ul>
      *
      * <p>Override for custom behavior:
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     label = "Description"
      * )
      * @UI(componentType = UI.ComponentType.TEXT_AREA)
      * private String description;
-     * }</pre>
+     * }
      *
      * @return UI configuration
      */
@@ -459,7 +457,7 @@ public @interface Field {
      * <p>Defines constraints applied in both backend and frontend.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     label = "Email"
      * )
@@ -469,7 +467,7 @@ public @interface Field {
      *     message = "Valid email required"
      * )
      * private String email;
-     * }</pre>
+     * }
      *
      * @return validation configuration
      */
@@ -551,7 +549,7 @@ public @interface Field {
      * Useful for organizing complex forms into logical sections.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(label = "Street", group = "Address")
      * private String street;
      *
@@ -560,7 +558,7 @@ public @interface Field {
      *
      * @Field(label = "Country", group = "Address")
      * private String country;
-     * }</pre>
+     * }
      *
      * @return group name
      */
@@ -677,14 +675,14 @@ public @interface Field {
      * <p>Fields with same composite name form a composite unique constraint.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(label = "Code", compositeUnique = "tenant_code")
      * private String code;
      *
      * @Field(label = "Tenant", compositeUnique = "tenant_code")
      * private UUID tenantId;
      * // Creates: UNIQUE(code, tenant_id)
-     * }</pre>
+     * }
      *
      * @return composite unique constraint name
      */
@@ -705,7 +703,7 @@ public @interface Field {
      * </ul>
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     label = "Max Users",
      *     computed = true,
@@ -714,7 +712,7 @@ public @interface Field {
      *     readOnly = true
      * )
      * private Integer maxUsers;
-     * }</pre>
+     * }
      *
      * @return true if field is computed
      */
@@ -726,14 +724,14 @@ public @interface Field {
      * <p>Frontend Effect will listen to changes in these fields and recompute.
      *
      * <p><strong>Example:</strong>
-     * <pre>{@code
+     * {@snippet lang="java" :
      * @Field(
      *     label = "Total",
      *     computed = true,
      *     computedFrom = {"unitPrice", "quantity", "discountPercent"}
      * )
      * private BigDecimal total;
-     * }</pre>
+     * }
      *
      * @return array of dependency field names
      */

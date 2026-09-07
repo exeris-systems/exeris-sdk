@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * Neo4j, etc.) enabling graph traversals, similarity searches, and recommendations.
  *
  * <h2>Basic Usage:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @ExerisDomain(module = "pfm")
  * @Graph(
  *     nodeClass = "Transaction",
@@ -24,10 +24,10 @@ import java.lang.annotation.*;
  *     @GraphEdge(type = "BELONGS_TO", target = Category.class)
  *     private Category category;
  * }
- * }</pre>
+ * }
  *
  * <h2>With Similarity Search:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Graph(
  *     nodeClass = "Product",
  *     syncToGraph = true,
@@ -37,10 +37,10 @@ import java.lang.annotation.*;
  *     similarityAlgorithm = SimilarityAlgorithm.COSINE
  * )
  * public class Product { }
- * }</pre>
+ * }
  *
  * <h2>With GraphQL Extensions:</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @Graph(
  *     nodeClass = "User",
  *     syncToGraph = true,
@@ -51,14 +51,12 @@ import java.lang.annotation.*;
  *     }
  * )
  * public class User { }
- * }</pre>
+ * }
  *
  *
  * <p><strong>Status: LIVE</strong> — the type-level annotation is extracted into {@code GraphMetadata} and read by {@code KernelGraphSyncGenerator}. The detail annotations
  * around it are not: {@link GraphProperty @GraphProperty} and {@link GraphQuery @GraphQuery} are unread, so {@code properties} arrives null and {@code queries} empty.
- * @author Exeris SDK Team
- * @version 0.1.0
- * @since 0.1.0
+ * @since 0.1
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -521,19 +519,19 @@ public @interface Graph {
      * Synchronization type for SQL-to-Graph projection.
      */
     enum SyncType {
-        /** SQL trigger-based sync (immediate) */
+        /** SQL trigger-based sync (immediate). */
         TRIGGER,
 
-        /** Event projection-based sync (eventual) */
+        /** Event projection-based sync (eventual). */
         PROJECTION,
 
-        /** CDC-based sync (Debezium, etc.) */
+        /** CDC-based sync (Debezium, etc.). */
         CDC,
 
-        /** Manual sync via API */
+        /** Manual sync via API. */
         MANUAL,
 
-        /** Scheduled batch sync */
+        /** Scheduled batch sync. */
         SCHEDULED
     }
 
@@ -541,25 +539,25 @@ public @interface Graph {
      * Supported graph database backends.
      */
     enum GraphDatabase {
-        /** PostgreSQL with Apache AGE extension */
+        /** PostgreSQL with Apache AGE extension. */
         APACHE_AGE,
 
-        /** Neo4j */
+        /** Neo4j. */
         NEO4J,
 
-        /** Amazon Neptune */
+        /** Amazon Neptune. */
         NEPTUNE,
 
-        /** JanusGraph */
+        /** JanusGraph. */
         JANUSGRAPH,
 
-        /** TigerGraph */
+        /** TigerGraph. */
         TIGERGRAPH,
 
-        /** ArangoDB */
+        /** ArangoDB. */
         ARANGODB,
 
-        /** Custom implementation */
+        /** Custom implementation. */
         CUSTOM
     }
 
@@ -567,19 +565,19 @@ public @interface Graph {
      * Similarity algorithms for graph queries.
      */
     enum SimilarityAlgorithm {
-        /** Cosine similarity */
+        /** Cosine similarity. */
         COSINE,
 
-        /** Euclidean distance */
+        /** Euclidean distance. */
         EUCLIDEAN,
 
-        /** Jaccard similarity */
+        /** Jaccard similarity. */
         JACCARD,
 
-        /** Pearson correlation */
+        /** Pearson correlation. */
         PEARSON,
 
-        /** Custom algorithm */
+        /** Custom algorithm. */
         CUSTOM
     }
 
@@ -587,17 +585,17 @@ public @interface Graph {
      * Log levels for graph operations.
      */
     enum LogLevel {
-        /** Trace-level logging (most verbose) */
+        /** Trace-level logging (most verbose). */
         TRACE,
-        /** Debug-level logging */
+        /** Debug-level logging. */
         DEBUG,
-        /** Info-level logging */
+        /** Info-level logging. */
         INFO,
-        /** Warning-level logging */
+        /** Warning-level logging. */
         WARN,
-        /** Error-level logging */
+        /** Error-level logging. */
         ERROR,
-        /** Logging disabled */
+        /** Logging disabled. */
         OFF
     }
 
@@ -673,28 +671,28 @@ public @interface Graph {
          * Types of graph queries.
          */
         enum QueryType {
-            /** Find similar nodes */
+            /** Find similar nodes. */
             SIMILAR,
 
-            /** Find connected nodes */
+            /** Find connected nodes. */
             CONNECTED,
 
-            /** Find shortest path */
+            /** Find shortest path. */
             PATH,
 
-            /** Aggregate over graph */
+            /** Aggregate over graph. */
             AGGREGATE,
 
-            /** Pattern matching */
+            /** Pattern matching. */
             PATTERN,
 
-            /** Recommendations */
+            /** Recommendations. */
             RECOMMEND,
 
-            /** Community detection */
+            /** Community detection. */
             COMMUNITY,
 
-            /** Custom Cypher/Gremlin */
+            /** Custom Cypher/Gremlin. */
             CUSTOM
         }
     }
@@ -708,23 +706,23 @@ public @interface Graph {
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface QueryArg {
-        /** Argument name
+        /** Argument name.
          * @return the name */
         String name();
 
-        /** Argument type
+        /** Argument type.
          * @return the type */
         String type();
 
-        /** Default value
+        /** Default value.
          * @return the default value */
         String defaultValue() default "";
 
-        /** Whether argument is required
+        /** Whether argument is required.
          * @return true if required */
         boolean required() default false;
 
-        /** Argument description
+        /** Argument description.
          * @return the description */
         String description() default "";
     }

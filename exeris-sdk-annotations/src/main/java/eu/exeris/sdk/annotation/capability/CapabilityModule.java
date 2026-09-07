@@ -20,14 +20,14 @@ import java.lang.annotation.Target;
  * emits the cap manifest.
  *
  * <h2>Example</h2>
- * <pre>{@code
+ * {@snippet lang="java" :
  * @CapabilityModule
  * @Provides(service = RouteRegistry.class, version = "1.0.0")
  * @Provides(service = BackendHealthMonitor.class, version = "1.0.0")
  * @Requires(service = KernelTransport.class)
  * @Requires(service = MetricsSink.class, optional = true)
  * public final class GatewayCoreModule { }
- * }</pre>
+ * }
  *
  * <h2>Scope</h2>
  * <p>This is a pure marker. A cap's <em>identity</em> comes from its repository
@@ -40,9 +40,7 @@ import java.lang.annotation.Target;
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code CapabilityModuleMetadata} and
  * consumed by the capability graph and module descriptor, which resolve the {@code @Requires}→{@code @Provides} edges and emit {@code cap-manifest.json}.
- * @author Exeris SDK Team
- * @version 0.4.0
- * @since 0.4.0
+ * @since 0.4
  * @see Provides
  * @see Requires
  * @see CapabilityLifecycle

@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * container. The processor unwraps it to reach the repeated
  * {@link SagaStep @SagaStep} declarations, so on that path its status is
  * {@code @SagaStep}'s own; the {@code -io} reader does not, and keeps one step.
- * @since 0.9.0
+ * @since 0.9
  * @see SagaStep
  */
 @Target(ElementType.METHOD)
