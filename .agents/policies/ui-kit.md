@@ -21,3 +21,18 @@
    `tests/public-surface.txt` snapshot-gates exported CSS class names and token names. At 1.0:
    - Token names (`--exeris-primary`) and component class vocabulary (`.exeris-input`) are **frozen**.
    - Theme values (colors, radii, shadows) remain **free** to support CMS and consumer customization.
+6. **TSDoc + API golden on the TypeScript surface:**
+   ADR-085 §F.21a–c names this package one of three gated TypeScript surfaces in the ecosystem; the
+   rules are [`tsdoc-conventions.md`](https://github.com/exeris-systems/exeris-docs/blob/main/standards/tsdoc-conventions.md).
+   - Every exported symbol carries a **release tag** (`@public` / `@beta` / `@alpha` / `@internal`) and
+     a doc comment — including nested property signatures, which typedoc checks.
+   - `@author` and `@version` are banned; `@since` is `major.minor` (`0.1`, never `0.1.0`).
+   - Markdown, not Javadoc markup: no `<p>`, no `{@code}`, no `{type}` in a tag.
+   - **`api/ui-kit.api.md` is the committed golden**, the TypeScript analogue of japicmp. CI fails on
+     drift; accept a change with `npm run api:accept` and commit it in the same PR. A `-` line
+     removes a name, which is a **major** for this package (rule 4, rule 5).
+   - The three checks are `npm run lint` (shared ESLint fragment from `exeris-systems/.github`),
+     `npm run docs:check` (typedoc) and `npm run api:check` (api-extractor), wired in CI as the
+     `tsdoc` job of `.github/workflows/guardrails.yml`.
+   - The lint needs the bundle as a **real directory** at `exeris-sdk-ui-kit/.guardrails` — a symlink
+     defeats Node's plugin resolution. See the package README's Contributing section.

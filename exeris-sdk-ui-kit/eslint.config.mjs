@@ -3,7 +3,10 @@
 // The doc-comment rules are NOT written here: they come from the shared bundle
 // (exeris-systems/.github), and this import IS the adoption — a flat config cannot be injected
 // from outside, so tsdoc-gate.yml greps this file for the reference rather than assuming it.
-// `.guardrails` is the bundle: checked out there by the workflow, a local symlink otherwise.
+// `.guardrails` is the bundle. CI checks it out to that path; locally it has to be a real
+// directory at the same path — see README "Contributing". A symlink to a shared checkout
+// does not work here, because Node resolves this file's realpath and then looks for
+// eslint-plugin-jsdoc next to the bundle instead of next to this package.
 import tseslint from 'typescript-eslint';
 import exerisTsdoc from './.guardrails/ts/eslint.tsdoc.mjs';
 

@@ -55,7 +55,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
 - **TSDoc + API golden:** `@exeris-systems/ui-kit` is a gated TypeScript surface under ADR-085
   §F.21a–c. Every export carries a release tag and a doc comment, and `api/ui-kit.api.md` is
   committed — CI fails on drift, so a removed name is a major for that package's own version
-  ([standard](https://github.com/exeris-systems/exeris-docs/blob/main/standards/tsdoc-conventions.md)).
+  ([policy](.agents/policies/ui-kit.md)).
 
 ## Architecture and documentation entry points
 
