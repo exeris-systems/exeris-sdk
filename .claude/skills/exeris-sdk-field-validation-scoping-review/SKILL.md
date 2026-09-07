@@ -47,7 +47,7 @@ This is the single most likely regression surface in the repo.
    - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
    - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
 6. **MIGRATION.md** — user-visible scoping change requires a `MIGRATION.md` entry with diff.
-7. **Cross-repo coordination** — flag the processor (`~/exeris-systems/exeris-tooling/exeris-processor/`) when the scoping change visibly affects extraction logic (constraint-value extraction targets `FieldMetadata`; the `-io` reader must stay in parity per ADR-042).
+7. **Cross-repo coordination** — flag the processor (`exeris-tooling`, module `exeris-processor/`) when the scoping change visibly affects extraction logic (constraint-value extraction targets `FieldMetadata`; the `-io` reader must stay in parity per ADR-042).
 8. **Decision and report** — `APPROVE` / `CONDITIONAL` / `REJECT`.
 
 ## Decision Logic
