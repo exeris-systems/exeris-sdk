@@ -132,8 +132,8 @@ public @interface NavMenu {
      * Material icon name for the menu item.
      * <p>Examples: "home", "shopping_cart", "person", "settings"
      *
-     * @see <a href="https://fonts.google.com/icons">Material Icons</a>
      * @return icon name
+     * @see <a href="https://fonts.google.com/icons">Material Icons</a>
      */
     String icon() default "";
 

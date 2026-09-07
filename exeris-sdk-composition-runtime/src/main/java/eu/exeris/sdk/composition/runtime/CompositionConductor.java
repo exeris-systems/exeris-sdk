@@ -357,7 +357,7 @@ public final class CompositionConductor implements AutoCloseable {
          *         the ADR-024 stamp assertion (before any effect)
          * @throws CompositionBootException  if hook discovery or a cap's initialize/ready fails
          *         (touched caps are unwound first)
-                  */
+         */
         public CompositionConductor start() {
             CapManifest resolved = resolveManifest();
             CompositionStampAssertion.assertConsistent(resolved);
