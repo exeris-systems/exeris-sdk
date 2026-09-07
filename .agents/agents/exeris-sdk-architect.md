@@ -25,13 +25,13 @@ Architect/reviewer for the most upstream Exeris repo. Prioritise wire-format and
 
 ## Preflight
 - Read `CLAUDE.md` for load-bearing facts + drift hazards.
-- Read `docs/adr/ADR-003 Entity-First Development Strategy.md` for the architectural premise.
+- Read `docs/adr/ADR-003-entity-first-development-strategy.md` for the architectural premise.
 - Read `MIGRATION.md` for the deprecation pipeline.
 - Read `ROADMAP.md` for milestone scope.
 - Read package-info files when scoping changes:
   - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
   - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
-- For new annotation attribute scoping: reference-first — grep `~/exeris-systems/budgetHQ/backend/` and `~/exeris-systems/pbm/` for real-world `@ExerisDomain` usage.
+- For new annotation attribute scoping: reference-first — grep `budgetHQ` (`backend/`) and `pbm` for real-world `@ExerisDomain` usage. Both are sibling repositories, available only in a full ecosystem checkout; finding nothing there means they are not checked out, not that the pattern is unused.
 
 ## Hard Constraints
 - Zero runtime coupling preserved.

@@ -79,7 +79,7 @@ public record ViewMetadata(
         if (layout != null && layout.isBlank()) {
             layout = null;
         }
-        regions = regions == null ? List.of() : List.copyOf(regions);
+        regions = AstLists.copyOfNoNulls(regions, "regions");
     }
 
     /**

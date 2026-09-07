@@ -1,3 +1,13 @@
+---
+title: "ADR-069: The SDK baselines on JDK 25 LTS, and ships one artifact line"
+type: adr
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-08-12
+slug: adr/ADR-069
+---
+
 # ADR-069: The SDK baselines on JDK 25 LTS, and ships one artifact line
 
 | Attribute       | Value                                                                                          |

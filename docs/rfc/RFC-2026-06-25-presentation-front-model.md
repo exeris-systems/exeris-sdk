@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-25: Should exeris-sdk introduce a first-class, entity-optional presentation/front model (a framework-neutral presentation IR), and with what shape and commitment?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-26
+---
+
 # RFC-2026-06-25: Should exeris-sdk introduce a first-class, entity-optional presentation/front model (a framework-neutral presentation IR), and with what shape and commitment?
 
 | Field             | Value                                                                 |
@@ -7,7 +16,7 @@
 | **Date Opened**   | 2026-06-25                                                           |
 | **Date Closed**   | 2026-06-25                                                          |
 | **Umbrella**      | Feeds [RFC-2026-06-25 — publishable-unit / marketplace surface](https://github.com/exeris-systems/exeris-docs/blob/main/rfc/RFC-2026-06-25-publishable-unit-marketplace.md) (owned by `exeris-docs`, platform-scope): the presentation IR is the **front facet** of a publishable unit; that RFC owns the unit-as-distributable question. |
-| **Target ADR(s)** | TBD — a thin SDK-side "presentation IR surface" ADR (the ADR-037/038 shape) that also **annotates the scope of [ADR-003](../adr/ADR-003%20Entity-First%20Development%20Strategy.md)** (entity = source of truth for *data*; presentation IR = source of truth for *composition*). Number reserved in `exeris-docs/adr-index.md` only once the build gate below opens (cross-repo, same protocol as ADR-037/038). |
+| **Target ADR(s)** | TBD — a thin SDK-side "presentation IR surface" ADR (the ADR-037/038 shape) that also **annotates the scope of [ADR-003](../adr/ADR-003-entity-first-development-strategy.md)** (entity = source of truth for *data*; presentation IR = source of truth for *composition*). Number reserved in `exeris-docs/adr-index.md` only once the build gate below opens (cross-repo, same protocol as ADR-037/038). |
 | **Affected Repos**| `exeris-sdk` (annotations + AST IR), `exeris-tooling` (processor extraction + the framework-neutral-IR → **Angular 22 signal-first emitter**, sibling to the SSE emitter RFC-2026-06-22; `-io` reader in parity), `exeris-platform` (Studio visual page/composition editing + LSP rendering of the presentation tree), `exeris-sdk-ui-kit` (framework-agnostic primitives the *emitted* front consumes — a downstream consumer, **not** an emitter target owner) |
 | **Reviewers**     | —                                                                    |
 

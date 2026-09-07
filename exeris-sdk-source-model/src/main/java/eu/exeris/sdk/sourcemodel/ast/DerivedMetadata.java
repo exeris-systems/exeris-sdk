@@ -54,7 +54,7 @@ public record DerivedMetadata(
         }
         // Empty dependsOn serializes as [] (the AST's NON_NULL list convention,
         // as for every other list-valued record) — intentionally not dropped.
-        dependsOn = dependsOn == null ? List.of() : List.copyOf(dependsOn);
+        dependsOn = AstLists.copyOfNoNulls(dependsOn, "dependsOn");
     }
 
     /**

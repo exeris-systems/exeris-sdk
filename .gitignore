@@ -25,6 +25,8 @@ mvnw.cmd
 # Node (ui-kit)
 node_modules/
 dist/
+# typedoc `out` and api-extractor `reportTempFolder`; the committed golden is api/, not build/.
+build/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -43,3 +45,7 @@ coverage/
 
 # Build-classpath dumps produced by `mvn dependency:build-classpath`; never source.
 cp.txt
+
+# The shared guardrail bundle (exeris-systems/.github), checked out locally so the doc gates can
+# run outside CI. A checkout of another repository, never content of this one.
+.guardrails/
