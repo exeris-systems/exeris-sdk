@@ -1,3 +1,12 @@
+---
+title: "Migration guide: 0.x → 1.0.0 (skeleton)"
+type: migration-guide
+visibility: public
+owning-repo: exeris-sdk
+status: draft
+last-verified: 2026-09-04
+---
+
 # Migration guide: 0.x → 1.0.0 (skeleton)
 
 > **Status: skeleton, seeded during the 0.9.0 cycle.** 1.0.0 GA freezes the

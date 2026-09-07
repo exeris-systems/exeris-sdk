@@ -1,3 +1,12 @@
+---
+title: "RFC-2026-06-03: How does exeris-sdk realize the ADR-024 capability annotation surface under zero runtime coupling?"
+type: rfc
+visibility: public
+owning-repo: exeris-sdk
+status: active
+last-verified: 2026-06-05
+---
+
 # RFC-2026-06-03: How does exeris-sdk realize the ADR-024 capability annotation surface under zero runtime coupling?
 
 | Field             | Value                                                                 |

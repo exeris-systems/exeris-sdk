@@ -19,7 +19,7 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
   - `exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/package-info.java`
   - `exeris-sdk-source-model/src/main/java/eu/exeris/sdk/sourcemodel/ast/package-info.java`
   Keep them aligned when scoping changes.
-- Maintain `docs/adr/ADR-003 Entity-First Development Strategy.md` link integrity (cross-repo registry at `~/exeris-systems/exeris-docs/adr-index.md`).
+- Maintain `docs/adr/ADR-003-entity-first-development-strategy.md` link integrity (cross-repo registry at `~/exeris-systems/exeris-docs/adr-index.md`).
 - Track downstream-consumer impact: when AST shape changes, document the consumer-side migration story in `MIGRATION.md`.
 
 ## Workflow

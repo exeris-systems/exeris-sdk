@@ -1,3 +1,11 @@
+---
+title: Exeris SDK — Roadmap to 1.0.0 GA
+type: roadmap
+visibility: public
+owning-repo: exeris-sdk
+last-verified: 2026-09-04
+---
+
 # Exeris SDK — Roadmap to 1.0.0 GA
 
 The SDK defines the **contract** between user domain code and Exeris tooling.
