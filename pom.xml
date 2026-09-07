@@ -137,15 +137,33 @@
              The `release` profile at the foot of this file changes that going
              forward but not retroactively. 0.12.0 is the first version to reach
              Central, so the 0.11.0 baseline named here will never be resolvable
-             there and this gate stays CI-skipped for exactly one more milestone.
+             there and this gate cannot run anywhere for exactly one more
+             milestone.
+
+             Hence the default below is `true`, and that is a change from a
+             default of `false` overridden per workflow. The reason is the same
+             one the jacoco.skip comment above gives: `javadoc-gate.yml` runs
+             `mvn install` and takes no `extra-maven-args`, so it cannot pass
+             `-Djapicmp.skip=true` the way build.yml, release.yml and
+             release-assets.yml all do — and japicmp binds to `verify`, which
+             `install` runs. Measured: the gate died on `exeris-sdk-source-model`
+             with "Could not find artifact eu.exeris:exeris-sdk-source-model:jar:
+             0.11.0 in central", before reaching a single doc comment.
+
+             Nothing is weakened by the flip, because every Maven entry point in
+             this repository already passes that flag; a default no caller uses is
+             not a safeguard, it is a trap for the fifth caller. The three flags
+             are now redundant and are left where they are — they state the same
+             fact at the point of use.
+
              It goes live when the 0.13.0 line opens against a 0.12.0 baseline
-             Central can serve — at which point the -Djapicmp.skip=true in
-             .github/workflows/build.yml comes off, and that flag is the thing to
-             delete rather than this comment. -->
+             Central can serve: set this property back to `false` and delete the
+             three -Djapicmp.skip=true flags together. That is one edit and three
+             deletions, not a comment to rewrite. -->
         <japicmp.version>0.23.1</japicmp.version>
         <japicmp.baseline.version>0.11.0</japicmp.baseline.version>
-        <!-- Overridden to true where no baseline artifact can be resolved. -->
-        <japicmp.skip>false</japicmp.skip>
+        <!-- True while no baseline artifact can be resolved anywhere. See above. -->
+        <japicmp.skip>true</japicmp.skip>
     </properties>
 
     <build>
