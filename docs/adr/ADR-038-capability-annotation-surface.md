@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-07-21
+last-verified: 2026-09-07
 slug: adr/ADR-038
 ---
 
@@ -85,7 +85,7 @@ This mirrors the `@ExerisDomain` → `DomainMetadata` layering the repo already 
 
 - [ADR-024](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-024-capability-composition-model.md) — the ecosystem composition model this ADR realizes in the SDK; authoritative on names + semantics.
 - [ADR-023](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-023-capability-licensing-taxonomy.md) — licensing is a per-cap-repo property, kept off the annotation surface.
-- [ADR-015](https://github.com/exeris-systems/exeris-docs/blob/main/adr/ADR-015-codegen-emission-strategy.md) — Codegen Emission Strategy: the tooling pipeline that owns `cap-manifest.json` emission and the cap discovery format (both kept out of the SDK per "What is NOT in scope").
+- [ADR-015](https://github.com/exeris-systems/exeris-tooling/blob/main/docs/adr/ADR-015-codegen-emission-strategy.md) — Codegen Emission Strategy: the tooling pipeline that owns `cap-manifest.json` emission and the cap discovery format (both kept out of the SDK per "What is NOT in scope").
 - [ADR-037](ADR-037-source-model-io-module.md) — the `-io` module whose round-trip completion is this ADR's sequencing precondition; the same "thin implements" shape.
 - [RFC-2026-06-03](../rfc/RFC-2026-06-03-capability-annotation-surface.md) — the accepted RFC this ADR locks; full options analysis (A: strings; B: `Class<?>` — chosen; C: `Service` marker interface; D: do nothing) and the annotation/AST shapes.
 - [ADR-003](ADR-003-entity-first-development-strategy.md) — Entity-First: the annotated class is the single source of truth, capabilities included.
