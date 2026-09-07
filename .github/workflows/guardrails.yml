@@ -54,8 +54,21 @@ jobs:
       # rfc/. Turning it on would assert something about a page set that does not exist.
       section-check: false
       # No path list: docs-lint reads the whole repository and skips what is not documentation
-      # (generated output, agent trees, "_"-prefixed working directories). Nothing here needs
-      # taking out of that.
+      # (generated output, agent trees, "_"-prefixed working directories).
+      #
+      # One path does need taking out of that, and it is a gap rather than a preference.
+      # `exeris-sdk-ui-kit/api/ui-kit.api.md` is api-extractor's report — generated output that is
+      # committed on purpose, because it is that package's japicmp (§F.21c). `_common.py` names
+      # generated output by directory (`node_modules`, `target`, `build`, `dist`, …) and `api/` is
+      # not one, so the checker reads the report as a documentation page and demands frontmatter
+      # that `npm run api:accept` would strip on its next run. Measured over this tree: 26 files /
+      # 1 error without the exclude, 25 / 0 with it.
+      #
+      # The right fix is upstream and is already written into the ADR: §F.21d marks generated trees
+      # `linguist-generated` in `.gitattributes` — this repository now carries that marker — and
+      # `frontmatter_check.py` should honour it rather than have every repository enumerate its
+      # generated reports a second time. Drop this line when it does.
+      exclude: exeris-sdk-ui-kit/api
   commits:
     uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
   pr-body:
