@@ -77,36 +77,50 @@ jobs:
   # ADR-085 §F.21. Two halves, and both have to be green before 0.12.0 ships, because a Javadoc
   # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
   #
-  # The module list is every jar this reactor publishes, plus one that does not.
-  # `exeris-sdk-bom` and `exeris-sdk-parent` are pom-packaged and have nothing to document.
+  # `modules` is every jar this reactor publishes. `exeris-sdk-bom` and `exeris-sdk-parent` are
+  # pom-packaged and have nothing to document.
   #
-  # `exeris-sdk-annotation-catalog` is the exception, and it is here because the gate cannot build
-  # without it rather than because §F.21 asks for it — the module holds itself back from deploy
-  # (maven.deploy.skip in its own pom), so "every module published to Maven Central" does not reach
-  # it. `exeris-sdk-annotations` consumes it as an annotation processor through
-  # <annotationProcessorPaths>, and Maven does not treat that as a reactor dependency edge — the
-  # root pom's <modules> comment says so, and orders the declaration to compensate. Declaration
-  # order only helps a full reactor build. This gate runs `-pl <modules> -am`, where the catalog is
-  # neither selected nor reachable, so the first CI run died in the install step with "Could not
-  # find artifact eu.exeris:exeris-sdk-annotation-catalog:jar:0.12.0-SNAPSHOT" before reaching a
-  # single doc comment. It passed locally only because a previous full build had left the jar in
-  # ~/.m2; reproduced by deleting it, fixed by naming the module here.
+  # `build-modules` carries `exeris-sdk-annotation-catalog`, which the gate has to BUILD and has no
+  # reason to CHECK. The module holds itself back from deploy (maven.deploy.skip in its own pom),
+  # so "every module published to Maven Central" does not reach it; `exeris-sdk-annotations`
+  # consumes it as an annotation processor through <annotationProcessorPaths>, which Maven does not
+  # treat as a reactor dependency edge — the root pom's <modules> comment says so and orders the
+  # declaration to compensate, which only helps a full reactor build. `-pl <modules> -am` neither
+  # selects nor reaches it, so the first run here died in the install step with "Could not find
+  # artifact eu.exeris:exeris-sdk-annotation-catalog:jar:0.12.0-SNAPSHOT" before reaching a doc
+  # comment. Naming it in `modules` fixed the build and bought a cost — the gate then also graded a
+  # build-time module the standard does not ask about. `build-modules` is the separation, and it
+  # exists because that cost was reported rather than absorbed twice.
   #
-  # The cost of naming it is that the gate also checks it: two Checkstyle findings, both in
-  # JavadocText.java, both a <pre> written inside prose about `<pre>{@code}` blocks. Being stricter
-  # with a build-time module than the standard requires is a fair price for a gate that runs at all.
-  # The narrower fix belongs upstream — a `build-modules` input on javadoc-gate.yml, separate from
-  # the set it checks — and is worth proposing to exeris-systems/.github rather than working around
-  # twice.
+  # `trivial-accessors: exempt` opts out of the Checkstyle half of rule 1 for single-line bodies,
+  # and the opt-out is narrow and covered rather than convenient. Measured on this reactor with the
+  # pinned 13.8.0: `documented` (the default) reports 204 errors, every one a fluent builder setter
+  # of the shape `public Builder x(T v) { this.x = v; return this; }`; `exempt` reports 0. Two
+  # things already cover them, and both are stricter than what is being dropped —
+  # `maven-javadoc-plugin` runs doclint with failOnWarnings, and `JavadocCompletenessTest` requires
+  # a doc comment on every public member of `source-model` EXCEPT a setter whose body is exactly
+  # that assignment, with the assigned field back-referenced to the method name. Checkstyle cannot
+  # express a body shape; the test can, and does. Documenting the 204 instead would put 204 comments
+  # restating `this.x = v` into a -javadoc.jar on Central, permanently.
   #
-  # No `extra-maven-args` and no dedicated profile: unlike the kernel, the strict Javadoc settings
-  # here live unconditionally in each module's own pom and the `release` profile deliberately does
-  # not relax them, so the gate runs exactly the configuration a release runs. The one thing that
-  # had to change for this job to work is in the root pom — see the jacoco.skip comment there.
+  # `extra-maven-args` carries `-Djapicmp.skip=true`, the same flag build.yml, release.yml and
+  # release-assets.yml pass, for the reason the root POM's japicmp comment gives in full: the 0.11.0
+  # baseline is not on Central and 0.12.0 is the first version that will be. japicmp binds to
+  # `verify`, which `install` runs, so without it the gate dies on an artifact resolution before
+  # reading a doc comment. All four callers say it now, in the same words, and they come off together
+  # when the 0.13.0 line opens.
+  #
+  # No dedicated profile: unlike the kernel, the strict Javadoc settings here live unconditionally
+  # in each module's own pom and the `release` profile deliberately does not relax them, so the gate
+  # runs exactly the configuration a release runs. The one thing that had to change in the root pom
+  # for this job is the jacoco.skip line — see its comment there.
   javadoc:
     uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
     with:
-      modules: exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
+      modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
+      build-modules: exeris-sdk-annotation-catalog
+      trivial-accessors: exempt
+      extra-maven-args: -Djapicmp.skip=true
   # ADR-085 §F.21a–c. The TypeScript half of the same rule, and this repository owns one of the
   # three surfaces the ADR names by hand: `@exeris-systems/ui-kit`.
   #
