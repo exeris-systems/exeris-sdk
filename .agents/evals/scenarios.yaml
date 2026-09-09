@@ -16,8 +16,8 @@
 # think about is the only kind that tests anything.
 #
 # Run:
-#   python3 .agents/vendor/exeris-agents-1.3.0/evals/run.py --dry-run     # resolve, invoke nothing
-#   python3 .agents/vendor/exeris-agents-1.3.0/evals/run.py --tags wire-format
+#   python3 .agents/vendor/exeris-agents-1.4.0/evals/run.py --dry-run     # resolve, invoke nothing
+#   python3 .agents/vendor/exeris-agents-1.4.0/evals/run.py --tags wire-format
 #
 # On demand and on a schedule, never on every pull request. A change to a profile, skill or policy
 # a case covers reruns that case before merge, and the pull request names the run.
