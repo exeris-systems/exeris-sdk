@@ -4,3 +4,9 @@
 # package's japicmp, and a `-` line in it is a major — but it is rewritten wholesale by
 # `npm run api:accept`, so nothing hand-written survives there, frontmatter included.
 exeris-sdk-ui-kit/api/*.api.md linguist-generated=true
+
+# The vendored agent bundle is another repository's code, pinned and digest-verified here. Marking
+# it collapses it in pull-request diffs and keeps it out of the language statistics — and out of
+# CodeQL's default setup, which would otherwise scan `hooks/bin/hook.py` and `evals/run.py` as if
+# this repository had written them.
+.agents/vendor/** linguist-vendored=true

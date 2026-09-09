@@ -64,14 +64,25 @@ jobs:
       # `agent-check` is left at its default `true` — the agent-layer half of §I.29 is not optional
       # here, and this repository has an `.agents/` tree to check.
       #
-      # `agents-ref` is NOT left at its default `main`. The tooling that checks the agent layer and
-      # the semantics it checks are one contract at one version — the reason §C.11 puts them in a
-      # repository that has a SemVer at all — so it is pinned to the same commit `.agents/manifest.yaml`
-      # vendors. Running the checker from `main` would let a bundle release change what this
-      # repository's CI enforces without this repository moving, which is the moving target rule 8
-      # forbids one level down. Bumping the bundle means editing both, and the digest check fails
-      # loudly if only one moves.
-      agents-ref: 628cf11b4c4d3ecafadfe07b18764e75598ebd46
+      # `agents-ref` is left at its default `main`, and that is the second time this file makes the
+      # same call for the same reason as the `uses:` comment above. Pinning it to the commit
+      # `.agents/manifest.yaml` vendors is the tempting move — tooling and semantics are one
+      # contract at one version, which is why §C.11 gave the bundle a SemVer. It was tried here and
+      # taken out, because **nothing verifies the two agree**: the digest check compares the
+      # vendored tree against the pin inside `manifest.yaml` and never reads this file, so a hand-
+      # typed SHA here can drift from the vendored one indefinitely and every check stays green.
+      # A pin whose only enforcement is that someone remembers is the frozen-and-silent gate the
+      # comment above rejects, one layer out.
+      #
+      # The cost of `main` is real and is accepted knowingly: a bundle release changes what this
+      # repository's CI enforces without this repository moving. That happened deliberately in
+      # 1.2.0, which turned a previously green check red by validating a rule that had bound since
+      # schema v2. Being pinned then would have meant passing on rules the vendored tree already
+      # claimed to follow, which is the worse failure.
+      #
+      # The fix belongs upstream, in one line: `docs-lint` can read `imports[].ref` out of the
+      # consuming repository's own `manifest.yaml` and check the bundle out at that, which is the
+      # only arrangement in which the two cannot disagree. Reported.
   commits:
     uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
   pr-body:

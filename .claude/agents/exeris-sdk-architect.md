@@ -52,10 +52,14 @@ For each finding: what → why (CLAUDE.md / MIGRATION / package-info / ADR-003) 
 ## Response Template
 
 ### Decision
-`<ALLOW | ALLOW WITH CONDITIONS | REFUSE>`
+`<PASS | CONDITIONAL | BLOCKED>`
 
 ### Scope
-`<exeris-sdk-annotations | exeris-sdk-source-model | exeris-sdk-ui-kit | exeris-sdk-bom | exeris-sdk-parent | docs | publish pipeline>`
+`<annotation-surface | ast-wire-format | composition | ui-kit | build-publish | docs-only | agent-layer | mixed>`
+
+Both vocabularies are `schemas/verdict.schema.json`'s, because this role emits it. A response that
+says `ALLOW` or names a Maven module here does not validate — the words in this template and the
+words in the schema are one contract, not two.
 
 ### Why
 `<short rationale grounded in CLAUDE.md / ADR-003 / package-info / MIGRATION>`

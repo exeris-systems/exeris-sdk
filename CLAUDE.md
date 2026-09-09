@@ -18,5 +18,6 @@ This file exists only because a Claude client looks for it
 rule 7). It states no rule of its own: a rule written here would be a second place to author project
 semantics, which is what the schema forbids.
 
-Claude-specific adapters generated from `.agents/` are in [`.claude/`](.claude), each carrying a
-do-not-edit marker naming its source.
+Claude-specific adapters generated from `.agents/` are in [`.claude/`](.claude). Profiles and
+workflows are rendered files carrying a do-not-edit marker that names their source; the ten skills
+are symlinks into `.agents/skills/`, so there is no second copy to mark.

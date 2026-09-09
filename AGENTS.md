@@ -79,10 +79,11 @@ Detailed rules are authored once under [`.agents/`](.agents) and nowhere else.
 | Path | What it holds |
 |:--|:--|
 | [`.agents/policies/`](.agents/policies) | Non-negotiable boundaries — zero runtime coupling, AST wire format, field/validation scoping, route access, JDK baseline, UI kit, stability & deprecation, javadoc & emitters. Each is linked from the invariant it governs above. |
-| [`.agents/references/`](.agents/references) | Authoritative summaries — build & testing, downstream consumers, Maven Central distribution. |
-| [`.agents/skills/`](.agents/skills) | Bounded review capabilities: annotation contracts, AST format, build invariants, coverage, deprecations, field scoping, publish readiness, routing, triage, zero coupling. |
+| [`.agents/references/`](.agents/references) | Authoritative summaries — [build & testing](.agents/references/build-and-testing.md), downstream consumers, Maven Central distribution. |
+| [`.agents/skills/`](.agents/skills) | Bounded review capabilities, one per invariant this repository defends, plus triage and routing. |
 | [`.agents/agents/`](.agents/agents) | Role profiles: router, architect, implementer, verification, docs-adr. |
-| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences: annotation contract audit, AST review, field scoping audit, publish readiness audit. |
+| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences. **`sdk-pr-review`** is the routine the CI review runs; the other four are audits. |
+| [`.agents/schemas/`](.agents/schemas) | Decision schemas — `verdict`, narrowing the bundle's base. |
 | [`.agents/manifest.yaml`](.agents/manifest.yaml) | Composition metadata, schema v2. Pins the `exeris-agents` bundle vendored under `.agents/vendor/`. |
 
 Instruction sources resolve broad to narrow: organisation bundle → repository → subtree → workflow.
