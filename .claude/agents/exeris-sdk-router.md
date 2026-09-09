@@ -100,7 +100,11 @@ Do not import from downstream (`exeris-tooling`, `exeris-platform`) under any ci
 
 Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
 
-- `.agents/vendor/exeris-agents-1.3.0/policies/agent-safety-and-autonomy.md`
-- `.agents/vendor/exeris-agents-1.3.0/policies/error-handling-and-fallback.md`
+- `.agents/vendor/exeris-agents-1.4.0/policies/agent-safety-and-autonomy.md`
+- `.agents/vendor/exeris-agents-1.4.0/policies/error-handling-and-fallback.md`
+
+## Response contract
+
+After the Markdown response above, emit the same content as a fenced `json` block conforming to `.agents/schemas/triage-result.schema.json`. The Markdown is for the human; the JSON is what the eval runner and the CI review consume. If the two cannot be made to agree, the Markdown is wrong.
 
 <!-- END GENERATED -->

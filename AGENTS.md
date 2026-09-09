@@ -83,7 +83,7 @@ Detailed rules are authored once under [`.agents/`](.agents) and nowhere else.
 | [`.agents/skills/`](.agents/skills) | Bounded review capabilities, one per invariant this repository defends, plus triage and routing. |
 | [`.agents/agents/`](.agents/agents) | Role profiles: router, architect, implementer, verification, docs-adr. |
 | [`.agents/workflows/`](.agents/workflows) | Repeatable sequences. **`sdk-pr-review`** is the routine the CI review runs; the other four are audits. |
-| [`.agents/schemas/`](.agents/schemas) | Decision schemas — `verdict`, narrowing the bundle's base. |
+| [`.agents/schemas/`](.agents/schemas), [`evals/`](.agents/evals) | The decision contract: `verdict` and `triage-result` narrow the bundle's bases, and ten cases pin the two roles that emit them. |
 | [`.agents/manifest.yaml`](.agents/manifest.yaml) | Composition metadata, schema v2. Pins the `exeris-agents` bundle vendored under `.agents/vendor/`. |
 
 Instruction sources resolve broad to narrow: organisation bundle → repository → subtree → workflow.

@@ -49,3 +49,12 @@ cp.txt
 # The shared guardrail bundle (exeris-systems/.github), checked out locally so the doc gates can
 # run outside CI. A checkout of another repository, never content of this one.
 .guardrails/
+
+# The eval runner's report. A run is evidence for one pull request, not repository content, and it
+# carries a timestamp that would make every run a diff.
+working-notes/eval-report.json
+
+# Running the vendored eval runner or hook dispatcher leaves bytecode inside the vendored tree.
+# The digest check ignores it — it covers the bytes that were vendored — but an untracked
+# directory inside a digest-verified tree is the kind of thing a reader stops to work out.
+__pycache__/

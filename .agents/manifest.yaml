@@ -14,9 +14,9 @@ repository: exeris-sdk
 # means re-vendoring, not editing in place.
 imports:
   - bundle: exeris-agents
-    version: 1.3.0
-    ref: 628cf11b4c4d3ecafadfe07b18764e75598ebd46
-    sha256: sha256:4a9e2d84b51a4ff0adabb047942aa6ff1b632063f26e5e8399388c3bcfd8746f
+    version: 1.4.0
+    ref: 306afae9e3c3f6bb1c9dc9a05b1f4c97adbfb5aa
+    sha256: sha256:0695d672a37de13beddf278ba7829028ac88989ffa7b5cfbb3ec53f49a1a3c7c
 
 agents:
   - exeris-sdk-router
@@ -62,24 +62,27 @@ references:
   - downstream-consumers
   - maven-central-distribution
 
-# Not adopted, each for a reason rather than by omission:
+# Not adopted, and for a reason rather than by omission:
 #
 #   hooks   (rule 12) — L0 exists to stop an irreversible action or hold a session open until a
 #           consequence is discharged. This repository's irreversible act is a Maven Central
 #           deploy, which no interactive session performs: it runs in release.yml behind an
 #           environment. A hook here would guard nothing that happens here.
-#   evals   (rule 14) — owed, and the one gap worth naming as a gap: this repository ships five
-#           profiles, so rule 14 applies. The scenarios have to be written against real routing
-#           decisions rather than invented, and that is a change of its own.
 hooks: null
-evals: null
 
-# Rule 13. `verdict` narrows the bundle's base schema to this repository's reviewing roles and its
-# surfaces; `exeris-sdk-architect` names it in `output` and the CI review posts it. There is no
-# `triage-result` or `handoff` schema because no agent hands either to another one here — the five
-# profiles hand off in prose, and a schema with no emitter is a file that drifts.
+# Rule 14. Ten cases over the two roles that emit a machine-readable decision, graded
+# deterministically. They run on demand and on a schedule, never on a pull request.
+evals: evals/scenarios.yaml
+
+# Rule 13. `verdict` narrows the bundle's base to this repository's reviewing role and its
+# surfaces; `triage-result` narrows it to the classes `exeris-sdk-task-classifier` already
+# publishes as its output contract. Each has exactly one emitter — `exeris-sdk-architect` and
+# `exeris-sdk-router`, both naming it in `output` — which is the rule a schema is added under
+# here: one with no emitter is a file that drifts. There is still no `handoff` schema, because
+# the five profiles hand off in prose.
 schemas:
   - verdict
+  - triage-result
 
 nested: []
 

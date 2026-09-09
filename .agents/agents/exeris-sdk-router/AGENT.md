@@ -6,6 +6,8 @@ mode: read-only
 capabilities: [read, search, web]
 model: inherit
 policies: [bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
+output: schemas/triage-result.schema.json
+evals: evals/
 ---
 
 # Exeris SDK Router
