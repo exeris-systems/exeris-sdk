@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review verdict (exeris-sdk)",
+  "description": "The bundle's shape, narrowed to this repository's reviewing roles and its surfaces. The three-state `decision` and the `checks_run` contract are the base's; only the vocabulary is local. `scope_class` is finer than the four classes ADR-085 \u00a7E.16 fixes for a pull-request body, because a review answers which surface broke and a body answers how far the change reaches.",
+  "allOf": [
+    {
+      "$ref": "../vendor/exeris-agents-1.3.0/schemas/verdict.base.schema.json"
+    },
+    {
+      "properties": {
+        "agent": {
+          "enum": [
+            "exeris-sdk-architect"
+          ],
+          "description": "One role, because one role emits. `exeris-sdk-architect` is the only profile naming this schema in `output` and the only one the CI review runs as. Widening the enum ahead of a second emitter would let a verdict validate under a role that has never produced one."
+        },
+        "scope_class": {
+          "enum": [
+            "annotation-surface",
+            "ast-wire-format",
+            "composition",
+            "ui-kit",
+            "build-publish",
+            "docs-only",
+            "agent-layer",
+            "mixed"
+          ]
+        }
+      }
+    }
+  ]
+}

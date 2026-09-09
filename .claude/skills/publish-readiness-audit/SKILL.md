@@ -1,12 +1,11 @@
 ---
 name: publish-readiness-audit
 description: Audit repository release readiness for Maven Central deployment and Sonatype Portal rules.
-argument-hint: Release commit, POM diff, or tag
-steps:
-  - {agent: exeris-sdk-architect, skill: exeris-sdk-publish-readiness-review}
-  - {agent: exeris-sdk-implementer, when: "a POM or module attribute has to change before the release"}
+disable-model-invocation: true
 ---
 
+<!-- DO NOT EDIT. Generated from .agents/workflows/publish-readiness-audit.md by agents_render.py
+     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 Audit release readiness before deploying `exeris-sdk` to Maven Central.
 
 Priorities:

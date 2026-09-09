@@ -79,11 +79,12 @@ Detailed rules are authored once under [`.agents/`](.agents) and nowhere else.
 | Path | What it holds |
 |:--|:--|
 | [`.agents/policies/`](.agents/policies) | Non-negotiable boundaries — zero runtime coupling, AST wire format, field/validation scoping, route access, JDK baseline, UI kit, stability & deprecation, javadoc & emitters. Each is linked from the invariant it governs above. |
-| [`.agents/references/`](.agents/references) | Authoritative summaries: [build & testing](.agents/references/build-and-testing.md), [downstream consumers](.agents/references/downstream-consumers.md), [distribution](.agents/references/maven-central-distribution.md). |
-| [`.agents/skills/`](.agents/skills) | Bounded review capabilities: annotation contracts, AST format, build invariants, coverage, deprecations, field scoping, publish readiness, routing, triage, zero coupling. |
+| [`.agents/references/`](.agents/references) | Authoritative summaries — [build & testing](.agents/references/build-and-testing.md), downstream consumers, Maven Central distribution. |
+| [`.agents/skills/`](.agents/skills) | Bounded review capabilities, one per invariant this repository defends, plus triage and routing. |
 | [`.agents/agents/`](.agents/agents) | Role profiles: router, architect, implementer, verification, docs-adr. |
-| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences: annotation contract audit, AST review, field scoping audit, publish readiness audit. |
-| [`.agents/manifest.yaml`](.agents/manifest.yaml) | Composition metadata. Imports none. |
+| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences. **`sdk-pr-review`** is the routine the CI review runs; the other four are audits. |
+| [`.agents/schemas/`](.agents/schemas) | Decision schemas — `verdict`, narrowing the bundle's base. |
+| [`.agents/manifest.yaml`](.agents/manifest.yaml) | Composition metadata, schema v2. Pins the `exeris-agents` bundle vendored under `.agents/vendor/`. |
 
 Instruction sources resolve broad to narrow: organisation bundle → repository → subtree → workflow.
 A narrower file may restrict behaviour; it may never relax a higher-order rule.
@@ -112,7 +113,8 @@ line, and an agent does not open pull requests or file issues unattended. Contri
 
 ## Provider adapters
 
-[`.claude/`](.claude) holds Claude Code adapters generated from `.agents/`, each carrying a
-do-not-edit marker naming its source. Rewrite them with `tools/agent-adapter-check/agent-adapter-render.sh`
-and verify with `tools/agent-adapter-check/agent-adapter-check.sh`; never edit an adapter directly.
-[`CLAUDE.md`](CLAUDE.md) points here.
+[`.claude/`](.claude) holds Claude Code adapters generated from `.agents/` — profiles and
+workflows carry a do-not-edit marker naming their source, skills are symlinks to it. One shared
+renderer produces them (`exeris-systems/exeris-agents`, pinned in `manifest.yaml`); this
+repository carries none of its own. Never edit an adapter directly. [`CLAUDE.md`](CLAUDE.md)
+points here.

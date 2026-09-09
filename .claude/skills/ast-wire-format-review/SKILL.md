@@ -1,12 +1,11 @@
 ---
 name: ast-wire-format-review
 description: Review AST records and wire-format serialization contracts across source-model and downstream tooling consumers.
-argument-hint: Modified AST record files or diff
-steps:
-  - {agent: exeris-sdk-architect, skill: exeris-sdk-ast-jackson-contract-review}
-  - {agent: exeris-sdk-verification, when: "a record change has no round-trip test covering it"}
+disable-model-invocation: true
 ---
 
+<!-- DO NOT EDIT. Generated from .agents/workflows/ast-wire-format-review.md by agents_render.py
+     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 Review AST record changes against Jackson 3 serialization invariants.
 
 Priorities:

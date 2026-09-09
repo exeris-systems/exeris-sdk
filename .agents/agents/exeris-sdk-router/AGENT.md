@@ -1,12 +1,13 @@
 ---
 name: exeris-sdk-router
 description: Entry router for exeris-sdk. Use proactively for triage to classify a task (annotation contract / AST records / UI kit / stability / docs / pre-publish) and recommend a specialist agent.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+role: router
+mode: read-only
+capabilities: [read, search, web]
 model: inherit
+policies: [bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-router/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Router
 
 ## Role
@@ -93,14 +94,3 @@ or `None`
 
 ## Non-goal
 Do not import from downstream (`exeris-tooling`, `exeris-platform`) under any circumstance — this is the upstream-most repo by construction.
-
-<!-- BEGIN GENERATED: composition (agents-md-schema.md rule 5) -->
-
-## Applies
-
-Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
-
-- `.agents/vendor/exeris-agents-1.3.0/policies/agent-safety-and-autonomy.md`
-- `.agents/vendor/exeris-agents-1.3.0/policies/error-handling-and-fallback.md`
-
-<!-- END GENERATED -->

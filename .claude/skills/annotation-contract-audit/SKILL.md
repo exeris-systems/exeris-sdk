@@ -1,12 +1,11 @@
 ---
 name: annotation-contract-audit
 description: Audit annotation contracts for RetentionPolicy.SOURCE, presence of @Target, and zero compile-time dependencies.
-argument-hint: Modified annotation files or diff
-steps:
-  - {agent: exeris-sdk-architect, skill: exeris-sdk-annotation-contract-review}
-  - {agent: exeris-sdk-implementer, when: "a finding needs the annotation or its test changed"}
+disable-model-invocation: true
 ---
 
+<!-- DO NOT EDIT. Generated from .agents/workflows/annotation-contract-audit.md by agents_render.py
+     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 Audit annotations touched in this change against Exeris SDK invariants.
 
 Priorities:

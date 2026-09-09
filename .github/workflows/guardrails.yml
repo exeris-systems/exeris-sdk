@@ -60,6 +60,29 @@ jobs:
       # committed on purpose because it is that package's japicmp (§F.21c), and a frontmatter block
       # in it would not survive the next `npm run api:accept`. No `exclude` list here: measured on
       # this tree with the current script, 25 files / 0 errors without one.
+      #
+      # `agent-check` is left at its default `true` — the agent-layer half of §I.29 is not optional
+      # here, and this repository has an `.agents/` tree to check.
+      #
+      # `agents-ref` is left at its default `main`, and that is the second time this file makes the
+      # same call for the same reason as the `uses:` comment above. Pinning it to the commit
+      # `.agents/manifest.yaml` vendors is the tempting move — tooling and semantics are one
+      # contract at one version, which is why §C.11 gave the bundle a SemVer. It was tried here and
+      # taken out, because **nothing verifies the two agree**: the digest check compares the
+      # vendored tree against the pin inside `manifest.yaml` and never reads this file, so a hand-
+      # typed SHA here can drift from the vendored one indefinitely and every check stays green.
+      # A pin whose only enforcement is that someone remembers is the frozen-and-silent gate the
+      # comment above rejects, one layer out.
+      #
+      # The cost of `main` is real and is accepted knowingly: a bundle release changes what this
+      # repository's CI enforces without this repository moving. That happened deliberately in
+      # 1.2.0, which turned a previously green check red by validating a rule that had bound since
+      # schema v2. Being pinned then would have meant passing on rules the vendored tree already
+      # claimed to follow, which is the worse failure.
+      #
+      # The fix belongs upstream, in one line: `docs-lint` can read `imports[].ref` out of the
+      # consuming repository's own `manifest.yaml` and check the bundle out at that, which is the
+      # only arrangement in which the two cannot disagree. Reported.
   commits:
     uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
   pr-body:
