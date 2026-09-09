@@ -81,6 +81,7 @@ Read the ones your change touches. Each is authoritative for its own list; do no
 - `.agents/policies/ast-wire-format.md`
 - `.agents/policies/jdk-baseline.md`
 - `.agents/policies/ui-kit.md`
+- `.agents/policies/route-access.md`
 - `.agents/vendor/exeris-agents-1.2.0/policies/agent-safety-and-autonomy.md`
 - `.agents/vendor/exeris-agents-1.2.0/policies/error-handling-and-fallback.md`
 

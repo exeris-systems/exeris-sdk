@@ -5,7 +5,7 @@ role: implementer
 mode: edit
 capabilities: [read, search, edit, shell, web]
 model: inherit
-policies: [zero-runtime-coupling, ast-wire-format, jdk-baseline, ui-kit, bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
+policies: [zero-runtime-coupling, ast-wire-format, jdk-baseline, ui-kit, route-access, bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
 ---
 
 # Exeris SDK Implementer

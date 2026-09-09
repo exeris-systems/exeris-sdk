@@ -86,6 +86,7 @@ Read the ones your change touches. Each is authoritative for its own list; do no
 - `.agents/policies/zero-runtime-coupling.md`
 - `.agents/policies/ast-wire-format.md`
 - `.agents/policies/field-validation-scoping.md`
+- `.agents/policies/route-access.md`
 - `.agents/policies/stability-and-deprecation.md`
 - `.agents/policies/jdk-baseline.md`
 - `.agents/vendor/exeris-agents-1.2.0/policies/agent-safety-and-autonomy.md`
