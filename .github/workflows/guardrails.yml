@@ -60,6 +60,18 @@ jobs:
       # committed on purpose because it is that package's japicmp (§F.21c), and a frontmatter block
       # in it would not survive the next `npm run api:accept`. No `exclude` list here: measured on
       # this tree with the current script, 25 files / 0 errors without one.
+      #
+      # `agent-check` is left at its default `true` — the agent-layer half of §I.29 is not optional
+      # here, and this repository has an `.agents/` tree to check.
+      #
+      # `agents-ref` is NOT left at its default `main`. The tooling that checks the agent layer and
+      # the semantics it checks are one contract at one version — the reason §C.11 puts them in a
+      # repository that has a SemVer at all — so it is pinned to the same commit `.agents/manifest.yaml`
+      # vendors. Running the checker from `main` would let a bundle release change what this
+      # repository's CI enforces without this repository moving, which is the moving target rule 8
+      # forbids one level down. Bumping the bundle means editing both, and the digest check fails
+      # loudly if only one moves.
+      agents-ref: 628cf11b4c4d3ecafadfe07b18764e75598ebd46
   commits:
     uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
   pr-body:
