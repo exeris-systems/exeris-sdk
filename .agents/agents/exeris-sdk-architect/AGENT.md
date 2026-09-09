@@ -6,6 +6,7 @@ mode: read-only
 capabilities: [read, search, web]
 model: inherit
 policies: [zero-runtime-coupling, ast-wire-format, field-validation-scoping, route-access, stability-and-deprecation, jdk-baseline, bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
+output: schemas/verdict.schema.json
 ---
 
 # Exeris SDK Architect

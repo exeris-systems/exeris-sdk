@@ -38,6 +38,7 @@ skills:
   - exeris-sdk-zero-runtime-coupling-review
 
 workflows:
+  - sdk-pr-review
   - annotation-contract-audit
   - ast-wire-format-review
   - field-validation-scoping-audit
@@ -67,14 +68,18 @@ references:
 #           consequence is discharged. This repository's irreversible act is a Maven Central
 #           deploy, which no interactive session performs: it runs in release.yml behind an
 #           environment. A hook here would guard nothing that happens here.
-#   schemas (rule 13) — no agent hands a machine-readable decision to another one yet. The five
-#           profiles hand off in prose, and a schema with no emitter is a file that drifts.
 #   evals   (rule 14) — owed, and the one gap worth naming as a gap: this repository ships five
 #           profiles, so rule 14 applies. The scenarios have to be written against real routing
 #           decisions rather than invented, and that is a change of its own.
 hooks: null
-schemas: []
 evals: null
+
+# Rule 13. `verdict` narrows the bundle's base schema to this repository's reviewing roles and its
+# surfaces; `exeris-sdk-architect` names it in `output` and the CI review posts it. There is no
+# `triage-result` or `handoff` schema because no agent hands either to another one here — the five
+# profiles hand off in prose, and a schema with no emitter is a file that drifts.
+schemas:
+  - verdict
 
 nested: []
 
