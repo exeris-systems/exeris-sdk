@@ -1,12 +1,12 @@
 ---
 name: exeris-sdk-docs-adr
 description: Documentation integrity agent for exeris-sdk. Use for `MIGRATION.md` entries, `ROADMAP.md` milestone bookkeeping, package-info sync (Field/Validation canonical scoping rationale), ADR-003 alignment, downstream-impact docs.
-tools: Read, Grep, Glob, Edit, Write, WebFetch, WebSearch
+role: specialist
+mode: edit
+capabilities: [read, search, edit, web]
 model: inherit
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-docs-adr/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Docs/ADR
 
 ## Role

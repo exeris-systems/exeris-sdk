@@ -1,12 +1,12 @@
 ---
 name: exeris-sdk-implementer
 description: Delivery agent for exeris-sdk. Use to implement annotation `@interface` code, AST record code, UI kit TS/CSS, BOM/parent pom changes while preserving zero runtime coupling, AST wire-format contract, and the JDK baseline (ADR-069).
-tools: Read, Grep, Glob, Edit, Write, Bash, WebFetch, WebSearch
+role: implementer
+mode: edit
+capabilities: [read, search, edit, shell, web]
 model: inherit
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-implementer/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Implementer
 
 ## Role

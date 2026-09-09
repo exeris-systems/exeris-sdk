@@ -1,12 +1,12 @@
 ---
 name: exeris-sdk-architect
 description: Architectural reviewer for exeris-sdk. Use for zero-runtime-coupling enforcement, AST wire-format contract, stability + deprecation policy, Field/Validation canonical scoping, Entity-First alignment (ADR-003), the JDK baseline (ADR-069), Maven Central publish-readiness. Read-only — does not edit code.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+role: reviewer
+mode: read-only
+capabilities: [read, search, web]
 model: inherit
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-architect/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Architect
 
 ## Role

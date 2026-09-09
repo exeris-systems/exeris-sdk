@@ -1,12 +1,11 @@
 ---
 name: field-validation-scoping-audit
 description: Audit field vs validation attribute boundaries across annotations, AST records, and package-info files.
-argument-hint: Modified annotation, AST, or package-info files
-steps:
-  - {agent: exeris-sdk-architect, skill: exeris-sdk-field-validation-scoping-review}
-  - {agent: exeris-sdk-docs-adr, when: "the two package-info files disagree with the decided scoping"}
+disable-model-invocation: true
 ---
 
+<!-- DO NOT EDIT. Generated from .agents/workflows/field-validation-scoping-audit.md by agents_render.py
+     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 Audit changes to `@Field`, `@Validation`, or `FieldMetadata` against canonical scoping rules.
 
 Priorities:

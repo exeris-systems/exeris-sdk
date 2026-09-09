@@ -1,12 +1,12 @@
 ---
 name: exeris-sdk-verification
 description: Verification agent for exeris-sdk. Owns `AnnotationContractTest`, `AstJsonRoundTripTest`, JaCoCo 85% gate, Vitest 85% per-file gate, and the "what would catch this regression?" question for wire-format and contract changes.
-tools: Read, Grep, Glob, Edit, Write, Bash
+role: specialist
+mode: edit
+capabilities: [read, search, edit, shell]
 model: inherit
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-verification/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Verification
 
 ## Role

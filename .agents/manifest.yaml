@@ -1,57 +1,127 @@
 # Composition and delivery metadata for this repository's agent material.
-# agents-md-schema.md rules 5 and 8: profiles and workflows compose by reference, and any imported
-# bundle is version-pinned. This repository imports nothing — the organisation bundle does not exist
-# as a published artefact yet, and a floating import would be a rule-8 violation, not a shortcut.
-version: 1
+# agents-md-schema.md rules 5, 7, 8 and 10-13: profiles and workflows compose by reference,
+# provider directories are generated, imports are version-pinned, and what a vendor cannot do is
+# written down rather than assumed.
+#
+# The check asserts this file and the filesystem agree in BOTH directions: every name here exists,
+# and every profile, skill and workflow on disk is named here.
+version: 2
 repository: exeris-sdk
-imports: []
 
-policies:
-  - policies/ast-wire-format.md
-  - policies/field-validation-scoping.md
-  - policies/javadoc-and-contract-emitters.md
-  - policies/jdk-baseline.md
-  - policies/route-access.md
-  - policies/stability-and-deprecation.md
-  - policies/ui-kit.md
-  - policies/zero-runtime-coupling.md
-
-references:
-  - references/build-and-testing.md
-  - references/downstream-consumers.md
-  - references/maven-central-distribution.md
-
-skills:
-  - skills/exeris-sdk-annotation-contract-review
-  - skills/exeris-sdk-ast-jackson-contract-review
-  - skills/exeris-sdk-build-invariants-review
-  - skills/exeris-sdk-coverage-gates-review
-  - skills/exeris-sdk-deprecation-pipeline-review
-  - skills/exeris-sdk-field-validation-scoping-review
-  - skills/exeris-sdk-publish-readiness-review
-  - skills/exeris-sdk-routing-planner
-  - skills/exeris-sdk-task-classifier
-  - skills/exeris-sdk-zero-runtime-coupling-review
+# The organisation bundle, pinned and vendored under .agents/vendor/. `ref` is the commit the
+# vendored tree was taken from and `sha256` is a digest over every byte of it, so a hand-edit of
+# the vendored copy is a CI failure rather than a silent local fork (rule 8). Bumping the version
+# means re-vendoring, not editing in place.
+imports:
+  - bundle: exeris-agents
+    version: 1.1.0
+    ref: a060b179258489162d6a63d375677c48e584ce15
+    sha256: sha256:b9591e34b3a2409e408891d4ea437a10e869cc614aa9e85dcd4023a8cf8d6ab1
 
 agents:
-  - agents/exeris-sdk-architect.md
-  - agents/exeris-sdk-docs-adr.md
-  - agents/exeris-sdk-implementer.md
-  - agents/exeris-sdk-router.md
-  - agents/exeris-sdk-verification.md
+  - exeris-sdk-router
+  - exeris-sdk-architect
+  - exeris-sdk-implementer
+  - exeris-sdk-verification
+  - exeris-sdk-docs-adr
+
+skills:
+  - exeris-sdk-annotation-contract-review
+  - exeris-sdk-ast-jackson-contract-review
+  - exeris-sdk-build-invariants-review
+  - exeris-sdk-coverage-gates-review
+  - exeris-sdk-deprecation-pipeline-review
+  - exeris-sdk-field-validation-scoping-review
+  - exeris-sdk-publish-readiness-review
+  - exeris-sdk-routing-planner
+  - exeris-sdk-task-classifier
+  - exeris-sdk-zero-runtime-coupling-review
 
 workflows:
-  - workflows/annotation-contract-audit.md
-  - workflows/ast-wire-format-review.md
-  - workflows/field-validation-scoping-audit.md
-  - workflows/publish-readiness-audit.md
+  - annotation-contract-audit
+  - ast-wire-format-review
+  - field-validation-scoping-audit
+  - publish-readiness-audit
+
+# Repository-owned policies only. `agent-safety-and-autonomy` and `error-handling-and-fallback`
+# live in the shared bundle, where a change to them reaches every repository at once; a profile
+# references those as `bundle:<name>` so a reader can tell whose rule it is.
+policies:
+  - ast-wire-format
+  - field-validation-scoping
+  - javadoc-and-contract-emitters
+  - jdk-baseline
+  - route-access
+  - stability-and-deprecation
+  - ui-kit
+  - zero-runtime-coupling
+
+references:
+  - build-and-testing
+  - downstream-consumers
+  - maven-central-distribution
+
+# Not adopted, each for a reason rather than by omission:
+#
+#   hooks   (rule 12) — L0 exists to stop an irreversible action or hold a session open until a
+#           consequence is discharged. This repository's irreversible act is a Maven Central
+#           deploy, which no interactive session performs: it runs in release.yml behind an
+#           environment. A hook here would guard nothing that happens here.
+#   schemas (rule 13) — no agent hands a machine-readable decision to another one yet. The five
+#           profiles hand off in prose, and a schema with no emitter is a file that drifts.
+#   evals   (rule 14) — owed, and the one gap worth naming as a gap: this repository ships five
+#           profiles, so rule 14 applies. The scenarios have to be written against real routing
+#           decisions rather than invented, and that is a change of its own.
+hooks: null
+schemas: []
+evals: null
+
+nested: []
+
+renderer:
+  # One implementation, shared across repositories (ADR-085 §C.11 as amended 2026-09-08: a
+  # repository does not carry its own renderer). This replaced tools/agent-adapter-check/, which
+  # was exactly the second implementation the amendment names.
+  source: exeris-systems/exeris-agents
+  entrypoint: tools/agents_render.py
+  check: tools/agents_file_check.py
+  bundle: tools/agents_bundle.py
 
 adapters:
   claude:
     target: .claude
-    generated: true
-    renderer: tools/agent-adapter-check/agent-adapter-render.sh
-    map:
-      skills: .claude/skills
-      agents: .claude/agents
-      workflows: .claude/commands
+    agents: .claude/agents/{name}.md
+    # One symlink PER SKILL, not one for the directory: workflows render into the same directory,
+    # so a directory-level link makes the two kinds fight over one path.
+    skills: symlink
+    workflows: .claude/skills/{name}/SKILL.md   # `commands/` is the legacy flat-file form
+  copilot:
+    target: .github
+    skills: native
+    status: deferred
+  codex:
+    target: .codex
+    skills: native
+    status: deferred
+  gemini:
+    target: .gemini
+    skills: native
+    status: deferred
+  antigravity:
+    target: .agents
+    skills: native
+    status: deferred
+  cursor:
+    target: .cursor
+    skills: native
+    status: deferred
+
+degradations:
+  # What each runtime cannot do. An unrecorded degradation is an operator believing a gate runs on
+  # a client that never had it. This repository declares no hooks, so the stop-hook degradations
+  # the bundle records for four runtimes cost it nothing today — they are listed because adopting
+  # a hook later must not require rediscovering them.
+  copilot: [stop-hook-warn-only]
+  gemini: [stop-hook-warn-only, no-agent-scoped-hooks]
+  cursor: [stop-hook-warn-only]
+  antigravity: [stop-hook-warn-only]

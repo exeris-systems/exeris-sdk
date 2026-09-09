@@ -1,12 +1,12 @@
 ---
 name: exeris-sdk-router
 description: Entry router for exeris-sdk. Use proactively for triage to classify a task (annotation contract / AST records / UI kit / stability / docs / pre-publish) and recommend a specialist agent.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+role: router
+mode: read-only
+capabilities: [read, search, web]
 model: inherit
 ---
 
-<!-- DO NOT EDIT. Generated from .agents/agents/exeris-sdk-router/AGENT.md by agents_render.py
-     (exeris-systems/exeris-agents; agents-md-schema.md rule 7). Edit the source. -->
 # Exeris SDK Router
 
 ## Role
