@@ -100,7 +100,7 @@ Do not import from downstream (`exeris-tooling`, `exeris-platform`) under any ci
 
 Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
 
-- `.agents/vendor/exeris-agents-1.1.0/policies/agent-safety-and-autonomy.md`
-- `.agents/vendor/exeris-agents-1.1.0/policies/error-handling-and-fallback.md`
+- `.agents/vendor/exeris-agents-1.2.0/policies/agent-safety-and-autonomy.md`
+- `.agents/vendor/exeris-agents-1.2.0/policies/error-handling-and-fallback.md`
 
 <!-- END GENERATED -->

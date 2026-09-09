@@ -78,7 +78,10 @@ def file_registry(schema_path: str):
     base_dir = os.path.dirname(os.path.abspath(schema_path))
 
     def retrieve(uri: str):
+        # A `$ref` is a path fragment out of a JSON file, which is the same class of input as
+        # `--scenarios` and `schema_dir`. Three of those were guarded and this one was not.
         target = uri if os.path.isabs(uri) else os.path.normpath(os.path.join(base_dir, uri))
+        target = within_repo(target, f"$ref '{uri}'")
         with open(target, encoding="utf-8") as fh:
             return Resource.from_contents(json.load(fh), default_specification=DRAFT202012)
 
@@ -160,15 +163,43 @@ def build_prompt(case: dict, fixture_dir: str) -> str:
     parts = [case.get("prompt", "").strip()]
     fixture = case.get("fixture")
     if fixture:
-        path = os.path.join(fixture_dir, fixture)
+        path = within_repo(os.path.join(fixture_dir, fixture), f"fixture '{fixture}'")
         parts.append(f"\n--- {fixture} ---\n{open(path, encoding='utf-8').read().strip()}")
     parts.append("\nAnswer with the JSON object your response contract requires, and nothing else.")
     return "\n".join(p for p in parts if p)
 
 
+def within_repo(path: str, what: str) -> str:
+    """Resolve `path` and refuse it if it leaves the checkout.
+
+    `--scenarios` is a CLI argument and `defaults.schema_dir` / `fixture_dir` are values in a YAML
+    file, so both reach `open()` as attacker- or typo-controlled path fragments. The runner has no
+    business reading anything outside the repository it is evaluating, and a `schema_dir` that
+    silently resolves somewhere else is the same failure this function's callers were written to
+    fix, one level up: a path that resolves to *something* rather than to the right thing.
+    """
+    resolved = os.path.realpath(path)
+    root = os.path.realpath(REPO)
+    if resolved != root and not resolved.startswith(root + os.sep):
+        sys.exit(f"eval-run: {what} resolves outside the repository ({resolved}); "
+                 f"paths are repository-relative by design")
+    return resolved
+
+
+def default_scenarios() -> str:
+    """The repository's own scenarios, not the vendored copy's.
+
+    `HERE/scenarios.yaml` is right only when this runner sits at `.agents/evals/`. Vendored it does
+    not, and `evals/` carries no scenarios file at all — so the documented invocation exited with a
+    FileNotFoundError against a path inside the vendored tree.
+    """
+    repo_local = os.path.join(REPO, ".agents", "evals", "scenarios.yaml")
+    return repo_local if os.path.exists(repo_local) else os.path.join(HERE, "scenarios.yaml")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenarios", default=os.path.join(HERE, "scenarios.yaml"))
+    ap.add_argument("--scenarios", default=default_scenarios())
     ap.add_argument("--runtime", choices=sorted(RUNTIMES))
     ap.add_argument("--tags", help="comma-separated; run only cases carrying one of them")
     ap.add_argument("--case", help="run a single case by id")
@@ -177,10 +208,25 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
-    cfg = load_yaml(a.scenarios)
+    # Guard FIRST. This used to sit seven lines lower, after load_yaml() had already opened and
+    # parsed the file — so the one CLI-controlled read the guard exists for still happened, and a
+    # path outside the checkout produced a YAML parse error or a raw FileNotFoundError rather than
+    # the refusal. A guard that runs after the sink is a comment.
+    scenarios = within_repo(a.scenarios, "--scenarios")
+    report_path = within_repo(a.report, "--report")
+
+    cfg = load_yaml(scenarios)
     defaults = cfg.get("defaults") or {}
-    schema_dir = os.path.normpath(os.path.join(HERE, defaults.get("schema_dir", "../schemas")))
-    fixture_dir = os.path.normpath(os.path.join(HERE, defaults.get("fixture_dir", "fixtures")))
+    # Relative to the SCENARIOS FILE, not to this script. The two were the same only while the
+    # runner lived at `.agents/evals/` — vendored, it sits at `.agents/vendor/<bundle>-<v>/evals/`,
+    # so `../schemas` resolved to the bundle's BASE schemas and `fixtures` to a directory the
+    # vendored tree does not have. Every case then failed to resolve, in every consumer, with the
+    # documented defaults. The same trap the dispatcher and repo_root() above were written for.
+    base = os.path.dirname(scenarios)
+    schema_dir = within_repo(os.path.join(base, defaults.get("schema_dir", "../schemas")),
+                             "defaults.schema_dir")
+    fixture_dir = within_repo(os.path.join(base, defaults.get("fixture_dir", "fixtures")),
+                              "defaults.fixture_dir")
 
     cases = cfg.get("cases") or []
     if a.case:
@@ -197,9 +243,26 @@ def main() -> int:
 
     results, failed = [], 0
     for case in cases:
-        schema_path = os.path.join(schema_dir, (case.get("expect") or {}).get("schema", ""))
-        prompt = build_prompt(case, fixture_dir)
         entry = {"id": case["id"], "agent": case.get("agent"), "tags": case.get("tags") or []}
+        named = (case.get("expect") or {}).get("schema")
+        if not named:
+            # Joining "" onto the schema directory resolves to the DIRECTORY, which exists, so the
+            # case was reported `ok` while naming no schema at all — the same "resolves to
+            # something rather than to the right thing" this runner's guards were written for.
+            entry |= {"status": "error", "failures": ["case names no expect.schema"]}
+            results.append(entry); failed += 1
+            print(f"ERROR {case['id']}: no expect.schema"); continue
+        schema_path = within_repo(os.path.join(schema_dir, named),
+                                  f"case '{case['id']}' expect.schema")
+
+        # F5: a missing fixture is recorded like a missing schema. It used to raise out of
+        # build_prompt and abort the whole run, so one typo in one case hid every later result.
+        try:
+            prompt = build_prompt(case, fixture_dir)
+        except OSError as exc:
+            entry |= {"status": "error", "failures": [f"fixture not readable: {exc}"]}
+            results.append(entry); failed += 1
+            print(f"ERROR {case['id']}: fixture not readable"); continue
 
         if not os.path.exists(schema_path):
             entry |= {"status": "error", "failures": [f"schema not found: {schema_path}"]}
@@ -235,11 +298,11 @@ def main() -> int:
 
     report = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
               "runtime": runtime, "total": len(results), "failed": failed, "cases": results}
-    os.makedirs(os.path.dirname(a.report), exist_ok=True)
-    with open(a.report, "w", encoding="utf-8") as fh:
+    os.makedirs(os.path.dirname(report_path), exist_ok=True)
+    with open(report_path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
         fh.write("\n")
-    print(f"\n{len(results) - failed}/{len(results)} passed — report: {os.path.relpath(a.report, REPO)}")
+    print(f"\n{len(results) - failed}/{len(results)} passed — report: {os.path.relpath(report_path, REPO)}")
     return min(failed, 125)
 
 

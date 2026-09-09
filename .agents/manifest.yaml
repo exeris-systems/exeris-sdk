@@ -14,9 +14,9 @@ repository: exeris-sdk
 # means re-vendoring, not editing in place.
 imports:
   - bundle: exeris-agents
-    version: 1.1.0
-    ref: a060b179258489162d6a63d375677c48e584ce15
-    sha256: sha256:b9591e34b3a2409e408891d4ea437a10e869cc614aa9e85dcd4023a8cf8d6ab1
+    version: 1.2.0
+    ref: b55bb8ad734f7a7b678216302ee9c4f34d213aad
+    sha256: sha256:fe1b6c92599d6f2c83f94f385329be3493f46c78a2208072166320d8f748848d
 
 agents:
   - exeris-sdk-router
