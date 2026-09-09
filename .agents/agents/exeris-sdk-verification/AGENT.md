@@ -5,6 +5,7 @@ role: specialist
 mode: edit
 capabilities: [read, search, edit, shell]
 model: inherit
+policies: [ast-wire-format, ui-kit, bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
 ---
 
 # Exeris SDK Verification

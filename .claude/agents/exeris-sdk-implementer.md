@@ -70,3 +70,18 @@ or `None`
 
 ### Escalation Needed
 `<None | exeris-sdk-architect | exeris-sdk-verification | exeris-sdk-docs-adr>`
+
+<!-- BEGIN GENERATED: composition (agents-md-schema.md rule 5) -->
+
+## Applies
+
+Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
+
+- `.agents/policies/zero-runtime-coupling.md`
+- `.agents/policies/ast-wire-format.md`
+- `.agents/policies/jdk-baseline.md`
+- `.agents/policies/ui-kit.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/agent-safety-and-autonomy.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/error-handling-and-fallback.md`
+
+<!-- END GENERATED -->

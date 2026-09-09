@@ -76,3 +76,19 @@ or `None`
 - Do not micro-review Java style.
 - Do not collapse the deferred Field/Validation overlap (it waits on budgetHQ usage signal).
 - Do not import from downstream repos (`exeris-tooling`, `exeris-platform`) under any circumstance.
+
+<!-- BEGIN GENERATED: composition (agents-md-schema.md rule 5) -->
+
+## Applies
+
+Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
+
+- `.agents/policies/zero-runtime-coupling.md`
+- `.agents/policies/ast-wire-format.md`
+- `.agents/policies/field-validation-scoping.md`
+- `.agents/policies/stability-and-deprecation.md`
+- `.agents/policies/jdk-baseline.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/agent-safety-and-autonomy.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/error-handling-and-fallback.md`
+
+<!-- END GENERATED -->

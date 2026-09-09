@@ -5,6 +5,7 @@ role: specialist
 mode: edit
 capabilities: [read, search, edit, web]
 model: inherit
+policies: [javadoc-and-contract-emitters, stability-and-deprecation, field-validation-scoping, bundle:agent-safety-and-autonomy, bundle:error-handling-and-fallback]
 ---
 
 # Exeris SDK Docs/ADR

@@ -74,3 +74,17 @@ or `None`
 
 ### Merge Recommendation
 `<Docs can follow | Docs required before merge | Deprecation window must pass before removal>`
+
+<!-- BEGIN GENERATED: composition (agents-md-schema.md rule 5) -->
+
+## Applies
+
+Read the ones your change touches. Each is authoritative for its own list; do not work from a remembered subset.
+
+- `.agents/policies/javadoc-and-contract-emitters.md`
+- `.agents/policies/stability-and-deprecation.md`
+- `.agents/policies/field-validation-scoping.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/agent-safety-and-autonomy.md`
+- `.agents/vendor/exeris-agents-1.1.0/policies/error-handling-and-fallback.md`
+
+<!-- END GENERATED -->
