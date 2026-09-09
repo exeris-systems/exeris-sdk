@@ -74,10 +74,12 @@ hooks: null
 # deterministically. They run on demand and on a schedule, never on a pull request.
 evals: evals/scenarios.yaml
 
-# Rule 13. `verdict` narrows the bundle's base schema to this repository's reviewing roles and its
-# surfaces; `exeris-sdk-architect` names it in `output` and the CI review posts it. There is no
-# `triage-result` or `handoff` schema because no agent hands either to another one here — the five
-# profiles hand off in prose, and a schema with no emitter is a file that drifts.
+# Rule 13. `verdict` narrows the bundle's base to this repository's reviewing role and its
+# surfaces; `triage-result` narrows it to the classes `exeris-sdk-task-classifier` already
+# publishes as its output contract. Each has exactly one emitter — `exeris-sdk-architect` and
+# `exeris-sdk-router`, both naming it in `output` — which is the rule a schema is added under
+# here: one with no emitter is a file that drifts. There is still no `handoff` schema, because
+# the five profiles hand off in prose.
 schemas:
   - verdict
   - triage-result

@@ -14,11 +14,20 @@ Classify incoming work before execution. Triage only — no implementation.
 - Skip for a single-file, already-scoped, one-line change.
 
 ## Output Contract
+
+The field names are [`.agents/schemas/triage-result.schema.json`](../../schemas/triage-result.schema.json)'s,
+because `exeris-sdk-router` emits that schema and this skill is how it decides what to put in it. A
+name that differs here is a name the router cannot use.
+
 1. `task_class` (`ANNOTATION_CONTRACT` | `AST_WIRE_FORMAT` | `UI_KIT` | `STABILITY_DEPRECATION` | `DOCS_ADR` | `PUBLISH_READINESS` | `BUILD_INVARIANTS` | `MULTI_DOMAIN`)
-2. `scope` (single-module | cross-module | npm-only | cross-repo downstream impact)
-3. `severity` (low | medium | high | critical)
-4. `primary_risk`
-5. `recommended_primary_agent`
+2. `primary_risk` — one sentence: what goes wrong if this is routed badly, not a restatement of the task
+3. `primary_agent` — the role that runs
+4. `validation_gates` — objects, not strings: no gate is named without the risk it retires
+5. `next_action` — the single best immediate move
+
+`secondary_handoffs` and `execution_plan` are optional and belong to the routing planner. Scope and
+severity are judgement this skill applies rather than fields it emits: they decide `task_class` and
+`primary_agent`, and a consumer that needs them reads the risk sentence.
 
 ## Classification Heuristics
 - `ANNOTATION_CONTRACT`: `@interface` add / change / remove in `exeris-sdk-annotations`; `AnnotationContractTest` impact.
