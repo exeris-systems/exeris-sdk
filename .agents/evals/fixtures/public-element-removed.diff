@@ -1,0 +1,14 @@
+--- a/exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/Validation.java
++++ b/exeris-sdk-annotations/src/main/java/eu/exeris/sdk/annotation/Validation.java
+@@
+-    /**
+-     * Whether the field is required (cannot be null or empty).
+-     *
+-     * @return true if field is required
+-     * @deprecated Use {@link Field#required()} instead.
+-     */
+-    @Deprecated(since = "0.2.0", forRemoval = true)
+-    boolean required() default false;
+-
+     /** Minimum numeric value accepted. */
+     int min() default Integer.MIN_VALUE;

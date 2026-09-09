@@ -62,17 +62,17 @@ references:
   - downstream-consumers
   - maven-central-distribution
 
-# Not adopted, each for a reason rather than by omission:
+# Not adopted, and for a reason rather than by omission:
 #
 #   hooks   (rule 12) — L0 exists to stop an irreversible action or hold a session open until a
 #           consequence is discharged. This repository's irreversible act is a Maven Central
 #           deploy, which no interactive session performs: it runs in release.yml behind an
 #           environment. A hook here would guard nothing that happens here.
-#   evals   (rule 14) — owed, and the one gap worth naming as a gap: this repository ships five
-#           profiles, so rule 14 applies. The scenarios have to be written against real routing
-#           decisions rather than invented, and that is a change of its own.
 hooks: null
-evals: null
+
+# Rule 14. Ten cases over the two roles that emit a machine-readable decision, graded
+# deterministically. They run on demand and on a schedule, never on a pull request.
+evals: evals/scenarios.yaml
 
 # Rule 13. `verdict` narrows the bundle's base schema to this repository's reviewing roles and its
 # surfaces; `exeris-sdk-architect` names it in `output` and the CI review posts it. There is no
@@ -80,6 +80,7 @@ evals: null
 # profiles hand off in prose, and a schema with no emitter is a file that drifts.
 schemas:
   - verdict
+  - triage-result
 
 nested: []
 

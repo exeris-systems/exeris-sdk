@@ -1,0 +1,165 @@
+# Behaviour tests for this repository's roles — agents-md-schema.md rule 14.
+#
+# Runtime-independent on purpose: a case names a fixture, a prompt, the schema the answer must
+# conform to, and assertions over its fields. `run.py` drives whichever CLI is available; nothing
+# here mentions one.
+#
+# Graders are deterministic — equality, membership, counts. Every case here is written that way,
+# which is the rubric's own instruction: a case that can be an assertion must be one, because a
+# judged run costs a model call and returns a number nobody can reproduce.
+#
+# What these cover is chosen by blast radius rather than by surface area. This repository ships
+# `@Retention(SOURCE)` annotations and a canonical AST that `exeris-tooling` and
+# `exeris-platform` compile against, so its characteristic failure is a contract that breaks
+# somebody else's build while everything here stays green. Each fixture is one of those, written
+# as a plausible proposal rather than as an obvious violation — a case a reviewer would have to
+# think about is the only kind that tests anything.
+#
+# Run:
+#   python3 .agents/vendor/exeris-agents-1.3.0/evals/run.py --dry-run     # resolve, invoke nothing
+#   python3 .agents/vendor/exeris-agents-1.3.0/evals/run.py --tags wire-format
+#
+# On demand and on a schedule, never on every pull request. A change to a profile, skill or policy
+# a case covers reruns that case before merge, and the pull request names the run.
+version: 1
+
+defaults:
+  schema_dir: ../schemas
+  fixture_dir: fixtures
+
+cases:
+  # ── triage ────────────────────────────────────────────────────────────────────────────────
+  # The router's own output contract, made checkable. `task_class` is not invented here: it is the
+  # enum the task-classifier skill already publishes, and these cases are what keeps the skill and
+  # the schema from drifting apart.
+  - id: triage-ast-record-is-wire-format
+    agent: exeris-sdk-router
+    fixture: ast-record-as-class.java
+    prompt: "Triage this proposed change."
+    expect:
+      schema: triage-result.schema.json
+      fields:
+        task_class: AST_WIRE_FORMAT
+        primary_agent: exeris-sdk-architect
+    tags: [triage, wire-format]
+
+  - id: triage-annotation-is-contract
+    agent: exeris-sdk-router
+    fixture: annotation-runtime-retention.java
+    prompt: "Triage this proposed change."
+    expect:
+      schema: triage-result.schema.json
+      fields:
+        task_class: ANNOTATION_CONTRACT
+        primary_agent: exeris-sdk-architect
+    tags: [triage, annotations]
+
+  - id: triage-public-removal-is-stability
+    agent: exeris-sdk-router
+    fixture: public-element-removed.diff
+    prompt: "Triage this proposed change."
+    expect:
+      schema: triage-result.schema.json
+      fields:
+        task_class: STABILITY_DEPRECATION
+    tags: [triage, stability]
+
+  # ── the contract invariants ───────────────────────────────────────────────────────────────
+  # Each of these is a rule whose violation compiles, passes every test here, and fails in a
+  # consumer's build. That is what makes them worth a fixture rather than a unit test.
+  - id: wire-format-ast-type-must-be-a-record
+    agent: exeris-sdk-architect
+    fixture: ast-record-as-class.java
+    prompt: "Review this proposed addition to the AST."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+        scope_class: ast-wire-format
+      min_findings: 1
+      contains: ["record"]
+    tags: [architect, wire-format]
+
+  - id: zero-coupling-annotation-retention-and-dependency
+    agent: exeris-sdk-architect
+    fixture: annotation-runtime-retention.java
+    prompt: "Review this proposed annotation."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+        scope_class: annotation-surface
+      min_findings: 2
+      contains: ["SOURCE"]
+    tags: [architect, zero-coupling]
+
+  - id: scoping-constraint-must-not-return-to-field
+    agent: exeris-sdk-architect
+    fixture: field-constraint-attribute.java
+    prompt: "Review this proposed attribute."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+        scope_class: annotation-surface
+      min_findings: 1
+      contains: ["Validation"]
+    tags: [architect, field-validation]
+
+  # The one whose failure mode is a security regression rather than a broken build. `roles = {}`
+  # reads as "public" to an author and means "authenticated-only" to the generator, so a reviewer
+  # that treats it as a style point has approved an open endpoint.
+  - id: route-access-empty-roles-is-not-public
+    agent: exeris-sdk-architect
+    fixture: route-access-empty-roles.java
+    prompt: "Review this proposed action."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+      min_findings: 1
+      contains: ["RouteAccess"]
+    tags: [architect, route-access, security]
+
+  - id: stability-removal-needs-the-pipeline
+    agent: exeris-sdk-architect
+    fixture: public-element-removed.diff
+    prompt: "Review this proposed removal."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+      min_findings: 1
+      contains: ["MIGRATION"]
+    tags: [architect, stability]
+
+  # ── the two cases that test the reviewer rather than the rules ─────────────────────────────
+  # A defect that violates no written clause. The verdict schema's `findings[].why` takes a
+  # `<file>#<rule>` coordinate, so before `sdk-pr-review.md` grew its Correctness step this could
+  # only be reported as a suggestion — and suggestions do not block. This case fails if that
+  # regression ever comes back.
+  - id: correctness-plain-bug-still-blocks
+    agent: exeris-sdk-architect
+    fixture: plain-defect-no-clause.java
+    prompt: "Review this proposed change."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: BLOCKED
+      min_findings: 1
+      contains: ["sdk-pr-review.md#correctness"]
+    tags: [architect, correctness]
+
+  # The opposite failure, and the more common one: inventing a finding because a review that
+  # returns nothing feels like a review that did not happen.
+  - id: docs-typo-passes-without-invention
+    agent: exeris-sdk-architect
+    fixture: docs-typo.diff
+    prompt: "Review this proposed change."
+    expect:
+      schema: verdict.schema.json
+      fields:
+        decision: PASS
+        scope_class: docs-only
+      forbidden: ["BLOCKED", "CONDITIONAL"]
+    tags: [architect, scope-discipline]
