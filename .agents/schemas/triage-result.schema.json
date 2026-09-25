@@ -3,7 +3,9 @@
   "title": "Triage result (exeris-sdk)",
   "description": "The bundle's shape, narrowed to this repository's classes and roles. The vocabulary is not invented here: `task_class` is the enum `.agents/skills/exeris-sdk-task-classifier/SKILL.md` already publishes as its output contract, and this file is where that contract becomes checkable.",
   "allOf": [
-    { "$ref": "../vendor/exeris-agents-1.4.0/schemas/triage-result.base.schema.json" },
+    {
+      "$ref": "../vendor/exeris-agents-2.1.0/schemas/triage-result.base.schema.json"
+    },
     {
       "properties": {
         "task_class": {
@@ -26,8 +28,21 @@
             "exeris-sdk-verification",
             "exeris-sdk-docs-adr"
           ]
+        },
+        "validation_gates": {
+          "items": {
+            "$ref": "../vendor/exeris-agents-2.1.0/schemas/triage-result.base.schema.json#/properties/validation_gates/items",
+            "unevaluatedProperties": false
+          }
+        },
+        "secondary_handoffs": {
+          "items": {
+            "$ref": "../vendor/exeris-agents-2.1.0/schemas/triage-result.base.schema.json#/properties/secondary_handoffs/items",
+            "unevaluatedProperties": false
+          }
         }
       }
     }
-  ]
+  ],
+  "unevaluatedProperties": false
 }
