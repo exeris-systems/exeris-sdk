@@ -1,6 +1,6 @@
 ---
 name: sdk-pr-review
-description: Full pull-request review for exeris-sdk — scope, the contract invariants, public-API stability, test reach, publish readiness, ending in a verdict. This is the routine the CI review action runs; run it locally before opening a pull request to get the same answer earlier.
+description: Full pull-request review for exeris-sdk — scope, the contract invariants, public-API stability, test reach, publish readiness, ending in a verdict. Run it locally before opening a pull request. CI reviews with the organisation's shared routine and `docs/repo-review-rules.md`, which holds CI's review to the same policies.
 disable-model-invocation: true
 ---
 
