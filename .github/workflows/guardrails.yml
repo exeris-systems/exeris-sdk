@@ -16,7 +16,10 @@ on:
     types: [opened, edited, synchronize, ready_for_review, labeled, unlabeled]
 concurrency:
   group: guardrails-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # Not `true`. Publication removes the review label, and that removal is an `unlabeled` event whose
+  # run would cancel the run still publishing. Bot-triggered runs queue instead of cancelling; human
+  # pushes still collapse.
+  cancel-in-progress: ${{ !endsWith(github.actor, '[bot]') }}
 # A called workflow can only NARROW what the caller grants, never raise it, so this block is the
 # union of what every called workflow declares — not a wish list and not a minimum. Omitting a
 # permission one of them declares does not run that job with less; it makes the whole file an
@@ -87,16 +90,49 @@ jobs:
     uses: exeris-systems/.github/.github/workflows/commit-lint.yml@main
   pr-body:
     uses: exeris-systems/.github/.github/workflows/pr-body-check.yml@main
-  # The L2 review of ADR-085 §J.33, and not the same thing as claude-code-review.yml: that
-  # workflow reviews the change, this one checks the change against the documentation standards.
-  # Skips itself when no Markdown or Java changed.
+  # The review of ADR-085 §J.33, published under the organisation's identity by ADR-087 §B: one
+  # routine, one verdict, one publisher. The shared routine judges the pull request, its pages, its
+  # records, the comments in its code and what the code does; this repository's own rules reach it
+  # as `repo-routine`.
+  #
+  # `needs` puts it after the gates it complements and `l1-results` hands it their conclusions:
+  # the reviewer's harness denies the network, so a gate it is asked to read for itself lands in the
+  # verdict as `not-run`. `always()`, because a review that vanishes from the checks when its gates
+  # go red is the failure this arrangement exists to prevent. A bot's event runs the job too: the
+  # publishing half answers it from the standing verdict, and the model does not start on one.
+  #
+  # THE REVIEW RUNS ON READINESS, not on every push: when the pull request is opened, reopened,
+  # marked ready for review, or labelled `needs-review` by a person. A push afterwards leaves the
+  # standing verdict covering an older commit, and the check says so until a review is asked for
+  # again.
   docs-review:
+    needs: [docs, commits, pr-body]
+    if: ${{ always() }}
     uses: exeris-systems/.github/.github/workflows/docs-review.yml@main
+    with:
+      # `docs-review / publish / verdict` is the check this adds, red when the verdict is BLOCKED,
+      # absent, invalid, or resting on a mandatory gate that did not run. It is not a required
+      # context here; making it one is a branch-protection change, not a change to this file.
+      publish: true
+      l1-results: >-
+        {"docs-lint": "${{ needs.docs.result }}",
+         "commit-lint": "${{ needs.commits.result }}",
+         "pr-body-check": "${{ needs.pr-body.result }}"}
+      # This repository's own rules, applied after the shared routine's parts and under its
+      # severity tags and verdict schema. Read at the BASE commit, never at the pull request's ref:
+      # a pull request does not write the rules it is judged by.
+      repo-routine: docs/repo-review-rules.md
+      # One model run per part, composed into one verdict and one comment. `pr` and `repo` run on
+      # every pull request; `docs`, `records`, `code-docs` and `code` where the diff has their
+      # files. A part that leaves no verdict makes the check red.
+      review-in-parts: true
     # Named, not `secrets: inherit`. This repository publishes to Maven Central as of 0.12.0, so
-    # its secret set now includes a GPG signing key and a Central portal token; `inherit` would
-    # hand all of them to a job that needs exactly one.
+    # its secret set includes a GPG signing key and a Central portal token; `inherit` would hand all
+    # of them to a job that needs three.
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      exeris_bot_app_id: ${{ secrets.EXERIS_BOT_APP_ID }}
+      exeris_bot_private_key: ${{ secrets.EXERIS_BOT_PRIVATE_KEY }}
   # ADR-085 §F.21. Two halves, and both have to be green before 0.12.0 ships, because a Javadoc
   # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
   #
