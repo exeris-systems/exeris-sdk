@@ -8,6 +8,7 @@ import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1488,6 +1489,64 @@ class SourceModelIoTest {
                     assertThat(step.order()).isEqualTo(1);       // default order
                 });
             });
+        }
+
+        /**
+         * Kernel ADR-064 addresses a saga plan by {@code (name, version)}. The processor
+         * has read {@code @Saga.version} since exeris-tooling 0.8.0; this reader did not, so
+         * {@code version = 3} came back as {@code 1} — a different plan identity from the one in
+         * the processor's baseline, with both sides emitting well-formed metadata.
+         */
+        @Test
+        void sagaVersionIsReadAsDeclaredAndDefaultsToOne() {
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 3)").version()).isEqualTo(3);
+            // Absent: the annotation default, which is also the builder default — the
+            // processor is present-only on the same builder, so both paths say 1.
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\")").version()).isEqualTo(1);
+            assertThat(sagaOf("@Saga").version()).isEqualTo(1);
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 1)").version()).isEqualTo(1);
+            // The other attributes are untouched by the version read.
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 2, maxRetries = 5)"))
+                    .satisfies(s -> {
+                        assertThat(s.name()).isEqualTo("Fulfilment");
+                        assertThat(s.version()).isEqualTo(2);
+                        assertThat(s.maxRetries()).isEqualTo(5);
+                    });
+        }
+
+        @Test
+        void sagaVersionIsCarriedAsWrittenEvenWhereTheKernelRefusesIt() {
+            // javac folds these into the processor's value unchanged, and the kernel refuses a
+            // version below 1 at FlowDefinitionBuilder.version(int). Repairing them to 1 here
+            // would disagree with the processor AND hide the refusal the author needs to see.
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = -2)").version()).isEqualTo(-2);
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 0)").version()).isZero();
+            // The one literal whose magnitude is not an int by itself: JavaParser hands it back
+            // as a Long, and it must still land on the value javac folds it to.
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = -2147483648)").version())
+                    .isEqualTo(Integer.MIN_VALUE);
+        }
+
+        @Test
+        void sagaVersionFromAConstantIsNotResolved() {
+            // The documented structural difference, pinned so that closing it is a deliberate
+            // change: the processor sees javac's folded constant, a syntactic reader sees a name
+            // or an expression and keeps the default.
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = Versions.CURRENT)").version())
+                    .isEqualTo(1);
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 1 + 2)").version()).isEqualTo(1);
+        }
+
+        private SagaMetadata sagaOf(String sagaAnnotation) {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    @ExerisDomain
+                    %s
+                    public class Fulfilment {}
+                    """.formatted(sagaAnnotation);
+            return reader.read(src).orElseThrow().sagaMetadata();
         }
 
         @Test

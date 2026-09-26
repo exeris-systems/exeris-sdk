@@ -111,8 +111,14 @@ import java.util.TreeSet;
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
  * resolution — activating JavaParser symbol-solving would pull heavy optional
- * deps and is out of scope. Instances are <b>not thread-safe</b> (they hold a
- * single {@code JavaParser}); use one per call-site or guard externally.
+ * deps and is out of scope. For the same reason attribute values are read
+ * syntactically: a string or number attribute is read from its literal, so a value
+ * supplied through a constant reference or a constant expression — which the
+ * processor receives already folded by javac — is not resolved here. For
+ * {@code @Saga.version} that means a constant-valued version reads as the default
+ * {@code 1}, a different kernel plan identity than the one the processor records, so
+ * declare it as a literal. Instances are <b>not thread-safe</b> (they hold a single
+ * {@code JavaParser}); use one per call-site or guard externally.
  *
  * @since 0.3
  */
@@ -750,8 +756,23 @@ public final class SourceModelReader {
     /**
      * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
      * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
-     * simple name; {@code description}/{@code timeout}/{@code maxRetries} are
-     * present-only; steps come from {@code @SagaStep} methods.
+     * simple name; {@code description}/{@code timeout}/{@code maxRetries}/{@code version}
+     * are present-only; steps come from {@code @SagaStep} methods.
+     *
+     * <p>{@code version} is the other half of the {@code (name, version)} key kernel
+     * ADR-064 addresses a saga plan by. The processor has read it since
+     * {@code exeris-tooling} 0.8.0 and this reader did not, so {@code version = 3} read
+     * back as {@code 1} here while the processor's baseline said {@code 3} — an ADR-042
+     * parity break with no diagnostic on either side. Absent, it keeps the builder
+     * default {@code 1}, which is also the annotation default, exactly as the processor
+     * does. It is read <em>signed</em>, unlike the count-style
+     * attributes: {@code 0} or a negative literal is carried as written, because javac
+     * folds it into the processor's value just the same, and the kernel refuses a version
+     * below {@code 1} at {@code FlowDefinitionBuilder.version(int)} — a refusal that
+     * repairing the value to {@code 1} here would hide. One difference remains and is
+     * structural: a constant reference or expression ({@code version = Versions.CURRENT})
+     * is resolved by javac on the processor path and is not a literal to this reader, so it
+     * reads as absent (see the class-level limitations).
      */
     private SagaMetadata sagaMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> saga = type.getAnnotationByName("Saga");
@@ -763,6 +784,7 @@ public final class SourceModelReader {
         stringAttr(saga.get(), "description").ifPresent(builder::description);
         stringAttr(saga.get(), "timeout").ifPresent(builder::timeout);
         intAttr(saga.get(), "maxRetries").ifPresent(builder::maxRetries);
+        signedIntAttr(saga.get(), "version").ifPresent(builder::version);
         builder.steps(sagaSteps(type));
         return builder.build();
     }
@@ -822,6 +844,17 @@ public final class SourceModelReader {
         return value(annotation, attribute)
                 .filter(Expression::isIntegerLiteralExpr)
                 .map(value -> value.asIntegerLiteralExpr().asNumber().intValue());
+    }
+
+    /**
+     * Present-only signed int attribute: an integer literal, optionally negated. For
+     * an attribute where a sign is not meaningless and dropping it would change what
+     * the source says ({@code @Saga.version}); see {@link #sagaMetadata}. Read through
+     * {@link #longAttr} and narrowed, which is how javac folds a negated {@code int}
+     * constant — so {@code -2147483648} is {@link Integer#MIN_VALUE} on both paths.
+     */
+    private Optional<Integer> signedIntAttr(AnnotationExpr annotation, String attribute) {
+        return longAttr(annotation, attribute).map(Long::intValue);
     }
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {
