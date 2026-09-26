@@ -14,9 +14,26 @@ last-verified: 2026-09-07
 > see [`ROADMAP.md`](ROADMAP.md) "Versioning policy"). This document collects,
 > ahead of time, everything a 0.x consumer must do to cross the freeze. It is
 > to be **validated against the consumers that cross the freeze** — the
-> `exeris-tooling` processor and codegen, and `exeris-platform-lsp` (ROADMAP
-> 1.0.0 GA item) — and finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
+> `exeris-tooling` processor and codegen, `exeris-platform-lsp`, and, for the
+> author-facing parts only, Stellar Tactics (ROADMAP 1.0.0 GA item) — and
+> finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
 > in [`MIGRATION.md`](MIGRATION.md).
+>
+> **Stellar Tactics validates the author side** (founder decision, 2026-09-26):
+> §1/§2 as they apply to annotated sources, and what §3 promises an author. It
+> is the one consumer that authors `@ExerisDomain` at scale — 36 classes across
+> two generated services — and where the SDK, `exeris-tooling` and the kernel
+> meet, which is how it found Stellar finding S6. It validates through tooling,
+> not through the Java API, so it does not replace the two consumers above.
+> "Validated" means, on the SDK 1.0.0-RC plus an `exeris-tooling` build and a
+> kernel build on that RC:
+> 1. `./build.sh` is green, with zero platform patches;
+> 2. the hand-written source diff contains only what this guide lists;
+> 3. every hunk in the generated trees is traced to this guide or to
+>    `exeris-tooling`'s changelog;
+> 4. any change in `-Aexeris.strict` warnings is explained;
+> 5. the pass is recorded as a dated entry in the Stellar findings log and a
+>    line in §5 of this guide.
 
 ---
 
@@ -446,5 +463,7 @@ freeze or is explicitly re-dispositioned here.
   `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
   `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
   go with the last two).
-- Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`).
+- Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`),
+  and one dated line for the Stellar Tactics author-side pass, recorded to the
+  definition in the status note at the top.
 - npm `@exeris/ui-kit` public-registry publish notes (GA item).

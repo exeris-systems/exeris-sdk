@@ -857,7 +857,7 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("a record with a compatibility constructor still binds through its canonical one (S6)")
+    @DisplayName("a record with a compatibility constructor still binds through its canonical one (Stellar finding S6)")
     void compatibilityConstructorsDoNotCaptureTheCreator() {
         // These three records keep their 0.11.0 arity as a second public constructor
         // (MIGRATION-0.x-to-1.0.md §3, Stellar finding S6). A mapper that bound through the

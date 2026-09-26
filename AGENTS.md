@@ -70,7 +70,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
 3. Package-info files for scoping rationale: `annotations/.../package-info.java`
    and `source-model/.../package-info.java`.
 4. Downstream references: `exeris-tooling/exeris-processor/`, `exeris-platform/exeris-platform-lsp/`,
-   `budgetHQ/backend/` ([reference](.agents/references/downstream-consumers.md)).
+   `Stellar-Tactics/` ([reference](.agents/references/downstream-consumers.md)).
 
 ## `.agents/` — the canonical semantic source
 
@@ -91,8 +91,7 @@ A narrower file may restrict behaviour; it may never relax a higher-order rule.
 
 ## Verification and reporting
 
-- `mvn clean install` runs the full reactor and JaCoCo 0.85 BUNDLE instruction + line gate on `source-model`
-  ([reference](.agents/references/build-and-testing.md)).
+- `mvn clean install` runs the full reactor and JaCoCo 0.85 BUNDLE instruction + line gate on `source-model`.
 - `AnnotationContractTest` verifies `@Retention(SOURCE)` and `@Target` across all annotations.
 - `AstJsonRoundTripTest` and `MutationWireFormatTest` enforce Jackson 3 serialization.
 - `ClassFileBaselineTest` enforces class-file major ≤ 69 (JDK 25 LTS).
