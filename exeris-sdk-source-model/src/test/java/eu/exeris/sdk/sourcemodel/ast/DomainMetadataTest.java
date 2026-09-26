@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,15 +37,16 @@ class DomainMetadataTest {
         }
 
         @Test
-        void effectiveTableNameDerivesSnakeCaseWhenBlank() {
-            // Empty string is the Builder default for tableName.
-            assertThat(base().build().effectiveTableName()).isEqualTo("order");
+        void effectiveTableNameDerivesTheSnakeCasedPluralWhenBlank() {
+            // Empty string is the Builder default for tableName. Until 0.12.0 this returned the
+            // singular "order", a table no generator ever emitted.
+            assertThat(base().build().effectiveTableName()).isEqualTo("orders");
         }
 
         @Test
         void effectiveTableNameSnakeCasesCamelEntityName() {
             assertThat(DomainMetadata.builder("OrderLineItem", "p").build().effectiveTableName())
-                    .isEqualTo("order_line_item");
+                    .isEqualTo("order_line_items");
         }
 
         @Test
@@ -106,6 +108,98 @@ class DomainMetadataTest {
         void singleLetterYDoesNotTriggerIesRule() {
             // Branch coverage: length-1 guards the substring math from blowing up.
             assertThat(DomainMetadata.builder("Y", "p").build().pluralName()).isEqualTo("Ys");
+        }
+    }
+
+    @Nested
+    @DisplayName("the derived route and table take the English plural (T6)")
+    class PluralNaming {
+
+        private DomainMetadata entity(String name) {
+            return DomainMetadata.builder(name, "p").build();
+        }
+
+        @Test
+        void consonantYBecomesIesInTheTableAndTheRoute() {
+            // The names Stellar Tactics shipped as colonys / technologys / reassemblys.
+            assertThat(entity("Colony").effectiveTableName()).isEqualTo("colonies");
+            assertThat(entity("Colony").effectivePath()).isEqualTo("/colonies");
+            assertThat(entity("Technology").effectiveTableName()).isEqualTo("technologies");
+            assertThat(entity("Reassembly").effectiveTableName()).isEqualTo("reassemblies");
+            assertThat(entity("SupplyDepot").effectiveTableName()).isEqualTo("supply_depots");
+            assertThat(entity("DiplomaticPolicy").effectivePath()).isEqualTo("/diplomatic-policies");
+        }
+
+        @Test
+        void sibilantEndingsTakeEs() {
+            assertThat(entity("Box").effectiveTableName()).isEqualTo("boxes");
+            assertThat(entity("Status").effectiveTableName()).isEqualTo("statuses");
+            assertThat(entity("Status").effectivePath()).isEqualTo("/statuses");
+            assertThat(entity("Branch").effectiveTableName()).isEqualTo("branches");
+            assertThat(entity("FleetDispatch").effectiveTableName()).isEqualTo("fleet_dispatches");
+        }
+
+        @Test
+        void aVowelBeforeYTakesAPlainS() {
+            assertThat(entity("Survey").effectiveTableName()).isEqualTo("surveys");
+            assertThat(entity("Survey").effectivePath()).isEqualTo("/surveys");
+        }
+
+        @Test
+        void wherePlainSIsRightNothingMovesFromTheOldToolingDefault() {
+            // exeris-tooling has named tables snake_case(entityName) + "s". The rule only differs
+            // where English does not add a bare s, so every regular name keeps its table.
+            for (String name : List.of("Order", "ConstructionOrder", "Fleet", "Engagement",
+                    "GalaxyPresence", "Planet", "HTTPRoute")) {
+                String naive = name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT) + "s";
+                assertThat(entity(name).effectiveTableName()).as(name).isEqualTo(naive);
+            }
+        }
+
+        @Test
+        void anIrregularNounGetsTheRegularEndingAndTheOverrideFixesIt() {
+            // Pinned, not endorsed: the rule knows endings, not words. The override is the remedy,
+            // and it wins over the derivation on both helpers.
+            DomainMetadata person = entity("Person");
+            assertThat(person.pluralName()).isEqualTo("Persons");
+            assertThat(person.effectiveTableName()).isEqualTo("persons");
+
+            DomainMetadata overridden = DomainMetadata.builder("Person", "p")
+                    .tableName("people").path("/people").build();
+            assertThat(overridden.effectiveTableName()).isEqualTo("people");
+            assertThat(overridden.effectivePath()).isEqualTo("/people");
+        }
+
+        @Test
+        void anAlreadyPluralNameIsNotRecognisedAndTheOverrideFixesIt() {
+            DomainMetadata settings = entity("Settings");
+            assertThat(settings.pluralName()).isEqualTo("Settingses");
+            assertThat(settings.effectiveTableName()).isEqualTo("settingses");
+            assertThat(DomainMetadata.builder("Settings", "p").tableName("settings").build()
+                    .effectiveTableName()).isEqualTo("settings");
+        }
+
+        @Test
+        void theDerivationDoesNotDependOnTheDefaultLocale() {
+            // Under a Turkish default, String.toLowerCase() maps I to a dotless i, which would put
+            // "ıtems" into a table name on one machine and "items" on another.
+            Locale saved = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+                assertThat(entity("Item").effectiveTableName()).isEqualTo("items");
+                assertThat(entity("InventoryItem").effectivePath()).isEqualTo("/inventory-items");
+            } finally {
+                Locale.setDefault(saved);
+            }
+        }
+
+        @Test
+        void anAbsentEntityNameDerivesNothingRatherThanThrowing() {
+            DomainMetadata unnamed = DomainMetadata.builder(null, "p").build();
+            assertThat(unnamed.pluralName()).isEmpty();
+            assertThat(unnamed.effectiveTableName()).isEmpty();
+            assertThat(unnamed.effectivePath()).isEqualTo("/");
+            assertThat(DomainMetadata.builder("", "p").build().pluralName()).isEmpty();
         }
     }
 

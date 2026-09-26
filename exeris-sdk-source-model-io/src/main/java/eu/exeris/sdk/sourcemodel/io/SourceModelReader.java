@@ -71,7 +71,8 @@ import java.util.TreeSet;
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
- * {@code dataScope} tier. Two of those are deprecated for removal at 1.0.0 and read
+ * {@code dataScope} tier, and so is {@code tableName} (0.12.0), which the reader
+ * reads ahead of the processor for the reason given at the read. Two of those are deprecated for removal at 1.0.0 and read
  * only until then: {@code tenantScoped} (ADR-059) and {@code apiVersion}
  * (Stellar finding T38). Domain {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
@@ -330,6 +331,15 @@ public final class SourceModelReader {
      * {@code validationMode}/{@code ui} attributes are not read here — the processor
      * doesn't read them either, so they constitute no reader-vs-processor divergence
      * and {@link #unmodeledFacets} does not flag them.
+     *
+     * <p>{@code tableName} (0.12.0) is the one read here that the processor does not make
+     * yet, and it is deliberate. The attribute and its carrier ship in this release so the
+     * table-naming fix (Stellar finding T6) can land in the tooling release paired with it,
+     * and a reader that waited would miss that release and diverge the other way, as the
+     * {@code @Saga.version} read did (K5). Until the processor extracts it, a source that
+     * sets it reads here with a table name the processor's baseline lacks. That cannot raise
+     * a mutation conflict — {@link SourceModelConflictDetector} compares fields, relationships
+     * and actions, not domain attributes — but a whole-record parity comparison would see it.
      */
     private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
         stringAttr(ann, "module").ifPresent(builder::module);
@@ -340,6 +350,7 @@ public final class SourceModelReader {
         stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
+        stringAttr(ann, "tableName").ifPresent(builder::tableName);
         boolAttr(ann, "restApi").ifPresent(builder::restApi);
         boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);

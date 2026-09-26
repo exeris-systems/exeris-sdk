@@ -186,6 +186,72 @@ declares nothing keeps its route.
 - **Processor:** `exeris-tooling` keeps reading it for the window, and its
   `-Aexeris.strict` inert-attribute check already reports it. The read goes at 1.0.0.
 
+### `effectivePath()` and `effectiveTableName()` take the English plural; `@ExerisDomain.tableName` is new
+
+**Why:** three naming helpers on `DomainMetadata` disagreed about the same entity.
+`pluralName()` applied English endings (`Colony` → `Colonies`). `effectivePath()`'s
+fallback appended a bare `s` (`/colonys`). `effectiveTableName()` returned the
+*singular* (`colony`), a table no generator has ever emitted: `exeris-tooling`
+computes its own `snake_case(name) + "s"` and says in its source that it avoids this
+method for that reason. What a helper returns freezes at 1.0.0, and changing it in a
+1.x minor would be a silent break that no signature check can see, so the three are
+aligned now. The naive plural reached real output: `colonys`, `technologys` and
+`reassemblys` as table names, and `colonys` as an Angular route (Stellar finding T6).
+
+**What changed** — both helpers now derive from `pluralName()`, whose rule is
+unchanged (`+es` after `s`, `x`, `z`, `ch`, `sh`; consonant + `y` → `ies`; otherwise
+`+s`), and both lower-case under `Locale.ROOT`, so a Turkish default locale no longer
+turns `Item` into `ıtem`:
+
+| Entity | `effectiveTableName()` 0.11 → 0.12 | `effectivePath()` fallback 0.11 → 0.12 |
+|---|---|---|
+| `Order` | `order` → `orders` | `/orders` (unchanged) |
+| `OrderLineItem` | `order_line_item` → `order_line_items` | `/order-line-items` (unchanged) |
+| `Colony` | `colony` → `colonies` | `/colonys` → `/colonies` |
+| `Status` | `status` → `statuses` | `/statuss` → `/statuses` |
+| `Box` | `box` → `boxes` | `/boxs` → `/boxes` |
+
+`effectiveTableName()` changed for every entity. `effectivePath()` changed only where
+English does not add a bare `s`, and only when `path` is blank, which metadata read
+from annotated source never is, since `@ExerisDomain.path` is required.
+
+**Who has to act:** code that calls either helper and relied on the old output. Set
+the value you relied on explicitly:
+
+```java
+// hand-built metadata that expected the old results
+DomainMetadata.builder("Colony", "com.acme.empire")
+        .tableName("colony")   // effectiveTableName() used to return this
+        .path("/colonys")      // effectivePath()'s old fallback
+        .build();
+```
+
+The rule does not know irregular or already-plural nouns (`Person` → `persons`,
+`Settings` → `settingses`); the explicit values are the remedy there too.
+
+**`@ExerisDomain.tableName`** (new, default `""` = derive) is the author's side of
+the same override, and until now there was none: `DomainMetadata.tableName` existed,
+and `exeris-tooling`'s table naming honoured it, but nothing could fill it. The `-io`
+reader reads it now. The `exeris-tooling` processor does not yet, so on the build path
+that generates code it has no effect until the processor release that extracts it.
+It is also how an existing table keeps its name once the default changes:
+
+```java
+// keeps the table exeris-tooling has created for Colony so far
+@ExerisDomain(module = "empire", path = "/colonies", tableName = "colonys")
+public class Colony { … }
+```
+
+**What follows in `exeris-tooling`, not in this release:** its own default table name
+and its Angular route segments switch from the bare `s` to this rule, and the
+processor warns once for each entity whose table name that changes, naming the
+`tableName` value that keeps the old one. On an existing database, an entity without
+that override gets a new table name and a new migration file name.
+
+The TCK has no case for `tableName`. Its only identity cases cover the class name and
+package, which come from the class and not from an attribute, and the parity suite
+that would catch a reader/processor disagreement is bound nowhere today.
+
 ### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
 
 **Recompile once against 0.12.0, then this stops being your problem.**

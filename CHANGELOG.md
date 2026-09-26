@@ -37,6 +37,19 @@ for per-version upgrade steps.
   consumer compiled against 0.11.0 carries the old literal in its own class file and will compare
   against it forever. Recompile once against 0.12.0. Invisible to japicmp, which compares signatures
   rather than the constant pool. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `effectivePath()` and `effectiveTableName()` take the English
+  plural.** Both now derive from `pluralName()`, whose rule is unchanged (`+es` after a sibilant,
+  consonant + `y` → `ies`, otherwise `+s`), and both lower-case under `Locale.ROOT`.
+  `effectiveTableName()` used to return the snake-cased *singular* (`order`), a table no generator
+  emits; it now returns `orders`, `colonies`, `boxes`. `effectivePath()`'s blank-path fallback used
+  to append a bare `s` (`/colonys`); it now agrees with the title and the table. The fallback is
+  unreachable from annotated source, where `path` is required. The three helpers freeze at 1.0.0,
+  and a later change would silently rename tables, so they are aligned before the freeze (Stellar
+  finding T6). A caller that relied on the old output sets `tableName` / `path` explicitly. The rule
+  knows endings, not words: `Person` → `persons`, `Settings` → `settingses`; the override is the
+  remedy. `exeris-tooling` still names its tables `snake_case(name) + "s"` and its Angular routes
+  with a bare `s`; switching both, with a warning per entity whose table would move, is its
+  change to make. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
 
@@ -48,6 +61,17 @@ for per-version upgrade steps.
   `exeris-tooling`'s processor (Stellar finding S6 — see Changed). `defaults()` now returns
   `builder().build()`. The processor, the only producer that fills this record with anything but
   the defaults, may switch to it; the kept 10-argument constructor means it does not have to.
+
+- **`@ExerisDomain.tableName` — the author can name the table.** Default `""`, which means derive
+  it (`DomainMetadata.effectiveTableName()`). `DomainMetadata.tableName` has existed for a long
+  time, and `exeris-tooling`'s table naming honours it for the repository's SQL, the `CREATE TABLE`
+  and the migration file name, but no annotation fed it, so the override branch was unreachable
+  and an irregular or pre-existing table could not be named at all (Stellar finding T6). The `-io`
+  reader reads it; the `exeris-tooling` processor does not yet, so it is PARTIAL until the
+  processor release that extracts it. It is also how an existing table keeps its name when
+  tooling's default moves from the bare `s` to the English plural. The reader reads it ahead of the
+  processor on purpose: the two ship in one release train, and a reader that waited would miss it
+  and diverge the other way, as `@Saga.version` did.
 
 - **`@Channel` — the SDK can state that an entity's clients also speak.** `@Target(TYPE)`, two
   optional attributes (`messageType()`, `subprotocol()`), carried by the new nullable

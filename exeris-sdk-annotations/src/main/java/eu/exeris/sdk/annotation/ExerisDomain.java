@@ -492,6 +492,42 @@ public @interface ExerisDomain {
     String searchConfig() default "english";
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // DATABASE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Physical table name for this entity, overriding the derived one.
+     *
+     * <p>Leave it empty to take the derived name, {@code DomainMetadata.effectiveTableName()}:
+     * the snake-cased English plural of the class name, by the same rule as
+     * {@code DomainMetadata.pluralName()} — {@code Order} → {@code orders},
+     * {@code ConstructionOrder} → {@code construction_orders}, {@code Colony} →
+     * {@code colonies}, {@code Box} → {@code boxes}. The rule knows the regular English
+     * endings and nothing else, so it is the override that covers an irregular noun
+     * ({@code Person} → {@code tableName = "people"}), a class name that is already plural,
+     * and a table that exists under a name no rule would produce.
+     *
+     * <p>It is also how a table keeps its name when the derivation changes.
+     * {@code exeris-tooling} has emitted every table as the snake-cased name plus
+     * {@code "s"} ({@code colonys}, {@code technologys}, {@code reassemblys}) and moves to
+     * the rule above in a later release of its own; setting this attribute to the old name
+     * keeps an existing database's table, and the Flyway migration that created it, where
+     * they are.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The {@code -io} reader reads it into
+     * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming already
+     * honours that component when it is set, for the repository's SQL, the
+     * {@code CREATE TABLE} and the migration file name alike. The {@code exeris-tooling}
+     * processor does not extract it yet, so on the build path that generates code it has
+     * no effect until the processor release that does. Check that release's notes before
+     * relying on it.
+     *
+     * @return the table name, or empty to derive it from the class name
+     * @since 0.12
+     */
+    String tableName() default "";
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // FIELD NAME OVERRIDES
     // Use these when not using @TenantId, @SoftDelete, etc. annotations
     // ═══════════════════════════════════════════════════════════════════════════

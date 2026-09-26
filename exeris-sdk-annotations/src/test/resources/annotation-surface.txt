@@ -246,6 +246,7 @@ eu.exeris.sdk.annotation.ExerisDomain#softDelete=boolean:default
 eu.exeris.sdk.annotation.ExerisDomain#softDeleteField=java.lang.String:default
 eu.exeris.sdk.annotation.ExerisDomain#softDeleteTimestampField=java.lang.String:default
 eu.exeris.sdk.annotation.ExerisDomain#softDeletedByField=java.lang.String:default
+eu.exeris.sdk.annotation.ExerisDomain#tableName=java.lang.String:default
 eu.exeris.sdk.annotation.ExerisDomain#tags=java.lang.String[]:default
 eu.exeris.sdk.annotation.ExerisDomain#tenantIdField=java.lang.String:default
 eu.exeris.sdk.annotation.ExerisDomain#tenantScoped=boolean:default

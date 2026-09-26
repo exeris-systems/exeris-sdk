@@ -512,6 +512,25 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   attribute in all but name. **Tooling:** keep reading it through the window — the
   `-Aexeris.strict` inert-attribute entry already reports it, and javac now warns on every use —
   and drop the read, the inert-registry entry and the TS model field at 1.0.0
+- [x] **Pluralization is fixed before 1.0 — SDK half (Stellar finding T6)** — the three naming
+  helpers on `DomainMetadata` disagreed: `pluralName()` applied English endings,
+  `effectivePath()`'s fallback appended a bare `s`, and `effectiveTableName()` returned the
+  snake-cased *singular*, which matched no emitted table. Both helpers now derive from
+  `pluralName()`'s unchanged rule, under `Locale.ROOT`; `effectiveTableName()` is `tableName` if
+  set, else the snake-cased plural. That was chosen over deprecating the method because every
+  table an Exeris generator emits is plural, and with this rule the method returns exactly
+  tooling's current name for every entity where English adds a bare `s`, so tooling can delegate
+  to it. `@ExerisDomain.tableName` (default `""`) is the author's override that
+  `DomainMetadata.tableName` had lacked; the `-io` reader reads it. No irregular-noun map: the rule
+  knows endings, the override covers the rest, and a map would be one more behaviour frozen at 1.0
+- [ ] **T6, tooling half (`exeris-tooling`, not SDK work)** — (1) the processor extracts
+  `@ExerisDomain.tableName` into `DomainMetadata.tableName`, in the tooling release paired with
+  SDK 0.12.0, since the `-io` reader already reads it; (2) `KernelTableNaming.effectiveTable`
+  delegates its default to `effectiveTableName()` instead of `snake_case(name) + "s"`, and the
+  processor warns once for each entity whose default table changes, naming the
+  `tableName = "<old>"` that keeps it; (3) `exeris-codegen-ts`'s `app-structure-gen.ts` takes
+  `pluralName()`'s rule for Angular route segments instead of `endsWith('s') ? name : name + 's'`.
+  Server routes are unaffected: `@ExerisDomain.path` is required
 - [ ] **`ApplyResult` and `CapManifest` still carry the old relaxation** — the two named
   records outside `source-model` (`-io`, `composition-spec`) keep `CONSTRUCTOR_REMOVED` as a
   MINOR change. Neither has grown since the override was written. Whether they move to the §3

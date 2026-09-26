@@ -127,6 +127,32 @@ class SourceModelIoTest {
         }
 
         @Test
+        void readsTheTableNameOverridePresentOnly() {
+            // @ExerisDomain.tableName (0.12.0, Stellar finding T6) is the author's override of the
+            // derived table. Read verbatim when declared; absent keeps the builder's "", so
+            // effectiveTableName() derives the snake-cased plural.
+            String declared = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(module = "empire", path = "/colonies", tableName = "colonys")
+                    public class Colony {}
+                    """;
+            String absent = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(module = "empire", path = "/colonies")
+                    public class Colony {}
+                    """;
+            DomainMetadata pinned = reader.read(declared).orElseThrow();
+            assertThat(pinned.tableName()).isEqualTo("colonys");
+            assertThat(pinned.effectiveTableName()).isEqualTo("colonys");
+
+            DomainMetadata derived = reader.read(absent).orElseThrow();
+            assertThat(derived.tableName()).isEmpty();
+            assertThat(derived.effectiveTableName()).isEqualTo("colonies");
+        }
+
+        @Test
         @SuppressWarnings("removal") // the deprecated carrier is what this test pins
         void readsTheDeprecatedApiVersionUntilItsRemoval() {
             // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38),

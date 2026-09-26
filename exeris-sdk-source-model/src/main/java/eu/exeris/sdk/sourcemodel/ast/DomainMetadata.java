@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Domain metadata extracted from {@code @ExerisDomain} annotation.
@@ -23,7 +24,8 @@ import java.util.List;
  * <p>Field names match {@code @ExerisDomain} annotation attributes.
  *
  * @param entityName the annotated class's simple name — the entity's identity throughout the
- *        generated tree, and what {@link #effectiveTableName()} falls back to
+ *        generated tree, and what {@link #pluralName()}, {@link #effectivePath()} and
+ *        {@link #effectiveTableName()} derive from
  *
  * @param packageName the package the annotated class is declared in; generated Java is emitted
  *        relative to it
@@ -66,8 +68,9 @@ import java.util.List;
  * @param cacheRegion the cache region or namespace entries are placed in
  * @param fullTextSearch whether a full-text search index and query surface are generated
  * @param searchConfig the PostgreSQL text-search configuration the index is built with
- * @param tableName the physical table name. Optional: blank means "derive it", and
- *        {@link #effectiveTableName()} is the accessor that applies the snake-case default
+ * @param tableName the physical table name, from {@code @ExerisDomain.tableName}. Optional:
+ *        blank means "derive it", and {@link #effectiveTableName()} is the accessor that applies
+ *        the default — the snake-cased English plural of {@link #entityName()}
  *
  * @param fields the entity's persisted and presented fields, in declaration order
  * @param actions the domain actions callable on the entity
@@ -315,21 +318,49 @@ public record DomainMetadata(
     }
 
     /**
-     * Effective table name (explicit or derived from entityName).
+     * The table this entity is stored in: {@link #tableName()} when it is set, otherwise the
+     * snake-cased {@link #pluralName()} — {@code Order} → {@code orders},
+     * {@code OrderLineItem} → {@code order_line_items}, {@code Colony} → {@code colonies},
+     * {@code Box} → {@code boxes}.
      *
-     * @return the {@code String}
+     * <p>Snake case inserts {@code _} wherever a lower-case letter is followed by an upper-case
+     * one and then lower-cases the whole name under {@link Locale#ROOT}, so the result is the
+     * same on every JVM whatever its default locale (a Turkish default would otherwise turn
+     * {@code Item} into {@code ıtem}). An acronym is not split: {@code HTTPRoute} →
+     * {@code httproutes}.
+     *
+     * <p><strong>Changed in 0.12.0:</strong> the default used to be the snake-cased
+     * <em>singular</em> ({@code order}), which matched no table any generator emits.
+     * {@code exeris-tooling} named its tables {@code snake_case(entityName) + "s"} instead,
+     * which agrees with this method except where English does not add a bare {@code s}
+     * ({@code colonys}, {@code boxs}). A consumer that needs the old value sets
+     * {@code @ExerisDomain.tableName}.
+     *
+     * @return the explicit table name, or the derived one
      */
     public String effectiveTableName() {
-        return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(entityName);
+        return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(pluralName());
     }
 
     /**
-     * Effective API path (explicit or derived from entityName).
+     * The base route of this entity's generated endpoints: {@link #path()} when it is set,
+     * otherwise {@code "/"} plus the kebab-cased {@link #pluralName()} — {@code Order} →
+     * {@code /orders}, {@code OrderLineItem} → {@code /order-line-items}, {@code Colony} →
+     * {@code /colonies}.
      *
-     * @return the {@code String}
+     * <p>{@code @ExerisDomain.path} is mandatory, so metadata extracted from annotated source
+     * always takes the first branch; the derivation serves metadata built by hand or by a
+     * tool. Kebab case follows the snake-case rule of {@link #effectiveTableName()} with
+     * {@code -} for {@code _}, under {@link Locale#ROOT}.
+     *
+     * <p><strong>Changed in 0.12.0:</strong> the fallback appended a bare {@code s}
+     * ({@code /colonys}); it now takes the same plural as {@link #pluralName()}, so the
+     * derived route, the derived table and the title agree.
+     *
+     * @return the explicit path, or the derived one
      */
     public String effectivePath() {
-        return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(entityName) + "s";
+        return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(pluralName());
     }
 
     /**
@@ -342,23 +373,33 @@ public record DomainMetadata(
     }
 
     /**
-     * Plural name for entity (derived from entityName).
+     * The English plural of {@link #entityName()}, keeping its case — the one rule
+     * {@link #effectivePath()} and {@link #effectiveTableName()} derive from too.
      *
-     * @return the {@code String}
+     * <p>Applied to the end of the name, which in a camel-case compound is its last word:
+     * <ul>
+     *   <li>ends in {@code s}, {@code x}, {@code z}, {@code ch} or {@code sh} → {@code +es}
+     *       ({@code Status} → {@code Statuses}, {@code Box} → {@code Boxes},
+     *       {@code Branch} → {@code Branches});</li>
+     *   <li>ends in a consonant followed by {@code y} → {@code y} becomes {@code ies}
+     *       ({@code Colony} → {@code Colonies}, {@code Technology} →
+     *       {@code Technologies}); a vowel before the {@code y} takes a plain {@code s}
+     *       ({@code Day} → {@code Days});</li>
+     *   <li>anything else → {@code +s}.</li>
+     * </ul>
+     *
+     * <p>That is all it knows. An irregular noun gets the regular ending ({@code Person} →
+     * {@code Persons}), a name that is already plural gets another one ({@code Settings} →
+     * {@code Settingses}), and a {@code z} is not doubled ({@code Quiz} → {@code Quizes}).
+     * Those are what {@code @ExerisDomain.path} and {@code @ExerisDomain.tableName} are for;
+     * the rule itself stays small and deterministic, because its output is part of the
+     * frozen contract from 1.0.0 and a later change would silently rename tables. An empty
+     * or absent {@code entityName} yields {@code ""}.
+     *
+     * @return the plural entity name
      */
     public String pluralName() {
-        // Simple pluralization - add 's' to entityName
-        if (entityName.endsWith("s") || entityName.endsWith("x") || entityName.endsWith("z")
-                || entityName.endsWith("ch") || entityName.endsWith("sh")) {
-            return entityName + "es";
-        }
-        if (entityName.endsWith("y") && entityName.length() > 1) {
-            char beforeY = entityName.charAt(entityName.length() - 2);
-            if (!"aeiou".contains(String.valueOf(beforeY))) {
-                return entityName.substring(0, entityName.length() - 1) + "ies";
-            }
-        }
-        return entityName + "s";
+        return plural(entityName);
     }
 
     /**
@@ -526,14 +567,27 @@ public record DomainMetadata(
         return new Builder(entityName, packageName);
     }
 
+    private static String plural(String name) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        if (name.endsWith("s") || name.endsWith("x") || name.endsWith("z")
+                || name.endsWith("ch") || name.endsWith("sh")) {
+            return name + "es";
+        }
+        if (name.endsWith("y") && name.length() > 1
+                && "aeiou".indexOf(name.charAt(name.length() - 2)) < 0) {
+            return name.substring(0, name.length() - 1) + "ies";
+        }
+        return name + "s";
+    }
+
     private static String toSnakeCase(String s) {
-        if (s == null || s.isBlank()) return "";
-        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT);
     }
 
     private static String toKebabCase(String s) {
-        if (s == null || s.isBlank()) return "";
-        return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
+        return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase(Locale.ROOT);
     }
 
     /**
