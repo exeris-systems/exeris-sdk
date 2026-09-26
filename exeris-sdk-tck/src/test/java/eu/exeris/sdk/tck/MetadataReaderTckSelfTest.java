@@ -3,6 +3,7 @@ package eu.exeris.sdk.tck;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +38,7 @@ class MetadataReaderTckSelfTest {
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
             reader.actionIsReadUnderTheDeclaredName();
+            reader.sagaVersionIsTheDeclaredOne();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -105,6 +107,31 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("a saga version left at the default an unread attribute leaves is caught")
+    void sagaVersionCaseIsNotVacuous() {
+        // The shipped shape exactly: every other saga attribute read, version never looked at, so
+        // the builder default stands in for what the source declared.
+        Reader versionBlind = new Reader(m -> m.sagaMetadata() == null
+                ? m
+                : withSaga(m, SagaMetadata.builder(m.sagaMetadata().name())
+                        .steps(m.sagaMetadata().steps())
+                        .build()));
+        assertThatThrownBy(versionBlind::sagaVersionIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("read as version 1")
+                .hasMessageContaining("ADR-064");
+    }
+
+    @Test
+    @DisplayName("a reader that drops the saga altogether is caught")
+    void sagaPresenceCaseIsNotVacuous() {
+        Reader sagaBlind = new Reader(m -> withSaga(m, null));
+        assertThatThrownBy(sagaBlind::sagaVersionIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no saga metadata");
+    }
+
+    @Test
     @DisplayName("declaring a mandatory facet unsupported is caught")
     void theSkipTrapdoorIsClosed() {
         Reader optingOut = new Reader(UnaryOperator.identity()) {
@@ -141,6 +168,15 @@ class MetadataReaderTckSelfTest {
                 .fields(source.fields())
                 .actions(source.actions())
                 .relationships(source.relationships())
+                .build();
+    }
+
+    private static DomainMetadata withSaga(DomainMetadata source, SagaMetadata saga) {
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields())
+                .actions(source.actions())
+                .relationships(source.relationships())
+                .sagaMetadata(saga)
                 .build();
     }
 

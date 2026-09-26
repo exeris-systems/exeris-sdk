@@ -5,6 +5,8 @@ import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.mutation.BaselineTrust;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -23,6 +25,12 @@ import java.util.List;
  * a correct reader and a correct producer must both arrive at from the shipped sources.
  */
 final class ReferenceBinding {
+
+    /** The saga {@code Order} declares, by the name its {@code @Saga} gives it. */
+    static final String ORDER_SAGA = "OrderFulfillmentSaga";
+
+    /** The version {@code Order}'s {@code @Saga} declares — deliberately not the default {@code 1}. */
+    static final int ORDER_SAGA_VERSION = 3;
 
     private ReferenceBinding() {
     }
@@ -93,6 +101,13 @@ final class ReferenceBinding {
                                 .displayName("Note")
                                 .build()))
                 .actions(List.of(ActionMetadata.simple("submit")))
+                .sagaMetadata(SagaMetadata.builder(ORDER_SAGA)
+                        .version(ORDER_SAGA_VERSION)
+                        .steps(List.of(SagaStepMetadata.builder("charge", 1)
+                                .service("payments")
+                                .command("charge")
+                                .build()))
+                        .build())
                 .build();
     }
 

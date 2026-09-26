@@ -47,6 +47,16 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- Test-only: this module's reader is bound to the SDK's own reader TCK
+             (SourceModelReaderTckTest). The edge runs one way on purpose — the TCK's enforcer
+             bans this module from ITS tree, so the kit stays implementation-agnostic while the
+             SDK's reader is still held to it on every build. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-tck</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

@@ -2,6 +2,7 @@ package eu.exeris.sdk.tck;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.function.UnaryOperator;
 
@@ -28,6 +29,7 @@ class MetadataProducerTckSelfTest {
             producer.baselineTrustFieldsAreSiblingsNotAWrapper();
             producer.validationConstraintsReachTheProducedField();
             producer.aZeroValuedBoundSurvivesSerialization();
+            producer.sagaVersionReachesTheProducedMetadata();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -86,6 +88,31 @@ class MetadataProducerTckSelfTest {
         Producer dropping = new Producer(json -> json.replaceAll("\"minLength\":3,?", ""));
         assertThatThrownBy(dropping::validationConstraintsReachTheProducedField)
                 .isInstanceOf(AssertionError.class);
+    }
+
+    @Test
+    @DisplayName("a saga version the producer never read is caught")
+    void sagaVersionCaseIsNotVacuous() {
+        // What an extraction that skips the attribute writes: the builder default, well-formed.
+        Producer versionBlind = new Producer(json -> json.replace(
+                "\"version\":" + ReferenceBinding.ORDER_SAGA_VERSION, "\"version\":1"));
+        assertThatThrownBy(versionBlind::sagaVersionReachesTheProducedMetadata)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("baseline says 1")
+                .hasMessageContaining("ADR-064");
+    }
+
+    @Test
+    @DisplayName("a baseline with no saga at all is caught")
+    void sagaPresenceCaseIsNotVacuous() {
+        Producer sagaBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            root.remove("sagaMetadata");
+            return root.toString();
+        });
+        assertThatThrownBy(sagaBlind::sagaVersionReachesTheProducedMetadata)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("carries no sagaMetadata");
     }
 
     /** A producer binding whose output is the reference baseline put through one transformation. */

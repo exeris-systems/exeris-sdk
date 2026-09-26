@@ -32,7 +32,15 @@ public enum Facet {
     ACTIONS,
 
     /** The ADR-042 {@code sourceDigest} / {@code schemaVersion} baseline-trust siblings. */
-    BASELINE_TRUST;
+    BASELINE_TRUST,
+
+    /**
+     * {@code @Saga} on an entity, carried as {@code DomainMetadata.sagaMetadata} — including the
+     * {@code version} that kernel ADR-064 makes half of a saga plan's identity.
+     *
+     * @since 0.12
+     */
+    SAGA;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);
