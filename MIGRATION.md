@@ -22,30 +22,53 @@ the upgrade steps required.
 
 ### Three AST records grew a trailing component + `SchemaVersion.CURRENT` is `"0.12.0"`
 
-**Impact:** three records in `eu.exeris.sdk.sourcemodel.ast` gained trailing,
-nullable components, so their canonical constructors changed arity:
+**Impact on code: none required.** Three records in `eu.exeris.sdk.sourcemodel.ast`
+gained trailing, nullable components, and each keeps its 0.11.0 constructor:
 
-| Record | Components 0.11.0 → 0.12.0 | Added | Non-positional construction |
-|---|---|---|---|
-| `DomainMetadata` | 39 → 41 | `routeAccess` (`@RouteAccess`), `channel` (`@Channel`) | builder: `.routeAccess(…)`, `.channel(…)` |
-| `ActionMetadata` | 17 → 18 | `routeAccess` (`@RouteAccess`) | builder: `.routeAccess(…)` |
-| `SystemFieldsMetadata` | 10 → 11 | `sharedScopeField` (`@SharedScope`) | none; `defaults()` only |
+| Record | Components 0.11.0 → 0.12.0 | Added | Kept constructor | Named construction |
+|---|---|---|---|---|
+| `DomainMetadata` | 39 → 41 | `routeAccess` (`@RouteAccess`), `channel` (`@Channel`) | 39 arguments | builder: `.routeAccess(…)`, `.channel(…)` |
+| `ActionMetadata` | 17 → 18 | `routeAccess` (`@RouteAccess`) | 17 arguments | builder: `.routeAccess(…)` |
+| `SystemFieldsMetadata` | 10 → 11 | `sharedScopeField` (`@SharedScope`) | 10 arguments | builder: **new**, `SystemFieldsMetadata.builder()` |
+
+The kept constructor delegates to the new canonical one with `null` for what was
+added, which is the 0.11.0 meaning. So builder callers change nothing, positional
+callers compile unchanged, and a class compiled against 0.11.0 still links rather
+than failing with `NoSuchMethodError` on a constructor that is no longer there.
 
 This is the record-growth stance in
-[`MIGRATION-0.x-to-1.0.md` §3](MIGRATION-0.x-to-1.0.md): existing positional
-prefixes are unchanged in order, so **builder callers need no change**, and
-**positional callers recompile with one added trailing argument per new
-component** — `null` keeps the 0.11.0 meaning, so `DomainMetadata` takes two and
-the other two records one each. The semver gate is configured to accept the
-constructor change as a minor-level one; it does not flag this growth.
+[`MIGRATION-0.x-to-1.0.md` §3](MIGRATION-0.x-to-1.0.md), **rewritten for 0.12.0**
+(Stellar finding S6). Until now growth replaced the canonical constructor,
+positional callers added one trailing argument per new component, and
+`source-model`'s semver gate was told to accept the removed constructor as a
+minor change. That broke the one caller with no alternative. `SystemFieldsMetadata`
+had no builder, and its only factory, `defaults()`, fixes the canonical names, so
+`exeris-tooling`'s processor, which sets non-canonical names from `@TenantId` and
+`tenantIdField`, could only build it positionally, and it stopped compiling against
+0.12.0. It compiles unchanged now. The semver gate no longer treats a removed
+constructor as compatible anywhere in `source-model`.
 
-**`SystemFieldsMetadata` has no builder**, and its only factory, `defaults()`,
-returns the canonical field names. A caller that needs non-canonical names — the
-annotation processor resolving `@TenantId` or `tenantIdField`, for instance — has
-only the positional constructor, so for this record "use the builder" is not
-available: such a caller must add the trailing `null` for `sharedScopeField` to
-build against 0.12.0. `exeris-tooling`'s processor is one.
-<!-- S6: remedy pending founder decision -->
+**Optional: switch to the builder.** A caller that fills `SystemFieldsMetadata`
+with non-canonical names can name them instead of ordering them:
+
+```java
+// 0.11.0, and still compiles on 0.12.0
+new SystemFieldsMetadata("id", "createdAt", "createdBy", "modifiedAt", "updatedBy",
+        "orgId", "rev", "deleted", null, null);
+
+// 0.12.0: starts from defaults() and sets only what differs — the same value
+SystemFieldsMetadata.builder()
+        .updatedAtField("modifiedAt")
+        .tenantIdField("orgId")
+        .versionField("rev")
+        .softDeleteField("deleted")
+        .build();
+```
+
+All eleven components are `String`s, so a positional call that swaps two of them
+compiles and silently points a generated column at the wrong field. The builder
+cannot make that mistake. `exeris-tooling`'s processor is the natural first user:
+it is the only producer that fills this record with anything but the defaults.
 
 **On the wire nothing breaks.** Every new component is by-name and omitted when
 absent, so a 0.11.0 document reads back with them `null`. The AST shape still has
@@ -78,9 +101,9 @@ collision is the reason this annotation exists.
 
 ### `@Channel` is new, reserved, and outside the 1.0.0 freeze
 
-Nothing to migrate in annotated sources — it is additive and nothing extracts it
-yet. Code that constructs `DomainMetadata` positionally adds the trailing
-`channel` argument (first entry above); builder callers change nothing.
+Nothing to migrate — it is additive and nothing extracts it yet. Code that
+constructs `DomainMetadata` positionally keeps compiling through the kept 0.11.0
+constructor, which leaves `channel` absent (first entry above).
 
 - Declaring it has **no generated effect today**. No processor reads it, no
   generator opens an endpoint from it, and the `-io` reader does not read it.
@@ -98,9 +121,10 @@ reconnection behaviour — ADR-072 obligation 20 gives the reason for each.
 
 ### `@SharedScope` is new and reserved — frozen as declared
 
-Nothing to migrate in annotated sources. Code that constructs
-`SystemFieldsMetadata` positionally must add the trailing `sharedScopeField`
-argument, and there is no builder to switch to (first entry above).
+Nothing to migrate. Code that constructs `SystemFieldsMetadata` positionally
+keeps compiling through the kept 10-argument constructor, which leaves
+`sharedScopeField` `null`. To set it, use the 11-argument canonical constructor or
+the new builder's `.sharedScopeField(…)` (first entry above).
 
 - It marks the field holding the **shared-scope key** of a `DataScope.UNIVERSE`
   entity — the column a generated policy would compare against the kernel's

@@ -30,20 +30,8 @@ for per-version upgrade steps.
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.11.0"` → `"0.12.0"`** — a baseline
   stamped `"0.11.0"` now reads as schema skew, so ADR-042 conflict detection refuses it rather than
   trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is additive on the
-  wire (by-name, nullable) but not for positional callers — see the next entry.
-  See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
-- **`exeris-sdk-source-model`: three AST records grew a trailing component — positional callers
-  recompile.** `DomainMetadata` 39 → 41 (`routeAccess`, `channel`), `ActionMetadata` 17 → 18
-  (`routeAccess`), `SystemFieldsMetadata` 10 → 11 (`sharedScopeField`). Builder callers are
-  unaffected; a positional caller adds one trailing argument per new component, and `null` keeps the
-  0.11.0 meaning. That is the record-growth stance in `MIGRATION-0.x-to-1.0.md` §3, and the reason
-  `source-model`'s japicmp configuration accepts `CONSTRUCTOR_REMOVED` as a minor-level change.
-  **`SystemFieldsMetadata` is the one that bites:** it has no builder and its only factory,
-  `defaults()`, fixes the canonical names, so a caller that sets non-canonical names has no
-  non-positional path — `exeris-tooling`'s processor is such a caller and does not compile against
-  0.12.0 until it passes the eleventh argument. Reported by the Stellar Tactics dog-food (S6).
-  <!-- S6: remedy pending founder decision -->
-  See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+  wire (by-name, nullable), and for positional callers too, because each grown record keeps its
+  0.11.0 constructor — see Changed. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` is no longer a compile-time constant** — it was
   `static final String` with a literal initialiser, so javac inlined it into every consumer. A
   consumer compiled against 0.11.0 carries the old literal in its own class file and will compare
@@ -51,6 +39,15 @@ for per-version upgrade steps.
   rather than the constant pool. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
+
+- **`SystemFieldsMetadata.builder()`.** All eleven components, preset to the names `defaults()`
+  returns, so a caller sets only the ones that differ. Every component is a field-name `String`, so
+  a positional call that swaps two of them compiles, round-trips and silently points a generated
+  column at the wrong field; the builder names each one. It was also the one record a consumer had
+  no non-positional way to fill with non-canonical names, which is how its 0.12.0 growth broke
+  `exeris-tooling`'s processor (Stellar finding S6 — see Changed). `defaults()` now returns
+  `builder().build()`. The processor, the only producer that fills this record with anything but
+  the defaults, may switch to it; the kept 10-argument constructor means it does not have to.
 
 - **`@Channel` — the SDK can state that an entity's clients also speak.** `@Target(TYPE)`, two
   optional attributes (`messageType()`, `subprotocol()`), carried by the new nullable
@@ -243,6 +240,29 @@ for per-version upgrade steps.
   the bound case fails. Binders: a side that does not extract sagas yet declares `Facet.SAGA` in
   `unsupportedFacets()`.
 
+
+### Changed
+
+- **`exeris-sdk-source-model`: a record that grows keeps its previous constructor, and the semver
+  gate stops calling a removed constructor compatible.** Three records grew a trailing component in
+  this release — `DomainMetadata` 39 → 41 (`routeAccess`, `channel`), `ActionMetadata` 17 → 18
+  (`routeAccess`), `SystemFieldsMetadata` 10 → 11 (`sharedScopeField`) — and each keeps its 0.11.0
+  shape as a public constructor that delegates with `null` for what was added. No caller changes:
+  builder calls are untouched, positional calls compile, and classes compiled against 0.11.0 link.
+  That is the record-growth stance in `MIGRATION-0.x-to-1.0.md` §3, rewritten for this release.
+
+  Until now growth replaced the canonical constructor, positional callers were told to recompile
+  with a trailing `null`, and `source-model`'s japicmp configuration labelled `CONSTRUCTOR_REMOVED`
+  binary- and source-compatible so the growth could pass. The label was false — a removed public
+  constructor is a `NoSuchMethodError` for every class compiled against it — and the rule broke the
+  one caller that had no builder to fall back on: `exeris-tooling`'s processor, which can only fill
+  `SystemFieldsMetadata` with non-canonical names positionally, did not compile against 0.12.0
+  (Stellar finding S6). It compiles unchanged now. The override is gone, so the gate fails on a
+  removed constructor once it has a baseline (0.13.0). Until then `RecordConstructorLedgerTest`
+  holds the rule: it fails if a published arity loses its constructor, or if a record grows without
+  its new arity being appended to `record-arities.txt`. `ApplyResult` (`-io`) and `CapManifest`
+  (`composition-spec`) keep their named relaxation for now; whether they follow is open. See
+  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Security
 

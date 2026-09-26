@@ -128,27 +128,57 @@ removals and renames fail.
   `FAIL_ON_NULL_FOR_PRIMITIVES = false` (Jackson 3 defaults it to `true`).
   Canonical reference: `AstJsonRoundTripTest` + the
   `eu.exeris.sdk.sourcemodel.ast` package-info.
-- **Builders/factories over positional constructors** — canonical (all-args)
-  record constructors grow across 0.x minors; builders and `simple(...)` /
-  `of(...)` factories are the stable path and remain so in 1.x.
-- **Record growth stays legal after the freeze — the canonical constructor is
-  not the frozen surface.** Stated explicitly because the bullet above only
-  implies it, and because it is load-bearing: an AST record may gain a
-  **trailing** component in a 1.x minor (by-name on the wire, absent reads back
-  `null`, existing positional prefixes unchanged in order), accompanied by a
-  `SchemaVersion` bump. Positional callers recompile with one added trailing
-  argument; that recompile is the accepted cost, and it is why builders are
-  documented as the stable path. Consumers that must survive a minor without
-  recompiling should construct through builders and factories exclusively.
+- **Record growth stays legal after the freeze, and breaks no caller.** An AST
+  record may gain a **trailing** component in a 1.x minor (by-name on the wire,
+  absent reads back `null`, existing components unchanged in order), accompanied
+  by a `SchemaVersion` bump. The record **keeps its previous arity as a public
+  constructor** that delegates to the new canonical one with `null` for what was
+  added. `DomainEventMetadata` has done this since EV1; 0.12.0 made it the rule
+  (Stellar finding S6). So neither kind of caller breaks: a builder or factory
+  caller never saw the constructor, and a positional caller, in source or in a
+  compiled class, finds the shape it was built against. Every constructor a
+  record has published is part of the frozen surface. They accumulate across
+  1.x, roughly one per growth, and can only be pruned at 2.0.
+
+  Builders and `simple(...)` / `of(...)` factories remain the recommended path,
+  for readability rather than survival: they name what a positional call leaves
+  to argument order. That matters most on a record with a run of same-typed
+  components, which is why `SystemFieldsMetadata`, eleven `String`s, gained a
+  builder in 0.12.0. Not every record has one — 26 `ast` records have no builder
+  or factory that reaches every component — and under this rule none needs one
+  to be safe.
 
   **Why this has to be policy and not a footnote:** every surface the SDK
   expects to grow after 1.0 — the blob and job facets kernel 0.11 opened, flow
   await, graph multi-hop — arrives as a new component on an existing record.
-  If a trailing component counts as a break, all of it is blocked until 2.0.
-  The 1.0.0 GA japicmp/revapi gate must be configured to encode this
-  distinction (trailing-additive = allowed; reorder, rename, retype, or remove
-  = break). A gate configured on defaults will reject exactly the growth this
-  paragraph permits — see the ROADMAP 1.0.0 GA item.
+  If a trailing component counted as a break, all of it would wait for 2.0.
+
+  **How it is enforced.** japicmp on its plugin defaults, which is what the rule
+  makes possible: growth emits only `CONSTRUCTOR_ADDED` and `METHOD_ADDED`, while
+  removing a constructor, or removing, renaming or retyping a component, fails the
+  build. Until that gate has a baseline (0.13.0, see §4),
+  `RecordConstructorLedgerTest` fails if a published arity loses its constructor
+  or a growth goes unrecorded. `RecordComponentOrderTest` pins the one change no
+  signature shows, a reorder of same-typed components, and stays after japicmp
+  runs.
+
+  **What this replaced, and why.** Through 0.11 the rule was that positional
+  callers "recompile with one added trailing argument; that recompile is the
+  accepted cost", with builders and factories named as the stable path, and
+  `source-model`'s japicmp configuration labelled `CONSTRUCTOR_REMOVED` binary-
+  and source-compatible so that growth could pass. The label was false: removing
+  a public constructor is a `NoSuchMethodError` for every class compiled against
+  it (JLS 13.4.12). The stable path was missing too — eight `ast` records had no
+  builder or factory that takes any value at all. `exeris-tooling`'s processor
+  builds `SystemFieldsMetadata` positionally because nothing else could set its
+  names, and it stopped compiling against 0.12.0 (Stellar finding S6). It runs on
+  each consumer's processor path, linked against whatever SDK version Maven
+  resolves there, so under the old rule a newer SDK minor meant a
+  `NoSuchMethodError` inside javac.
+
+  **The one exception is a major.** Removing a component from the middle of a
+  record changes every constructor it has. 1.0.0 does that to `DomainMetadata`
+  (§1), and its constructor history restarts from the 1.0.0 shape.
 - **There is no `internal/` package, and everything public is contract.** Said
   plainly because the phrase "everything not in `internal/` is contract" invites
   the assumption that some escape hatch exists. None does, and none is planned:
@@ -191,18 +221,22 @@ freeze or is explicitly re-dispositioned here.
   Those keep their assertions but lose the discriminator, because after this
   change there is no second candidate to distinguish from — their comments say
   so rather than claiming a distinction that no longer exists.
-- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, encoding the
-  record-growth stance in §3: `CONSTRUCTOR_REMOVED` is downgraded to a
-  MINOR-level compatible change, because that is the signal a trailing record
-  component produces, while removals, renames and retypes still break the build
-  through their accessors. Bound to `verify` in all five non-annotation
-  publishable modules — **strict by default**, with the relaxation declared
-  only where records actually live:
-  - `exeris-sdk-source-model` — module-wide, because `ast` + `mutation` *is*
-    the record surface end to end.
+- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, bound to
+  `verify` in all five non-annotation publishable modules and **strict by
+  default**. As configured in 0.10.0 it encoded the record-growth stance of the
+  time by downgrading `CONSTRUCTOR_REMOVED` to a MINOR-level compatible change
+  where records live, since that is the signal a trailing component produced.
+  **Amended 2026-09-26 (Stellar finding S6):** the stance changed (§3), and with
+  it the configuration:
+  - `exeris-sdk-source-model` — **strict, no relaxation.** A record that grows
+    keeps its previous arity as a delegating constructor, so growth removes
+    nothing and the plugin defaults accept it. Until 0.12.0 this module carried
+    the downgrade module-wide.
   - `exeris-sdk-source-model-io` (`ApplyResult`) and
-    `exeris-sdk-composition-spec` (`CapManifest`) — two executions each, the
-    relaxed one naming the single record and the strict one excluding it.
+    `exeris-sdk-composition-spec` (`CapManifest`) — still two executions each,
+    the relaxed one naming the single record and the strict one excluding it.
+    Neither record has grown since; whether they move to the §3 rule is open
+    (`ROADMAP.md`, 0.12.0).
   - `exeris-sdk-composition-lifecycle` / `-runtime` — strict, no relaxation.
     They have no public records at all, and do have exception classes with
     meaningful constructor overloads, so a blanket relaxation would have
@@ -232,10 +266,15 @@ freeze or is explicitly re-dispositioned here.
     `AnnotationSurfaceContractTest` gates it instead.
 
   What the gate cannot see is a same-arity, same-type component **reorder** —
-  invisible by construction, since the override stops reading exactly the
-  constructor signal a reorder would show up in. `RecordComponentOrderTest`
-  pins component order against a snapshot and closes it. The two are a pair;
-  removing either leaves the stance unenforced.
+  invisible by construction, because swapping two `String` components leaves
+  every accessor and every constructor descriptor exactly as it was.
+  `RecordComponentOrderTest` pins component order against a snapshot and closes
+  it; `RecordConstructorLedgerTest` holds the constructor half of §3 until the
+  gate has a baseline. Removing any of the three leaves the stance unenforced.
+  *(Corrected 2026-09-26: this said the reorder was invisible "since the override
+  stops reading exactly the constructor signal a reorder would show up in". That
+  held only for a reorder across different types; the same-type case is invisible
+  with or without the override, which is gone.)*
 - [x] **Public API surface review** — **done**; 103 public top-level types, the
   full result is in `ROADMAP.md` under 1.0.0 GA. The premise as seeded
   ("everything not in `internal/` is contract") describes a partition that does
