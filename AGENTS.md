@@ -91,7 +91,9 @@ A narrower file may restrict behaviour; it may never relax a higher-order rule.
 
 ## Verification and reporting
 
-- `mvn clean install` runs the full reactor and JaCoCo 0.85 BUNDLE instruction + line gate on `source-model`.
+- `mvn clean install -Djapicmp.skip=true` runs the full reactor and JaCoCo 0.85 BUNDLE instruction + line gate on `source-model`.
+  The flag is required on a fresh clone: japicmp's `0.11.0` baseline was never published to Maven Central
+  ([reference](.agents/references/build-and-testing.md)).
 - `AnnotationContractTest` verifies `@Retention(SOURCE)` and `@Target` across all annotations.
 - `AstJsonRoundTripTest` and `MutationWireFormatTest` enforce Jackson 3 serialization.
 - `ClassFileBaselineTest` enforces class-file major ≤ 69 (JDK 25 LTS).

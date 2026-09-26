@@ -160,7 +160,7 @@ public record EventSourcedMetadata(
     }
 
     /**
-     * A mutable builder for {@code ProjectionConfig}.
+     * A mutable builder for {@code EventSourcedMetadata}.
      *
      * <p>Each setter sets the record component of the same name. Those components are
      * documented by the record's own {@code @param} tags and are deliberately not restated

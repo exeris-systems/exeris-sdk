@@ -6,15 +6,17 @@ This reference summarizes build commands, coverage thresholds, and verification 
 
 ```bash
 # Full Maven reactor build and test verification
-mvn clean install
+mvn clean install -Djapicmp.skip=true
 
 # Targeted module build with dependencies
-mvn -pl exeris-sdk-source-model -am verify
+mvn -pl exeris-sdk-source-model -am verify -Djapicmp.skip=true
 mvn -pl exeris-sdk-annotations -am test    # requires catalog module installed once first
 
 # Run UI kit tests and coverage (npm-only)
 cd exeris-sdk-ui-kit && npm ci && npm run test:coverage
 ```
+
+> **japicmp baseline:** any goal that reaches `verify` needs `-Djapicmp.skip=true` on a machine without a local `0.11.0` install. japicmp compares against the last released version, `0.11.0`, which was never published to Maven Central, and an absent baseline is configured to fail rather than pass. CI passes the flag in `build.yml`, `release.yml`, `release-assets.yml` and `guardrails.yml`. The flag comes off when the 0.13.0 line opens against a Central-resolvable `0.12.0` baseline; the root `pom.xml` comment beside `japicmp.baseline.version` is canonical. `test` stops before `verify`, so it needs no flag.
 
 > **Build wrinkle:** `annotationProcessorPaths` is not a Maven dependency edge. On a clean checkout, a partial build like `mvn -pl exeris-sdk-annotations -am ...` fails to resolve `AnnotationCatalogProcessor` until `exeris-sdk-annotation-catalog` has been installed at least once. Run the full reactor `mvn clean install` first (or `mvn -pl exeris-sdk-annotation-catalog install`).
 

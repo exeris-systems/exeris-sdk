@@ -155,7 +155,8 @@ removals and renames fail.
   every module here is a deliberate API surface, so there is no implementation
   detail for one to hold. Practical consequence for a consumer: if it is
   `public` in a publishable module, 1.0.0 freezes it — with the single stated
-  exception in §2 (`@Blob` / `@Schedule` and their AST carriers).
+  exception in §2 (`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and
+  their AST carriers).
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.
@@ -213,9 +214,10 @@ freeze or is explicitly re-dispositioned here.
 
   Two follow-ons, both deliberate:
   - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
-    last released jar and no `eu.exeris` artifact is published anywhere yet.
-    An absent baseline is configured to fail, not to pass quietly, so the skip
-    is explicit in the workflow rather than implicit in the plugin.
+    last released jar, `0.11.0`, and no release at or below it was ever
+    published to Central. An absent baseline is configured to fail, not to pass
+    quietly, so the skip is explicit in the workflows rather than implicit in
+    the plugin.
     **Corrected 2026-09-03:** this used to say the flag comes off "when the
     Central wiring lands". It does not, and the difference is one milestone.
     The wiring landed in 0.12.0, and 0.12.0 is the *first* version to reach
@@ -240,8 +242,8 @@ freeze or is explicitly re-dispositioned here.
   not exist — there is no `internal/` package anywhere in the repo, and there
   should not be. Each of the three seeded inputs, checked against the sources on
   both sides of the build-time hand-off rather than assumed:
-  - **Never-populated AST components — three, each with a different
-    disposition.** `ActionMetadata.realTimeUpdates` is **reserved and frozen as
+  - **Never-populated AST components — three seeded, each with a different
+    disposition; the full recount follows them.** `ActionMetadata.realTimeUpdates` is **reserved and frozen as
     declared**: the processor declines it by name ("deliberately NOT extracted
     here … extracting it would only create an inert `ActionMetadata` attribute")
     and the extraction lands with its consumer. `ActionMetadata.schedule` is
@@ -256,6 +258,36 @@ freeze or is explicitly re-dispositioned here.
     wire today, so unlike `ValidationMetadata` (removed outright in 0.9.0, ADR-054)
     there is a live producer, and narrowing it to the one populated component
     would be a wire-format break bought for nothing.
+
+    **Recounted 2026-09-26** against `exeris-tooling` `main` and the `-io`
+    reader. "Three" was the seeded list, never a census, and 0.12.0 added more.
+    Components that *neither* producer ever sets, on the four records at the top
+    of the wire:
+    - `DomainMetadata` — 9 of 41: `tags`, `roles`, `permissions`, `tableName`,
+      `projections`, `eventHandlers`, `rules`, `routeAccess`, `channel`.
+      `tableName` has no source at all — `@ExerisDomain` declares no such
+      attribute — so it is always the builder's `""`, and consumers read
+      `effectiveTableName()`, the snake-cased entity name.
+    - `ActionMetadata` — 9 of 18: `resultType`, `idempotent`, `dangerous`,
+      `requiresConfirmation`, `permissions`, `producesEvents`,
+      `realTimeUpdates`, `schedule`, `routeAccess`.
+    - `FieldMetadata` — 10 of 31: `columnName`, `audited`, `hidden`,
+      `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
+      `derived`, `blob`.
+    - `SystemFieldsMetadata` — 1 of 11: `sharedScopeField`. (`primaryKeyField`
+      is populated and read by no generator, which is a different gap.)
+
+    That is 29. Five are the ADR-072 exception §2 already excludes from the
+    freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
+    `DomainMetadata.channel`); the other 24 are frozen as declared under §3's
+    rule that everything public is contract. Whole records no producer
+    populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
+    `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
+    `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
+    — are counted as records rather than components and follow the same two
+    rules. Not counted: components one producer sets and the other does not
+    (`DomainMetadata.systemFields`, `ActionMetadata.displayName`). Those are
+    ADR-042 parity questions, not population ones.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*
     (`consumers`, `rateLimit`, `requireMtls`, `timeout`, `documented`);
@@ -353,7 +385,9 @@ freeze or is explicitly re-dispositioned here.
 
 ## 5. TBD at the 1.0.0 release PR
 
-- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the two
-  `@Validation` removals only).
+- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the three §1
+  removals only — `@Validation.required`, `@Validation.validateOn` and
+  `@ExerisDomain.tenantScoped`, with the `DomainMetadata.tenantScoped`
+  component that goes with the last).
 - Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`).
 - npm `@exeris/ui-kit` public-registry publish notes (GA item).

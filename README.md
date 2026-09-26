@@ -79,8 +79,15 @@ compile against the annotations but not yet run the processor.
 ## Build
 
 ```bash
-mvn clean install
+mvn clean install -Djapicmp.skip=true
 ```
+
+A fresh clone needs `-Djapicmp.skip=true`. The semver gate (japicmp, bound to `verify`)
+compares each module against the last released version, `0.11.0`, which was never published
+to Maven Central, so the build fails resolving that baseline unless you have installed
+`0.11.0` locally yourself. CI passes the same flag. It comes off when the 0.13.0 line opens
+against a `0.12.0` baseline Central can serve — no earlier version is published there — as the
+root `pom.xml` explains next to `japicmp.baseline.version`.
 
 ## License
 

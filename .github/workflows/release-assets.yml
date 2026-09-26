@@ -2,11 +2,18 @@ name: release assets
 
 # Attaches the generated annotation catalog to the GitHub Release for a tag.
 #
-# This exists because the asset is the whole delivery channel. The SDK does not
-# publish to Maven Central yet — that is sequenced behind the kernel — so a
-# downstream consumer that wants the catalog has no coordinate to resolve and no
-# jar to unpack. A release asset needs no publishing infrastructure at all, which
-# is what makes the catalog reachable now rather than after the Central move.
+# This exists because the asset is a delivery channel that depends on nothing
+# else. Maven Central carries a release only once it has been published there —
+# publication is sequenced so the SDK does not publish before the kernel, and no
+# release at or below 0.11.0 is on Central at all — so a consumer cannot count on
+# a coordinate to resolve or a jar to unpack. A release asset needs no publishing
+# infrastructure, which makes the catalog reachable from the tag whatever the
+# state of Central.
+#
+# `-Djapicmp.skip=true` in the build step is for the reason the root POM's
+# japicmp comment gives: the 0.11.0 baseline was never published to Central. It
+# comes off with the other three workflows' flags when the 0.13.0 line opens
+# against a Central-resolvable 0.12.0 baseline.
 #
 # It runs on the tag rather than as a manual step on purpose: the catalog went
 # unshipped for as long as it did because nothing failed when it was not.

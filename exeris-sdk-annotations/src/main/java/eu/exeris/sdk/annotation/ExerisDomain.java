@@ -484,9 +484,16 @@ public @interface ExerisDomain {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Name of the primary key field.
-     * <p>Only needed if not using {@code @PrimaryKey} annotation or if
-     * primary key field is not named "id".
+     * Name of the primary key field, for an entity whose key is not named
+     * {@code id}.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The {@code exeris-tooling} processor
+     * extracts the value into {@code SystemFieldsMetadata.primaryKeyField}, but no
+     * generator reads it: the emitted schema declares {@code id} as the primary key
+     * unconditionally, the repository identifies rows by {@code id}, and every
+     * by-id route binds {@code {id}} — so setting a different name changes no
+     * emitted output. The {@code -io} reader does not read it, and
+     * {@code @PrimaryKey} is RESERVED for the same reason.
      *
      * @return primary key field name
      */
@@ -589,13 +596,14 @@ public @interface ExerisDomain {
      *   <li>NONE: no validation</li>
      * </ul>
      *
-     * <p><strong>Open-Core status — RESERVED, inert by construction:</strong>
-     * this attribute governs the strictness of system-field <em>marker</em>
-     * validation ({@code @TenantId}, {@code @Version}, …), but the tooling
-     * processor does not scan fields for those markers, so no mode has
-     * anything to validate — the attribute governs nothing until marker
-     * scanning lands. The live system-field path is the field-name override
-     * attributes above / the canonical accessor names.
+     * <p><strong>Open-Core status — RESERVED:</strong> no {@code exeris-tooling}
+     * processor reads this attribute, so every mode behaves the same. The
+     * processor does read the system-field markers ({@code @TenantId},
+     * {@code @Version}, …), but the checks it applies to them are unconditional:
+     * a marker repeated on two fields, or naming a different field than the
+     * matching override attribute above, is a build error whatever this attribute
+     * says, and an absent marker is never one — the override attribute or the
+     * canonical accessor name applies instead.
      *
      * @return validation mode
      */

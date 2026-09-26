@@ -8,12 +8,13 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a field as the tenant identifier for multi-tenant isolation.
- * <p>When {@code @ExerisDomain(tenantScoped = true)}, exactly one field
- * must be annotated with {@code @TenantId} OR {@code tenantIdField} must be specified.
+ * <p>When {@code @ExerisDomain(dataScope = TENANT)}, at most one field may carry
+ * {@code @TenantId}; with none, the {@code tenantIdField} override or the canonical
+ * name {@code tenantId} applies.
  *
  * <h2>Usage:</h2>
  * {@snippet lang="java" :
- * @ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
+ * @ExerisDomain(module = "sales", path = "/orders", dataScope = DataScope.TENANT)
  * public class Order {
  *
  *     @Field(label = "Organization")
@@ -29,22 +30,36 @@ import java.lang.annotation.Target;
  *   <li>{@code Long} - for integer-based tenant IDs</li>
  * </ul>
  *
- * <h2>Target design — not emitted today:</h2>
+ * <h2>Emitted today — by {@code dataScope = TENANT}, not by this marker:</h2>
  * <ul>
- *   <li>Repository queries automatically filter by tenant</li>
- *   <li>Service layer injects current tenant from security context</li>
- *   <li>API responses never expose tenant ID (security)</li>
- *   <li>Indexes created for tenant + primary key</li>
+ *   <li>Reads and writes are confined to the current tenant by a generated
+ *       row-level-security policy ({@code USING} and {@code WITH CHECK}, forced so
+ *       the table owner is bound by it too)</li>
+ *   <li>A written row whose tenant is unset is stamped with the acting tenant from
+ *       the kernel's {@code StorageContext} — in the repository, not a service
+ *       layer</li>
+ *   <li>The tenant column is indexed on its own</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
- * fields for this marker, so writing it changes nothing in the emitted output. What
- * generates the column is the entity-level flag set on {@code @ExerisDomain}, with the
- * field-name override attributes choosing its name. See the package javadoc for the live
- * path.
+ * <h2>Target design — not emitted today:</h2>
+ * <ul>
+ *   <li>API responses never expose tenant ID (security) — today a create answers
+ *       with the entity, tenant field included</li>
+ *   <li>A composite tenant + primary-key index</li>
+ * </ul>
+ *
+ * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * marker and records the annotated field as {@code SystemFieldsMetadata.tenantIdField},
+ * which the generators use for the tenant column in place of the canonical name. It names
+ * the field; it does not partition the entity — that is {@code dataScope = TENANT} on
+ * {@code @ExerisDomain}. The processor refuses the marker on more than one field, and a
+ * {@code tenantIdField} override that names a different field. None of the attributes
+ * below is carried ({@code SystemFieldsMetadata} holds one field name per role), so
+ * setting one changes no emitted output, and the {@code -io} reader does not read the
+ * marker. See the package javadoc.
  *
  * @since 0.1
- * @see eu.exeris.sdk.annotation.ExerisDomain#tenantScoped()
+ * @see eu.exeris.sdk.annotation.ExerisDomain#dataScope()
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)

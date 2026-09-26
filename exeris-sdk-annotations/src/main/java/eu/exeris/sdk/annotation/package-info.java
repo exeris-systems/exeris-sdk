@@ -26,8 +26,8 @@
  *
  * <h2>Status vocabulary</h2>
  * <p>Every annotation — and, where they differ, every attribute — is labelled
- * with one of four words. They are used consistently across this package, the
- * AST package, and {@code docs/guide/}:
+ * with one of four words. They are used consistently across this package and the
+ * AST package:
  * <dl>
  *   <dt><strong>LIVE</strong></dt>
  *   <dd>Extracted into the AST <em>and</em> read by a generator that emits
@@ -80,15 +80,18 @@
  * <h2>Quick start</h2>
  *
  * <h3>1. Resolve the artifacts</h3>
- * <p>There are no {@code eu.exeris} artifacts on Maven Central yet. The Central
- * Portal endpoints are wired in the root POM, but publishing is deliberately not
- * switched on before the kernel moves — an ecosystem sequencing decision.
- * Releases ship as a git tag plus a GitHub Release. Until that changes, build the
- * SDK from source and consume the local install:
+ * <p>From the 0.12.0 line on, a released version resolves from Maven Central
+ * under the {@code eu.exeris} group. Releases at or below 0.11.0 are a git tag
+ * plus a GitHub Release only, and none is backfilled. A version Central does not
+ * carry — one of those, a {@code -SNAPSHOT}, or a line not yet released — is
+ * built from source and consumed from the local install:
  * {@snippet lang="shell" :
- * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk && mvn -q install
+ * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk
+ * mvn -q install -Djapicmp.skip=true
  * }
- * <p>Then depend on it:
+ * <p>The flag skips the semver gate, whose {@code 0.11.0} baseline was never
+ * published to Maven Central; the README has the details. Either way, depend on
+ * it:
  * {@snippet lang="xml" :
  * <dependency>
  *     <groupId>eu.exeris</groupId>
@@ -189,7 +192,8 @@
  *
  * <h2>Annotation index by status</h2>
  * <p>Annotation-level status. Attribute-level status is on each annotation's own
- * javadoc, and the full per-attribute matrix is in {@code docs/guide/}.
+ * javadoc, which {@code META-INF/exeris/annotation-catalog.json} in this jar carries
+ * per attribute in machine-readable form.
  * <dl>
  *   <dt><strong>LIVE</strong> — reach the AST and drive emitted output</dt>
  *   <dd>{@link eu.exeris.sdk.annotation.ExerisDomain @ExerisDomain},
@@ -227,7 +231,13 @@
  *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge} is PARTIAL for
  *       the other reason in the definition: a generator does consume it
  *       ({@code KernelGraphSyncGenerator}), but only the processor extracts it
- *       — the {@code -io} reader does not, so the two readers disagree.</dd>
+ *       — the {@code -io} reader does not, so the two readers disagree. The
+ *       {@code system} markers other than {@code @PrimaryKey} and
+ *       {@code @SharedScope} — {@code @TenantId}, {@code @Version}, the three
+ *       soft-delete markers and the four {@code @Audit*} markers — are PARTIAL
+ *       for the same reason: the processor records the field each one marks
+ *       and the generators name the column after it, but the {@code -io}
+ *       reader reads none of them.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
@@ -251,10 +261,10 @@
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
  *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu};
- *       and <strong>the whole {@code system} and {@code security} subpackages</strong>
- *       — {@code @PrimaryKey}, {@code @TenantId}, {@code @Version},
- *       {@code @SoftDelete}, the {@code @Audit*} family, {@code @Encrypted},
- *       {@code @RowLevelSecurity}. See the note below.</dd>
+ *       {@code @PrimaryKey} and {@code @SharedScope} from the {@code system}
+ *       subpackage; and <strong>the whole {@code security} subpackage</strong> —
+ *       {@code @Encrypted}, {@code @RowLevelSecurity}. See the note below on
+ *       system fields.</dd>
  * </dl>
  *
  * <p>Two rules extend the index to the types it does not name. A
@@ -269,11 +279,10 @@
  * {@code @Saga} is LIVE and {@code @Saga.SagaTrigger} is RESERVED, because
  * {@code trigger()} is not extracted.
  *
- * <h2>System fields are driven by flags, not by field annotations</h2>
+ * <h2>System fields: the flag creates the column, the marker names it</h2>
  * <p>This is the most surprising consequence of the index above, so it is worth
- * stating plainly: the {@code system} subpackage annotations are <strong>not
- * read by the processor</strong>. Marking a field {@code @TenantId} or
- * {@code @SoftDelete} does not create a column, a filter, or a policy.
+ * stating plainly: marking a field {@code @TenantId} or {@code @SoftDelete} does
+ * not create a column, a filter, or a policy.
  *
  * <p>What generates those columns is the entity-level flag set on
  * {@code @ExerisDomain}: {@link eu.exeris.sdk.annotation.ExerisDomain#dataScope()}
@@ -281,8 +290,17 @@
  * {@link eu.exeris.sdk.annotation.ExerisDomain#audited()},
  * {@link eu.exeris.sdk.annotation.ExerisDomain#versioned()}. The generator adds
  * the column, the migration, the repository filter and the RLS policy from the
- * flag alone. The {@code system} annotations exist to let a future reader
- * override the derived names; today they are documentation for humans.
+ * flag alone.
+ *
+ * <p>A {@code system} marker says <em>which field</em> holds a role the flag
+ * switched on. The processor reads every marker except {@code @PrimaryKey} and
+ * {@code @SharedScope}, and the generators use the marked field's name for the
+ * column in place of the canonical one. The {@code @ExerisDomain} field-name
+ * override attributes ({@code tenantIdField}, {@code versionField}, …) say the
+ * same thing from the class; with neither, the canonical name applies, and a
+ * marker and an override that name different fields are refused at the
+ * declaration. The markers' own attributes are not carried. The {@code system}
+ * package javadoc has the per-marker status.
  *
  * <h2>Data scope (formerly {@code tenantScoped})</h2>
  * <p>{@link eu.exeris.sdk.annotation.ExerisDomain#tenantScoped()} is
@@ -474,7 +492,9 @@
  *
  * <h2>Where to go next</h2>
  * <ul>
- *   <li>{@code docs/guide/} — the user guide and the full per-attribute status matrix.</li>
+ *   <li>{@code META-INF/exeris/annotation-catalog.json}, inside this jar — every
+ *       annotation and attribute in this package with its javadoc, status labels
+ *       included, in machine-readable form.</li>
  *   <li>{@code MIGRATION.md} — every deprecation, its replacement and its removal release.</li>
  *   <li>{@code ROADMAP.md} — what each release added and what 1.0.0 freezes.</li>
  *   <li>{@code exeris-tooling} — the processor and generators; authoritative for

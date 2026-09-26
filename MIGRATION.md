@@ -20,17 +20,44 @@ the upgrade steps required.
 
 ## 0.11.x → 0.12.x
 
-### `SchemaVersion.CURRENT` is `"0.12.0"` — baselines stamped `"0.11.0"` read as skew
+### Three AST records grew a trailing component + `SchemaVersion.CURRENT` is `"0.12.0"`
 
-Additive change, no code edit. `DomainMetadata` and `ActionMetadata` each gained
-a trailing nullable `routeAccess` component (`@RouteAccess`, reserved — see
-below), so the AST wire shape has a version of its own and the stamp moves with
-it. A baseline stamped by 0.11.0 now reads as
-`NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps it. That is the
-deliberate posture — refuse a cross-shape baseline rather than assume
+**Impact:** three records in `eu.exeris.sdk.sourcemodel.ast` gained trailing,
+nullable components, so their canonical constructors changed arity:
+
+| Record | Components 0.11.0 → 0.12.0 | Added | Non-positional construction |
+|---|---|---|---|
+| `DomainMetadata` | 39 → 41 | `routeAccess` (`@RouteAccess`), `channel` (`@Channel`) | builder: `.routeAccess(…)`, `.channel(…)` |
+| `ActionMetadata` | 17 → 18 | `routeAccess` (`@RouteAccess`) | builder: `.routeAccess(…)` |
+| `SystemFieldsMetadata` | 10 → 11 | `sharedScopeField` (`@SharedScope`) | none; `defaults()` only |
+
+This is the record-growth stance in
+[`MIGRATION-0.x-to-1.0.md` §3](MIGRATION-0.x-to-1.0.md): existing positional
+prefixes are unchanged in order, so **builder callers need no change**, and
+**positional callers recompile with one added trailing argument per new
+component** — `null` keeps the 0.11.0 meaning, so `DomainMetadata` takes two and
+the other two records one each. The semver gate is configured to accept the
+constructor change as a minor-level one; it does not flag this growth.
+
+**`SystemFieldsMetadata` has no builder**, and its only factory, `defaults()`,
+returns the canonical field names. A caller that needs non-canonical names — the
+annotation processor resolving `@TenantId` or `tenantIdField`, for instance — has
+only the positional constructor, so for this record "use the builder" is not
+available: such a caller must add the trailing `null` for `sharedScopeField` to
+build against 0.12.0. `exeris-tooling`'s processor is one.
+<!-- S6: remedy pending founder decision -->
+
+**On the wire nothing breaks.** Every new component is by-name and omitted when
+absent, so a 0.11.0 document reads back with them `null`. The AST shape still has
+a version of its own, and the stamp moves with it: a baseline stamped by 0.11.0
+now reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps it. That
+is the deliberate posture — refuse a cross-shape baseline rather than assume
 compatibility — and it is the same one-milestone degradation the 0.10.0 and
 0.11.0 bumps caused. Note this is *not* the inlining bug below: that one made
 the two halves of a single build disagree; this one is the mechanism working.
+
+All three additions are reserved, and no processor populates them yet. Each has
+its own entry below.
 
 ### `@RouteAccess` is new, reserved, and outside the 1.0.0 freeze
 
@@ -48,6 +75,45 @@ Do not reach for `roles = {}` or `permissions = {}` to mean "public" — empty
 already means "nothing declared" on all four attributes, and `@Action.roles` has
 documented empty as "accessible to all authenticated users" since 0.1.0. That
 collision is the reason this annotation exists.
+
+### `@Channel` is new, reserved, and outside the 1.0.0 freeze
+
+Nothing to migrate in annotated sources — it is additive and nothing extracts it
+yet. Code that constructs `DomainMetadata` positionally adds the trailing
+`channel` argument (first entry above); builder callers change nothing.
+
+- Declaring it has **no generated effect today**. No processor reads it, no
+  generator opens an endpoint from it, and the `-io` reader does not read it.
+- It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
+  amended 2026-09-03), because the kernel holds its WebSocket SPI (kernel
+  ADR-084) at tier `preview`. That tier is gated on evidence under load rather
+  than on the contract's shape, but it still bars freezing: a 1.x minor may
+  change or drop the annotation. Pin exactly if you adopt it early.
+
+It is not another spelling of `@ExerisDomain(realTimeApi = true)` or
+`@Action(streaming = true)`. Those are server push over SSE, one-directional by
+construction; `@Channel` declares a connection clients also write to. It
+deliberately declares no message-size limit, origin allowlist, frame format or
+reconnection behaviour — ADR-072 obligation 20 gives the reason for each.
+
+### `@SharedScope` is new and reserved — frozen as declared
+
+Nothing to migrate in annotated sources. Code that constructs
+`SystemFieldsMetadata` positionally must add the trailing `sharedScopeField`
+argument, and there is no builder to switch to (first entry above).
+
+- It marks the field holding the **shared-scope key** of a `DataScope.UNIVERSE`
+  entity — the column a generated policy would compare against the kernel's
+  `ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE` to widen reads across
+  tenants. It **accompanies** `@TenantId`, which keeps writes pinned to the owning
+  tenant; it does not replace it.
+- Declaring it has **no generated effect today**. The `exeris-tooling` processor
+  reads every `system` marker except `@PrimaryKey` and this one, and
+  `dataScope = UNIVERSE` is still refused at the declaration site, so no build
+  today reads the field.
+- Unlike `@RouteAccess` and `@Channel`, it is **not** on ADR-072's exception
+  list. Like the other reserved system markers it is frozen at 1.0.0 as declared
+  ([`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md)).
 
 ### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
 

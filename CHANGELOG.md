@@ -29,8 +29,20 @@ for per-version upgrade steps.
 
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.11.0"` → `"0.12.0"`** — a baseline
   stamped `"0.11.0"` now reads as schema skew, so ADR-042 conflict detection refuses it rather than
-  trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is itself additive
-  (trailing nullable `routeAccess` on `DomainMetadata` and `ActionMetadata`).
+  trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is additive on the
+  wire (by-name, nullable) but not for positional callers — see the next entry.
+  See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: three AST records grew a trailing component — positional callers
+  recompile.** `DomainMetadata` 39 → 41 (`routeAccess`, `channel`), `ActionMetadata` 17 → 18
+  (`routeAccess`), `SystemFieldsMetadata` 10 → 11 (`sharedScopeField`). Builder callers are
+  unaffected; a positional caller adds one trailing argument per new component, and `null` keeps the
+  0.11.0 meaning. That is the record-growth stance in `MIGRATION-0.x-to-1.0.md` §3, and the reason
+  `source-model`'s japicmp configuration accepts `CONSTRUCTOR_REMOVED` as a minor-level change.
+  **`SystemFieldsMetadata` is the one that bites:** it has no builder and its only factory,
+  `defaults()`, fixes the canonical names, so a caller that sets non-canonical names has no
+  non-positional path — `exeris-tooling`'s processor is such a caller and does not compile against
+  0.12.0 until it passes the eleventh argument. Reported by the Stellar Tactics dog-food (S6).
+  <!-- S6: remedy pending founder decision -->
   See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` is no longer a compile-time constant** — it was
   `static final String` with a literal initialiser, so javac inlined it into every consumer. A
@@ -94,7 +106,9 @@ for per-version upgrade steps.
   entry (the readiness step now asserts the two lists agree, and fails when they do not). It does
   not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate stays CI-skipped for
   one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
-  resolvable from Central; `-Djapicmp.skip=true` comes off `build.yml` when 0.13.0 opens.
+  resolvable from Central. `-Djapicmp.skip=true` comes off all four workflows that carry it —
+  `build.yml`, `release.yml`, `release-assets.yml` and `guardrails.yml` (through the javadoc gate's
+  `extra-maven-args`) — when the 0.13.0 line opens against a 0.12.0 baseline Central can serve.
 
 - **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
   marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
@@ -116,9 +130,9 @@ for per-version upgrade steps.
 
   A bare marker with no attributes, deliberately: `@TenantId`'s four attributes are all inert, and
   reproducing them on a new annotation would manufacture surface with nothing to be inert against.
-  **Reserved**, on the same footing as the ten markers already in that package — the processor does
-  not scan fields for any of them — and `dataScope = UNIVERSE` is still refused at the declaration
-  site, so there is no build today in which the field would be read. It lands now because the other
+  **Reserved**: `exeris-tooling`'s processor reads every marker in that package except
+  `@PrimaryKey` and this one, and `dataScope = UNIVERSE` is still refused at the declaration site,
+  so there is no build today in which the field would be read. It lands now because the other
   two thirds are in place: the kernel published both session-variable constants in v0.12.0, and the
   only remaining piece for a transcription was the SDK saying which column to compare.
 
@@ -156,9 +170,11 @@ for per-version upgrade steps.
   role kind at all. **Reserved**, on ADR-072's three-part test and therefore outside the 1.0.0
   freeze: no processor extracts it, no generator emits a policy table from it, and the kernel
   holds route authorization at tier `preview`.
-- **`SchemaVersion.CURRENT` is `"0.12.0"`** for the two new trailing components. Additive and
-  by-name; a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established posture of
-  refusing a cross-shape baseline rather than assuming compatibility.
+- **`SchemaVersion.CURRENT` is `"0.12.0"`** for the new trailing components — `routeAccess` on
+  `DomainMetadata` and `ActionMetadata`, `DomainMetadata.channel`, and
+  `SystemFieldsMetadata.sharedScopeField`. By-name on the wire, and a recompile for positional
+  callers (see *Breaking*); a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established
+  posture of refusing a cross-shape baseline rather than assuming compatibility.
 
 - **`META-INF/exeris/ast-schema.json` ships inside `exeris-sdk-source-model`, and is attached
   to the GitHub Release.** A JSON Schema (draft 2020-12) for the build-time metadata hand-off
@@ -230,6 +246,49 @@ for per-version upgrade steps.
   suite all pass on it.
 
 ### Fixed
+
+- **Nine system-field markers said the processor ignores them. It reads them.** `@TenantId`,
+  `@Version`, `@SoftDelete`, `@SoftDeleteTimestamp`, `@SoftDeletedBy` and the four `@Audit*` markers
+  each carried "Status: RESERVED — the `exeris-tooling` processor does not scan fields for this
+  marker", and the `system` package-info, the root `package-info` index, `@SharedScope` and
+  `@ExerisDomain.validationMode` repeated it. Checked against `exeris-tooling` `main` rather than
+  our own notes: the processor resolves all nine into `SystemFieldsMetadata` beside the override
+  attributes, the generators read the marked field's name in place of the canonical one, and a
+  marker repeated on two fields or contradicting its override is refused at the declaration. They
+  are now PARTIAL — a generator consumes them, but the `-io` reader does not read them and their 19
+  attributes are carried nowhere — and each says that a marker names the column while the entity
+  flag still decides whether it exists. `@PrimaryKey` and `@SharedScope` stay RESERVED, each with
+  its reason; `validationMode` stays RESERVED for the reason that is actually true, that no processor
+  reads it. This prose ships verbatim in `annotation-catalog.json`, so a wrong status label here is
+  a wrong answer served to every agent that reads the catalog.
+
+- **Three documentation gaps before the cut.** The root `package-info` sent readers to
+  `docs/guide/` three times, and no such directory exists on `main`; it now points at
+  `META-INF/exeris/annotation-catalog.json`, which ships in the same jar and carries the same
+  per-attribute text. The 1.0.0 freeze exception was four surfaces in `MIGRATION-0.x-to-1.0.md` §2
+  but three in the `ROADMAP.md` GA item and two in that guide's own §3; all three now name
+  `@Blob` / `@Schedule` / `@RouteAccess` / `@Channel`, per the ADR-072 amendment of 2026-09-03. And
+  neither `README.md` nor `CONTRIBUTING.md` said that a fresh clone needs `-Djapicmp.skip=true` to
+  reach `verify` — the `0.11.0` baseline was never published to Central — or when that flag comes
+  off, while the root `package-info` quick start ran a bare `mvn -q install` that fails on exactly
+  that; all three carry the flag now.
+
+- **Javadoc that ships in the 0.12.0 jars said things that stop being true, or never were.**
+  - The root `package-info` quick start said there are no `eu.exeris` artifacts on Central and
+    publishing is not switched on — false inside the first jar meant for Central. It now says what
+    holds before and after the upload: from the 0.12.0 line on a release resolves from Central,
+    nothing at or below 0.11.0 is there, and anything Central does not carry is built from source.
+  - `@TenantId`, `@Version` and `@SoftDelete` listed as "not emitted today" behaviours the entity
+    flag does emit: the forced RLS policy and tenant stamping, the optimistic-lock predicate with its
+    409, soft delete as an update filtered out of every read. Each list is now split into what the
+    flag emits and what remains a target, checked against the generators. The JPA `@Version` item
+    is gone; Exeris emits no JPA.
+  - `@ExerisDomain.primaryKeyField` read as working; it carries a PARTIAL label now, since the
+    value reaches `SystemFieldsMetadata` and no generator reads it.
+  - The AST `package-info` had no section for the 0.12.0 components `routeAccess`, `channel` and
+    `sharedScopeField`, and now states each one's status. Only the first two are outside the
+    1.0.0 freeze.
+  - `EventSourcedMetadata.Builder` called itself a builder for `ProjectionConfig`.
 
 - **The record-growth snapshot could go stale without anything noticing, and had.**
   `RecordComponentOrderTest` compares each AST record against `record-components.txt` as a
