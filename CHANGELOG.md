@@ -320,6 +320,20 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **The derived names no longer depend on the JVM's default locale.**
+  `FieldMetadata.effectiveColumnName()` lower-cased its snake-cased fallback with
+  `String.toLowerCase()`, which under a Turkish default (`tr-TR`) maps `I` to a dotless `ı`: a field
+  `invoiceId` became the column `invoice_ıd` on that machine and `invoice_id` everywhere else.
+  `DomainMetadata.effectivePath()` and `effectiveTableName()` had the same defect until the
+  pluralization change above moved them to `Locale.ROOT`; found downstream by a tr-TR vs ROOT
+  byte-identity test, where an entity with no declared path was served at `/ınvoices` while the
+  generated TypeScript client called `/invoices`. All three now lower-case under `Locale.ROOT`, and
+  no case conversion without an explicit locale is left in `exeris-sdk-source-model` or
+  `exeris-sdk-source-model-io`. Pinned by `FieldMetadataTest.effectiveColumnNameDoesNotDependOnTheDefaultLocale`
+  and `DomainMetadataTest$PluralNaming.theDerivationDoesNotDependOnTheDefaultLocale`, which run the
+  helpers under `Locale.of("tr", "TR")` and restore the default afterwards; each fails with the
+  default-locale call put back.
+
 - **`SourceModelReader` reads `@Saga.version`, so the reader and the processor agree on a saga's
   plan identity.** Kernel ADR-064 keys the plan catalog by `(name, version)`. The `exeris-tooling`
   processor has extracted `@Saga.version` since 0.8.0. The `-io` reader never did, so

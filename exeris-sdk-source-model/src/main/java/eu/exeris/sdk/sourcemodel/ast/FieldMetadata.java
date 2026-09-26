@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -180,8 +181,10 @@ public record FieldMetadata(
     }
 
     /**
-     * The effective {@code columnName}: the declared value when one is set, and this
-     * record's documented fallback otherwise.
+     * The effective {@code columnName}: the declared value when one is set, otherwise the
+     * snake-cased field {@code name} ({@code orderLineTotal} → {@code order_line_total}),
+     * lower-cased under {@link Locale#ROOT} so the result does not depend on the JVM's default
+     * locale.
      *
      * @return the effective value
      */
@@ -267,8 +270,10 @@ public record FieldMetadata(
     @JsonIgnore
     public boolean isTemporal() { return type.contains("LocalDate") || type.contains("LocalDateTime") || type.contains("Instant") || type.contains("OffsetDateTime"); }
 
+    // Locale.ROOT, not the JVM default: under tr-TR the default maps I to a dotless ı, and a
+    // derived column name must be the same bytes on every build machine.
     private static String toSnakeCase(String input) {
-        return input.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+        return input.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT);
     }
 
     /**

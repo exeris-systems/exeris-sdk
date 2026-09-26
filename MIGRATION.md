@@ -201,7 +201,12 @@ aligned now. The naive plural reached real output: `colonys`, `technologys` and
 **What changed** — both helpers now derive from `pluralName()`, whose rule is
 unchanged (`+es` after `s`, `x`, `z`, `ch`, `sh`; consonant + `y` → `ies`; otherwise
 `+s`), and both lower-case under `Locale.ROOT`, so a Turkish default locale no longer
-turns `Item` into `ıtem`:
+turns `Item` into `ıtem` — or serves an entity with no declared path at `/ınvoices`
+while the generated client calls `/invoices`. `FieldMetadata.effectiveColumnName()`
+got the same fix (`invoiceId` was `invoice_ıd` under `tr-TR`). On a JVM whose default
+locale is not Turkish-like nothing changes; on one that is, derived names now match
+every other machine; tests run all three under `Locale.of("tr", "TR")`. What the
+plural changes:
 
 | Entity | `effectiveTableName()` 0.11 → 0.12 | `effectivePath()` fallback 0.11 → 0.12 |
 |---|---|---|

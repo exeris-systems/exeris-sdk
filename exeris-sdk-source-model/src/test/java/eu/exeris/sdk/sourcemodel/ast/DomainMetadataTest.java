@@ -183,11 +183,15 @@ class DomainMetadataTest {
         void theDerivationDoesNotDependOnTheDefaultLocale() {
             // Under a Turkish default, String.toLowerCase() maps I to a dotless i, which would put
             // "ıtems" into a table name on one machine and "items" on another.
+            // Found downstream by a tr-TR vs ROOT byte-identity test: an entity with no declared
+            // path was served at /ınvoices while the generated TypeScript client called /invoices.
             Locale saved = Locale.getDefault();
             try {
-                Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+                Locale.setDefault(Locale.of("tr", "TR"));
                 assertThat(entity("Item").effectiveTableName()).isEqualTo("items");
                 assertThat(entity("InventoryItem").effectivePath()).isEqualTo("/inventory-items");
+                assertThat(entity("Invoice").effectivePath()).isEqualTo("/invoices");
+                assertThat(entity("Invoice").effectiveTableName()).isEqualTo("invoices");
             } finally {
                 Locale.setDefault(saved);
             }
