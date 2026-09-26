@@ -264,6 +264,21 @@ for per-version upgrade steps.
   (`composition-spec`) keep their named relaxation for now; whether they follow is open. See
   [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
+### Deprecated
+
+- **`@ExerisDomain.apiVersion`** — `@Deprecated(since = "0.12.0", forRemoval = true)`, removal at
+  1.0.0, with no replacement. It reaches no emitted artifact: the router, the OpenAPI document and
+  every generated client serve and request the entity at its `path`, and have since the client was
+  aligned on it after its `/api/<version>` prefix produced a `404` against the generated server
+  (Stellar finding T38). It also could not be activated later, because its default is `"v1"` —
+  honouring it would move every route of every application that never set it. Deprecating it now
+  rather than at the freeze is the `tenantScoped` argument again: a deprecation and its removal
+  cannot share a release, so an attribute still live at 1.0.0 would stay for all of 1.x. Its
+  carrier goes with it: `DomainMetadata.apiVersion()` and `DomainMetadata.Builder.apiVersion(…)`
+  are deprecated for removal too. Both build paths keep reading the attribute until 1.0.0, so
+  nothing a build emits changes in the window; a source that sets it compiles with a `[removal]`
+  warning. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+
 ### Security
 
 - **`jackson-databind` 3.2.0 → 3.2.2.** 3.2.0 carries the `@JsonView`-bypass advisory for

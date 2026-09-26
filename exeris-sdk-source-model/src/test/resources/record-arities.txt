@@ -12,9 +12,9 @@
 # CONSTRUCTOR_REMOVED reports it once a baseline resolves (0.13.0), and review catches it
 # before then.
 #
-# A major re-baselines. 1.0.0 removes DomainMetadata.tenantScoped from the middle of the
-# record, which changes every DomainMetadata constructor at once; its line restarts from the
-# 1.0.0 shape then, and only then.
+# A major re-baselines. 1.0.0 removes DomainMetadata.tenantScoped and DomainMetadata.apiVersion
+# from the middle of the record, which changes every DomainMetadata constructor at once; its
+# line restarts from the 1.0.0 shape then, and only then.
 #
 # Earlier arities recorded here, and the release whose shape each one preserves:
 #   ActionMetadata=17            0.11.0 (routeAccess added in 0.12.0)

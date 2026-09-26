@@ -123,15 +123,28 @@ public @interface ExerisDomain {
      * typed client requests the same. Setting this attribute does not change where an
      * endpoint is served, and {@code -Aexeris.strict} reports it.
      *
-     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()} — so it is
-     * carried on the wire and available to a future consumer, unlike
-     * {@link Action#path()}, which reaches no AST component at all. Whether the router
-     * and the published contract should serve {@code /api/<version>/…} is an open
-     * design question; taking it would change every emitted route.
+     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()}, itself
+     * deprecated for removal alongside this attribute — and both build paths still read
+     * it until 1.0.0, so a source that sets it keeps producing the same metadata for the
+     * whole deprecation window.
      *
      * @return API version (e.g., "v1", "v2"); carried into the AST, read by no
-     *         generator today
+     *         generator
+     * @deprecated since 0.12.0, for removal in 1.0.0. It reaches no emitted artifact:
+     *         the router, the OpenAPI document and every generated client serve and
+     *         request the entity at its {@link #path()}, with no version segment, and
+     *         they have since the generated client was aligned on that path (Stellar
+     *         finding T38). It cannot be switched on later either, because its default
+     *         is {@code "v1"}: honouring it would move every route of every application
+     *         that never wrote the attribute. Freezing it at 1.0.0 would promise, for
+     *         the whole 1.x line, an attribute that does nothing. <strong>There is no
+     *         replacement today — delete the attribute;</strong> a versioned route is
+     *         spelled in {@link #path()} if you need one now. If versioned routes return
+     *         as a generated feature, they will come as a new opt-in attribute with no
+     *         default, so that declaring nothing keeps every route where it is. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.12.0", forRemoval = true)
     String apiVersion() default "v1";
 
     /**

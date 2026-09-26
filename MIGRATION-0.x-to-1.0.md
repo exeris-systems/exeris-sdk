@@ -38,6 +38,20 @@ survives into 1.x unchanged.
   sources still setting only the boolean silently lose their tier. The AST
   component `DomainMetadata.tenantScoped` goes with it — `dataScope` becomes
   the sole carrier and `effectiveDataScope()` collapses to returning it.
+- **`@ExerisDomain.apiVersion`** — deprecated since 0.12.0 (`forRemoval = true`,
+  Stellar finding T38). **No replacement:** the attribute reaches no emitted
+  artifact (router, OpenAPI document and generated clients all serve the entity
+  at its `path`), and its `"v1"` default means it could never be switched on
+  without moving every route. A versioned route, if wanted, is spelled in `path`.
+  Three things go together:
+  - the attribute itself;
+  - the AST component `DomainMetadata.apiVersion`, with its accessor and its
+    builder setter `DomainMetadata.Builder.apiVersion(String)` — which changes
+    every `DomainMetadata` constructor, as the `tenantScoped` removal does;
+  - the `-io` reader's read (`SourceModelReader.deprecatedApiVersion`), in
+    lockstep with the `exeris-tooling` processor dropping its own.
+  A 0.x baseline that carries `"apiVersion"` still reads, because the records
+  ignore unknown properties.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -424,9 +438,10 @@ freeze or is explicitly re-dispositioned here.
 
 ## 5. TBD at the 1.0.0 release PR
 
-- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the three §1
-  removals only — `@Validation.required`, `@Validation.validateOn` and
-  `@ExerisDomain.tenantScoped`, with the `DomainMetadata.tenantScoped`
-  component that goes with the last).
+- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the four §1
+  removals only — `@Validation.required`, `@Validation.validateOn`,
+  `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
+  `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
+  go with the last two).
 - Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`).
 - npm `@exeris/ui-kit` public-registry publish notes (GA item).

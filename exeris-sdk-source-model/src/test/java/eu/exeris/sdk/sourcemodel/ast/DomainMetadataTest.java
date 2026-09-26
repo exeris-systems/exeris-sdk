@@ -230,6 +230,9 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("Builder default invariants")
     class BuilderDefaults {
+        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
+        // until then; this test exercises the carrier on purpose.
+        @SuppressWarnings("removal")
         @Test
         void unsetFieldsHaveSafeDefaults() {
             DomainMetadata d = base().build();
@@ -250,6 +253,9 @@ class DomainMetadataTest {
             assertThat(d.uiMetadata()).isNull();
         }
 
+        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
+        // until then; this test exercises the carrier on purpose.
+        @SuppressWarnings("removal")
         @Test
         void builderSettersAreFluent() {
             DomainMetadata d = base()
@@ -293,8 +299,45 @@ class DomainMetadataTest {
     }
 
     @Nested
+    @DisplayName("apiVersion is deprecated for removal at 1.0.0, and still carried until then")
+    class ApiVersionDeprecation {
+        @Test
+        void accessorAndBuilderSetterBothCarryTheDeprecation() throws Exception {
+            // The attribute, the accessor and the setter go together at 1.0.0 (MIGRATION-0.x-to-1.0.md
+            // §1). A carrier that lost its marker would let a consumer keep reading a component the
+            // removal list says is going, with no warning until the build that breaks.
+            for (var member : List.of(DomainMetadata.class.getMethod("apiVersion"),
+                    DomainMetadata.Builder.class.getMethod("apiVersion", String.class))) {
+                Deprecated deprecated = member.getAnnotation(Deprecated.class);
+                assertThat(deprecated).as("%s must be deprecated", member).isNotNull();
+                assertThat(deprecated.forRemoval()).as("%s must be marked for removal", member).isTrue();
+                assertThat(deprecated.since()).isEqualTo("0.12.0");
+            }
+        }
+
+        @Test
+        @SuppressWarnings("removal") // the point of the test is the deprecated accessor
+        void theComponentIsStillCarriedUnchanged() {
+            // Deprecation changes no behaviour inside the window: the builder default stays "v1",
+            // a set value comes back, and the explicit accessor returns the component itself.
+            assertThat(base().build().apiVersion()).isEqualTo("v1");
+            DomainMetadata d = base().apiVersion("v2").build();
+            assertThat(d.apiVersion()).isEqualTo("v2");
+            assertThat(d).isEqualTo(new DomainMetadata(
+                    "Order", "com.acme.domain", "", "", "", "", "v2", List.of(),
+                    true, false, false, false, false, false, false, false,
+                    List.of(), List.of(), false, false, "PT5M", "", false, "english", "",
+                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                    null, null, null, null, null, null, List.of(), null));
+        }
+    }
+
+    @Nested
     @DisplayName("the 0.11.0 constructor shape is kept")
     class PreviousArity {
+        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
+        // until then; this test exercises the carrier on purpose.
+        @SuppressWarnings("removal")
         @Test
         void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {
             // Kept so code compiled or written against 0.11.0 still links and compiles

@@ -44,6 +44,9 @@ class AstJsonRoundTripTest {
 
     @Test
     @DisplayName("DomainMetadata round-trips with nested fields, actions, events")
+    // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) but stays on the wire
+    // until then, so its round trip is still pinned here.
+    @SuppressWarnings("removal")
     void domainMetadataRoundTrips() {
         DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
                 .module("sales")

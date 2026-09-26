@@ -127,6 +127,29 @@ class SourceModelIoTest {
         }
 
         @Test
+        @SuppressWarnings("removal") // the deprecated carrier is what this test pins
+        void readsTheDeprecatedApiVersionUntilItsRemoval() {
+            // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38),
+            // and the processor still reads it. Until both drop it together the reader keeps
+            // reading it, present-only: a declared value survives and an absent one stays the
+            // builder's "v1". Stopping early would make the two paths disagree (ADR-042).
+            String declared = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(module = "billing", apiVersion = "v2")
+                    public class Invoice {}
+                    """;
+            String absent = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    @ExerisDomain(module = "billing")
+                    public class Invoice {}
+                    """;
+            assertThat(reader.read(declared).orElseThrow().apiVersion()).isEqualTo("v2");
+            assertThat(reader.read(absent).orElseThrow().apiVersion()).isEqualTo("v1");
+        }
+
+        @Test
         void absentBooleanAttributeKeepsBuilderDefault() {
             // restApi defaults TRUE in the builder (the surprising branch — all other
             // booleans default false); an absent restApi must stay true, not be forced.

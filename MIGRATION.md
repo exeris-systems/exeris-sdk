@@ -139,6 +139,53 @@ the new builder's `.sharedScopeField(…)` (first entry above).
   list. Like the other reserved system markers it is frozen at 1.0.0 as declared
   ([`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md)).
 
+### `@ExerisDomain.apiVersion` is deprecated — removal in 1.0.0
+
+**Why:** the attribute reaches no emitted artifact. The generated router registers
+each entity at its `path`, the OpenAPI document publishes the same, and every
+generated client requests the same; none of them has an `/api/<version>` segment.
+The client used to prefix one, which is how the mismatch was found: the first
+request from a generated client to a generated server answered `404` (Stellar
+finding T38), and the client was aligned on `path`. Since then the attribute has
+had no destination at all.
+
+It cannot be given one later either. Its default is `"v1"`, so a generator that
+started honouring it would move every route of every application that never wrote
+it. And 1.0.0 freezes everything public, with 1.x additive-only, so an attribute
+still live at the freeze could not be removed before 2.0. Deprecating it now is
+the only window in which removing it costs nothing.
+
+**Impact:** a source that sets it now compiles with a `[removal]` warning from
+javac. Nothing else changes before 1.0.0: both build paths keep reading it into
+`DomainMetadata.apiVersion`, so the generated output and the metadata stay what
+they were. Code that reads `DomainMetadata.apiVersion()` or calls the builder's
+`.apiVersion(…)` gets the same warning; both go at 1.0.0 with the attribute.
+
+```java
+// before — declares a version nothing serves
+@ExerisDomain(module = "sales", path = "/orders", apiVersion = "v2")
+public class Order { … }
+
+// after — say nothing; the route was always /orders
+@ExerisDomain(module = "sales", path = "/orders")
+public class Order { … }
+
+// if you need a versioned route today, it is part of the path
+@ExerisDomain(module = "sales", path = "/v2/orders")
+public class Order { … }
+```
+
+**There is no replacement attribute.** If generated versioned routes come back,
+they will come as a new opt-in attribute with no default, so that an entity that
+declares nothing keeps its route.
+
+- **Deprecated:** 0.12.0 (`@Deprecated(since = "0.12.0", forRemoval = true)`).
+- **Removed:** 1.0.0 — the attribute, the `DomainMetadata.apiVersion` component with
+  its accessor and builder setter, and the `-io` reader's read
+  ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` keeps reading it for the window, and its
+  `-Aexeris.strict` inert-attribute check already reports it. The read goes at 1.0.0.
+
 ### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
 
 **Recompile once against 0.12.0, then this stops being your problem.**

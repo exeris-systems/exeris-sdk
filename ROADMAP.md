@@ -500,6 +500,18 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   is rewritten. **Tooling:** `main` compiles unchanged against 0.12 again, so the
   `SystemFieldsMetadata` half of Stellar's B0 patch can be dropped; switching the processor to
   the builder is optional
+- [x] **`@ExerisDomain.apiVersion` is deprecated for removal at 1.0.0 (Stellar finding T38)** —
+  it reaches no emitted artifact, and its `"v1"` default means it could never be activated
+  without moving every route, so it would have frozen as a promise that does nothing for the
+  whole 1.x line. Deprecated in 0.12.0 with no replacement; the attribute, the
+  `DomainMetadata.apiVersion` component (accessor and builder setter, both
+  `@Deprecated(forRemoval = true)`) and the `-io` reader's read are listed in
+  `MIGRATION-0.x-to-1.0.md` §1. The reader keeps reading it, under a suppression scoped to that
+  one call, because the processor does (ADR-042). Activating it instead (option A) was rejected:
+  it would have to happen before 1.0 with the default changed to `""`, which is a new opt-in
+  attribute in all but name. **Tooling:** keep reading it through the window — the
+  `-Aexeris.strict` inert-attribute entry already reports it, and javac now warns on every use —
+  and drop the read, the inert-registry entry and the TS model field at 1.0.0
 - [ ] **`ApplyResult` and `CapManifest` still carry the old relaxation** — the two named
   records outside `source-model` (`-io`, `composition-spec`) keep `CONSTRUCTOR_REMOVED` as a
   MINOR change. Neither has grown since the override was written. Whether they move to the §3

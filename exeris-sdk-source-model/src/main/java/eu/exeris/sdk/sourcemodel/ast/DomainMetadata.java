@@ -35,7 +35,9 @@ import java.util.List;
  * @param apiVersion the declared API version. Carried on the wire and read by no generator —
  *                   no emitted artifact publishes an {@code /api/<version>} segment, so this
  *                   does not describe where an endpoint is served (see
- *                   {@code @ExerisDomain.apiVersion})
+ *                   {@code @ExerisDomain.apiVersion}). <strong>Deprecated for removal in
+ *                   1.0.0</strong>, with the attribute it carries; both producers fill it
+ *                   until then
  * @param tags grouping labels carried into the generated OpenAPI/AsyncAPI document
  * @param restApi whether REST endpoints are generated for this entity
  * @param graphqlApi whether a GraphQL schema and resolvers are generated
@@ -277,6 +279,26 @@ public record DomainMetadata(
                 cacheRegion, fullTextSearch, searchConfig, tableName, fields, actions, events,
                 relationships, projections, eventHandlers, uiMetadata, graphMetadata, sagaMetadata,
                 eventSourced, internalApi, systemFields, rules, dataScope, null, null);
+    }
+
+    /**
+     * The declared API version — the carrier of {@code @ExerisDomain.apiVersion}.
+     *
+     * <p>Declared explicitly, rather than left to the record, only so it can carry the
+     * deprecation; it returns the component unchanged.
+     *
+     * @return the declared API version, {@code "v1"} unless the source set another
+     * @deprecated since 0.12.0, for removal in 1.0.0, together with
+     *         {@code @ExerisDomain.apiVersion}, which no generator reads: no emitted
+     *         artifact serves or requests an {@code /api/<version>} segment (Stellar finding
+     *         T38). There is no replacement — the route an entity is served at is
+     *         {@link #effectivePath()}. The component stays on the wire, and both the
+     *         {@code exeris-tooling} processor and the {@code -io} reader keep filling it,
+     *         until 1.0.0, so baselines written before then read back unchanged.
+     */
+    @Deprecated(since = "0.12.0", forRemoval = true)
+    public String apiVersion() {
+        return apiVersion;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -574,6 +596,17 @@ public record DomainMetadata(
         public Builder path(String v) { this.path = v; return this; }
         public Builder aggregate(String v) { this.aggregate = v; return this; }
         public Builder description(String v) { this.description = v; return this; }
+        /**
+         * Sets {@link DomainMetadata#apiVersion()}.
+         *
+         * @param v the declared API version
+         * @return this builder
+         * @deprecated since 0.12.0, for removal in 1.0.0, with the component it sets — see
+         *         {@link DomainMetadata#apiVersion()}. Producers that mirror
+         *         {@code @ExerisDomain.apiVersion} keep calling it until then; nothing else
+         *         should start.
+         */
+        @Deprecated(since = "0.12.0", forRemoval = true)
         public Builder apiVersion(String v) { this.apiVersion = v; return this; }
         public Builder tags(List<String> v) { this.tags = v; return this; }
         public Builder restApi(boolean v) { this.restApi = v; return this; }

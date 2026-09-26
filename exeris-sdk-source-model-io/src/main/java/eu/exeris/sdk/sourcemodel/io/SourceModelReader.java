@@ -71,7 +71,9 @@ import java.util.TreeSet;
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
- * {@code dataScope} tier. Domain {@code @DomainEvent}s are read
+ * {@code dataScope} tier. Two of those are deprecated for removal at 1.0.0 and read
+ * only until then: {@code tenantScoped} (ADR-059) and {@code apiVersion}
+ * (Stellar finding T38). Domain {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
@@ -334,7 +336,7 @@ public final class SourceModelReader {
         stringAttr(ann, "path").ifPresent(builder::path);
         stringAttr(ann, "aggregate").ifPresent(builder::aggregate);
         stringAttr(ann, "description").ifPresent(builder::description);
-        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
+        deprecatedApiVersion(ann, builder);
         stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
@@ -350,6 +352,19 @@ public final class SourceModelReader {
         boolAttr(ann, "sensitive").ifPresent(builder::sensitive);
         boolAttr(ann, "cacheable").ifPresent(builder::cacheable);
         boolAttr(ann, "fullTextSearch").ifPresent(builder::fullTextSearch);
+    }
+
+    /**
+     * {@code @ExerisDomain.apiVersion}, deprecated for removal in 1.0.0 together with its
+     * carrier, {@code DomainMetadata.apiVersion} (Stellar finding T38). Still read, present-only,
+     * because the processor still reads it: dropping it here first would make the two paths
+     * disagree about every source that sets it (ADR-042). The read goes at 1.0.0, in the same
+     * change that removes the attribute and the component; the suppression is scoped to this one
+     * call so nothing else in the reader can lean on it.
+     */
+    @SuppressWarnings("removal")
+    private void deprecatedApiVersion(AnnotationExpr ann, DomainMetadata.Builder builder) {
+        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
     }
 
     /** Present-only boolean attribute (no default — absent leaves the builder default). */
