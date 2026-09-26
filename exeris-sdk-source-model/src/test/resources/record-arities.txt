@@ -1,0 +1,83 @@
+# Record-constructor ledger — the record-growth stance (MIGRATION-0.x-to-1.0.md §3).
+#
+# One line per public record on the wire-carrying surface: every constructor arity the
+# record has published, ascending. RecordConstructorLedgerTest asserts that for each arity N
+# a public constructor still exists whose parameter types are the record's first N component
+# types, and that the record's current canonical arity is on the line.
+#
+# APPEND-ONLY. When a record grows, append its new arity in the same commit and keep the old
+# constructor as one that delegates with null for the new trailing components — that is what
+# lets code compiled against the previous release keep linking and keep compiling. Deleting an
+# arity together with its constructor is the one edit the test cannot see; japicmp's strict
+# CONSTRUCTOR_REMOVED reports it once a baseline resolves (0.13.0), and review catches it
+# before then.
+#
+# A major re-baselines. 1.0.0 removes DomainMetadata.tenantScoped from the middle of the
+# record, which changes every DomainMetadata constructor at once; its line restarts from the
+# 1.0.0 shape then, and only then.
+#
+# Earlier arities recorded here, and the release whose shape each one preserves:
+#   ActionMetadata=17            0.11.0 (routeAccess added in 0.12.0)
+#   DomainMetadata=39            0.11.0 (routeAccess, channel added in 0.12.0)
+#   SystemFieldsMetadata=10      0.11.0 (sharedScopeField added in 0.12.0)
+#   DomainEventMetadata=4,6      pre-EV1 and pre-EV2 (payload lists, then the trigger triple)
+
+eu.exeris.sdk.sourcemodel.ast.ActionMetadata=17,18
+eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata=11
+eu.exeris.sdk.sourcemodel.ast.BindingMetadata=5
+eu.exeris.sdk.sourcemodel.ast.BlobMetadata=2
+eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata=3
+eu.exeris.sdk.sourcemodel.ast.ChannelMetadata=2
+eu.exeris.sdk.sourcemodel.ast.ComponentNodeMetadata=6
+eu.exeris.sdk.sourcemodel.ast.DerivedMetadata=3
+eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata=4,6,9
+eu.exeris.sdk.sourcemodel.ast.DomainMetadata=39,41
+eu.exeris.sdk.sourcemodel.ast.EnumMetadata=5
+eu.exeris.sdk.sourcemodel.ast.EnumMetadata$EnumValueMetadata=4
+eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata=16
+eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata=12
+eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata$ProjectionConfig=6
+eu.exeris.sdk.sourcemodel.ast.FieldMetadata=31
+eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata=3
+eu.exeris.sdk.sourcemodel.ast.GraphMetadata=4
+eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata=3
+eu.exeris.sdk.sourcemodel.ast.GraphQueryMetadata=3
+eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata=7
+eu.exeris.sdk.sourcemodel.ast.ProjectionMetadata=10
+eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata=2
+eu.exeris.sdk.sourcemodel.ast.RegionMetadata=2
+eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata=14
+eu.exeris.sdk.sourcemodel.ast.RequiresMetadata=3
+eu.exeris.sdk.sourcemodel.ast.RuleMetadata=5
+eu.exeris.sdk.sourcemodel.ast.SagaMetadata=16
+eu.exeris.sdk.sourcemodel.ast.SagaMetadata$MonitoringConfig=4
+eu.exeris.sdk.sourcemodel.ast.SagaMetadata$SagaTransition=4
+eu.exeris.sdk.sourcemodel.ast.SagaMetadata$SagaTrigger=5
+eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata=19
+eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$FieldMapping=3
+eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$InputMapping=2
+eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata$OutputMapping=2
+eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata=2
+eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata=10,11
+eu.exeris.sdk.sourcemodel.ast.UIMetadata=14
+eu.exeris.sdk.sourcemodel.ast.UIMetadata$AutocompleteConfig=8
+eu.exeris.sdk.sourcemodel.ast.UIMetadata$SelectConfig=7
+eu.exeris.sdk.sourcemodel.ast.UIMetadata$SelectOption=5
+eu.exeris.sdk.sourcemodel.ast.UIMetadata$UIFieldMetadata=18
+eu.exeris.sdk.sourcemodel.ast.UIMetadata$UIGroupMetadata=9
+eu.exeris.sdk.sourcemodel.ast.ViewMetadata=7
+eu.exeris.sdk.sourcemodel.mutation.BaselineTrust=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$AddAction=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$AddField=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$AddRelationship=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$ChangeFieldType=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$ChangeRelationshipCardinality=2
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$RemoveAction=1
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$RemoveField=1
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$RemoveRelationship=1
+eu.exeris.sdk.sourcemodel.mutation.MutationOp$RenameField=2
+eu.exeris.sdk.sourcemodel.mutation.MutationPath=3
+eu.exeris.sdk.sourcemodel.mutation.MutationResult$Conflict=4
+eu.exeris.sdk.sourcemodel.mutation.MutationResult$NoBaseline=2
+eu.exeris.sdk.sourcemodel.mutation.MutationResult$Success=1
+eu.exeris.sdk.sourcemodel.mutation.MutationResult$ValidationError=2

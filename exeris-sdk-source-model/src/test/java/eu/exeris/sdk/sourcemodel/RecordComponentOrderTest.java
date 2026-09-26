@@ -3,20 +3,13 @@ package eu.exeris.sdk.sourcemodel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -24,16 +17,23 @@ import static org.assertj.core.api.Assertions.fail;
 /**
  * Enforces the record-growth stance from {@code MIGRATION-0.x-to-1.0.md} §3:
  * an AST record may gain a <strong>trailing</strong> component, and may not
- * reorder, rename, retype or remove an existing one.
+ * reorder, rename, retype or remove an existing one. (The stance's other half —
+ * a record that grows keeps its previous arity as a delegating constructor — is
+ * {@link RecordConstructorLedgerTest}'s.)
  *
  * <p><b>Why this exists alongside the japicmp gate.</b> The two are a pair, and
  * neither is sufficient alone. japicmp sees removals, renames and retypes,
  * because each of those changes a record's <em>accessor</em>. It cannot see a
- * same-arity, same-type <em>reorder</em>: every accessor survives untouched and
- * the only trace is constructor parameter order — which the root pom's
- * {@code CONSTRUCTOR_REMOVED} override deliberately stops reading, since that
- * same signal is what a legitimate trailing append produces. Component order is
- * therefore invisible to the gate and pinned here instead.
+ * same-arity, same-type <em>reorder</em>: every accessor survives untouched, and
+ * so does every constructor descriptor, because swapping two {@code String}
+ * components leaves {@code (String, String)} exactly where it was. Component
+ * order is therefore invisible to the gate and pinned here instead.
+ *
+ * <p>Until 0.12.0 the gate was blinder than that: {@code source-model}'s pom
+ * told japicmp to accept {@code CONSTRUCTOR_REMOVED} as compatible, module-wide,
+ * so a reorder across <em>different</em> types went unseen too. That override
+ * is gone — growth now keeps the old constructor instead of removing it
+ * (Stellar finding S6) — but the same-type case never depended on it.
  *
  * <p>A reorder is the quiet failure mode worth spending a test on. Jackson binds
  * records by name, so the wire survives and {@code AstJsonRoundTripTest} stays
@@ -49,16 +49,6 @@ import static org.assertj.core.api.Assertions.fail;
 @DisplayName("record-growth stance: AST record components grow at the tail only")
 class RecordComponentOrderTest {
 
-    /**
-     * Both wire-carrying packages. The mutation surface is included because its
-     * {@code MutationOp} / {@code MutationResult} variants are records under a
-     * sealed interface and grow on the same terms — covering only {@code ast}
-     * would leave a guard that reads as complete and is not.
-     */
-    private static final List<String> PACKAGES = List.of(
-            "eu.exeris.sdk.sourcemodel.ast",
-            "eu.exeris.sdk.sourcemodel.mutation");
-
     private static final String SNAPSHOT = "/record-components.txt";
 
     @Test
@@ -66,8 +56,10 @@ class RecordComponentOrderTest {
     void componentOrderGrowsOnlyAtTheTail() throws Exception {
         Map<String, List<String>> recorded = readSnapshot();
         Map<String, List<String>> actual = new LinkedHashMap<>();
-        for (String pkg : PACKAGES) {
-            actual.putAll(discoverRecordComponents(pkg));
+        for (Map.Entry<String, Class<?>> e : WireRecords.discover().entrySet()) {
+            actual.put(e.getKey(), Arrays.stream(e.getValue().getRecordComponents())
+                    .map(java.lang.reflect.RecordComponent::getName)
+                    .toList());
         }
 
         assertThat(actual)
@@ -123,46 +115,6 @@ class RecordComponentOrderTest {
             fail("Record-growth stance violated (%d):%n%n%s",
                     violations.size(), String.join("%n%n".formatted(), violations));
         }
-    }
-
-    /**
-     * Binary class name → component names in declaration order, public records
-     * only. Keyed by the full name rather than the simple one so a nested
-     * variant ({@code MutationOp$AddField}) cannot collide with a top-level type.
-     */
-    private Map<String, List<String>> discoverRecordComponents(String pkg) throws Exception {
-        String pkgPath = pkg.replace('.', '/');
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        var urls = cl.getResources(pkgPath);
-        if (!urls.hasMoreElements()) {
-            fail("Package not found on classpath: %s", pkg);
-        }
-        Map<String, List<String>> out = new LinkedHashMap<>();
-        while (urls.hasMoreElements()) {
-            URL root = urls.nextElement();
-            Path dir = Paths.get(URLDecoder.decode(root.getPath(), StandardCharsets.UTF_8));
-            if (!Files.isDirectory(dir)) continue;
-            try (Stream<Path> files = Files.walk(dir)) {
-                for (Path p : (Iterable<Path>) files::iterator) {
-                    if (!Files.isRegularFile(p)) continue;
-                    String fname = p.getFileName().toString();
-                    if (!fname.endsWith(".class") || fname.equals("package-info.class")) continue;
-                    // Nested types are kept: builders are classes and filtered out
-                    // below, while sealed-interface variants are records that carry
-                    // the wire just as much as a top-level one.
-                    String rel = dir.relativize(p).toString().replace(File.separatorChar, '.');
-                    String fqn = pkg + "." + rel.substring(0, rel.length() - ".class".length());
-                    Class<?> c = Class.forName(fqn, false, cl);
-                    if (c.isRecord() && java.lang.reflect.Modifier.isPublic(c.getModifiers())) {
-                        out.put(c.getName(),
-                                Arrays.stream(c.getRecordComponents())
-                                        .map(java.lang.reflect.RecordComponent::getName)
-                                        .toList());
-                    }
-                }
-            }
-        }
-        return out;
     }
 
     private Map<String, List<String>> readSnapshot() throws Exception {

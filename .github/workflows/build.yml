@@ -52,8 +52,8 @@ jobs:
       # for the same reason; the root POM's japicmp comment is canonical.
       #
       # The half of the record-growth stance that needs no baseline —
-      # RecordComponentOrderTest and AnnotationSurfaceContractTest — runs here
-      # unconditionally as an ordinary test.
+      # RecordComponentOrderTest, RecordConstructorLedgerTest and
+      # AnnotationSurfaceContractTest — runs here unconditionally as ordinary tests.
       - name: mvn -B verify (runs Java tests + JaCoCo 85% gate)
         run: mvn -B -ntp verify -Djapicmp.skip=true
 

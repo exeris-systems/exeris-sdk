@@ -25,8 +25,9 @@ cd exeris-sdk-ui-kit && npm ci && npm run test:coverage   # ui-kit (npm-only, 85
 semver gate's baseline, `0.11.0`, was never published to Maven Central, so it resolves only if
 you have installed it locally; CI passes the same flag. It comes off when the 0.13.0 line opens
 against a Central-resolvable `0.12.0` baseline — see the japicmp comment in the root `pom.xml`.
-Record-component order and the annotation surface are still gated without it
-(`RecordComponentOrderTest`, `AnnotationSurfaceContractTest`).
+Record-component order, the constructor arities a record has published, and the annotation surface
+are still gated without it (`RecordComponentOrderTest`, `RecordConstructorLedgerTest`,
+`AnnotationSurfaceContractTest`).
 
 **JDK 25 LTS is the baseline** across the reactor ([ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md)).
 Never lower or raise `maven.compiler.release` without an ecosystem-wide decision. Emitted class-file

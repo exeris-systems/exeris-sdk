@@ -285,15 +285,18 @@
                                 <type>jar</type>
                             </dependency>
                         </oldVersion>
-                        <!-- Strict by default. The record-growth relaxation is NOT
-                             here: it is declared per module, and only where records
-                             actually live (exeris-sdk-source-model wholesale;
-                             ApplyResult / CapManifest by name elsewhere). Two gated
-                             modules — composition-lifecycle and composition-runtime —
-                             have no public records at all, and do have exception
-                             classes with meaningful constructor overloads, so a
-                             blanket override would quietly retire a real safety net
-                             in exchange for nothing. -->
+                        <!-- Strict by default, and strict for the AST. The one
+                             relaxation left is CONSTRUCTOR_REMOVED on two named
+                             records outside it (ApplyResult in -io, CapManifest in
+                             composition-spec). exeris-sdk-source-model carried the
+                             same relaxation module-wide until 0.12.0 and dropped it:
+                             a record there that grows keeps its previous arity as a
+                             delegating constructor, so growth removes nothing (see
+                             that module's pom). composition-lifecycle and
+                             composition-runtime have no public records at all, and do
+                             have exception classes with meaningful constructor
+                             overloads, so a blanket override would quietly retire a
+                             real safety net in exchange for nothing. -->
                         <parameter>
                             <!-- Absent baseline must not read as "no breaks found".
                                  It reads as "not checked", loudly, and the module's

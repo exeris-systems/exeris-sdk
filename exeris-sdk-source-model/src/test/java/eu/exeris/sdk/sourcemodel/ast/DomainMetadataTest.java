@@ -293,6 +293,44 @@ class DomainMetadataTest {
     }
 
     @Nested
+    @DisplayName("the 0.11.0 constructor shape is kept")
+    class PreviousArity {
+        @Test
+        void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {
+            // Kept so code compiled or written against 0.11.0 still links and compiles
+            // (MIGRATION-0.x-to-1.0.md §3). It must equal the builder's record with both 0.12.0
+            // components absent — two shapes that disagreed would be two contracts.
+            List<FieldMetadata> fields = List.of(FieldMetadata.builder("ref", "String").build());
+            DomainMetadata old = new DomainMetadata(
+                    "Order", "com.acme.domain", "sales", "/orders", "CustomerOrder", "desc", "v2",
+                    List.of("t"), false, true, true, true,
+                    true, true, true, true,
+                    List.of("ROLE_X"), List.of("p:r"), true,
+                    true, "PT10M", "region",
+                    true, "german", "orders",
+                    fields, List.of(), List.of(), List.of(), List.of(), List.of(),
+                    null, null, null, null, null, SystemFieldsMetadata.defaults(),
+                    List.of(), DataScope.TENANT);
+            DomainMetadata built = base()
+                    .module("sales").path("/orders").aggregate("CustomerOrder").description("desc")
+                    .apiVersion("v2").tags(List.of("t"))
+                    .restApi(false).graphqlApi(true).realTimeApi(true).internalClient(true)
+                    .tenantScoped(true).softDelete(true).audited(true).versioned(true)
+                    .roles(List.of("ROLE_X")).permissions(List.of("p:r")).sensitive(true)
+                    .cacheable(true).cacheTtl("PT10M").cacheRegion("region")
+                    .fullTextSearch(true).searchConfig("german").tableName("orders")
+                    .fields(fields)
+                    .systemFields(SystemFieldsMetadata.defaults())
+                    .dataScope(DataScope.TENANT)
+                    .build();
+
+            assertThat(old).isEqualTo(built);
+            assertThat(old.routeAccess()).isNull();
+            assertThat(old.channel()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("effectiveDataScope: explicit tier wins, tenantScoped is the fallback")
     class EffectiveDataScope {
 

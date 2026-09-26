@@ -205,6 +205,80 @@ public record DomainMetadata(
         @JsonProperty("channel") ChannelMetadata channel
 ) {
 
+    /**
+     * The 0.11.0 shape — the 39 components before {@code routeAccess} and {@code channel} — kept
+     * as a delegating constructor so that code compiled or written against 0.11.0 still links and
+     * still compiles. Both 0.12.0 components are {@code null}: no route access declared, and no
+     * duplex channel.
+     *
+     * <p>Prefer {@link #builder(String, String)}, which sets any component by name and does not
+     * change shape when the record grows.
+     *
+     * @param entityName the {@code entityName} the result carries
+     * @param packageName the {@code packageName} the result carries
+     * @param module the {@code module} the result carries
+     * @param path the {@code path} the result carries
+     * @param aggregate the {@code aggregate} the result carries
+     * @param description the {@code description} the result carries
+     * @param apiVersion the {@code apiVersion} the result carries
+     * @param tags the {@code tags} the result carries
+     * @param restApi the {@code restApi} the result carries
+     * @param graphqlApi the {@code graphqlApi} the result carries
+     * @param realTimeApi the {@code realTimeApi} the result carries
+     * @param internalClient the {@code internalClient} the result carries
+     * @param tenantScoped the {@code tenantScoped} the result carries
+     * @param softDelete the {@code softDelete} the result carries
+     * @param audited the {@code audited} the result carries
+     * @param versioned the {@code versioned} the result carries
+     * @param roles the {@code roles} the result carries
+     * @param permissions the {@code permissions} the result carries
+     * @param sensitive the {@code sensitive} the result carries
+     * @param cacheable the {@code cacheable} the result carries
+     * @param cacheTtl the {@code cacheTtl} the result carries
+     * @param cacheRegion the {@code cacheRegion} the result carries
+     * @param fullTextSearch the {@code fullTextSearch} the result carries
+     * @param searchConfig the {@code searchConfig} the result carries
+     * @param tableName the {@code tableName} the result carries
+     * @param fields the {@code fields} the result carries
+     * @param actions the {@code actions} the result carries
+     * @param events the {@code events} the result carries
+     * @param relationships the {@code relationships} the result carries
+     * @param projections the {@code projections} the result carries
+     * @param eventHandlers the {@code eventHandlers} the result carries
+     * @param uiMetadata the {@code uiMetadata} the result carries
+     * @param graphMetadata the {@code graphMetadata} the result carries
+     * @param sagaMetadata the {@code sagaMetadata} the result carries
+     * @param eventSourced the {@code eventSourced} the result carries
+     * @param internalApi the {@code internalApi} the result carries
+     * @param systemFields the {@code systemFields} the result carries
+     * @param rules the {@code rules} the result carries
+     * @param dataScope the {@code dataScope} the result carries
+     */
+    public DomainMetadata(String entityName, String packageName, String module, String path,
+                          String aggregate, String description, String apiVersion,
+                          List<String> tags, boolean restApi, boolean graphqlApi,
+                          boolean realTimeApi, boolean internalClient, boolean tenantScoped,
+                          boolean softDelete, boolean audited, boolean versioned,
+                          List<String> roles, List<String> permissions, boolean sensitive,
+                          boolean cacheable, String cacheTtl, String cacheRegion,
+                          boolean fullTextSearch, String searchConfig, String tableName,
+                          List<FieldMetadata> fields, List<ActionMetadata> actions,
+                          List<DomainEventMetadata> events,
+                          List<RelationshipMetadata> relationships,
+                          List<ProjectionMetadata> projections,
+                          List<EventHandlerMetadata> eventHandlers, UIMetadata uiMetadata,
+                          GraphMetadata graphMetadata, SagaMetadata sagaMetadata,
+                          EventSourcedMetadata eventSourced, InternalApiMetadata internalApi,
+                          SystemFieldsMetadata systemFields, List<RuleMetadata> rules,
+                          DataScope dataScope) {
+        this(entityName, packageName, module, path, aggregate, description, apiVersion, tags,
+                restApi, graphqlApi, realTimeApi, internalClient, tenantScoped, softDelete,
+                audited, versioned, roles, permissions, sensitive, cacheable, cacheTtl,
+                cacheRegion, fullTextSearch, searchConfig, tableName, fields, actions, events,
+                relationships, projections, eventHandlers, uiMetadata, graphMetadata, sagaMetadata,
+                eventSourced, internalApi, systemFields, rules, dataScope, null, null);
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONVENIENCE METHODS
     // ═══════════════════════════════════════════════════════════════════════

@@ -185,10 +185,28 @@
                 </executions>
             </plugin>
 
-            <!-- Semver gate. This module is the reason the gate exists: the AST
-                 records are the surface MIGRATION-0.x-to-1.0.md §3 promises may
-                 grow a trailing component in a 1.x minor. See the root pom for
-                 the baseline and the ruleset. -->
+            <!-- Semver gate, strict — the root pom's defaults, with nothing relaxed. This module
+                 is the reason the gate exists: the AST records are the surface
+                 MIGRATION-0.x-to-1.0.md §3 lets grow a trailing component in a 1.x minor.
+
+                 Until 0.12.0 this execution downgraded CONSTRUCTOR_REMOVED to a compatible,
+                 MINOR-level change, module-wide, because a record that gains a component loses
+                 its old canonical constructor. The label was false. Removing a public
+                 constructor is a NoSuchMethodError for every class compiled against it
+                 (JLS 13.4.12) and a compile error for every positional caller, and it broke
+                 exeris-tooling's processor when SystemFieldsMetadata went from 10 components to
+                 11 (Stellar finding S6).
+
+                 So the stance changed rather than the label. A record that grows keeps its
+                 previous arity as a public constructor delegating with null for the new trailing
+                 components, and growth now emits only CONSTRUCTOR_ADDED and METHOD_ADDED, which
+                 the plugin defaults already accept. Removing, renaming or retyping a component
+                 still changes an accessor and still breaks.
+
+                 Two tests hold the stance while this gate cannot run (the 0.11.0 baseline is on
+                 no repository; see the root pom): RecordConstructorLedgerTest, which fails if a
+                 published arity loses its constructor, and RecordComponentOrderTest, which pins
+                 the one change no signature shows — a reorder of same-typed components. -->
             <plugin>
                 <groupId>com.github.siom79.japicmp</groupId>
                 <artifactId>japicmp-maven-plugin</artifactId>
@@ -197,42 +215,6 @@
                         <id>semver-gate</id>
                         <phase>verify</phase>
                         <goals><goal>cmp</goal></goals>
-                        <configuration>
-                            <!-- The record-growth stance, encoded.
-
-                                 A record that gains a trailing component emits
-                                 CONSTRUCTOR_REMOVED for the old canonical ctor, plus
-                                 a new ctor and a new accessor. On plugin defaults
-                                 that is a hard break, which would block every
-                                 post-1.0 facet — blob, job, flow await, graph
-                                 multi-hop — since each arrives as a component on an
-                                 existing record.
-
-                                 Applied module-wide here because this module IS the
-                                 AST and mutation surface: every public type in
-                                 `ast` and `mutation` is a record, an enum, or a
-                                 record-bearing sealed interface. Elsewhere the same
-                                 relaxation is named class by class.
-
-                                 Not weakened by this: removing, renaming or retyping
-                                 a component changes its accessor, so METHOD_REMOVED
-                                 and METHOD_RETURN_TYPE_CHANGED still break.
-
-                                 Not visible to this: a same-arity, same-type REORDER,
-                                 which shows up only in the constructor signal this
-                                 override stops reading. RecordComponentOrderTest
-                                 closes it; the two are a pair. -->
-                            <parameter>
-                                <overrideCompatibilityChangeParameters>
-                                    <overrideCompatibilityChangeParameter>
-                                        <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
-                                        <binaryCompatible>true</binaryCompatible>
-                                        <sourceCompatible>true</sourceCompatible>
-                                        <semanticVersionLevel>MINOR</semanticVersionLevel>
-                                    </overrideCompatibilityChangeParameter>
-                                </overrideCompatibilityChangeParameters>
-                            </parameter>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
