@@ -154,6 +154,24 @@ compile error. The property is invisible to reflection and to japicmp — the
 semver gate compared 0.11.0 against this change and reported nothing at all —
 so measuring the compiler is the only way to hold it.
 
+### `SourceModelReader` reads `@Saga.version` (bugfix)
+
+The `-io` reader now carries `@Saga.version` into `SagaMetadata.version`, as the `exeris-tooling`
+processor has since tooling 0.8.0. Before, it left the builder default `1` for every saga, so for
+`@Saga(version = 3)` the reader and the processor's baseline disagreed. There is no AST shape
+change and no `SchemaVersion` move.
+
+What a caller sees: `read()` of a source that declares a version now returns it. A value below `1`
+is carried as written, as the processor carries it, and the kernel refuses it at
+`FlowDefinitionBuilder.version(int)`. One difference remains. A version given through a constant
+reference or expression (`version = Versions.CURRENT`) reads as `1`, because the reader is
+syntactic and only the processor sees javac's folded value. Declare saga versions as literals.
+
+TCK binders: `Facet.SAGA` is new, and the corpus `Order` now declares `@Saga(version = 3)`. The
+reader, producer and parity suites each gain a case under it. A binding whose side does not extract
+sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
+`Facet` needs a new arm.
+
 ---
 
 ## 0.10.x → 0.11.x

@@ -229,6 +229,20 @@ for per-version upgrade steps.
   The bar is Maven Central: nothing in the publish path checks completeness, the javadoc jar
   builds either way, and the artifact is permanent.
 
+- **`exeris-sdk-tck`: a saga-version case in all three metadata suites, and the SDK's own reader
+  is bound to the kit.** The changes:
+  - `Facet.SAGA`, which is optional.
+  - The corpus `Order` declares `@Saga(name = "OrderFulfillmentSaga", version = 3)`.
+  - `sagaVersionIsTheDeclaredOne` (reader), `sagaVersionReachesTheProducedMetadata` (producer)
+    and `sagaIdentityAgrees` (parity, name and version). Each is proven non-vacuous against a
+    binding broken the way the defect shipped.
+  - `exeris-sdk-source-model-io` binds `AbstractMetadataReaderTck` as `SourceModelReaderTckTest`,
+    at test scope.
+  Until now nothing bound the kit, not `exeris-tooling` and not this repository. That is why the
+  `@Saga.version` divergence shipped past green builds. With the reader's version read removed,
+  the bound case fails. Binders: a side that does not extract sagas yet declares `Facet.SAGA` in
+  `unsupportedFacets()`.
+
 
 ### Security
 
@@ -246,6 +260,18 @@ for per-version upgrade steps.
   suite all pass on it.
 
 ### Fixed
+
+- **`SourceModelReader` reads `@Saga.version`, so the reader and the processor agree on a saga's
+  plan identity.** Kernel ADR-064 keys the plan catalog by `(name, version)`. The `exeris-tooling`
+  processor has extracted `@Saga.version` since 0.8.0. The `-io` reader never did, so
+  `@Saga(version = 3)` read back as `1` against a processor baseline of `3`. That is an ADR-042
+  parity break, and both sides still emitted well-formed metadata (Stellar finding K5, SDK half).
+  Absent stays `1`. A value below `1` is carried as written rather than repaired, as on the
+  processor path, and the kernel refuses it at `FlowDefinitionBuilder.version(int)`. A constant
+  reference or expression is not resolved by the syntactic reader and reads as `1`. The reader's
+  Limitations now say so: declare saga versions as literals. `@Saga.version`'s javadoc kept saying
+  "declared, not extracted" and "a hole in both" long after the processor half shipped. It now
+  says what each path does and how the value reaches the kernel.
 
 - **Nine system-field markers said the processor ignores them. It reads them.** `@TenantId`,
   `@Version`, `@SoftDelete`, `@SoftDeleteTimestamp`, `@SoftDeletedBy` and the four `@Audit*` markers

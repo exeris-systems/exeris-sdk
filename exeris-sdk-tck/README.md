@@ -7,13 +7,14 @@
 
 The SDK publishes a format — `exeris-metadata/<entity>.json` — and a discipline: ADR-042's *the
 reader reads what the processor writes*. The discipline has been enforced by whoever remembered it,
-and the record of that is not good. Three parity defects shipped, all the same shape:
+and the record of that is not good. Four parity defects shipped, all the same shape:
 
 | defect | what it did |
 |---|---|
 | `@ExerisDomain(name = …)` | the reader read an attribute the annotation never declared, so it could return a different entity identity than the producer for the same file |
 | `@Relationship.relationshipType` | the processor read the cardinality under the AST's name for it, so every edge silently came back as the builder default and the wrong side generated the foreign key |
 | `@ActionParam.label` | the processor reads it under `displayName`, a key the annotation does not declare, so the value is null on every run and a fallback hides it completely |
+| `@Saga.version` | the processor read it and the SDK's own reader never did, so the same source was version 3 to one side and version 1 to the other; the kit had no saga case and was bound nowhere, so it shipped past green builds |
 
 They are hard to catch for one reason: **nothing fails**. Both sides emit well-formed metadata, no
 exception is raised, no diagnostic appears. The defect is only visible if you compare the two
@@ -45,6 +46,8 @@ class MyParityTckTest extends AbstractMetadataParityTck {
 | `AbstractMetadataReaderTck` | `read(source) → DomainMetadata` | the same, from the other side |
 | `AbstractMetadataParityTck` | both | do they agree? |
 | `AbstractMapperPostureTck` | `readValue(json, type)` | can your mapper read what we emit? |
+
+`exeris-sdk-source-model-io`'s `SourceModelReaderTckTest` is a working reader binding.
 
 The corpus is shipped inside the jar (`TckCorpus`), not left to the binder — a binder-supplied
 corpus measures the binder's imagination. Each entity carries a case with a defect behind it.
