@@ -167,14 +167,13 @@ removals and renames fail.
   await, graph multi-hop — arrives as a new component on an existing record.
   If a trailing component counted as a break, all of it would wait for 2.0.
 
-  **How it is enforced.** japicmp on its plugin defaults, which is what the rule
-  makes possible: growth emits only `CONSTRUCTOR_ADDED` and `METHOD_ADDED`, while
-  removing a constructor, or removing, renaming or retyping a component, fails the
-  build. Until that gate has a baseline (0.13.0, see §4),
+  **How it is enforced.** japicmp on its plugin defaults (`-Psemver`, see §4),
+  which is what the rule makes possible: growth emits only `CONSTRUCTOR_ADDED` and
+  `METHOD_ADDED`, while removing a constructor, or removing, renaming or retyping a
+  component, fails the build. In every build, with or without that profile,
   `RecordConstructorLedgerTest` fails if a published arity loses its constructor
-  or a growth goes unrecorded. `RecordComponentOrderTest` pins the one change no
-  signature shows, a reorder of same-typed components, and stays after japicmp
-  runs.
+  or a growth goes unrecorded, and `RecordComponentOrderTest` pins the one change
+  no signature shows, a reorder of same-typed components.
 
   **What this replaced, and why.** Through 0.11 the rule was that positional
   callers "recompile with one added trailing argument; that recompile is the
@@ -235,9 +234,9 @@ freeze or is explicitly re-dispositioned here.
   Those keep their assertions but lose the discriminator, because after this
   change there is no second candidate to distinguish from — their comments say
   so rather than claiming a distinction that no longer exists.
-- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, bound to
-  `verify` in all five non-annotation publishable modules and **strict by
-  default**. As configured in 0.10.0 it encoded the record-growth stance of the
+- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, covering all
+  six non-annotation publishable modules (opt-in through `-Psemver` since
+  0.12.0, see below) and **strict by default**. As configured in 0.10.0 it encoded the record-growth stance of the
   time by downgrading `CONSTRUCTOR_REMOVED` to a MINOR-level compatible change
   where records live, since that is the signal a trailing component produced.
   **Amended 2026-09-26 (Stellar finding S6):** the stance changed (§3), and with
@@ -261,18 +260,20 @@ freeze or is explicitly re-dispositioned here.
   `includes`/`excludes` rather than inside the override itself.
 
   Two follow-ons, both deliberate:
-  - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
-    last released jar, `0.11.0`, and no release at or below it was ever
-    published to Central. An absent baseline is configured to fail, not to pass
-    quietly, so the skip is explicit in the workflows rather than implicit in
-    the plugin.
-    **Corrected 2026-09-03:** this used to say the flag comes off "when the
-    Central wiring lands". It does not, and the difference is one milestone.
-    The wiring landed in 0.12.0, and 0.12.0 is the *first* version to reach
-    Central — so the baseline japicmp names, `0.11.0`, predates the move and is
-    not resolvable there either. The flag comes off when the 0.13.0 line opens
-    against a Central-resolvable `0.12.0` baseline. Turning Central on and
-    giving the gate something to resolve are two changes, not one.
+  - **The gate is opt-in: `mvn -Psemver verify`** (amended 2026-09-26). All of
+    its configuration and both bindings live in one `semver` profile in the
+    root pom; a maintainer runs it before a release, and the default build
+    runs only the baseline-free guards (`AnnotationSurfaceContractTest`,
+    `RecordComponentOrderTest`, `RecordConstructorLedgerTest`). Until then it
+    was bound to `verify`, so every workflow and every fresh clone had to pass
+    `-Djapicmp.skip=true`: the baseline is the last released jar, `0.11.0`,
+    and no release at or below it was ever published to Central. Inside the
+    profile an absent baseline still fails the build rather than passing
+    quietly. CI adds `-Psemver` to `build.yml` and `release.yml` when the
+    0.13.0 line opens against a Central-resolvable `0.12.0` baseline — the
+    first version that can be one — and that edit is what starts 1.x binary
+    enforcement. Turning Central on and giving the gate something to resolve
+    were two changes, not one (corrected 2026-09-03).
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it
@@ -435,8 +436,8 @@ freeze or is explicitly re-dispositioned here.
 
   For consumers the module is additive and optional: test scope, nothing on a
   runtime classpath, and the surface it publishes freezes at 1.0.0 like any
-  other publishable module. `japicmp` is skipped there until a baseline artifact
-  exists, since none was released before the module did.
+  other publishable module. The semver gate covers it from 0.12.0, against the
+  0.11.0 release it first shipped in.
 
 ## 5. TBD at the 1.0.0 release PR
 

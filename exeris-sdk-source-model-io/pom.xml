@@ -136,61 +136,64 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <!-- Semver gate — ruleset and baseline in the root pom. -->
-            <plugin>
-                <groupId>com.github.siom79.japicmp</groupId>
-                <artifactId>japicmp-maven-plugin</artifactId>
-                <executions>
-                    <!-- Two executions on purpose. This module has exactly one
-                         record (ApplyResult); everything else is ordinary classes
-                         whose constructors are real API. A module-wide relaxation
-                         would retire a genuine safety net in exchange for one
-                         record's growth path, so the relaxation is named. -->
-                    <execution>
-                        <id>semver-gate-strict</id>
-                        <phase>verify</phase>
-                        <goals><goal>cmp</goal></goals>
-                        <configuration>
-                            <parameter>
-                                <excludes>
-                                    <exclude>eu.exeris.sdk.sourcemodel.io.ApplyResult</exclude>
-                                </excludes>
-                            </parameter>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>semver-gate-record-growth</id>
-                        <phase>verify</phase>
-                        <goals><goal>cmp</goal></goals>
-                        <configuration>
-                            <parameter>
-                                <includes>
-                                    <include>eu.exeris.sdk.sourcemodel.io.ApplyResult</include>
-                                </includes>
-                                <!-- Trailing-component growth for this one record:
-                                     a record that gains a component loses its old
-                                     canonical constructor, and this accepts that as a
-                                     MINOR change. Removing, renaming or retyping a
-                                     component still breaks through its accessor.
-                                     exeris-sdk-source-model dropped the same relaxation
-                                     in 0.12.0 in favour of keeping the previous arity as
-                                     a delegating constructor (Stellar finding S6; see
-                                     its pom); whether ApplyResult follows is open (ROADMAP,
-                                     0.12.0). -->
-                                <overrideCompatibilityChangeParameters>
-                                    <overrideCompatibilityChangeParameter>
-                                        <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
-                                        <binaryCompatible>true</binaryCompatible>
-                                        <sourceCompatible>true</sourceCompatible>
-                                        <semanticVersionLevel>MINOR</semanticVersionLevel>
-                                    </overrideCompatibilityChangeParameter>
-                                </overrideCompatibilityChangeParameters>
-                            </parameter>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <!-- Semver gate configuration for this module. The bindings, the baseline and the strict
+         ruleset are the root pom's opt-in `semver` profile; this profile shares its id, so
+         `-Psemver` activates both, and it binds nothing of its own — it only says which record
+         here takes the record-growth relaxation.
+
+         This module has exactly one record (ApplyResult); everything else is ordinary classes whose
+         constructors are real API. A module-wide relaxation would retire a genuine safety net in
+         exchange for one record's growth path, so the relaxation is named: the strict execution
+         excludes the record and the record-growth execution includes it, accepting
+         CONSTRUCTOR_REMOVED as a MINOR change. Removing, renaming or retyping a component still
+         breaks through its accessor. exeris-sdk-source-model dropped the same relaxation in
+         0.12.0 in favour of keeping the previous arity as a delegating constructor (Stellar
+         finding S6; see its pom); whether ApplyResult follows is open (ROADMAP, 0.12.0). -->
+    <profiles>
+        <profile>
+            <id>semver</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.siom79.japicmp</groupId>
+                        <artifactId>japicmp-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>semver-gate</id>
+                                <configuration>
+                                    <parameter>
+                                        <excludes>
+                                            <exclude>eu.exeris.sdk.sourcemodel.io.ApplyResult</exclude>
+                                        </excludes>
+                                    </parameter>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>semver-gate-record-growth</id>
+                                <configuration>
+                                    <skip>${japicmp.skip}</skip>
+                                    <parameter>
+                                        <includes>
+                                            <include>eu.exeris.sdk.sourcemodel.io.ApplyResult</include>
+                                        </includes>
+                                        <overrideCompatibilityChangeParameters>
+                                            <overrideCompatibilityChangeParameter>
+                                                <compatibilityChange>CONSTRUCTOR_REMOVED</compatibilityChange>
+                                                <binaryCompatible>true</binaryCompatible>
+                                                <sourceCompatible>true</sourceCompatible>
+                                                <semanticVersionLevel>MINOR</semanticVersionLevel>
+                                            </overrideCompatibilityChangeParameter>
+                                        </overrideCompatibilityChangeParameters>
+                                    </parameter>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

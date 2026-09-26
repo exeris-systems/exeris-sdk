@@ -185,11 +185,11 @@
                 </executions>
             </plugin>
 
-            <!-- Semver gate, strict — the root pom's defaults, with nothing relaxed. This module
-                 is the reason the gate exists: the AST records are the surface
+            <!-- Semver gate: the root pom's opt-in `semver` profile, strict here — no relaxation.
+                 This module is the reason the gate exists: the AST records are the surface
                  MIGRATION-0.x-to-1.0.md §3 lets grow a trailing component in a 1.x minor.
 
-                 Until 0.12.0 this execution downgraded CONSTRUCTOR_REMOVED to a compatible,
+                 Until 0.12.0 this pom downgraded CONSTRUCTOR_REMOVED to a compatible,
                  MINOR-level change, module-wide, because a record that gains a component loses
                  its old canonical constructor. The label was false. Removing a public
                  constructor is a NoSuchMethodError for every class compiled against it
@@ -203,21 +203,10 @@
                  the plugin defaults already accept. Removing, renaming or retyping a component
                  still changes an accessor and still breaks.
 
-                 Two tests hold the stance while this gate cannot run (the 0.11.0 baseline is on
-                 no repository; see the root pom): RecordConstructorLedgerTest, which fails if a
-                 published arity loses its constructor, and RecordComponentOrderTest, which pins
-                 the one change no signature shows — a reorder of same-typed components. -->
-            <plugin>
-                <groupId>com.github.siom79.japicmp</groupId>
-                <artifactId>japicmp-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>semver-gate</id>
-                        <phase>verify</phase>
-                        <goals><goal>cmp</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
+                 Two tests hold the stance in every build, with or without the profile:
+                 RecordConstructorLedgerTest, which fails if a published arity loses its
+                 constructor, and RecordComponentOrderTest, which pins the one change no signature
+                 shows — a reorder of same-typed components. -->
         </plugins>
     </build>
 </project>

@@ -48,10 +48,11 @@ import static org.assertj.core.api.Assertions.fail;
  *       exists.</li>
  * </ul>
  *
- * <p><b>Why a test when japicmp exists.</b> japicmp cannot run until the 0.13.0 line opens
- * against a baseline Central can serve (root pom). This needs no baseline, so it runs on every
- * build now. Once japicmp runs the two are a pair: the ledger cannot see an arity deleted
- * together with its constructor, and japicmp's strict {@code CONSTRUCTOR_REMOVED} can.
+ * <p><b>Why a test when japicmp exists.</b> japicmp is an opt-in profile ({@code -Psemver},
+ * root pom) that needs a resolvable release to compare with, and CI runs it only from the 0.13.0
+ * line, when a 0.12.0 baseline is on Central. This needs no baseline, so it runs in every build.
+ * Where japicmp runs the two are a pair: the ledger cannot see an arity deleted together with its
+ * constructor, and japicmp's strict {@code CONSTRUCTOR_REMOVED} can.
  * {@link RecordComponentOrderTest} stays, because a same-type reorder changes no descriptor and
  * neither of them sees it.
  */

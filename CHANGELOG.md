@@ -125,11 +125,11 @@ for per-version upgrade steps.
   replaces maven-deploy-plugin and does not read that property, so the build-time
   `exeris-sdk-annotation-catalog` was being staged for upload and needed an `<excludeArtifacts>`
   entry (the readiness step now asserts the two lists agree, and fails when they do not). It does
-  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate stays CI-skipped for
-  one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
-  resolvable from Central. `-Djapicmp.skip=true` comes off all four workflows that carry it —
-  `build.yml`, `release.yml`, `release-assets.yml` and `guardrails.yml` (through the javadoc gate's
-  `extra-maven-args`) — when the 0.13.0 line opens against a 0.12.0 baseline Central can serve.
+  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate does not run in CI
+  for one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore
+  not resolvable from Central. The gate is an opt-in `-Psemver` profile (see Changed), and
+  `build.yml` and `release.yml` add it when the 0.13.0 line opens against a 0.12.0 baseline
+  Central can serve.
 
 - **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
   marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
@@ -267,6 +267,22 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **The semver gate is a maintainer gate, not a build requirement: `mvn -Psemver verify`.** japicmp
+  was bound to `verify` in six modules, so a fresh-clone `mvn install` failed resolving its baseline,
+  `0.11.0`, which was never published to Maven Central and never will be. Every workflow and every
+  contributor carried `-Djapicmp.skip=true` to get past it. Now all of its configuration and both of
+  its bindings live in one opt-in `semver` profile in the root pom; `-io` and `composition-spec`
+  keep a same-named profile that only names their one relaxed record. A plain `mvn install` needs no
+  flag and resolves no baseline. Inside the profile an absent baseline still fails loudly
+  (`ignoreMissingOldVersion=false`). The baseline-free guards — `AnnotationSurfaceContractTest`,
+  `RecordComponentOrderTest`, `RecordConstructorLedgerTest` — stay in the default build. The flag is
+  gone from `build.yml`, `release.yml`, `release-assets.yml` and `guardrails.yml`, and from the
+  build instructions. CI does not pass `-Psemver` yet, since the baseline is unresolvable; adding it
+  to `build.yml` and `release.yml` when the 0.13.0 line opens against a 0.12.0 baseline is the edit
+  that starts 1.x binary enforcement. `japicmp.skip` survives only as the per-module opt-out the
+  annotations and catalog modules set. **Downstream:** a consumer that builds the SDK from source
+  (`exeris-tooling`'s CI does) can drop `-Djapicmp.skip=true`.
+
 - **`exeris-sdk-source-model`: a record that grows keeps its previous constructor, and the semver
   gate stops calling a removed constructor compatible.** Three records grew a trailing component in
   this release — `DomainMetadata` 39 → 41 (`routeAccess`, `channel`), `ActionMetadata` 17 → 18
@@ -281,9 +297,9 @@ for per-version upgrade steps.
   constructor is a `NoSuchMethodError` for every class compiled against it — and the rule broke the
   one caller that had no builder to fall back on: `exeris-tooling`'s processor, which can only fill
   `SystemFieldsMetadata` with non-canonical names positionally, did not compile against 0.12.0
-  (Stellar finding S6). It compiles unchanged now. The override is gone, so the gate fails on a
-  removed constructor once it has a baseline (0.13.0). Until then `RecordConstructorLedgerTest`
-  holds the rule: it fails if a published arity loses its constructor, or if a record grows without
+  (Stellar finding S6). It compiles unchanged now. The override is gone, so the gate
+  (`-Psemver`, see above) fails on a removed constructor; CI runs it from the 0.13.0 line, once a
+  baseline resolves. In every build meanwhile `RecordConstructorLedgerTest` holds the rule: it fails if a published arity loses its constructor, or if a record grows without
   its new arity being appended to `record-arities.txt`. `ApplyResult` (`-io`) and `CapManifest`
   (`composition-spec`) keep their named relaxation for now; whether they follow is open. See
   [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
@@ -366,11 +382,9 @@ for per-version upgrade steps.
   `META-INF/exeris/annotation-catalog.json`, which ships in the same jar and carries the same
   per-attribute text. The 1.0.0 freeze exception was four surfaces in `MIGRATION-0.x-to-1.0.md` §2
   but three in the `ROADMAP.md` GA item and two in that guide's own §3; all three now name
-  `@Blob` / `@Schedule` / `@RouteAccess` / `@Channel`, per the ADR-072 amendment of 2026-09-03. And
-  neither `README.md` nor `CONTRIBUTING.md` said that a fresh clone needs `-Djapicmp.skip=true` to
-  reach `verify` — the `0.11.0` baseline was never published to Central — or when that flag comes
-  off, while the root `package-info` quick start ran a bare `mvn -q install` that fails on exactly
-  that; all three carry the flag now.
+  `@Blob` / `@Schedule` / `@RouteAccess` / `@Channel`, per the ADR-072 amendment of 2026-09-03.
+  (A third gap — the build instructions omitting the `-Djapicmp.skip=true` a fresh clone needed —
+  was closed differently: no flag is needed any more. See Changed.)
 
 - **Javadoc that ships in the 0.12.0 jars said things that stop being true, or never were.**
   - The root `package-info` quick start said there are no `eu.exeris` artifacts on Central and

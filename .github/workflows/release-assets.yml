@@ -10,11 +10,6 @@ name: release assets
 # infrastructure, which makes the catalog reachable from the tag whatever the
 # state of Central.
 #
-# `-Djapicmp.skip=true` in the build step is for the reason the root POM's
-# japicmp comment gives: the 0.11.0 baseline was never published to Central. It
-# comes off with the other three workflows' flags when the 0.13.0 line opens
-# against a Central-resolvable 0.12.0 baseline.
-#
 # It runs on the tag rather than as a manual step on purpose: the catalog went
 # unshipped for as long as it did because nothing failed when it was not.
 
@@ -54,7 +49,7 @@ jobs:
       # module's own compilation, so `package` on that module is enough — no need
       # to run the whole reactor or its gates to produce it.
       - name: Build the modules that carry the descriptors
-        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model -am package -DskipTests -Djapicmp.skip=true
+        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model -am package -DskipTests
 
       - name: Locate the catalog and check it describes this tag
         id: catalog

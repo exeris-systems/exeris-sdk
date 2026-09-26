@@ -15,19 +15,14 @@ API surface of the Exeris platform.
 ## Build & test
 
 ```bash
-mvn clean install -Djapicmp.skip=true                                # full reactor build + JaCoCo 85% gate
-mvn -pl exeris-sdk-source-model-io -am verify -Djapicmp.skip=true    # one module + dependencies
+mvn clean install                                # full reactor build + JaCoCo 85% gate
+mvn -pl exeris-sdk-source-model-io -am verify    # one module + dependencies
 
 cd exeris-sdk-ui-kit && npm ci && npm run test:coverage   # ui-kit (npm-only, 85% per-file gate)
 ```
 
-**`-Djapicmp.skip=true` is required on a fresh clone** for anything that reaches `verify`. The
-semver gate's baseline, `0.11.0`, was never published to Maven Central, so it resolves only if
-you have installed it locally; CI passes the same flag. It comes off when the 0.13.0 line opens
-against a Central-resolvable `0.12.0` baseline — see the japicmp comment in the root `pom.xml`.
-Record-component order, the constructor arities a record has published, and the annotation surface
-are still gated without it (`RecordComponentOrderTest`, `RecordConstructorLedgerTest`,
-`AnnotationSurfaceContractTest`).
+**Maintainers run `mvn -Psemver verify` before a release;** the default build runs the baseline-free
+guards (`AnnotationSurfaceContractTest`, `RecordComponentOrderTest`, `RecordConstructorLedgerTest`).
 
 **JDK 25 LTS is the baseline** across the reactor ([ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md)).
 Never lower or raise `maven.compiler.release` without an ecosystem-wide decision. Emitted class-file

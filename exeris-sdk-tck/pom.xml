@@ -23,13 +23,11 @@
     </description>
 
     <properties>
-        <!-- Gated from 0.12.0 on. The skip existed for one reason — a module introduced in
-             0.11.0 had no 0.10.0 artifact to compare against — and the baseline has since
-             advanced to 0.11.0, which contains it. No records live here (the TCK ships abstract
-             JUnit bases, an enum and two helpers), so the module stays on strict japicmp
-             defaults: an added constructor overload on one of these classes is real API,
-             exactly as it is in the two record-free composition modules. (source-model, which
-             this comment used to contrast with, is strict too since 0.12.0.) -->
+        <!-- Covered by the root pom's opt-in `semver` profile, on its strict defaults. No
+             records live here (the TCK ships abstract JUnit bases, an enum and two helpers), so
+             an added constructor overload on one of these classes is real API, exactly as it is
+             in the two record-free composition modules. The module was introduced in 0.11.0, so
+             the 0.11.0 baseline contains it. -->
     </properties>
 
     <dependencies>
@@ -166,18 +164,6 @@
                                 </bannedDependencies>
                             </rules>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.github.siom79.japicmp</groupId>
-                <artifactId>japicmp-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>semver-gate</id>
-                        <phase>verify</phase>
-                        <goals><goal>cmp</goal></goals>
                     </execution>
                 </executions>
             </plugin>

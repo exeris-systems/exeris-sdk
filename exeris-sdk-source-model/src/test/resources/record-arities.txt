@@ -9,8 +9,8 @@
 # constructor as one that delegates with null for the new trailing components — that is what
 # lets code compiled against the previous release keep linking and keep compiling. Deleting an
 # arity together with its constructor is the one edit the test cannot see; japicmp's strict
-# CONSTRUCTOR_REMOVED reports it once a baseline resolves (0.13.0), and review catches it
-# before then.
+# CONSTRUCTOR_REMOVED reports it under -Psemver (in CI from the 0.13.0 line, once a baseline
+# resolves), and review catches it before then.
 #
 # A major re-baselines. 1.0.0 removes DomainMetadata.tenantScoped and DomainMetadata.apiVersion
 # from the middle of the record, which changes every DomainMetadata constructor at once; its

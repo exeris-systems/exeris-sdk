@@ -86,12 +86,9 @@
  * carry — one of those, a {@code -SNAPSHOT}, or a line not yet released — is
  * built from source and consumed from the local install:
  * {@snippet lang="shell" :
- * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk
- * mvn -q install -Djapicmp.skip=true
+ * git clone https://github.com/exeris-systems/exeris-sdk && cd exeris-sdk && mvn -q install
  * }
- * <p>The flag skips the semver gate, whose {@code 0.11.0} baseline was never
- * published to Maven Central; the README has the details. Either way, depend on
- * it:
+ * <p>Then depend on it:
  * {@snippet lang="xml" :
  * <dependency>
  *     <groupId>eu.exeris</groupId>

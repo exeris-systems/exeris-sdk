@@ -40,22 +40,18 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
-      # japicmp.skip: the semver gate compares against the last released jar, and
-      # that baseline — 0.11.0 — was never published to Maven Central: 0.6.0–0.11.0
-      # shipped as git tag + GitHub Release only, and nothing is backfilled. A CI
-      # runner therefore has no baseline to resolve, and the gate is configured to
-      # fail rather than treat an absent baseline as "no breaks found". It runs
-      # locally only where 0.11.0 has been installed into ~/.m2. The flag comes off
-      # when the 0.13.0 line opens against a 0.12.0 baseline Central can serve —
-      # the Central wiring has already landed, so that is not what turns the gate
-      # on. release.yml, release-assets.yml and guardrails.yml carry the same flag
-      # for the same reason; the root POM's japicmp comment is canonical.
+      # No semver gate here yet, and no flag needed to leave it out: japicmp runs only under
+      # the root pom's opt-in `semver` profile. Its baseline, 0.11.0, was never published to
+      # Maven Central (0.6.0–0.11.0 shipped as git tag + GitHub Release only), so a runner
+      # could not resolve it. When the 0.13.0 line opens against a 0.12.0 baseline Central can
+      # serve, add -Psemver to this step and to release.yml — that single edit is what starts
+      # 1.x binary enforcement.
       #
       # The half of the record-growth stance that needs no baseline —
       # RecordComponentOrderTest, RecordConstructorLedgerTest and
       # AnnotationSurfaceContractTest — runs here unconditionally as ordinary tests.
       - name: mvn -B verify (runs Java tests + JaCoCo 85% gate)
-        run: mvn -B -ntp verify -Djapicmp.skip=true
+        run: mvn -B -ntp verify
 
       - name: ui-kit npm test (Vitest + 85% coverage gate)
         working-directory: exeris-sdk-ui-kit
