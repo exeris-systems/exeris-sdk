@@ -5,32 +5,17 @@ import postcss from 'postcss';
 import { PACKAGE_ROOT, compileWithV3, compileWithV4 } from './support/tailwind.js';
 
 /**
- * One switch for dark mode, on both majors.
+ * Dark mode responds to a `.dark` class, not the system preference.
  *
- * <h2>What was wrong</h2>
- * This package has two dark surfaces, and until now they answered to different
- * signals. The `--exeris-*` design tokens take their dark values from a `.dark`
- * *class* — that is what the README tells you to toggle, and it is how the
- * token block in `index.css` and `theme.css` is written. The `.exeris-*`
- * component classes take theirs from `dark:` variants, and Tailwind's default
- * for `dark:` is `@media (prefers-color-scheme: dark)` on v3 and v4 alike. So
- * an app that toggled `.dark` got dark tokens and light component chrome unless
- * the operating system happened to agree — dark text on a light input, in
- * practice.
+ * This package has two dark surfaces, both responding to the same signal:
+ * the `--exeris-*` design tokens take their dark values from a `.dark` *class*,
+ * and the `.exeris-*` component classes do the same via Tailwind's `darkMode: 'class'`
+ * preset setting (v3) and `@custom-variant` (v4).
  *
- * <h2>What holds it together now</h2>
- * `darkMode: 'class'` in `tailwind.preset.js` for v3, and
- * `@custom-variant dark (&:where(.dark, .dark *))` in `theme.css` for v4, which
- * has no JS preset to read the former from. Two declarations for one rule, in
- * two files, is exactly the shape that drifts, so this guard compiles the real
- * setup a consumer is documented to use on each major and asserts the *absence*
- * of the media query — the failure mode is silent and invisible in the source.
- *
- * <h2>Why `prefers-color-scheme` is the assertion</h2>
- * Asserting a `.dark` selector is present would pass while a media query sat
- * beside it, which is the split this closes. The absence is the invariant; the
- * presence of the class form is asserted alongside it so the test cannot pass
- * on a build that simply emitted no dark styling at all.
+ * Two files must stay in sync for one rule: the v3 `tailwind.preset.js` and the v4
+ * `theme.css`. This guard compiles the real setup on each major and verifies two
+ * invariants: the absence of `prefers-color-scheme` media queries (the failure
+ * mode), and the presence of `.dark`-scoped rules (the success case).
  */
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
 

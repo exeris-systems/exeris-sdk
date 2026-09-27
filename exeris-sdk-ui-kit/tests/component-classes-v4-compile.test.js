@@ -5,30 +5,20 @@ import { COMPONENT_TYPE_CLASS, RENDERABLE_CLASSES } from './support/component-ty
 import { PACKAGE_ROOT, compileWithV3, compileWithV4, rulesFor, selectorsFor } from './support/tailwind.js';
 
 /**
- * B3's open half: the `.exeris-*` component layer, put through a real compiler
- * on **both** majors.
+ * The `.exeris-*` component layer, compiled through both Tailwind v3 and v4.
  *
- * `index.css` was v4-unreachable, and the reason turned out to be one construct,
- * not the file's shape: `@apply` of a *custom* class ("Cannot apply unknown
- * utility class"). v4 tolerates the `@tailwind base/components/utilities`
- * directives at the top — they are no-ops there — and understands everything
- * else in the file, including `@layer components`, `@apply` of real utilities,
- * arbitrary values like `duration-[var(--exeris-transition-fast)]`, and the
- * `dark:` / `sm:` / `focus:` variants. The four `@apply exeris-btn` lines in the
- * button variants were the whole blocker; they are now a selector list, which
- * needs no v4-only syntax and no second copy of the base declarations.
- *
- * So this guard has two jobs. That v4 emits the classes at all, and that v3 —
- * the major this file is written against and the one consumers are on today —
- * still gets exactly what it got before. The second is why the button
- * assertions below run on both compilers rather than just the new one.
+ * This guard asserts two invariants: that v4 emits all component classes, and that
+ * v3 — the major this file is written against and the one consumers presently use —
+ * continues to emit exactly what it did before. The button variants share their base
+ * declarations through a selector list, not `@apply` of a custom class, which v4
+ * rejects; so they are asserted on both compilers.
  */
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
 
 /** Every `.exeris-*` class this stylesheet declares, read off the source. */
 const DECLARED = [...new Set([...indexCss.matchAll(/\.(exeris-[a-z0-9-]+)/g)].map(([, name]) => name))];
 
-/** The button family, the one place the v4 blocker lived. */
+/** The button family: the classes whose shared base is a selector list. */
 const BUTTON_BASE = 'exeris-btn';
 const BUTTON_VARIANTS = ['exeris-btn-primary', 'exeris-btn-secondary', 'exeris-btn-danger', 'exeris-btn-ghost'];
 

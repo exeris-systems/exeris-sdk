@@ -5,14 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { COMPONENT_TYPE_CLASS } from './support/component-types.js';
 
 /**
- * B3 — generated forms must not be unstyled for most field types. Every
- * `ComponentType` a generator can emit needs a styled `.exeris-*` class to bind
- * to; `COMPONENT_TYPE_CLASS` (in `tests/support/component-types.js`) is that
- * contract. This test asserts each class is actually declared in `index.css`, so
- * a rename or deletion cannot silently leave a control bare.
+ * Every `ComponentType` a generator can emit must have a styled `.exeris-*` class;
+ * `COMPONENT_TYPE_CLASS` (in `tests/support/component-types.js`) defines this
+ * contract. This test verifies that each class is actually declared in `index.css`,
+ * ensuring a rename or deletion cannot silently leave a control unstyled.
  *
- * Its companion, `component-classes-v4-compile.test.js`, asserts the stronger
- * thing: that a real Tailwind build — v3 *and* v4 — emits a rule for each.
+ * The companion test `component-classes-v4-compile.test.js` verifies the stronger
+ * property: that a real Tailwind build on both v3 and v4 emits a rule for each.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const indexCss = readFileSync(join(root, 'src/styles/index.css'), 'utf8');
