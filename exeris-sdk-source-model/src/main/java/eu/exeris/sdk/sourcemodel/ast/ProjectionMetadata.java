@@ -10,7 +10,7 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@code aggregateTypes} — the source aggregate(s) the projection reads
- *       from (from {@code @Projection.aggregateTypes})</li>
+ *       (from {@code @Projection.aggregateTypes})</li>
  *   <li>{@code events} / {@code eventClassNames} / {@code topicPattern} — the
  *       event subscription that drives the read model</li>
  *   <li>{@code model} / {@code schema} — the read-model identity (the view class

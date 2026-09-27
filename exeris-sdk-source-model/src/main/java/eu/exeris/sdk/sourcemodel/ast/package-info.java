@@ -118,9 +118,8 @@
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata} models event
  * <em>emission</em>; {@link eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata}
  * (a facet of {@code DomainMetadata}, like {@code events}) models the
- * <em>reaction</em> — the choreography backbone "when event X fires, do Y". The
- * {@code @EventHandler} annotation has shipped since 0.1.0, but had no AST
- * record to be extracted into; this record closes that gap. It captures the
+ * <em>reaction</em> — the choreography backbone "when event X fires, do Y". It is
+ * the AST record {@code @EventHandler} is extracted into, and it captures the
  * behaviourally meaningful facets (identity, event selection, ordering,
  * execution semantics, saga-trigger surface); the annotation's operational
  * attributes ({@code emitMetrics}/{@code logLevel}/{@code alertOnFailure}), the
@@ -258,9 +257,9 @@
  *
  * <p>The round-trip suite pins the inclusion behaviour these choices rest on, so
  * a new component can be reasoned about rather than guessed. {@code NON_DEFAULT}
- * treats a boxed numeric zero as "empty" and drops it — that is what cost the
- * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds a fix in 0.9.0, and
- * it is the trap to check for any new boxed-numeric component. It does not extend
+ * treats a boxed numeric zero as "empty" and drops it — which is why the
+ * {@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} bounds use per-component
+ * {@code NON_NULL}, and the trap to check for any new boxed-numeric component. It does not extend
  * to enums: an ordinal-0 constant is not "empty" to Jackson and survives
  * {@code NON_DEFAULT} untouched. Both are asserted in
  * {@code AstJsonRoundTripTest}.

@@ -45,10 +45,10 @@ public final class SchemaVersion {
      * that mentions {@code SchemaVersion.CURRENT} bakes the value it saw at
      * <em>its own</em> compile time into its own class file, and swapping the
      * {@code source-model} jar underneath it does not change what that class
-     * compares against. The two halves of the same build would then disagree:
+     * compares against. The two halves of the same build then disagree:
      * {@link #isCurrent(String)} answers from the new jar while a caller's
      * inlined {@code CURRENT.equals(stamp)} answers from the old one, and a
-     * baseline the build has just stamped would read back as
+     * baseline the build has just stamped reads back as
      * {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}. Computing the
      * value in a method keeps it out of every caller's constant pool.
      *

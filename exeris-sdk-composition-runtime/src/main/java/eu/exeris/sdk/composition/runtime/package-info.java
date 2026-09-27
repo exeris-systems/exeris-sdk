@@ -42,8 +42,9 @@
  * boots standalone (the code-detachment guarantee). Shutdown is SKU-entrypoint-driven: caps drain
  * and terminate in reverse {@code initOrder} (honouring the composition-wide drain deadline), then
  * the kernel stops. The composition-manifest format the conductor consumes is fixed as JSON
- * (ADR-053). A hand-written SKU entrypoint may invoke the conductor directly; the library contract
- * is identical to a generated call site's.
+ * (ADR-053). {@code exeris-tooling}'s {@code KernelApplicationGenerator} emits the call site for a
+ * build that declares caps (see {@code eu.exeris.sdk.composition.lifecycle}); a hand-written SKU
+ * entrypoint may invoke the conductor directly, and the library contract is identical in both cases.
  *
  * @since 0.8
  */

@@ -39,8 +39,8 @@
  * ({@code SourceModelMutationApplier}) applies with the {@code sourceDigest} as the apply-time
  * {@code STALE_DIGEST} concurrency token.
  *
- * <p><b>Cross-repo status — the baseline-trust stamp is live.</b> The tooling
- * half shipped: {@code ExerisDomainProcessor.buildMetadataNode} writes
+ * <p><b>Cross-repo status — the baseline-trust stamp is live.</b> On the tooling
+ * side, {@code ExerisDomainProcessor.buildMetadataNode} writes
  * {@code schemaVersion} and {@code sourceDigest} as sibling fields into each
  * {@code exeris-metadata/<entity>.json}
  * ({@code ExerisDomainProcessor.java:1969-1977}), on the {@code @ExerisDomain}
