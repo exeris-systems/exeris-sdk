@@ -17,11 +17,8 @@ name: release to maven central
 # WHICH COMMIT a tag points at and WHETHER ITS VERSION AGREES WITH THE POM — both checked below
 # rather than assumed.
 #
-# Ported from exeris-kernel/.github/workflows/release.yml, which is the reference for this flow in
-# the ecosystem. Deliberately NOT ported: its JDK-tarball pinning (this repo's other two workflows
-# use setup-java's temurin distribution, and a third spelling here would be the odd one out), its
-# SBOM and preview-bytecode gates (this reactor has neither), and its two-build digest assertion —
-# see the build step for why that one cannot hold here.
+# This workflow builds, signs, gates, attests and uploads. It differs from a simple deploy in that
+# the same Maven invocation gates and uploads in one pass, rather than gating in a separate build.
 
 on:
   push:
@@ -291,9 +288,9 @@ jobs:
 
           # `|| true` on every count, and it is not defensive noise. Under `set -euo pipefail` a
           # bare `ls` of a directory that does not exist fails the pipeline, fails the assignment,
-          # and exits the step — so this summary used to abort the job on exeris-sdk-ui-kit, which
-          # has no target/ because it is an npm package outside the Maven reactor. A reporting loop
-          # must not be able to fail a release that passed.
+          # and exits the step — because some modules (e.g. npm packages outside the Maven reactor)
+          # have no target/ directory. A reporting loop must not be able to fail a release that
+          # passed.
           total=$(ls -1 exeris-sdk-*/target/*.asc 2>/dev/null | wc -l || true)
           echo "release-readiness: $total signed files"
           for m in exeris-sdk-*/; do
