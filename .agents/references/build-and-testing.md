@@ -16,8 +16,6 @@ mvn -pl exeris-sdk-annotations -am test    # requires catalog module installed o
 cd exeris-sdk-ui-kit && npm ci && npm run test:coverage
 ```
 
-> **Semver gate:** maintainers run `mvn -Psemver verify` before a release; the default build runs the baseline-free guards (`AnnotationSurfaceContractTest`, `RecordComponentOrderTest`, `RecordConstructorLedgerTest`).
-
 > **Build wrinkle:** `annotationProcessorPaths` is not a Maven dependency edge. On a clean checkout, a partial build like `mvn -pl exeris-sdk-annotations -am ...` fails to resolve `AnnotationCatalogProcessor` until `exeris-sdk-annotation-catalog` has been installed at least once. Run the full reactor `mvn clean install` first (or `mvn -pl exeris-sdk-annotation-catalog install`).
 
 

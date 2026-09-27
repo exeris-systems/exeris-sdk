@@ -28,15 +28,7 @@ Before altering annotation attributes, AST components, or lifecycle hooks, verif
 - **Annotation processing:** `exeris-tooling`, module `exeris-processor/`
 - **Code generation:** `exeris-tooling`, modules `exeris-codegen-*/`
 - **IDE sync & diagnostics:** `exeris-platform`, module `exeris-platform-lsp/`
-- **Reference `@ExerisDomain` corpus:** `Stellar-Tactics` — 36 annotated classes across two
-  generated services (`player-app/`, `galaxy-service/`, each under `src/main/java/**/domain/`), built
-  through `exeris-tooling` onto the kernel, and a validating consumer of `MIGRATION-0.x-to-1.0.md`
-  for the author-facing parts. Its findings log (`docs/dogfooding-findings.md`) numbers its own
-  findings (`S1`–`S6`, `T…`, `K…`); cite them as "Stellar finding S6", never bare, because this
-  repository's review rules in `docs/repo-review-rules.md` are also numbered `S1`–`S7`.
-  `budgetHQ` is not an entity corpus: it consumes the platform through `exeris-spring-runtime` and
-  authors no `@ExerisDomain` sources (ROADMAP, 1.0.0 GA). Its ported entities survive only as the
-  `-io` round-trip corpus.
+- **Production entity examples:** `budgetHQ` (`backend/`) and `pbm`
 
 These are **sibling repositories in a full ecosystem checkout**, and the paths inside them are
 repository-relative. A clone of `exeris-sdk` alone does not contain them: a grep that finds nothing
