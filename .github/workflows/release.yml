@@ -192,10 +192,11 @@ jobs:
         # changes every published jar's bytes, so it belongs to its own slice with its own
         # reproducibility check — not to the change that first makes publishing possible.)
         #
-        # `-Djapicmp.skip=true` for the reason the root POM's japicmp comment gives in full: 0.12.0
-        # is the first version to reach Central, so the 0.11.0 baseline is resolvable on a
-        # developer machine and nowhere on a runner. This flag comes off with build.yml's, one
-        # milestone from now, when a Central-resolvable baseline exists.
+        # No -Psemver: the semver gate is an opt-in profile in the root pom, and its configured
+        # baseline is not one Central serves. A maintainer runs `mvn -Psemver verify` before
+        # tagging, against whatever baseline their machine can resolve. Once the baseline is on
+        # Central, adding -Psemver to both commands below and to build.yml is the edit that starts
+        # 1.x binary enforcement; the root pom's japicmp comment and the ROADMAP say when.
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
@@ -209,9 +210,9 @@ jobs:
             # signature fails HERE rather than silently sitting in the portal. Review the results
             # and press Publish there. Until you do it can be Dropped; after you do, nothing about
             # it can ever be changed.
-            mvn -B -ntp -P release clean deploy -Djapicmp.skip=true --settings .github/maven-settings.xml
+            mvn -B -ntp -P release clean deploy --settings .github/maven-settings.xml
           else
-            mvn -B -ntp -P release clean verify -Djapicmp.skip=true
+            mvn -B -ntp -P release clean verify
           fi
 
       - name: Release-readiness check

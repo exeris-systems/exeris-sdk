@@ -162,12 +162,8 @@ jobs:
   # express a body shape; the test can, and does. Documenting the 204 instead would put 204 comments
   # restating `this.x = v` into a -javadoc.jar on Central, permanently.
   #
-  # `extra-maven-args` carries `-Djapicmp.skip=true`, the same flag build.yml, release.yml and
-  # release-assets.yml pass, for the reason the root POM's japicmp comment gives in full: the 0.11.0
-  # baseline is not on Central and 0.12.0 is the first version that will be. japicmp binds to
-  # `verify`, which `install` runs, so without it the gate dies on an artifact resolution before
-  # reading a doc comment. All four callers say it now, in the same words, and they come off together
-  # when the 0.13.0 line opens.
+  # No `extra-maven-args`: the semver gate is an opt-in `semver` profile in the root pom, so the
+  # plain `install` this job runs never reaches japicmp or its unpublished baseline.
   #
   # No dedicated profile: unlike the kernel, the strict Javadoc settings here live unconditionally
   # in each module's own pom and the `release` profile deliberately does not relax them, so the gate
@@ -179,7 +175,6 @@ jobs:
       modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
       build-modules: exeris-sdk-annotation-catalog
       trivial-accessors: exempt
-      extra-maven-args: -Djapicmp.skip=true
   # ADR-085 §F.21a–c. The TypeScript half of the same rule, and this repository owns one of the
   # three surfaces the ADR names by hand: `@exeris-systems/ui-kit`.
   #
