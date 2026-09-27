@@ -70,7 +70,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
 3. Package-info files for scoping rationale: `annotations/.../package-info.java`
    and `source-model/.../package-info.java`.
 4. Downstream references: `exeris-tooling/exeris-processor/`, `exeris-platform/exeris-platform-lsp/`,
-   `budgetHQ/backend/` ([reference](.agents/references/downstream-consumers.md)).
+   `Stellar-Tactics/` ([reference](.agents/references/downstream-consumers.md)).
 
 ## `.agents/` — the canonical semantic source
 
