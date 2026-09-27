@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-07
+last-verified: 2026-09-27
 ---
 
 # Changelog
