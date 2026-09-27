@@ -63,12 +63,9 @@ import java.util.Objects;
  *        {@link #displayNameKey()}
  * @param derived the declarative derivation facet, present when the field carries a
  *        {@code @Derived} expression and absent for an ordinary stored field
- *
- *        <p>Added in 0.7.0
  * @param blob the binary-object facet, present when the field carries a {@code @Blob}
- *        declaration and absent for an ordinary inline-valued field
- *
- *        <p>Added in 0.11.0. Reserved: no processor populates it and no generator consumes it,
+ *        declaration and absent for an ordinary inline-valued field.
+ *        Reserved: no processor populates it and no generator consumes it,
  *        and it is outside the 1.0.0 freeze while the kernel holds {@code …spi.storage.blob} at
  *        tier {@code preview} (ADR-072)
  * @since 0.1

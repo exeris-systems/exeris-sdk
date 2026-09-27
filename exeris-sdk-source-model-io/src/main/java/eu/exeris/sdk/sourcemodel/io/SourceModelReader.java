@@ -49,10 +49,9 @@ import java.util.TreeSet;
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
  * — the in-editor counterpart to the build-time annotation processor.
  *
- * <p>0.3.0 scope: locates the first {@code @ExerisDomain}-annotated type and
- * extracts its entity name (the class simple name — see {@code toDomain}),
- * package, fields, and {@code @Relationship}s. Fields mirror the
- * processor's two-path contract: a field <b>with</b> {@code @Field} reads the full
+ * <p>Locates the first {@code @ExerisDomain}-annotated type and extracts its entity name
+ * (the class simple name — see {@code toDomain}), package, fields, and {@code @Relationship}s.
+ * Fields mirror the processor's two-path contract: a field <b>with</b> {@code @Field} reads the full
  * attribute surface the processor reads (label, description, required, unique,
  * indexed, searchable, sortable, filterable, readOnly, inCreate, inUpdate,
  * computed, computedFrom) present-only on a {@link FieldMetadata.Builder}, plus
@@ -73,7 +72,7 @@ import java.util.TreeSet;
  * cache/search config) are read present-only, as is the ADR-059
  * {@code dataScope} tier, and so is {@code tableName}, which the reader reads
  * ahead of the processor for the reason given at the read. Two of those are
- * deprecated for removal at 1.0.0 and read only until then: {@code tenantScoped}
+ * deprecated for removal at 1.0.0 and read until then: {@code tenantScoped}
  * (ADR-059) and {@code apiVersion} (see {@code MIGRATION.md}). Domain
  * {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
@@ -85,9 +84,8 @@ import java.util.TreeSet;
  * (including its {@code streamPrefix→aggregateType} translation and presence-only
  * {@code @InternalApi}).
  *
- * <p><b>0.4.0 capability scope.</b> {@link #readCapabilityModule} is the
- * capability counterpart of {@link #read}: it locates the first
- * {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
+ * <p>Capability scope: {@link #readCapabilityModule} is the capability counterpart of {@link #read}:
+ * it locates the first {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
  * (direct, repeated, or hand-written {@code @Provides.List} container) and
  * {@code @Requires} declarations into {@link CapabilityModuleMetadata}. Per
  * ADR-038, {@code service} is persisted <em>as written in source</em> (simple or

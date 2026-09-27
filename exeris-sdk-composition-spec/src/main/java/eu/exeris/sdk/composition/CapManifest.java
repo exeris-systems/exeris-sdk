@@ -87,7 +87,7 @@ public record CapManifest(
      * ({@code ExerisDomainProcessor}) emits it {@code NON_NULL} inside the module body; absent /
      * {@code null} / blank means the cap declares no lifecycle hooks, matching
      * {@code @CapabilityLifecycle}'s zero-or-one cardinality (a blank value normalizes to
-     * {@code null} in the compact constructor). Trailing component since 0.9.0.
+     * {@code null} in the compact constructor).
      *
      * @param provides       the services this module {@code @Provides}; may be {@code null} or empty
      * @param lifecycleOwner the fully-qualified name of the cap's {@code @CapabilityLifecycle}

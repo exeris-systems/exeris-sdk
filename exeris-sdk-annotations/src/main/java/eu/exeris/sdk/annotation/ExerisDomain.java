@@ -124,9 +124,9 @@ public @interface ExerisDomain {
      * endpoint is served, and {@code -Aexeris.strict} reports it.
      *
      * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()}, itself
-     * deprecated for removal alongside this attribute — and both build paths still read
-     * it until 1.0.0, so a source that sets it keeps producing the same metadata for the
-     * whole deprecation window.
+     * deprecated for removal alongside this attribute — and both build paths read
+     * it during the deprecation window, so a source that sets it keeps producing the
+     * same metadata.
      *
      * @return API version (e.g., "v1", "v2"); carried into the AST, read by no
      *         generator
@@ -182,14 +182,13 @@ public @interface ExerisDomain {
     /**
      * Whether to generate real-time streaming endpoints (SSE/WebTransport).
      *
-     * <p><strong>Open-Core status (kernel v0.10.0, ADR-043):</strong> live at
-     * the entity level. The kernel server-push SPI (SSE-first
-     * {@code HttpStreamExchange} / {@code HttpStreamHandler} /
-     * {@code HttpRouter.streamRoute}) shipped with kernel v0.10.0, and the
-     * tooling emits the entity-level stream route + TS {@code EventSource}
-     * client backed by the real domain-event feed. SSE is the shipped
-     * transport; the WebTransport/WebSocket half stays deferred kernel-side.
-     * See also {@link Action#streaming()} / {@link Action#realTimeUpdates()}.
+     * <p><strong>Open-Core status (ADR-043):</strong> live at the entity level.
+     * The kernel provides the server-push SPI (SSE-first {@code HttpStreamExchange}
+     * / {@code HttpStreamHandler} / {@code HttpRouter.streamRoute}), and the
+     * tooling emits the entity-level stream route plus TypeScript {@code EventSource}
+     * client backed by the real domain-event feed. SSE is the available transport;
+     * the WebTransport/WebSocket half stays deferred kernel-side. See also
+     * {@link Action#streaming()} / {@link Action#realTimeUpdates()}.
      *
      * @return true to generate real-time API
      */
@@ -236,20 +235,17 @@ public @interface ExerisDomain {
      * <p>The kernel carrier for the shared tier ({@code sharedScopeKey} + a
      * {@code SHARED_WORLD} row-visibility mode composing with the physical
      * isolation strategy, read-widen + owner-scoped write) is fixed by the kernel
-     * ADR-012 §4b amendment and implemented with its read-widen/write-pin TCK on
-     * the kernel 0.11 line.
+     * ADR-012 §4b amendment and implemented with its read-widen/write-pin TCK.
      *
      * <p><strong>Two kernel contracts stand behind this tier, and a transcription
      * needs the second one.</strong> {@code StorageContext.sharedScopeKey()} is
-     * what an application reads, and it has existed since the kernel 0.11 line.
-     * An emitted RLS policy reads neither the accessor nor the carrier — it
-     * writes a PostgreSQL session-variable <em>name</em> into SQL. That name
-     * became referenceable rather than retyped only in kernel v0.12.0, which
-     * publishes it as {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE}
-     * beside {@code SESSION_KEY_TENANT_ID}. Before that a generator emitting a
-     * shared-scope policy was transcribing a string no published kernel surface
-     * defined; it resolved only because a Community driver happened to set it.
-     * The transcription is therefore pinned to kernel v0.12.0, not to 0.11.
+     * what an application reads. An emitted RLS policy reads neither the accessor
+     * nor the carrier — it writes a PostgreSQL session-variable <em>name</em> into
+     * SQL. Kernel v0.12.0 publishes that name as
+     * {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE} beside
+     * {@code SESSION_KEY_TENANT_ID}, so a transcription is pinned to a kernel that
+     * carries the constant: the policy then references a published contract rather
+     * than retyping the literal one Community driver happens to set.
      *
      * <p>The {@code exeris-tooling} transcription mapping
      * {@code UNIVERSE} onto that carrier is not built, and without it the tier is
@@ -333,7 +329,7 @@ public @interface ExerisDomain {
      *         {@code dataScope = DataScope.TENANT}, {@code false} becomes
      *         {@code DataScope.GLOBAL}. The processor reads this attribute as a
      *         fallback with a build warning while {@code dataScope} is
-     *         {@link DataScope#UNSPECIFIED}; that window closes at 1.0.0. See
+     *         {@link DataScope#UNSPECIFIED}, until this attribute is removed at 1.0.0. See
      *         {@code MIGRATION.md} and RFC-2026-06-24.
      */
     @Deprecated(since = "0.10.0", forRemoval = true)
@@ -513,9 +509,8 @@ public @interface ExerisDomain {
      * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming
      * honours that component when it is set, for the repository's SQL, the
      * {@code CREATE TABLE} and the migration file name alike. The {@code exeris-tooling}
-     * processor does not extract it yet, so on the build path that generates code it has
-     * no effect until the processor release that does. Check that release's notes before
-     * relying on it.
+     * processor does not extract it, so on the build path that generates code the
+     * attribute has no effect.
      *
      * @return the table name, or empty to derive it from the class name
      * @since 0.12

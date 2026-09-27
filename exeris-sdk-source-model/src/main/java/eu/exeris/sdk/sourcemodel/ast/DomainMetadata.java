@@ -94,17 +94,15 @@ import java.util.Locale;
  *        {@link #effectiveDataScope()}
  *
  * @param routeAccess whether the entity's generated routes admit unauthenticated callers.
- *        Absent means the author declared nothing and the generated policy's default decides
- *
- *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator emits a route
- *        policy from it, and it is outside the 1.0.0 freeze (ADR-072)
+ *        Absent means the author declared nothing and the generated policy's default decides.
+ *        Reserved: no processor extracts it and no generator emits a route policy from it, and
+ *        it is outside the 1.0.0 freeze (ADR-072)
  *
  * @param channel the duplex channel this entity exposes, or absent if it exposes none. Present
  *        with no components set is a channel that declares nothing further — which is why this
- *        is a record rather than a second boolean beside {@link #realTimeApi()}
- *
- *        <p>Added in 0.12.0. Reserved: no processor extracts it and no generator opens an
- *        endpoint from it, and it is outside the 1.0.0 freeze (ADR-072)
+ *        is a record rather than a second boolean beside {@link #realTimeApi()}. Reserved: no
+ *        processor extracts it and no generator opens an endpoint from it, and it is outside the
+ *        1.0.0 freeze (ADR-072)
  *
  * @since 0.1
  */
@@ -184,37 +182,35 @@ public record DomainMetadata(
         @JsonProperty("internalApi") InternalApiMetadata internalApi,
         @JsonProperty("systemFields") SystemFieldsMetadata systemFields,
 
-        // Declarative behaviour (0.7.0): entity-level @Rule invariants. See RFC-2026-06-18.
+        // Entity-level invariants declared with @Rule. See RFC-2026-06-18.
         @JsonProperty("rules") List<RuleMetadata> rules,
 
-        // Data-scope tier (0.10.0): the mutually-exclusive successor of the
-        // deprecated tenantScoped boolean. Absent ⇒ fall back to tenantScoped
-        // via effectiveDataScope(). See RFC-2026-06-24 / ADR-059.
+        // Data-scope tier: the mutually-exclusive successor of the deprecated tenantScoped
+        // boolean. Absent ⇒ fall back to tenantScoped via effectiveDataScope(). See RFC-2026-06-24 / ADR-059.
         @JsonProperty("dataScope") DataScope dataScope,
 
-        // Route access (0.12.0): the identity half of the kernel's route-authorization
-        // decision (kernel ADR-061), covering the routes generated for this entity.
-        // Absent ⇒ the author declared nothing and the generated policy's default
-        // decides — there is no UNSPECIFIED constant, by design. Reserved: no processor
-        // writes it and no generator reads it, and the kernel holds route authorization
-        // at tier preview, so it is outside the 1.0.0 freeze. See ADR-072.
+        // Route access: the identity half of the kernel's route-authorization decision
+        // (kernel ADR-061), covering the routes generated for this entity. Absent ⇒ the
+        // author declared nothing and the generated policy's default decides — there is no
+        // UNSPECIFIED constant, by design. Reserved: no processor writes it and no generator
+        // reads it, and the kernel holds route authorization at tier preview, so it is
+        // outside the 1.0.0 freeze. See ADR-072.
         @JsonProperty("routeAccess") RouteAccess routeAccess,
 
-        // Duplex channel (0.12.0): the one shape the SSE surface above cannot express,
-        // because SSE is one-directional by construction and this entity's clients also
-        // speak. Absent ⇒ no channel; present with nothing set ⇒ a channel that declares
-        // nothing further, which a boolean could not distinguish from the first.
-        // Reserved: no processor writes it and no generator reads it, and the kernel holds
-        // …spi.websocket at tier preview — benchmark-gated, not shape-gated (kernel
-        // ADR-084 §10) — so it is outside the 1.0.0 freeze. See ADR-072.
+        // Duplex channel: the one shape the SSE surface above cannot express, because SSE
+        // is one-directional by construction and this entity's clients also speak. Absent ⇒
+        // no channel; present with nothing set ⇒ a channel that declares nothing further,
+        // which a boolean could not distinguish from the first. Reserved: no processor writes
+        // it and no generator reads it, and the kernel holds …spi.websocket at tier preview —
+        // benchmark-gated, not shape-gated (kernel ADR-084 §10) — so it is outside the 1.0.0
+        // freeze. See ADR-072.
         @JsonProperty("channel") ChannelMetadata channel
 ) {
 
     /**
-     * The 0.11.0 shape — the 39 components before {@code routeAccess} and {@code channel} — kept
-     * as a delegating constructor so that code compiled or written against 0.11.0 still links and
-     * still compiles. Both of those components are {@code null}: no route access declared, and
-     * no duplex channel.
+     * A delegating constructor for backward compatibility with code compiled against a previous
+     * version of this record. Omits {@code routeAccess} and {@code channel}, both of which default
+     * to {@code null}: no route access declared, and no duplex channel.
      *
      * <p>Prefer {@link #builder(String, String)}, which sets any component by name and does not
      * change shape when the record grows.

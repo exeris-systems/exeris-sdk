@@ -210,20 +210,20 @@ public @interface Action {
     /**
      * URL path for the endpoint.
      *
-     * <p><strong>Not consumed by any generator, and optional since 0.11.0.</strong> The served route
+     * <p><strong>Not consumed by any generator.</strong> The served route
      * is <em>derived</em> from the domain path and the action name:
      *
      * {@snippet lang="text" :
      * {domainPath}/{id}/actions/{kebab-case-action-name}
      * }
      *
-     * <p>So an {@code @Action(name = "commandFormation")} on a domain at {@code /fleets} is served at
+     * <p>An {@code @Action(name = "commandFormation")} on a domain at {@code /fleets} is served at
      * {@code POST /fleets/{id}/actions/command-formation} regardless of what this attribute says.
      * {@code ActionMetadata} carries no path component, so the value does not even reach the
-     * build-time JSON; setting it has no effect, and {@code -Aexeris.strict} reports it.
+     * build-time JSON; setting it has no effect, and {@code -Aexeris.strict} reports it. A
+     * source that sets it can drop the value.
      *
-     * <p>It was mandatory (no default) until 0.11.0, so existing sources carry a value here; it can
-     * be dropped. The derived convention is deliberate and stays. Whether the attribute becomes an
+     * <p>The derived convention is deliberate and stays. Whether the attribute becomes an
      * honoured override or is removed outright is open (removal runs the {@code MIGRATION.md}
      * deprecation pipeline).
      *
@@ -479,17 +479,16 @@ public @interface Action {
      * public Flux<ReportProgress> generateReport() { ...  }
      * }
      *
-     * <p><strong>Open-Core status (kernel v0.10.0, ADR-043):</strong>
-     * partially live. The kernel server-push affordance (SSE-first
-     * {@code HttpStreamExchange}) shipped with kernel v0.10.0, and the
-     * tooling emits the per-action streaming route + parity TS RxJS client —
-     * but the generated per-action stream body is still a keep-alive
-     * scaffold (it does not yet push the real event feed; that is the
-     * pending tooling EV1-stream producer pass). A declared streaming action
-     * therefore serves a live SSE route with placeholder events for now.
-     * This and the related {@link #streamEventType()} /
-     * {@link #realTimeUpdates()} attributes flip fully live when that
-     * producer pass lands; WebSocket/WebTransport stays deferred.
+     * <p><strong>Open-Core status (ADR-043):</strong> partially live. The
+     * kernel provides the server-push affordance (SSE-first
+     * {@code HttpStreamExchange}), and the tooling emits the per-action
+     * streaming route plus the parity TypeScript RxJS client. The generated
+     * per-action stream body is a keep-alive scaffold: it does not push the
+     * real event feed, which is the pending tooling EV1-stream producer pass.
+     * A declared streaming action therefore serves a live SSE route with
+     * placeholder events. This and the related {@link #streamEventType()} /
+     * {@link #realTimeUpdates()} attributes go fully live with that producer
+     * pass; WebSocket/WebTransport stays deferred.
      *
      * @return true for streaming response
      */
@@ -500,7 +499,7 @@ public @interface Action {
      * <p>Used in SSE event type or WebTransport message type.
      *
      * <p><strong>Open-Core status:</strong> see {@link #streaming()} — the
-     * kernel affordance and the emitters shipped (kernel v0.10.0, ADR-043);
+     * kernel affordance and the emitters are available (ADR-043);
      * the per-action event feed awaits the tooling EV1-stream producer pass.
      *
      * @return stream event type name
@@ -518,10 +517,10 @@ public @interface Action {
      *
      * <p><strong>Open-Core status:</strong> still inert — unlike
      * {@link #streaming()}, this attribute is deliberately not extracted by
-     * the tooling processor yet (a separate subscribe-to-progress affordance
+     * the tooling processor (a separate subscribe-to-progress affordance
      * with no generator consumer; the extraction lands together with its
-     * consumer). The kernel affordance itself shipped (kernel v0.10.0,
-     * ADR-043), so only the tooling half is pending.
+     * consumer). The kernel affordance is available (ADR-043); only the
+     * tooling half is pending.
      *
      * @return true for real-time subscription support
      */

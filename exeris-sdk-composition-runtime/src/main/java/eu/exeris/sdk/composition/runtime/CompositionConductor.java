@@ -45,7 +45,7 @@ import tools.jackson.databind.json.JsonMapper;
  *       (drain, then terminate) and throws.</li>
  *   <li>One INFO line: {@code composition ready — N caps, M with lifecycle hooks}.</li>
  * </ol>
- * <p><b>0.9.0 non-guarantee:</b> {@code initialize()} / {@code ready()} calls are <em>not</em>
+ * <p><b>Time bounds:</b> {@code initialize()} / {@code ready()} calls are <em>not</em>
  * time-bounded — a hanging initialize hangs boot. Only the drain phase is deadline-enforced.
  *
  * <h2>Shutdown ({@link #shutdown()} / {@link #close()})</h2>

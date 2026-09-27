@@ -18,21 +18,15 @@ import java.util.Objects;
  *        aggregate method. Optional: {@code null} when unknown (hand-built metadata or
  *        legacy JSON); use {@link #effectiveMethodName()} for a name-based fallback.
  *
- *        <p>Added in 0.7.0.
- *
  * @param streaming Whether the action returns a streaming (server-push) response rather than
  *        responding once — the AST twin of {@code @Action(streaming=true)}. When
  *        {@code true}, build-time codegen emits a kernel {@code HttpStreamHandler}
  *        bound to a streaming route (ADR-043) instead of a respond-once handler.
  *
- *        <p>Added in 0.8.0.
- *
  * @param streamEventType The SSE {@code event:} name carried on each emitted {@link #streaming()}
  *        frame — the AST twin of {@code @Action(streamEventType=…)}. Optional:
  *        {@code null} when unset (normalized from a blank annotation value).
  *        Meaningful only when {@link #streaming()} is {@code true}.
- *
- *        <p>Added in 0.8.0.
  *
  * @param realTimeUpdates Whether clients may subscribe to this action's progress in real time —
  *        the AST twin of {@code @Action(realTimeUpdates=true)}. Distinct from
@@ -40,23 +34,9 @@ import java.util.Objects;
  *        subscribe-to-progress affordance.
  *
  *        <p><strong>Open-Core status — reserved, extraction pending
- *        tooling:</strong> unlike its two neighbours {@link #streaming()} and
- *        {@link #streamEventType()}, which the {@code exeris-tooling}
- *        processor does extract, this component is never populated from
- *        annotated source. The processor declines it by name — "deliberately
- *        NOT extracted here … extracting it would only create an inert
- *        {@code ActionMetadata} attribute" — the {@code NOTE:} comment in
- *        {@code ExerisDomainProcessor}'s {@code @Action} extraction
- *        ({@code exeris-tooling}, {@code exeris-processor/.../ExerisDomainProcessor.java};
- *        anchored on the comment rather than a line number, which has already
- *        moved once) —
- *        and no generator reads it back. On the build-time path it is
- *        therefore always {@code false}; only hand-built metadata can set it,
- *        and setting it changes no generated artifact. The extraction lands in
- *        the same change that introduces its consumer, matching the Open-Core
- *        status note on {@code @Action.realTimeUpdates()}.
- *
- *        <p>Added in 0.8.0.
+ *        tooling:</strong> this component is never extracted from annotated source
+ *        and is always {@code false} on the build-time path. Only hand-built metadata
+ *        can set it, and setting it changes no generated artifact.
  *
  * @param schedule The schedule on which this action also fires without a client call —
  *        the AST twin of {@code @Schedule} on the action method. Optional:
@@ -64,15 +44,12 @@ import java.util.Objects;
  *
  *        <p><strong>Open-Core status — reserved, extraction pending
  *        tooling:</strong> the kernel side exists ({@code JobScheduler} /
- *        {@code JobTrigger}, kernel ADR-057, shipped on the kernel 0.11 line
- *        with {@code AbstractJobSchedulerTck}), but no {@code exeris-tooling}
+ *        {@code JobTrigger}, kernel ADR-057), but no {@code exeris-tooling}
  *        processor extracts {@code @Schedule} and no generator submits a job
  *        from this component, so on the build-time path it is always
  *        {@code null}. The kernel holds {@code …spi.scheduling} at tier
  *        {@code preview}, so the component is excluded from the 1.0.0 freeze
  *        and a 1.x minor may still change it (ADR-072).
- *
- *        <p>Added in 0.11.0.
  *
  * @param routeAccess What this action's generated route demands of its caller — the identity
  *        half of the kernel's route-authorization decision (kernel ADR-061), and
@@ -86,15 +63,12 @@ import java.util.Objects;
  *
  *        <p><strong>Open-Core status — reserved, extraction pending
  *        tooling:</strong> the kernel side exists ({@code HttpRoutePolicy} /
- *        {@code RouteRequirement}, kernel ADR-061, shipped on the kernel 0.11 line
- *        with {@code AbstractHttpRoutePolicyTck}), but no {@code exeris-tooling}
+ *        {@code RouteRequirement}, kernel ADR-061), but no {@code exeris-tooling}
  *        processor extracts {@code @RouteAccess} and no generator emits a
  *        URL-to-policy table from this component, so on the build-time path it is
  *        always {@code null}. The kernel holds route authorization at tier
  *        {@code preview}, so the component is excluded from the 1.0.0 freeze and a
  *        1.x minor may still change it (ADR-072).
- *
- *        <p>Added in 0.12.0.
  *
  * @param name the action's identity, as the generated surface exposes it — distinct from
  *        {@link #methodName()}, the Java method behind it
@@ -148,10 +122,10 @@ public record ActionMetadata(
     }
 
     /**
-     * The 0.11.0 shape — the 17 components before {@code routeAccess} — kept as a delegating
-     * constructor so that code compiled or written against 0.11.0 still links and still compiles.
-     * {@code routeAccess} is {@code null}: the author declared nothing, and the generated policy's
-     * default decides. The compact constructor's normalization applies as it does to every call.
+     * A delegating constructor for backward compatibility with code compiled against a previous
+     * version of this record. This constructor omits {@code routeAccess}, which defaults to {@code null}:
+     * the author declared nothing, and the generated policy's default decides. The compact
+     * constructor's normalization applies as it does to every call.
      *
      * <p>Prefer {@link #builder(String)}, which sets any component by name and does not change
      * shape when the record grows.

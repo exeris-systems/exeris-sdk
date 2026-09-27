@@ -113,13 +113,11 @@ class AstSchemaContractTest {
             assertThat(each.get("why").asString()).isNotBlank();
         });
 
-        // Non-blank is not enough for this one. The claim it states was wrong in this repo
-        // until it was measured and corrected (CLAUDE.md, 2026-08-26): an *absent* primitive
-        // property binds the type's own default and raises nothing, and only an *explicit*
-        // null throws. The obligation survives the correction — a baseline is a file the
-        // reader did not write — but the reason changed, and a schema is exactly where a
-        // superseded reason must not come back to life. exeris-sdk-tck's
-        // AbstractMapperPostureTck is the executable statement of the same fact.
+        // Non-blank is not enough for this one. An *absent* primitive property binds the
+        // type's own default and raises nothing, and only an *explicit* null throws. The
+        // schema must state the explicit-null hazard, not a superseded interpretation.
+        // exeris-sdk-tck's AbstractMapperPostureTck is the executable statement of this
+        // contract.
         String why = requirement(requirements, "FAIL_ON_NULL_FOR_PRIMITIVES").get("why").asString();
         assertThat(why)
                 .as("the entry must name the explicit-null hazard, and must not restate the "

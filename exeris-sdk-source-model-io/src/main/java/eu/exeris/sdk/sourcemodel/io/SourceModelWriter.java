@@ -19,20 +19,18 @@ import java.util.Optional;
  * Applies field-level edits to Java source <em>idempotently</em>, preserving the
  * user's formatting, comments, and non-Exeris annotations.
  *
- * <p>This is the genuinely hard half of 0.3.0 and the reason {@code -io} is its
- * own module: codegen emits <em>fresh</em> files, whereas an editor/LSP must
- * surgically modify user-authored sources without reformatting them. The
- * preservation is JavaParser's {@code LexicalPreservingPrinter}: only the nodes
- * we touch change; everything else is reproduced byte-for-byte. Every method is
- * idempotent — a no-op edit returns the original source unchanged (and skips
- * the printer entirely, so re-applying a mutation is byte-stable and cheap).
+ * <p>This is the reason {@code -io} is its own module: codegen emits <em>fresh</em> files,
+ * whereas an editor/LSP must surgically modify user-authored sources without reformatting them. The preservation is JavaParser's
+ * {@code LexicalPreservingPrinter}: only the nodes we touch change; everything else is
+ * reproduced byte-for-byte. Every method is idempotent — a no-op edit returns the
+ * original source unchanged (and skips the printer entirely, so re-applying a mutation
+ * is byte-stable and cheap).
  *
- * <p>0.3.0 scope: field mutations — {@link #addField}, {@link #renameField},
+ * <p>Supports field mutations — {@link #addField}, {@link #renameField},
  * {@link #changeFieldType}, {@link #removeField} — relationship mutations —
  * {@link #addRelationship}, {@link #removeRelationship} — and action mutations —
- * {@link #addAction}, {@link #removeAction}. These are the
- * application half of what 0.5.0 will model as {@code MutationOp} records
- * (ADR-037 pre-emptive ruling: the op records live in {@code source-model};
+ * {@link #addAction}, {@link #removeAction}. They are the application half of the
+ * {@code MutationOp} records (ADR-037: the op records live in {@code source-model};
  * their application lives here). UI mutations follow.
  *
  * <p><b>Limitations.</b> Removal mutations are not byte-exact inverses of their

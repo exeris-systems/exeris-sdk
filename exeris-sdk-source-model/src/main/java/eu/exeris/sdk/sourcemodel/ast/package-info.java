@@ -37,7 +37,7 @@
  * the consumer's own and the rule above is a consumer obligation, not
  * something the SDK can enforce.
  *
- * <h2>FieldMetadata vs ValidationMetadata — canonical scoping (0.2.0, finalized 0.9.0)</h2>
+ * <h2>FieldMetadata vs ValidationMetadata — canonical scoping</h2>
  * <p>The annotation surface splits field-shape ({@code @Field}) from constraint
  * declarations ({@code @Validation}); the AST carries both on a single record:
  * <ul>
@@ -49,31 +49,24 @@
  *       constraint values {@code minLength}, {@code maxLength}, {@code min},
  *       {@code max}, {@code pattern}, populated <em>from {@code @Validation}</em>
  *       by the build-time processor and the {@code -io} reader.
- *       ({@code @Field} never declared these attributes — the historically
- *       documented "basic shape hints on {@code @Field}" overlap was fictional
- *       at the annotation level; ADR-054.) DB NOT NULL / not-blank semantics
- *       derive from {@code FieldMetadata.required} at generator level. Since
- *       0.9.0 the four numeric bounds use per-component
+ *       ({@code @Field} declares none of these attributes, so there is no
+ *       "basic shape hints on {@code @Field}" overlap at the annotation level;
+ *       ADR-054.) DB NOT NULL / not-blank semantics derive from
+ *       {@code FieldMetadata.required} at generator level. The four numeric
+ *       bounds use per-component
  *       {@code @JsonInclude(NON_NULL)} so a zero-valued bound (e.g.
- *       {@code min = 0} non-negativity) survives the wire; the class-level
- *       {@code NON_DEFAULT} treated boxed zero as "empty" and dropped it.
+ *       {@code min = 0} non-negativity) survives the wire; a class-level
+ *       {@code NON_DEFAULT} treats boxed zero as "empty" and drops it.
  *       (Same rationale as {@code ViewMetadata}'s deliberate {@code NON_NULL}
  *       choice — see the presentation-IR section below.)</li>
- *   <li><strong>{@code ValidationMetadata} was removed in 0.9.0</strong>
- *       (ADR-054): it was never populated by any processor or reader, never
- *       referenced by {@code DomainMetadata}, and never consumed by any
- *       generator — it never appeared on the domain wire, and no artifact had
- *       ever been published to a registry, so no external dependent could
- *       exist and the deprecation window would have been vacuous (0.x permits
- *       the break). Its {@code notNull} / {@code notBlank} "derived from
- *       {@code required}" design never happened (the derivation lives at
- *       generator level, from {@code FieldMetadata.required});
- *       {@code patternMessage} had no {@code @Validation} source. Do not add a
- *       parallel AST validation carrier — constraint values live on
- *       {@code FieldMetadata}.</li>
+ *   <li><strong>There is no {@code ValidationMetadata} record</strong>
+ *       (ADR-054): constraint values live on {@code FieldMetadata}, and a parallel
+ *       AST validation carrier must not be added. The derivation of
+ *       {@code notNull} / {@code notBlank} semantics lives at generator level, from
+ *       {@code FieldMetadata.required}.</li>
  * </ul>
  *
- * <h2>{@code dataType} vs {@code format} on FieldMetadata (0.6.0)</h2>
+ * <h2>{@code dataType} vs {@code format} on FieldMetadata</h2>
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata} carries two distinct
  * display-related strings, split by responsibility:
  * <ul>
@@ -88,15 +81,14 @@
  *       There is no {@code @Field} attribute feeding it today; it is reserved for
  *       a processor-derived or future explicit-format source.</li>
  * </ul>
- * <p>{@code dataType} was added to the record in 0.6.0 so the AST can carry the
- * {@code @Field.dataType} the annotation already declared (it was previously
- * dropped at the annotation→AST boundary). <strong>Populating it is a coordinated
- * cross-repo change:</strong> the build-time processor and the {@code -io} reader
- * must begin extracting {@code @Field.dataType} <em>together</em>, or a reader
- * that reads it while the processor does not would diverge from the codegen
- * baseline and break conflict detection (ADR-042).
+ * <p>The {@code dataType} field carries the {@code @Field.dataType} the annotation
+ * declares. <strong>Populating it is a coordinated cross-repo change:</strong> the
+ * build-time processor and the {@code -io} reader must begin extracting
+ * {@code @Field.dataType} <em>together</em>, or a reader that reads it while the
+ * processor does not would diverge from the codegen baseline and break conflict
+ * detection (ADR-042).
  *
- * <h2>i18n message keys + custom-component escape hatch (0.6.0)</h2>
+ * <h2>i18n message keys + custom-component escape hatch</h2>
  * <p>Two additive extensibility fields were added to the field-rendering AST:
  * <ul>
  *   <li><strong>i18n message keys</strong> — {@code FieldMetadata.displayNameKey}
@@ -122,7 +114,7 @@
  * {@code -io} reader and the build-time processor must begin populating them
  * <em>together</em> to keep ADR-042 conflict-detection baselines trustworthy.
  *
- * <h2>Event handlers — the reaction side (0.6.0)</h2>
+ * <h2>Event handlers — the reaction side</h2>
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata} models event
  * <em>emission</em>; {@link eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata}
  * (a facet of {@code DomainMetadata}, like {@code events}) models the
@@ -141,26 +133,22 @@
  * consumer are coordinated {@code exeris-tooling} work — the SDK supplies only
  * the record the choreography serializes into.
  *
- * <h2>Projection source + read-model framing (0.7.0)</h2>
- * <p>{@link eu.exeris.sdk.sourcemodel.ast.ProjectionMetadata} originally carried
- * only {@code name} / {@code description} / {@code fields} / {@code cacheable} —
- * it could say what a view shows but not what it is a view <em>of</em>. 0.7.0
- * adds the source and read-model framing: {@code aggregateTypes} (the source
- * aggregate(s) the projection reads — the "of <em>this</em> aggregate" link the
- * exposed {@code fields} subset was missing), the event subscription that drives
- * it ({@code events} / {@code eventClassNames} / {@code topicPattern}), and the
- * read-model identity ({@code model} / {@code schema}). {@code @Projection}'s
- * large operational surface (partitioning, error handling, rebuild, consistency,
- * monitoring, lifecycle, query API) is deliberately deferred — additive, by-name
- * JSON. Class-valued attributes ({@code model}, {@code eventClasses}) are stored
- * as source-written {@code String} names, the same zero-coupling discipline as
- * the capability and event-handler records.
+ * <h2>Projection source + read-model framing</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.ProjectionMetadata} carries the source
+ * and read-model framing: {@code aggregateTypes} (the source aggregate(s) the
+ * projection reads), the event subscription that drives it ({@code events} /
+ * {@code eventClassNames} / {@code topicPattern}), and the read-model identity
+ * ({@code model} / {@code schema}). {@code @Projection}'s large operational
+ * surface (partitioning, error handling, rebuild, consistency, monitoring,
+ * lifecycle, query API) is deliberately deferred — additive, by-name JSON.
+ * Class-valued attributes ({@code model}, {@code eventClasses}) are stored as
+ * source-written {@code String} names, the same zero-coupling discipline as the
+ * capability and event-handler records.
  *
- * <h2>Saga step kind + typed transitions (0.7.0)</h2>
- * <p>{@link eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata} was already a rich
- * step descriptor (order, service/command, compensation, timeout/retry,
- * parallel, condition, {@code dependsOn}, mappings), but two behavioural facts
- * were missing. 0.7.0 adds them:
+ * <h2>Saga step kind + typed transitions</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata} is a rich step
+ * descriptor carrying order, service/command, compensation, timeout/retry,
+ * parallel, condition, {@code dependsOn}, and mappings. It further carries:
  * <ul>
  *   <li><strong>{@code SagaStepMetadata.kind}</strong> — the step's behavioural
  *       {@code StepKind} ({@code INVOKE} / {@code COMPENSATE} / {@code AWAIT_EVENT}
@@ -189,7 +177,7 @@
  * coordinated {@code exeris-tooling} work (RFC-worthy) — the SDK supplies only
  * the record the state machine serializes into.
  *
- * <h2>Declarative behaviour — derived fields + rules (0.7.0)</h2>
+ * <h2>Declarative behaviour — derived fields + rules</h2>
  * <p>The declarative-behaviour layer lets a domain declare the <em>mechanical</em>
  * slice of behaviour the AST otherwise can't describe:
  * <ul>
@@ -214,7 +202,7 @@
  * {@code @Rule} processor extraction + codegen are coordinated
  * {@code exeris-tooling} work. See {@code RFC-2026-06-18}.
  *
- * <h2>Presentation IR — the front facet (0.8.0, reserved)</h2>
+ * <h2>Presentation IR — the front facet (reserved)</h2>
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.ViewMetadata} is a net-new,
  * <strong>entity-optional</strong> record family modelling the <em>front facet</em>
  * of a unit — a page / section / component / fragment
@@ -251,14 +239,14 @@
  * {@code DomainMetadata}, that gap creates no ADR-042 conflict-detection drift
  * surface, and {@code SchemaVersion} is unchanged. See {@code RFC-2026-06-25}.
  *
- * <h2>Blob + schedule facets (0.11.0, reserved)</h2>
+ * <h2>Blob + schedule facets (reserved)</h2>
  * <p>{@link eu.exeris.sdk.sourcemodel.ast.FieldMetadata#blob()}
  * ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
  * {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#schedule()}
  * ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}) are the AST twins of
  * {@code @Blob} and {@code @Schedule} — the design-time expression of the kernel
- * v0.11 blob-storage and job-scheduling seams (ADR-072). Both are trailing,
- * nullable, and absent from the wire unless declared.
+ * blob-storage and job-scheduling seams (ADR-072). Both are trailing, nullable,
+ * and absent from the wire unless declared.
  *
  * <p>{@code ScheduleMetadata} collapses the annotation's three mutually exclusive
  * attributes ({@code cron} / {@code every} / {@code at}) into one
@@ -283,9 +271,8 @@
  * moves to {@code "0.11.0"} regardless — the schema names the shape, not its
  * population.
  *
- * <h2>Route access, duplex channel, shared-scope key (0.12.0, reserved)</h2>
- * <p>Three more trailing, nullable components, each the AST twin of a 0.12.0
- * annotation:
+ * <h2>Route access, duplex channel, shared-scope key (reserved)</h2>
+ * <p>Three trailing, nullable components, each the AST twin of an annotation:
  * <ul>
  *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.DomainMetadata#routeAccess()} /
  *       {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#routeAccess()}</strong>

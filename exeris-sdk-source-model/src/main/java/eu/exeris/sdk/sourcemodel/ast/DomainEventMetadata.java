@@ -9,63 +9,41 @@ import java.util.List;
 /**
  * Metadata for domain events.
  *
- * <p>The record originally carried only the bare 4-tuple
- * ({@code name} / {@code topic} / {@code description} / {@code aggregateType}):
- * it could name an event but not say <em>what its payload is</em>. The EV1
- * growth adds the resolved payload-field framing so the "publish this subset of
- * the entity's fields as the event payload" pattern is expressible:
+ * <p><strong>Payload framing.</strong> {@code payloadFields} contains the RESOLVED payload
+ * field <em>names</em>, in {@code @DomainEvent.includeFields} order when that attribute is set,
+ * else in entity-declaration order. Resolution semantics (shared by the processor and the
+ * {@code -io} reader, ADR-042 lock-step): ({@code @DomainEvent.includeFields} if non-empty,
+ * else ALL of the entity's {@code @Field} names) minus {@code @DomainEvent.excludeFields}.
+ * {@code sensitiveFields} holds the {@code @DomainEvent.sensitiveFields} names to redact,
+ * verbatim. These are field <em>names</em>, not full {@link FieldMetadata} copies — the entity's
+ * field definitions live once on {@link DomainMetadata#fields()} and downstream tooling resolves
+ * a payload field's type by name from there (the same zero-duplication discipline the
+ * {@link ProjectionMetadata#fields()} subset uses).
  *
- * <ul>
- *   <li>{@code payloadFields} — the RESOLVED payload field <em>names</em>, in
- *       {@code @DomainEvent.includeFields} order when that attribute is set, else
- *       in entity-declaration order. Resolution semantics (shared by the processor
- *       and the {@code -io} reader, ADR-042 lock-step):
- *       ({@code @DomainEvent.includeFields} if non-empty, else ALL of the
- *       entity's {@code @Field} names) minus {@code @DomainEvent.excludeFields}.</li>
- *   <li>{@code sensitiveFields} — the {@code @DomainEvent.sensitiveFields} names
- *       to redact, verbatim.</li>
- * </ul>
+ * <p><strong>Wire form.</strong> The compact constructor normalizes {@code null} to
+ * {@link List#of()}, so {@code payloadFields} and {@code sensitiveFields} are never {@code null};
+ * under the class-level {@code @JsonInclude(NON_NULL)} an empty list therefore serializes as
+ * {@code []} (it is not suppressed — {@code NON_NULL} only drops {@code null}). This matches
+ * how {@link DomainMetadata}'s builder-constructed list members behave. A reader that predates
+ * these keys ignores them ({@code @JsonIgnoreProperties(ignoreUnknown = true)}), and both an
+ * absent key and {@code []} read back to {@link List#of()} through the compact constructor, so
+ * the record can grow further without a wire break.
  *
- * <p><strong>Lean, normalized.</strong> These are field <em>names</em>, not full
- * {@link FieldMetadata} copies — the entity's field definitions live once on
- * {@link DomainMetadata#fields()} and downstream tooling resolves a payload
- * field's type by name from there (the same zero-duplication discipline the
- * {@link ProjectionMetadata#fields()} subset uses). This follows the additive
- * by-name JSON / {@code @JsonInclude(NON_NULL)} grow precedent of
- * {@link DomainMetadata}'s {@code projections} / {@code eventHandlers} members.
+ * <p><strong>Not in {@code payloadFields}.</strong> {@code @DomainEvent.includeComputed} and
+ * {@code includePreviousValues} do not contribute to {@code payloadFields}: the persisted field
+ * list has no computed-field source. See the {@code // TODO(EV1)} note in
+ * {@code ExerisDomainProcessor.extractSingleEventMetadata}.
  *
- * <p><strong>Wire form of the EV1 lists.</strong> The compact constructor
- * normalizes {@code null} to {@link List#of()}, so {@code payloadFields} and
- * {@code sensitiveFields} are never {@code null}; under the class-level
- * {@code @JsonInclude(NON_NULL)} an empty list therefore serializes as {@code []}
- * (it is not suppressed — {@code NON_NULL} only drops {@code null}). This matches
- * how {@link DomainMetadata}'s builder-constructed list members behave. Old tooling
- * stays safe via {@code @JsonIgnoreProperties(ignoreUnknown = true)}, and both an
- * absent key and {@code []} read back to {@link List#of()} through the compact
- * constructor, so the EV1 metadata can grow further without a wire break.
- *
- * <p><strong>EV2: the trigger triple.</strong> {@code trigger} / {@code actionName} /
- * {@code fieldName} say <em>when</em> the event fires. Until 0.11.0 the record carried no
- * trigger at all: the processor read {@code @DomainEvent.trigger} only to derive the event
- * <em>name</em> suffix ({@code CREATE} → {@code OrderCreatedEvent}) and then discarded it, so
- * a generator could not know where to place a publish call. Worse, the suffix is only applied
- * when the user did not supply an explicit {@code name}, so
- * {@code @DomainEvent(name = "OrderPlaced", trigger = CREATE)} left no trace of the trigger
- * anywhere. {@code action} and {@code field} — required by {@code ACTION} and
- * {@code FIELD_CHANGED} respectively — were not read at all.
- *
- * <p><strong>{@code trigger} is nullable, deliberately.</strong> {@code null} means "this
- * baseline predates EV2 extraction", which is a different claim from "fires on CREATE".
- * Defaulting it in the compact constructor would make the two indistinguishable and would
- * silently attach create-time publishing to every pre-0.11.0 event. Use {@link #hasTrigger()}
- * and treat absence as "emit no publish call". Note that this differs from
- * {@code DomainMetadata.effectiveDataScope()} (ADR-059), which <em>can</em> default because it
- * has a deprecated predecessor attribute to fall back through; there is no predecessor here.
- *
- * <p><strong>Out of EV1 scope.</strong> {@code @DomainEvent.includeComputed} and
- * {@code includePreviousValues} do not contribute to {@code payloadFields} yet —
- * there is no computed-field source in the persisted field list. See the
- * {@code // TODO(EV1)} note in {@code ExerisDomainProcessor.extractSingleEventMetadata}.
+ * <p><strong>Event triggers.</strong> {@code trigger} / {@code actionName} / {@code fieldName}
+ * together specify <em>when</em> the event fires. The event name cannot stand in for them: the
+ * trigger-derived suffix ({@code CREATE} → {@code OrderCreatedEvent}) applies only when the author
+ * supplies no explicit {@code name}, so {@code @DomainEvent(name = "OrderPlaced", trigger = CREATE)}
+ * carries its trigger here and nowhere else. {@code trigger} is nullable, deliberately:
+ * {@code null} means "trigger not extracted", which is a different claim from "fires on CREATE".
+ * A generator must be able to distinguish them before it emits a publish call. Use
+ * {@link #hasTrigger()} and treat absence as "emit no publish call". Note that this differs
+ * from {@code DomainMetadata.effectiveDataScope()} (ADR-059), which <em>can</em> default because
+ * it has a deprecated predecessor attribute to fall back through; there is no predecessor here.
  *
  * @param name the event's name — its identity on the wire and in generated handlers
  * @param topic the messaging topic the event is published to
@@ -142,8 +120,8 @@ public record DomainEventMetadata(
     }
 
     /**
-     * Pre-EV1 4-tuple constructor — keeps existing call sites compiling and
-     * defaults both EV1 payload lists to empty. The grown 6-arg canonical
+     * A delegating constructor for backward compatibility with code compiled against an earlier
+     * version of this record. Defaults both payload lists to empty; the full canonical
      * constructor (or {@link #builder(String)}) carries the resolved payload.
      *
      * @param name the {@code name} the result carries
@@ -156,8 +134,9 @@ public record DomainEventMetadata(
     }
 
     /**
-     * Pre-EV2 6-arg constructor — keeps the EV1 call sites compiling and leaves the
-     * trigger triple unset (i.e. "not extracted", per the class javadoc).
+     * A delegating constructor for backward compatibility with code compiled against an earlier
+     * version of this record. Leaves the trigger triple unset (i.e. "not extracted", per the
+     * class javadoc).
      *
      * @param name the {@code name} the result carries
      * @param topic the {@code topic} the result carries

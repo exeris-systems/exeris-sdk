@@ -93,11 +93,10 @@ class SourceModelIoTest {
 
         @Test
         void entityNameIsTheClassSimpleName() {
-            // There is no second candidate, and that is the point. This used to be a
-            // pair of tests — one asserting @ExerisDomain(name=...) won, one asserting
-            // the class name was the fallback — but the annotation declares no `name`
-            // attribute and the processor derives the name from the class element
-            // alone, so the first pinned a behaviour no build could produce.
+            // There is no second candidate, and that is the point: the annotation declares
+            // no `name` attribute and the processor derives the name from the class element
+            // alone, so no test may assert an @ExerisDomain(name=...) override — it would pin
+            // a behaviour no build can produce.
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -293,7 +292,7 @@ class SourceModelIoTest {
     }
 
     @Nested
-    @DisplayName("reader: @CapabilityModule -> CapabilityModuleMetadata (0.4.0 Slice 3)")
+    @DisplayName("reader: @CapabilityModule -> CapabilityModuleMetadata")
     class Capabilities {
 
         /** IDP-shaped cap: repeated @Provides, ranged + optional @Requires, same-unit lifecycle. */
@@ -1148,8 +1147,8 @@ class SourceModelIoTest {
 
         @Test
         void readsTheTriggerEvenWhenTheEventNameIsExplicit() {
-            // The case the pre-0.11.0 reader lost completely: with an explicit name, the
-            // trigger contributed no name suffix either, so it left no trace anywhere.
+            // With an explicit name the trigger contributes no suffix to the event name, so
+            // the trigger component is the only place it survives.
             DomainMetadata domain = reader.read(ORDER).orElseThrow();
             assertThat(domain.events()).anySatisfy(e -> {
                 assertThat(e.name()).isEqualTo("OrderPlaced");

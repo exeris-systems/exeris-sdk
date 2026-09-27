@@ -50,17 +50,14 @@ class JavadocCompletenessTest {
      * A <em>trivial</em> builder setter: assigns the component of its own name from {@code v} and
      * returns the builder, and does nothing else.
      *
-     * <p>The pattern keys on the BODY, and that is the whole point of it. It used to be
-     * {@code ^public Builder \\w+\\(} — the shape of the signature — which exempted every method
-     * that looked like a setter regardless of what it did. Nine did more: three took a defensive
-     * copy, one appended instead of replacing, four normalised blank or null, and one replaced an
-     * entire list from a single value and threw on {@code null}. Each was silently excused by a
-     * rule whose stated justification — "the component is documented by the record's own
-     * {@code @param}" — was not true of any of them.
+     * <p>The pattern keys on the BODY, not the signature, and that is the whole point of it. A
+     * setter that takes a defensive copy, appends instead of replacing, normalises blank or null,
+     * or replaces a list from a single value does not match, so it must carry its own Javadoc:
+     * the record's {@code @param} does not describe what it does.
      *
-     * <p>The back-reference is what carries the "named for its component" half of that
-     * justification: {@code addParam} writes {@code params}, so it does not match, and neither
-     * will the next setter that stops being a plain assignment.
+     * <p>The back-reference carries the "named for its component" half: {@code addParam} writes
+     * {@code params}, so it does not match, and neither will the next setter that stops being a
+     * plain assignment.
      */
     private static final Pattern BUILDER_SETTER =
             Pattern.compile("^public Builder (\\w+)\\([^)]*\\)\\s*\\{\\s*this\\.\\1\\s*=\\s*v;\\s*return this;\\s*}$");

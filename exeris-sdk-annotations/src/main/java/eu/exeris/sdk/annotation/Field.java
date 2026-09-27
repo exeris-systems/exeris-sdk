@@ -487,7 +487,7 @@ public @interface Field {
      *   <li>"json" - Syntax highlight JSON</li>
      * </ul>
      *
-     * <p>Modelled in the AST as {@code FieldMetadata.dataType} (since 0.6.0) and
+     * <p>Modelled in the AST as {@code FieldMetadata.dataType} and
      * propagated end-to-end: the build-time processor and the {@code -io} reader
      * extract it in lock-step (ADR-042), and the Angular emitter renders it
      * ({@code currency}/{@code percent} pipes, {@code url} as a link); see the

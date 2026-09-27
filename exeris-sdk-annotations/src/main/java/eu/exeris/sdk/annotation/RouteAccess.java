@@ -69,14 +69,14 @@ import java.lang.annotation.Target;
  * is not written in the first place.
  *
  * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
- * <p>Declared shape, not yet an enforced route. The kernel side demonstrably
- * exists — {@code HttpRoutePolicy} / {@code RouteRequirement} shipped on the kernel
- * 0.11 line with {@code AbstractHttpRoutePolicyTck} — but no {@code exeris-tooling}
- * processor extracts {@code @RouteAccess}, no generator emits a URL-to-policy table
- * from it, and the {@code exeris-sdk-source-model-io} reader does not read it, so
- * declaring it today has no generated effect. The kernel holds route authorization
- * at tier {@code preview} in its {@code docs/stability-matrix.md}, so this surface
- * is <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
+ * <p>Declared shape, not yet an enforced route. The kernel provides
+ * {@code HttpRoutePolicy} / {@code RouteRequirement} with
+ * {@code AbstractHttpRoutePolicyTck} — but no {@code exeris-tooling} processor
+ * extracts {@code @RouteAccess}, no generator emits a URL-to-policy table from it,
+ * and the {@code exeris-sdk-source-model-io} reader does not read it, so declaring
+ * it today has no generated effect. The kernel holds route authorization at tier
+ * {@code preview} in its {@code docs/stability-matrix.md}, so this surface is
+ * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
  * change it; it is promoted when the kernel moves the surface out of
  * {@code preview} <em>and</em> the tooling transcription exists. See
  * {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
