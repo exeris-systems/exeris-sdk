@@ -181,9 +181,9 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
 
     /**
      * The saga's identity is the pair kernel ADR-064 addresses a plan by, so both halves are
-     * compared. The version is the half with a shipped defect behind it: the processor read it and
-     * the SDK's own reader did not, so the same source named two different plans — and, as with
-     * every divergence this suite exists for, both sides still emitted well-formed metadata.
+     * compared. The version is the half a side can skip without emitting anything malformed: it
+     * reports the default {@code 1}, the same source names two different plans, and — as with
+     * every divergence this suite exists for — only a comparison of the two sides sees it.
      */
     @Test
     @DisplayName("producer and reader agree on the saga's identity, version included")

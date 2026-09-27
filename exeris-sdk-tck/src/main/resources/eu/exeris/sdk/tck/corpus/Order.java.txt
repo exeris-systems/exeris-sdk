@@ -19,11 +19,10 @@ import eu.exeris.sdk.annotation.Validation;
  * when that boolean is removed — the kit breaking at exactly the freeze it exists to guard.
  *
  * <p>{@code version = 3} on the {@code @Saga} is the case behind the {@code SAGA} facet. Kernel
- * ADR-064 addresses a saga plan by name <em>and</em> version, and the SDK's own reader shipped not
- * reading this attribute while the processor did: the same source was version 3 to one side and
- * version 1 — the default an unread attribute leaves — to the other, with both emitting
- * well-formed metadata. It is not {@code 1} on purpose, because {@code 1} is what a producer or
- * reader that never looks at the attribute reports anyway.
+ * ADR-064 addresses a saga plan by name <em>and</em> version, and a side that skips this attribute
+ * still emits well-formed metadata: the same source is version 3 to one side and version 1 — the
+ * default an unread attribute leaves — to the other. It is not {@code 1} on purpose, because
+ * {@code 1} is what a producer or reader that never looks at the attribute reports anyway.
  */
 @ExerisDomain(
         module = "sales",

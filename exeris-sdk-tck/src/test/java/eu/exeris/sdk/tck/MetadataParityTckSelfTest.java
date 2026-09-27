@@ -96,8 +96,9 @@ class MetadataParityTckSelfTest {
     @Test
     @DisplayName("a saga version one side read and the other did not is caught")
     void sagaVersionDivergenceIsCaught() {
-        // The shipped defect: the processor carried the declared version, the SDK's own reader
-        // never read the attribute and reported the builder default. Both documents well-formed.
+        // The divergence the case exists for: the producer carries the declared version, the
+        // reader never reads the attribute and reports the builder default. Both documents are
+        // well-formed.
         Parity parity = new Parity(
                 UnaryOperator.identity(),
                 m -> m.sagaMetadata() == null

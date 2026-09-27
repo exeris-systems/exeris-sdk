@@ -141,8 +141,8 @@ class SimpleAstRecordsTest {
         @Test
         void theZeroElevenShapeStillConstructsWithNoSharedScope() {
             // The ten-argument 0.11.0 constructor, kept so code compiled against 0.11.0 links and
-            // code written against it compiles (Stellar finding S6: exeris-tooling's processor
-            // stopped compiling when the record grew). It is the canonical call with a trailing null.
+            // code written against it compiles (MIGRATION-0.x-to-1.0.md §3). It is the canonical
+            // call with a trailing null.
             SystemFieldsMetadata old = new SystemFieldsMetadata(
                     "id", "createdAt", "createdBy", "modifiedAt", "updatedBy", "orgId",
                     "rev", "deleted", null, null);

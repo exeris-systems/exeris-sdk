@@ -162,10 +162,8 @@ jobs:
   # express a body shape; the test can, and does. Documenting the 204 instead would put 204 comments
   # restating `this.x = v` into a -javadoc.jar on Central, permanently.
   #
-  # No `extra-maven-args`. This job used to pass `-Djapicmp.skip=true`, because japicmp was bound to
-  # `verify`, which `install` runs, and died resolving the unpublished 0.11.0 baseline before reading
-  # a doc comment. The semver gate is now an opt-in `semver` profile in the root pom, so a plain
-  # `install` never reaches it.
+  # No `extra-maven-args`: the semver gate is an opt-in `semver` profile in the root pom, so the
+  # plain `install` this job runs never reaches japicmp or its unpublished baseline.
   #
   # No dedicated profile: unlike the kernel, the strict Javadoc settings here live unconditionally
   # in each module's own pom and the `release` profile deliberately does not relax them, so the gate

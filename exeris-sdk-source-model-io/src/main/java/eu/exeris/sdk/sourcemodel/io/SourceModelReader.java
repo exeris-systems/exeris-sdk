@@ -71,10 +71,11 @@ import java.util.TreeSet;
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
- * {@code dataScope} tier, and so is {@code tableName} (0.12.0), which the reader
- * reads ahead of the processor for the reason given at the read. Two of those are deprecated for removal at 1.0.0 and read
- * only until then: {@code tenantScoped} (ADR-059) and {@code apiVersion}
- * (Stellar finding T38). Domain {@code @DomainEvent}s are read
+ * {@code dataScope} tier, and so is {@code tableName}, which the reader reads
+ * ahead of the processor for the reason given at the read. Two of those are
+ * deprecated for removal at 1.0.0 and read only until then: {@code tenantScoped}
+ * (ADR-059) and {@code apiVersion} (see {@code MIGRATION.md}). Domain
+ * {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
@@ -332,12 +333,12 @@ public final class SourceModelReader {
      * doesn't read them either, so they constitute no reader-vs-processor divergence
      * and {@link #unmodeledFacets} does not flag them.
      *
-     * <p>{@code tableName} (0.12.0) is the one read here that the processor does not make
-     * yet, and it is deliberate. The attribute and its carrier ship in this release so the
-     * table-naming fix (Stellar finding T6) can land in the tooling release paired with it,
-     * and a reader that waited would miss that release and diverge the other way, as the
-     * {@code @Saga.version} read did (K5). Until the processor extracts it, a source that
-     * sets it reads here with a table name the processor's baseline lacks. That cannot raise
+     * <p>{@code tableName} is the one read here that the processor does not make yet, and
+     * deliberately: the reader leads the processor on it rather than trailing it, because a
+     * reader that trails diverges the other way from the release in which the processor
+     * starts extracting, with no diagnostic on either side (see {@code CHANGELOG.md}). Until
+     * the processor extracts it, a source that sets it reads here with a table name the
+     * processor's baseline lacks. That cannot raise
      * a mutation conflict — {@link SourceModelConflictDetector} compares fields, relationships
      * and actions, not domain attributes — but a whole-record parity comparison would see it.
      */
@@ -367,11 +368,11 @@ public final class SourceModelReader {
 
     /**
      * {@code @ExerisDomain.apiVersion}, deprecated for removal in 1.0.0 together with its
-     * carrier, {@code DomainMetadata.apiVersion} (Stellar finding T38). Still read, present-only,
-     * because the processor still reads it: dropping it here first would make the two paths
-     * disagree about every source that sets it (ADR-042). The read goes at 1.0.0, in the same
-     * change that removes the attribute and the component; the suppression is scoped to this one
-     * call so nothing else in the reader can lean on it.
+     * carrier, {@code DomainMetadata.apiVersion} (see {@code MIGRATION.md}). Still read,
+     * present-only, because the processor still reads it: dropping it here first would make the
+     * two paths disagree about every source that sets it (ADR-042). The read goes at 1.0.0, in
+     * the same change that removes the attribute and the component; the suppression is scoped to
+     * this one call so nothing else in the reader can lean on it.
      */
     @SuppressWarnings("removal")
     private void deprecatedApiVersion(AnnotationExpr ann, DomainMetadata.Builder builder) {
@@ -786,12 +787,11 @@ public final class SourceModelReader {
      * are present-only; steps come from {@code @SagaStep} methods.
      *
      * <p>{@code version} is the other half of the {@code (name, version)} key kernel
-     * ADR-064 addresses a saga plan by. The processor has read it since
-     * {@code exeris-tooling} 0.8.0 and this reader did not, so {@code version = 3} read
-     * back as {@code 1} here while the processor's baseline said {@code 3} — an ADR-042
-     * parity break with no diagnostic on either side. Absent, it keeps the builder
-     * default {@code 1}, which is also the annotation default, exactly as the processor
-     * does. It is read <em>signed</em>, unlike the count-style
+     * ADR-064 addresses a saga plan by, and the processor reads it, so skipping it here
+     * would read {@code version = 3} back as {@code 1} against a processor baseline of
+     * {@code 3} — an ADR-042 parity break with no diagnostic on either side. Absent, it
+     * keeps the builder default {@code 1}, which is also the annotation default, exactly
+     * as the processor does. It is read <em>signed</em>, unlike the count-style
      * attributes: {@code 0} or a negative literal is carried as written, because javac
      * folds it into the processor's value just the same, and the kernel refuses a version
      * below {@code 1} at {@code FlowDefinitionBuilder.version(int)} — a refusal that

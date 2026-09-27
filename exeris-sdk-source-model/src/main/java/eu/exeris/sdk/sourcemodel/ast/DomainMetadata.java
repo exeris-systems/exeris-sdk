@@ -213,8 +213,8 @@ public record DomainMetadata(
     /**
      * The 0.11.0 shape — the 39 components before {@code routeAccess} and {@code channel} — kept
      * as a delegating constructor so that code compiled or written against 0.11.0 still links and
-     * still compiles. Both 0.12.0 components are {@code null}: no route access declared, and no
-     * duplex channel.
+     * still compiles. Both of those components are {@code null}: no route access declared, and
+     * no duplex channel.
      *
      * <p>Prefer {@link #builder(String, String)}, which sets any component by name and does not
      * change shape when the record grows.
@@ -293,11 +293,12 @@ public record DomainMetadata(
      * @return the declared API version, {@code "v1"} unless the source set another
      * @deprecated since 0.12.0, for removal in 1.0.0, together with
      *         {@code @ExerisDomain.apiVersion}, which no generator reads: no emitted
-     *         artifact serves or requests an {@code /api/<version>} segment (Stellar finding
-     *         T38). There is no replacement — the route an entity is served at is
-     *         {@link #effectivePath()}. The component stays on the wire, and both the
-     *         {@code exeris-tooling} processor and the {@code -io} reader keep filling it,
-     *         until 1.0.0, so baselines written before then read back unchanged.
+     *         artifact serves or requests an {@code /api/<version>} segment (see
+     *         {@code MIGRATION.md}). There is no replacement — the route an entity is
+     *         served at is {@link #effectivePath()}. The component stays on the wire, and
+     *         both the {@code exeris-tooling} processor and the {@code -io} reader keep
+     *         filling it, until 1.0.0, so baselines written before then read back
+     *         unchanged.
      */
     @Deprecated(since = "0.12.0", forRemoval = true)
     public String apiVersion() {
@@ -329,12 +330,9 @@ public record DomainMetadata(
      * {@code Item} into {@code ıtem}). An acronym is not split: {@code HTTPRoute} →
      * {@code httproutes}.
      *
-     * <p><strong>Changed in 0.12.0:</strong> the default used to be the snake-cased
-     * <em>singular</em> ({@code order}), which matched no table any generator emits.
-     * {@code exeris-tooling} named its tables {@code snake_case(entityName) + "s"} instead,
-     * which agrees with this method except where English does not add a bare {@code s}
-     * ({@code colonys}, {@code boxs}). A consumer that needs the old value sets
-     * {@code @ExerisDomain.tableName}.
+     * <p>A table whose existing name differs from the derived one — {@code colonys} where
+     * this gives {@code colonies}, say — keeps it through {@code @ExerisDomain.tableName}.
+     * See {@code MIGRATION.md}.
      *
      * @return the explicit table name, or the derived one
      */
@@ -353,9 +351,8 @@ public record DomainMetadata(
      * tool. Kebab case follows the snake-case rule of {@link #effectiveTableName()} with
      * {@code -} for {@code _}, under {@link Locale#ROOT}.
      *
-     * <p><strong>Changed in 0.12.0:</strong> the fallback appended a bare {@code s}
-     * ({@code /colonys}); it now takes the same plural as {@link #pluralName()}, so the
-     * derived route, the derived table and the title agree.
+     * <p>It takes the same plural as {@link #pluralName()} and {@link #effectiveTableName()},
+     * so the derived route, the derived table and the title agree.
      *
      * @return the explicit path, or the derived one
      */

@@ -24,15 +24,12 @@ import static org.assertj.core.api.Assertions.fail;
  * caller breaks — a builder caller never saw the constructor, and a positional caller finds the
  * shape it was compiled against.
  *
- * <p><b>Why the stance changed.</b> Until 0.12.0 growth simply replaced the canonical
- * constructor, and {@code source-model}'s pom told japicmp that {@code CONSTRUCTOR_REMOVED} was
- * binary- and source-compatible. It is neither: removing a public constructor is a
- * {@code NoSuchMethodError} for every class compiled against it (JLS 13.4.12) and a compile
- * error for every positional call. It broke {@code exeris-tooling}'s processor, which has no
- * other way to build {@code SystemFieldsMetadata} with non-canonical names, when that record went
- * from 10 components to 11 (Stellar finding S6). The processor runs on each consumer's processor
- * path linked against whatever SDK Maven resolves there, so under the old rule a newer SDK minor
- * meant a {@code NoSuchMethodError} inside javac.
+ * <p><b>Why the previous arity stays.</b> {@code CONSTRUCTOR_REMOVED} is neither binary- nor
+ * source-compatible: removing a public constructor is a {@code NoSuchMethodError} for every class
+ * compiled against it (JLS 13.4.12) and a compile error for every positional call. An annotation
+ * processor built against one SDK runs on each consumer's processor path linked against whatever
+ * SDK Maven resolves there, so a removed arity surfaces as a {@code NoSuchMethodError} inside
+ * javac, in a build that changed nothing of its own.
  *
  * <p><b>What this checks, against {@code record-arities.txt}:</b>
  * <ul>
@@ -49,8 +46,8 @@ import static org.assertj.core.api.Assertions.fail;
  * </ul>
  *
  * <p><b>Why a test when japicmp exists.</b> japicmp is an opt-in profile ({@code -Psemver},
- * root pom) that needs a resolvable release to compare with, and CI runs it only from the 0.13.0
- * line, when a 0.12.0 baseline is on Central. This needs no baseline, so it runs in every build.
+ * root pom) that needs a resolvable release to compare with. This needs no baseline, so it runs
+ * in every build.
  * Where japicmp runs the two are a pair: the ledger cannot see an arity deleted together with its
  * constructor, and japicmp's strict {@code CONSTRUCTOR_REMOVED} can.
  * {@link RecordComponentOrderTest} stays, because a same-type reorder changes no descriptor and

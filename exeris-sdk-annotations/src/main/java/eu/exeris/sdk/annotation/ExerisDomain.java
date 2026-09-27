@@ -132,17 +132,13 @@ public @interface ExerisDomain {
      *         generator
      * @deprecated since 0.12.0, for removal in 1.0.0. It reaches no emitted artifact:
      *         the router, the OpenAPI document and every generated client serve and
-     *         request the entity at its {@link #path()}, with no version segment, and
-     *         they have since the generated client was aligned on that path (Stellar
-     *         finding T38). It cannot be switched on later either, because its default
-     *         is {@code "v1"}: honouring it would move every route of every application
-     *         that never wrote the attribute. Freezing it at 1.0.0 would promise, for
-     *         the whole 1.x line, an attribute that does nothing. <strong>There is no
-     *         replacement today — delete the attribute;</strong> a versioned route is
-     *         spelled in {@link #path()} if you need one now. If versioned routes return
-     *         as a generated feature, they will come as a new opt-in attribute with no
-     *         default, so that declaring nothing keeps every route where it is. See
-     *         {@code MIGRATION.md}.
+     *         request the entity at its {@link #path()}, with no version segment. It
+     *         cannot be switched on either, because its default is {@code "v1"}:
+     *         honouring it would move every route of every application that never wrote
+     *         the attribute. <strong>There is no replacement — delete the
+     *         attribute;</strong> a versioned route is spelled in {@link #path()}. See
+     *         {@code MIGRATION.md} for why it goes before the 1.0.0 freeze and what a
+     *         generated versioned route would look like.
      */
     @Deprecated(since = "0.12.0", forRemoval = true)
     String apiVersion() default "v1";
@@ -507,15 +503,14 @@ public @interface ExerisDomain {
      * ({@code Person} → {@code tableName = "people"}), a class name that is already plural,
      * and a table that exists under a name no rule would produce.
      *
-     * <p>It is also how a table keeps its name when the derivation changes.
-     * {@code exeris-tooling} has emitted every table as the snake-cased name plus
-     * {@code "s"} ({@code colonys}, {@code technologys}, {@code reassemblys}) and moves to
-     * the rule above in a later release of its own; setting this attribute to the old name
-     * keeps an existing database's table, and the Flyway migration that created it, where
-     * they are.
+     * <p>It is also how an existing table keeps its name when the derived one differs —
+     * a table named as the snake-cased class name plus {@code "s"} ({@code colonys} where
+     * the rule gives {@code colonies}), for instance. Setting this attribute to the
+     * existing name keeps the table, and the Flyway migration that created it, where they
+     * are. See {@code MIGRATION.md}.
      *
      * <p><strong>Status: PARTIAL.</strong> The {@code -io} reader reads it into
-     * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming already
+     * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming
      * honours that component when it is set, for the repository's SQL, the
      * {@code CREATE TABLE} and the migration file name alike. The {@code exeris-tooling}
      * processor does not extract it yet, so on the build path that generates code it has

@@ -149,9 +149,9 @@
          exchange for one record's growth path, so the relaxation is named: the strict execution
          excludes the record and the record-growth execution includes it, accepting
          CONSTRUCTOR_REMOVED as a MINOR change. Removing, renaming or retyping a component still
-         breaks through its accessor. exeris-sdk-source-model dropped the same relaxation in
-         0.12.0 in favour of keeping the previous arity as a delegating constructor (Stellar
-         finding S6; see its pom); whether ApplyResult follows is open (ROADMAP, 0.12.0). -->
+         breaks through its accessor. exeris-sdk-source-model takes no such relaxation: a record
+         there that grows keeps its previous arity as a delegating constructor (see its pom).
+         Whether ApplyResult moves to that rule is open; see ROADMAP. -->
     <profiles>
         <profile>
             <id>semver</id>

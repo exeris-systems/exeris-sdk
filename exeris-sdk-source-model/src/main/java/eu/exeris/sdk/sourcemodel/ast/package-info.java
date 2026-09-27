@@ -318,15 +318,16 @@
  * held at tier {@code preview}, so a 1.x minor may change or drop them.
  * {@code sharedScopeField} is not on that list and is frozen as declared, like the
  * other reserved system-field components. {@code SchemaVersion} is
- * {@code "0.12.0"} for all three. Each grew its record's canonical constructor, and
- * each record keeps its 0.11.0 arity as a public constructor that delegates with
- * {@code null} for what was added, so code compiled or written against 0.11.0 links
- * and compiles unchanged — the record-growth stance in
+ * {@code "0.12.0"} for all three. Each is a trailing parameter of its record's
+ * canonical constructor, and each record keeps its 0.11.0 arity as a public
+ * constructor that delegates with {@code null} for the components it lacks, so code
+ * compiled or written against 0.11.0 links and compiles unchanged — the record-growth
+ * stance in
  * {@code MIGRATION-0.x-to-1.0.md} §3, held by {@code RecordConstructorLedgerTest}.
  * {@code SystemFieldsMetadata}, whose eleven components are all field-name
- * {@code String}s and which had no way to set a non-canonical name except by
- * position, gained {@link eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata#builder()}
- * in the same release — see {@code MIGRATION.md}.
+ * {@code String}s, is built with
+ * {@link eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata#builder()}, which sets a
+ * non-canonical name by name rather than by position — see {@code MIGRATION.md}.
  *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a

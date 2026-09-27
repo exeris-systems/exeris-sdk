@@ -128,9 +128,9 @@ class SourceModelIoTest {
 
         @Test
         void readsTheTableNameOverridePresentOnly() {
-            // @ExerisDomain.tableName (0.12.0, Stellar finding T6) is the author's override of the
-            // derived table. Read verbatim when declared; absent keeps the builder's "", so
-            // effectiveTableName() derives the snake-cased plural.
+            // @ExerisDomain.tableName is the author's override of the derived table. Read verbatim
+            // when declared; absent keeps the builder's "", so effectiveTableName() derives the
+            // snake-cased plural.
             String declared = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -155,8 +155,8 @@ class SourceModelIoTest {
         @Test
         @SuppressWarnings("removal") // the deprecated carrier is what this test pins
         void readsTheDeprecatedApiVersionUntilItsRemoval() {
-            // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38),
-            // and the processor still reads it. Until both drop it together the reader keeps
+            // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0, and the processor still
+            // reads it. Until both drop it together the reader keeps
             // reading it, present-only: a declared value survives and an absent one stays the
             // builder's "v1". Stopping early would make the two paths disagree (ADR-042).
             String declared = """
@@ -1541,10 +1541,10 @@ class SourceModelIoTest {
         }
 
         /**
-         * Kernel ADR-064 addresses a saga plan by {@code (name, version)}. The processor
-         * has read {@code @Saga.version} since exeris-tooling 0.8.0; this reader did not, so
-         * {@code version = 3} came back as {@code 1} — a different plan identity from the one in
-         * the processor's baseline, with both sides emitting well-formed metadata.
+         * Kernel ADR-064 addresses a saga plan by {@code (name, version)}, and the processor
+         * reads {@code @Saga.version}. A reader that skipped it would give {@code version = 3}
+         * back as {@code 1} — a different plan identity from the one in the processor's
+         * baseline, with both sides emitting well-formed metadata.
          */
         @Test
         void sagaVersionIsReadAsDeclaredAndDefaultsToOne() {

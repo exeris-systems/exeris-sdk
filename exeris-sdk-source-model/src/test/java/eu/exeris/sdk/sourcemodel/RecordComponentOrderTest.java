@@ -29,11 +29,10 @@ import static org.assertj.core.api.Assertions.fail;
  * components leaves {@code (String, String)} exactly where it was. Component
  * order is therefore invisible to the gate and pinned here instead.
  *
- * <p>Until 0.12.0 the gate was blinder than that: {@code source-model}'s pom
- * told japicmp to accept {@code CONSTRUCTOR_REMOVED} as compatible, module-wide,
- * so a reorder across <em>different</em> types went unseen too. That override
- * is gone — growth now keeps the old constructor instead of removing it
- * (Stellar finding S6) — but the same-type case never depended on it.
+ * <p>A reorder across <em>different</em> types does change the canonical
+ * constructor's descriptor, which the strict gate reports as
+ * {@code CONSTRUCTOR_REMOVED}; the same-type case is invisible to it either way,
+ * and it is the one this test exists for.
  *
  * <p>A reorder is the quiet failure mode worth spending a test on. Jackson binds
  * records by name, so the wire survives and {@code AstJsonRoundTripTest} stays

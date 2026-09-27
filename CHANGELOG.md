@@ -360,7 +360,10 @@ for per-version upgrade steps.
   reference or expression is not resolved by the syntactic reader and reads as `1`. The reader's
   Limitations now say so: declare saga versions as literals. `@Saga.version`'s javadoc kept saying
   "declared, not extracted" and "a hole in both" long after the processor half shipped. It now
-  says what each path does and how the value reaches the kernel.
+  says what each path does and how the value reaches the kernel. That route is
+  `FlowDefinitionBuilder.version(int)`, a setter the kernel added on its 0.12 line: before it, and
+  with any tooling build that predates the transcription into the generated `*SagaFlow`, a
+  declared version reached metadata and no plan.
 
 - **Nine system-field markers said the processor ignores them. It reads them.** `@TenantId`,
   `@Version`, `@SoftDelete`, `@SoftDeleteTimestamp`, `@SoftDeletedBy` and the four `@Audit*` markers

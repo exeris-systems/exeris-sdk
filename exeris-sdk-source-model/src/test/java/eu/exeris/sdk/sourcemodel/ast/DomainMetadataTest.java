@@ -38,8 +38,7 @@ class DomainMetadataTest {
 
         @Test
         void effectiveTableNameDerivesTheSnakeCasedPluralWhenBlank() {
-            // Empty string is the Builder default for tableName. Until 0.12.0 this returned the
-            // singular "order", a table no generator ever emitted.
+            // Empty string is the Builder default for tableName.
             assertThat(base().build().effectiveTableName()).isEqualTo("orders");
         }
 
@@ -112,7 +111,7 @@ class DomainMetadataTest {
     }
 
     @Nested
-    @DisplayName("the derived route and table take the English plural (T6)")
+    @DisplayName("the derived route and table take the English plural")
     class PluralNaming {
 
         private DomainMetadata entity(String name) {
@@ -121,7 +120,7 @@ class DomainMetadataTest {
 
         @Test
         void consonantYBecomesIesInTheTableAndTheRoute() {
-            // The names Stellar Tactics shipped as colonys / technologys / reassemblys.
+            // Consonant + y, where a bare "s" gives colonys / technologys / reassemblys.
             assertThat(entity("Colony").effectiveTableName()).isEqualTo("colonies");
             assertThat(entity("Colony").effectivePath()).isEqualTo("/colonies");
             assertThat(entity("Technology").effectiveTableName()).isEqualTo("technologies");
@@ -147,8 +146,8 @@ class DomainMetadataTest {
 
         @Test
         void wherePlainSIsRightNothingMovesFromTheOldToolingDefault() {
-            // exeris-tooling has named tables snake_case(entityName) + "s". The rule only differs
-            // where English does not add a bare s, so every regular name keeps its table.
+            // Against the naive snake_case(entityName) + "s": the rule differs only where English
+            // does not add a bare s, so every regular name gets the same table from both.
             for (String name : List.of("Order", "ConstructionOrder", "Fleet", "Engagement",
                     "GalaxyPresence", "Planet", "HTTPRoute")) {
                 String naive = name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT) + "s";
@@ -182,9 +181,9 @@ class DomainMetadataTest {
         @Test
         void theDerivationDoesNotDependOnTheDefaultLocale() {
             // Under a Turkish default, String.toLowerCase() maps I to a dotless i, which would put
-            // "ıtems" into a table name on one machine and "items" on another.
-            // Found downstream by a tr-TR vs ROOT byte-identity test: an entity with no declared
-            // path was served at /ınvoices while the generated TypeScript client called /invoices.
+            // "ıtems" into a table name on one machine and "items" on another, and serve an
+            // entity with no declared path at /ınvoices while a client generated elsewhere calls
+            // /invoices.
             Locale saved = Locale.getDefault();
             try {
                 Locale.setDefault(Locale.of("tr", "TR"));
@@ -328,8 +327,8 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("Builder default invariants")
     class BuilderDefaults {
-        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
-        // until then; this test exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
         @SuppressWarnings("removal")
         @Test
         void unsetFieldsHaveSafeDefaults() {
@@ -351,8 +350,8 @@ class DomainMetadataTest {
             assertThat(d.uiMetadata()).isNull();
         }
 
-        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
-        // until then; this test exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
         @SuppressWarnings("removal")
         @Test
         void builderSettersAreFluent() {
@@ -433,14 +432,14 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("the 0.11.0 constructor shape is kept")
     class PreviousArity {
-        // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) and still carried
-        // until then; this test exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
         @SuppressWarnings("removal")
         @Test
         void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {
             // Kept so code compiled or written against 0.11.0 still links and compiles
-            // (MIGRATION-0.x-to-1.0.md §3). It must equal the builder's record with both 0.12.0
-            // components absent — two shapes that disagreed would be two contracts.
+            // (MIGRATION-0.x-to-1.0.md §3). It must equal the builder's record with routeAccess
+            // and channel absent — two shapes that disagreed would be two contracts.
             List<FieldMetadata> fields = List.of(FieldMetadata.builder("ref", "String").build());
             DomainMetadata old = new DomainMetadata(
                     "Order", "com.acme.domain", "sales", "/orders", "CustomerOrder", "desc", "v2",

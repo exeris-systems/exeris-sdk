@@ -109,8 +109,8 @@ class MetadataReaderTckSelfTest {
     @Test
     @DisplayName("a saga version left at the default an unread attribute leaves is caught")
     void sagaVersionCaseIsNotVacuous() {
-        // The shipped shape exactly: every other saga attribute read, version never looked at, so
-        // the builder default stands in for what the source declared.
+        // Every other saga attribute read and version never looked at, so the builder default
+        // stands in for what the source declared.
         Reader versionBlind = new Reader(m -> m.sagaMetadata() == null
                 ? m
                 : withSaga(m, SagaMetadata.builder(m.sagaMetadata().name())

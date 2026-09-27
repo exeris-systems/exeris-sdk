@@ -119,13 +119,11 @@ public @interface Saga {
      * without one is version {@code 1}.
      *
      * <p><strong>Open-Core status — extracted on both build paths.</strong>
-     * The value reaches {@code SagaMetadata.version}: the build-time processor
-     * has read it since {@code exeris-tooling} 0.8.0, and the {@code -io}
-     * reader reads it from SDK 0.12.0, so the two AST producers agree on it as
-     * ADR-042 requires. (Until then they did not — the processor carried
-     * {@code version = 3} and the reader said {@code 1}.) Two edges, identical
-     * on both paths: an absent attribute is {@code 1}, and a value below
-     * {@code 1} is carried as written rather than repaired — the kernel refuses
+     * The value reaches {@code SagaMetadata.version} through both the build-time
+     * processor and the {@code -io} reader, so the two AST producers agree on it
+     * as ADR-042 requires. Two edges, identical on both paths: an absent
+     * attribute is {@code 1}, and a value below {@code 1} is carried as
+     * written rather than repaired — the kernel refuses
      * it, which is the diagnostic an author needs. One edge differs: the
      * {@code -io} reader is syntactic, so a version supplied through a constant
      * reference or expression, which the processor receives folded by javac,
@@ -133,16 +131,14 @@ public @interface Saga {
      *
      * <p><strong>Reaching the kernel.</strong> {@code exeris-tooling}
      * transcribes the value into the generated {@code *SagaFlow} through
-     * {@code FlowDefinitionBuilder.version(int)}, a setter the kernel added on
-     * its 0.12 line. Before that setter existed the value could be carried in
-     * metadata and still reach no plan, and a tooling build that predates the
-     * transcription behaves the same way — so confirm the generated flow calls
-     * {@code version(...)} before relying on a bump to protect in-flight
-     * sagas. Do not work around its absence by rebuilding the
-     * {@code FlowDefinition} record by hand: for a name never assembled through
-     * the builder, that route compiles to a plan carrying its steps and no
-     * declared edges, with no diagnostic (the kernel's own note on that
-     * setter).
+     * {@code FlowDefinitionBuilder.version(int)}. A generated flow that does not
+     * make that call carries the value in metadata and reaches no plan with it,
+     * so confirm the generated flow calls {@code version(...)} before relying on
+     * a bump to protect in-flight sagas. Do not work around its absence by
+     * rebuilding the {@code FlowDefinition} record by hand: for a name never
+     * assembled through the builder, that route compiles to a plan carrying its
+     * steps and no declared edges, with no diagnostic (the kernel's own note on
+     * that setter).
      *
      * @return saga version
      */

@@ -14,7 +14,7 @@ import java.util.Map;
  * <p>Shipped rather than left to the binder because a binder-supplied corpus measures the binder's
  * imagination. Each entity here carries a case with a defect behind it — a zero-valued bound that a
  * class-level {@code NON_DEFAULT} drops, a relationship whose cardinality attribute has been read
- * under the wrong key, a saga version that one side read and the other never did — so a binding
+ * under the wrong key, a saga version that one side reads and the other skips — so a binding
  * that regresses one of them fails on the case rather than on a fixture nobody thought to write.
  *
  * <p>The two entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship

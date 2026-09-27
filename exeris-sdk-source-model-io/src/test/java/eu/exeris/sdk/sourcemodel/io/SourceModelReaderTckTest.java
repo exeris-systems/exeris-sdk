@@ -9,11 +9,10 @@ import org.junit.jupiter.api.DisplayName;
  * real reader on every build of this repository rather than only against the hand-built reference
  * binding in the kit's self-tests.
  *
- * <p>Until this binding existed the kit was bound nowhere, and a case that nothing runs catches
- * nothing. The {@code @Saga.version} divergence shows the cost: this reader never read the
- * attribute while the processor did, and no build in either repository failed on it. With the
- * saga case in the kit and this binding in place, the same regression fails here, on the case
- * written for it.
+ * <p>A kit case that nothing runs catches nothing. This binding is what makes a reader regression
+ * — a dropped {@code @Saga.version} read, say, which leaves every saga at the default {@code 1}
+ * while the processor carries the declared value — fail here, on the case written for it, rather
+ * than pass every build in both repositories.
  *
  * <p>No facet is declared unsupported. The reader reads every facet the suite asks about, and
  * declaring one would turn a future regression in it into a skip.

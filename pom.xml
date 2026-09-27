@@ -127,23 +127,21 @@
              record-growth stance in MIGRATION-0.x-to-1.0.md §3, and a gate written after the
              freeze would be written against whatever the code already did.
 
-             Opt-in rather than bound to every build (founder direction, 2026-09-26). The gate
-             compares each module with the last released version, and that version has to be
-             resolvable. 0.11.0, the baseline named below, never will be: 0.6.0-0.11.0 shipped as
-             git tag + GitHub Release only, and 0.12.0 is the first version to reach Maven Central.
-             Bound to `verify`, the gate made a fresh-clone `mvn install` fail on artifact
-             resolution, and every workflow and every contributor carried -Djapicmp.skip=true to
-             get past it. Now the default build runs the baseline-free guards
-             (AnnotationSurfaceContractTest, RecordComponentOrderTest,
+             Opt-in rather than bound to every build: the gate compares each module with the last
+             released version, and that version has to be resolvable. The baseline named below,
+             0.11.0, is not on Maven Central, so a gate bound to `verify` would fail a fresh-clone
+             `mvn install` on artifact resolution. The default build runs the baseline-free guards
+             instead (AnnotationSurfaceContractTest, RecordComponentOrderTest,
              RecordConstructorLedgerTest), and a maintainer runs `-Psemver` before a release.
 
-             Inside the profile an absent baseline still fails the build, loudly
+             Inside the profile an absent baseline fails the build, loudly
              (ignoreMissingOldVersion=false): whoever turns the gate on has asked for a
              comparison, and "no baseline found" must not read as "no breaks found".
 
-             It becomes binding when the 0.13.0 line opens against a 0.12.0 baseline Central can
-             serve: move japicmp.baseline.version to 0.12.0 and add -Psemver to build.yml and
-             release.yml. That one edit is what starts 1.x binary enforcement. -->
+             It becomes binding in CI once the baseline is a version Central serves: move
+             japicmp.baseline.version to it and add -Psemver to build.yml and release.yml. That
+             one edit is what starts 1.x binary enforcement; the ROADMAP's 1.0.0 GA semver item
+             names the release. -->
         <japicmp.version>0.23.1</japicmp.version>
         <japicmp.baseline.version>0.11.0</japicmp.baseline.version>
         <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the
@@ -408,9 +406,9 @@
             overrideCompatibilityChangeParameter carries no class pattern, which is why the scoping
             is two executions rather than one override.
 
-            exeris-sdk-source-model carried that relaxation module-wide until 0.12.0 and dropped
-            it: a record there that grows keeps its previous arity as a delegating constructor, so
-            growth removes nothing (Stellar finding S6; see that module's pom). The two
+            exeris-sdk-source-model takes no relaxation: a record there that grows keeps its
+            previous arity as a delegating constructor, so growth removes nothing (see that
+            module's pom). The two
             record-free composition modules have exception classes whose constructor overloads are
             real API, so a blanket relaxation would retire a real safety net for nothing.
             Pom-packaging modules are skipped by the plugin itself (skipPomModules defaults to

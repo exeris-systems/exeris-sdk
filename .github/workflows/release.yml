@@ -192,12 +192,11 @@ jobs:
         # changes every published jar's bytes, so it belongs to its own slice with its own
         # reproducibility check — not to the change that first makes publishing possible.)
         #
-        # No -Psemver yet: the semver gate is an opt-in profile in the root pom, and its baseline,
-        # 0.11.0, is resolvable nowhere — 0.12.0 is the first version to reach Central. A
-        # maintainer runs `mvn -Psemver verify` before tagging, against whatever baseline their
-        # machine can resolve. When the 0.13.0 line opens against a 0.12.0 baseline Central can
-        # serve, add -Psemver to both commands below and to build.yml; that is the edit that
-        # starts 1.x binary enforcement.
+        # No -Psemver: the semver gate is an opt-in profile in the root pom, and its configured
+        # baseline is not one Central serves. A maintainer runs `mvn -Psemver verify` before
+        # tagging, against whatever baseline their machine can resolve. Once the baseline is on
+        # Central, adding -Psemver to both commands below and to build.yml is the edit that starts
+        # 1.x binary enforcement; the root pom's japicmp comment and the ROADMAP say when.
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}

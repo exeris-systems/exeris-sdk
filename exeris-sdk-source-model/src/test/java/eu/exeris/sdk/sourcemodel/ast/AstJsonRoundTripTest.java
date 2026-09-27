@@ -44,8 +44,8 @@ class AstJsonRoundTripTest {
 
     @Test
     @DisplayName("DomainMetadata round-trips with nested fields, actions, events")
-    // apiVersion is deprecated for removal at 1.0.0 (Stellar finding T38) but stays on the wire
-    // until then, so its round trip is still pinned here.
+    // apiVersion is deprecated for removal at 1.0.0 but stays on the wire until then, so its
+    // round trip is still pinned here.
     @SuppressWarnings("removal")
     void domainMetadataRoundTrips() {
         DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
@@ -857,10 +857,10 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("a record with a compatibility constructor still binds through its canonical one (Stellar finding S6)")
+    @DisplayName("a record with a compatibility constructor still binds through its canonical one")
     void compatibilityConstructorsDoNotCaptureTheCreator() {
         // These three records keep their 0.11.0 arity as a second public constructor
-        // (MIGRATION-0.x-to-1.0.md §3, Stellar finding S6). A mapper that bound through the
+        // (MIGRATION-0.x-to-1.0.md §3). A mapper that bound through the
         // shorter one would not throw: @JsonIgnoreProperties(ignoreUnknown = true) would swallow
         // the newer key and the component would read back null. So every case sets exactly the
         // trailing component the compatibility constructor lacks — that is the value that would

@@ -100,9 +100,9 @@ class FieldMetadataTest {
 
     @Test
     void effectiveColumnNameDoesNotDependOnTheDefaultLocale() {
-        // Under a Turkish default, String.toLowerCase() maps I to a dotless ı, so the derived
-        // column for invoiceId was "invoice_ıd" on a tr-TR JVM and "invoice_id" everywhere else —
-        // a generated schema that differs by the build machine's locale.
+        // Under a Turkish default, String.toLowerCase() maps I to a dotless ı, so a default-locale
+        // conversion would derive "invoice_ıd" for invoiceId on a tr-TR JVM and "invoice_id"
+        // everywhere else — a generated schema that differs by the build machine's locale.
         Locale saved = Locale.getDefault();
         try {
             Locale.setDefault(Locale.of("tr", "TR"));
