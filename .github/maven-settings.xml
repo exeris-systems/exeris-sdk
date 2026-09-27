@@ -4,8 +4,7 @@
                               https://maven.apache.org/xsd/settings-1.2.0.xsd">
   <servers>
     <!--
-      Maven Central (Central Portal, not the retired OSSRH — that was shut down on 2025-06-30,
-      and nexus-staging-maven-plugin with the oss.sonatype.org URLs it needs went with it).
+      Maven Central (Central Portal, not the retired OSSRH).
 
       Credentials are a USER TOKEN generated at central.sonatype.com/usertoken — not the account
       password — and arrive from the workflow environment, never from this file.
