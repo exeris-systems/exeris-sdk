@@ -1,13 +1,9 @@
 # The per-repo footprint of ADR-085 §C.11. Every check it runs is defined in
 # exeris-systems/.github; this file only says which gates apply here and how strictly.
 #
-# Until this landed, the documentation standards were binding and unenforced: a pull request could
-# contradict a standard and merge green, and the L2 documentation review existed only inside a
-# Cowork session. The Javadoc half is the sharper case — `maven-javadoc-plugin` has run with
-# failOnWarnings=true on the publishable modules for several releases and passes clean, which is
-# why ADR-085 chose this repository as the Javadoc pilot. That measured one half of the gate. The
-# Checkstyle half of javadoc-gate.yml had never been run here at all; when it first was, it
-# reported 890 findings across 126 of 132 sources.
+# It runs the organisation's documentation, record and code-documentation gates on every pull
+# request. The Javadoc gate has two halves: maven-javadoc with failOnWarnings on the publishable
+# modules, and Checkstyle over their doc comments.
 name: guardrails
 on:
   pull_request:
@@ -61,27 +57,23 @@ jobs:
       # exeris-systems/.github#19, anything `.gitattributes` marks `linguist-generated`, which is
       # how `exeris-sdk-ui-kit/api/ui-kit.api.md` is skipped. That report is api-extractor's output,
       # committed on purpose because it is that package's japicmp (§F.21c), and a frontmatter block
-      # in it would not survive the next `npm run api:accept`. No `exclude` list here: measured on
-      # this tree with the current script, 25 files / 0 errors without one.
+      # in it would not survive the next `npm run api:accept`. No `exclude` list: every other
+      # documentation file in this repository is expected to pass as written.
       #
       # `agent-check` is left at its default `true` — the agent-layer half of §I.29 is not optional
       # here, and this repository has an `.agents/` tree to check.
       #
       # `agents-ref` is left at its default `main`, and that is the second time this file makes the
-      # same call for the same reason as the `uses:` comment above. Pinning it to the commit
-      # `.agents/manifest.yaml` vendors is the tempting move — tooling and semantics are one
-      # contract at one version, which is why §C.11 gave the bundle a SemVer. It was tried here and
-      # taken out, because **nothing verifies the two agree**: the digest check compares the
-      # vendored tree against the pin inside `manifest.yaml` and never reads this file, so a hand-
-      # typed SHA here can drift from the vendored one indefinitely and every check stays green.
-      # A pin whose only enforcement is that someone remembers is the frozen-and-silent gate the
-      # comment above rejects, one layer out.
+      # same call for the same reason as the `uses:` comment above. Pinning to a commit in this file
+      # creates a gap: **nothing verifies the two agree** — the digest check compares the vendored
+      # tree against the pin inside `manifest.yaml` and never reads this file, so a hand-typed SHA
+      # here can drift from the vendored one indefinitely and every check stays green. A pin whose
+      # only enforcement is that someone remembers is the frozen-and-silent gate rejected above.
       #
-      # The cost of `main` is real and is accepted knowingly: a bundle release changes what this
-      # repository's CI enforces without this repository moving. That happened deliberately in
-      # 1.2.0, which turned a previously green check red by validating a rule that had bound since
-      # schema v2. Being pinned then would have meant passing on rules the vendored tree already
-      # claimed to follow, which is the worse failure.
+      # The cost of `main` is accepted knowingly: a bundle release can change what this
+      # repository's CI enforces without this repository moving. That trade is better than a
+      # drifted pin that nobody catches, which would silently relax checks that the vendored tree
+      # claims to enforce.
       #
       # The fix belongs upstream, in one line: `docs-lint` can read `imports[].ref` out of the
       # consuming repository's own `manifest.yaml` and check the bundle out at that, which is the
@@ -126,7 +118,7 @@ jobs:
       # every pull request; `docs`, `records`, `code-docs` and `code` where the diff has their
       # files. A part that leaves no verdict makes the check red.
       review-in-parts: true
-    # Named, not `secrets: inherit`. This repository publishes to Maven Central as of 0.12.0, so
+    # Named, not `secrets: inherit`. This repository publishes to Maven Central, so
     # its secret set includes a GPG signing key and a Central portal token; `inherit` would hand all
     # of them to a job that needs three.
     secrets:
@@ -162,24 +154,19 @@ jobs:
   # express a body shape; the test can, and does. Documenting the 204 instead would put 204 comments
   # restating `this.x = v` into a -javadoc.jar on Central, permanently.
   #
-  # `extra-maven-args` carries `-Djapicmp.skip=true`, the same flag build.yml, release.yml and
-  # release-assets.yml pass, for the reason the root POM's japicmp comment gives in full: the 0.11.0
-  # baseline is not on Central and 0.12.0 is the first version that will be. japicmp binds to
-  # `verify`, which `install` runs, so without it the gate dies on an artifact resolution before
-  # reading a doc comment. All four callers say it now, in the same words, and they come off together
-  # when the 0.13.0 line opens.
+  # No `extra-maven-args`: the semver gate is an opt-in `semver` profile in the root pom, so the
+  # plain `install` this job runs never reaches japicmp or its unpublished baseline.
   #
-  # No dedicated profile: unlike the kernel, the strict Javadoc settings here live unconditionally
-  # in each module's own pom and the `release` profile deliberately does not relax them, so the gate
-  # runs exactly the configuration a release runs. The one thing that had to change in the root pom
-  # for this job is the jacoco.skip line — see its comment there.
+  # No dedicated profile: the strict Javadoc settings here live unconditionally in each module's
+  # own pom and the `release` profile deliberately does not relax them, so the gate runs exactly
+  # the configuration a release runs. The gate requires the jacoco.skip line in the root pom — see
+  # its comment there.
   javadoc:
     uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
     with:
       modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
       build-modules: exeris-sdk-annotation-catalog
       trivial-accessors: exempt
-      extra-maven-args: -Djapicmp.skip=true
   # ADR-085 §F.21a–c. The TypeScript half of the same rule, and this repository owns one of the
   # three surfaces the ADR names by hand: `@exeris-systems/ui-kit`.
   #

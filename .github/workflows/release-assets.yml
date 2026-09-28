@@ -2,14 +2,12 @@ name: release assets
 
 # Attaches the generated annotation catalog to the GitHub Release for a tag.
 #
-# This exists because the asset is the whole delivery channel. The SDK does not
-# publish to Maven Central yet — that is sequenced behind the kernel — so a
-# downstream consumer that wants the catalog has no coordinate to resolve and no
-# jar to unpack. A release asset needs no publishing infrastructure at all, which
-# is what makes the catalog reachable now rather than after the Central move.
+# This exists because the asset is a delivery channel that depends on nothing
+# else. A release asset needs no publishing infrastructure, which makes the
+# catalog reachable from the tag whatever the state of Maven Central.
 #
-# It runs on the tag rather than as a manual step on purpose: the catalog went
-# unshipped for as long as it did because nothing failed when it was not.
+# It runs on the tag rather than as a manual step on purpose: automation
+# ensures the asset is always attached and does not depend on a manual step.
 
 on:
   push:
@@ -47,7 +45,7 @@ jobs:
       # module's own compilation, so `package` on that module is enough — no need
       # to run the whole reactor or its gates to produce it.
       - name: Build the modules that carry the descriptors
-        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model -am package -DskipTests -Djapicmp.skip=true
+        run: mvn -B -ntp -pl exeris-sdk-annotation-catalog,exeris-sdk-annotations,exeris-sdk-source-model -am package -DskipTests
 
       - name: Locate the catalog and check it describes this tag
         id: catalog

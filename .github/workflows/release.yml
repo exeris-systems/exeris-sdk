@@ -17,11 +17,8 @@ name: release to maven central
 # WHICH COMMIT a tag points at and WHETHER ITS VERSION AGREES WITH THE POM — both checked below
 # rather than assumed.
 #
-# Ported from exeris-kernel/.github/workflows/release.yml, which is the reference for this flow in
-# the ecosystem. Deliberately NOT ported: its JDK-tarball pinning (this repo's other two workflows
-# use setup-java's temurin distribution, and a third spelling here would be the odd one out), its
-# SBOM and preview-bytecode gates (this reactor has neither), and its two-build digest assertion —
-# see the build step for why that one cannot hold here.
+# This workflow builds, signs, gates, attests and uploads. It differs from a simple deploy in that
+# the same Maven invocation gates and uploads in one pass, rather than gating in a separate build.
 
 on:
   push:
@@ -192,10 +189,11 @@ jobs:
         # changes every published jar's bytes, so it belongs to its own slice with its own
         # reproducibility check — not to the change that first makes publishing possible.)
         #
-        # `-Djapicmp.skip=true` for the reason the root POM's japicmp comment gives in full: 0.12.0
-        # is the first version to reach Central, so the 0.11.0 baseline is resolvable on a
-        # developer machine and nowhere on a runner. This flag comes off with build.yml's, one
-        # milestone from now, when a Central-resolvable baseline exists.
+        # No -Psemver: the semver gate is an opt-in profile in the root pom, and its configured
+        # baseline is not one Central serves. A maintainer runs `mvn -Psemver verify` before
+        # tagging, against whatever baseline their machine can resolve. Once the baseline is on
+        # Central, adding -Psemver to both commands below and to build.yml is the edit that starts
+        # 1.x binary enforcement; the root pom's japicmp comment and the ROADMAP say when.
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
@@ -209,9 +207,9 @@ jobs:
             # signature fails HERE rather than silently sitting in the portal. Review the results
             # and press Publish there. Until you do it can be Dropped; after you do, nothing about
             # it can ever be changed.
-            mvn -B -ntp -P release clean deploy -Djapicmp.skip=true --settings .github/maven-settings.xml
+            mvn -B -ntp -P release clean deploy --settings .github/maven-settings.xml
           else
-            mvn -B -ntp -P release clean verify -Djapicmp.skip=true
+            mvn -B -ntp -P release clean verify
           fi
 
       - name: Release-readiness check
@@ -290,9 +288,9 @@ jobs:
 
           # `|| true` on every count, and it is not defensive noise. Under `set -euo pipefail` a
           # bare `ls` of a directory that does not exist fails the pipeline, fails the assignment,
-          # and exits the step — so this summary used to abort the job on exeris-sdk-ui-kit, which
-          # has no target/ because it is an npm package outside the Maven reactor. A reporting loop
-          # must not be able to fail a release that passed.
+          # and exits the step — because some modules (e.g. npm packages outside the Maven reactor)
+          # have no target/ directory. A reporting loop must not be able to fail a release that
+          # passed.
           total=$(ls -1 exeris-sdk-*/target/*.asc 2>/dev/null | wc -l || true)
           echo "release-readiness: $total signed files"
           for m in exeris-sdk-*/; do
