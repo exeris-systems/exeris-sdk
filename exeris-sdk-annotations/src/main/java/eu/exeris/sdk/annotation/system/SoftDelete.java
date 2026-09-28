@@ -8,8 +8,9 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a boolean field as the soft delete flag.
- * <p>When {@code @ExerisDomain(softDelete = true)}, exactly one field
- * must be annotated with {@code @SoftDelete} OR {@code softDeleteField} must be specified.
+ * <p>When {@code @ExerisDomain(softDelete = true)}, at most one field may carry
+ * {@code @SoftDelete}; with none, the {@code softDeleteField} override or the canonical
+ * name applies.
  *
  * <h2>Usage:</h2>
  * {@snippet lang="java" :
@@ -26,19 +27,25 @@ import java.lang.annotation.Target;
  * }
  * }
  *
+ * <h2>Emitted today — by {@code @ExerisDomain(softDelete = true)}, not by this marker:</h2>
+ * <ul>
+ *   <li>DELETE operations set the flag instead of removing the row</li>
+ *   <li>Every generated read — by id, list, count and the typed finders —
+ *       filters out soft-deleted rows</li>
+ * </ul>
+ *
  * <h2>Target design — not emitted today:</h2>
  * <ul>
- *   <li>DELETE operations set flag to true instead of removing row</li>
- *   <li>All queries automatically filter out soft-deleted records</li>
  *   <li>Restore operation available to undelete</li>
  *   <li>Optional: hard delete for compliance (GDPR right to erasure)</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
- * fields for this marker, so writing it changes nothing in the emitted output. What
- * generates the column is the entity-level flag set on {@code @ExerisDomain}, with the
- * field-name override attributes choosing its name. See the package javadoc for the live
- * path.
+ * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * marker and records the annotated field as {@code SystemFieldsMetadata.softDeleteField},
+ * which the generators use in place of the canonical name. It names the field; the column
+ * exists only when {@code @ExerisDomain(softDelete = true)}. None of the attributes below is
+ * carried, so setting one changes no emitted output, and the {@code -io} reader does not
+ * read the marker. See the package javadoc.
  *
  * @since 0.1
  * @see SoftDeleteTimestamp

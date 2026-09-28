@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-07
+last-verified: 2026-09-27
 ---
 
 # Changelog
@@ -29,16 +29,49 @@ for per-version upgrade steps.
 
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.11.0"` → `"0.12.0"`** — a baseline
   stamped `"0.11.0"` now reads as schema skew, so ADR-042 conflict detection refuses it rather than
-  trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is itself additive
-  (trailing nullable `routeAccess` on `DomainMetadata` and `ActionMetadata`).
-  See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+  trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is additive on the
+  wire (by-name, nullable), and for positional callers too, because each grown record keeps its
+  0.11.0 constructor — see Changed. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` is no longer a compile-time constant** — it was
   `static final String` with a literal initialiser, so javac inlined it into every consumer. A
   consumer compiled against 0.11.0 carries the old literal in its own class file and will compare
   against it forever. Recompile once against 0.12.0. Invisible to japicmp, which compares signatures
   rather than the constant pool. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+- **`exeris-sdk-source-model`: `effectivePath()` and `effectiveTableName()` take the English
+  plural.** Both now derive from `pluralName()`, whose rule is unchanged (`+es` after a sibilant,
+  consonant + `y` → `ies`, otherwise `+s`), and both lower-case under `Locale.ROOT`.
+  `effectiveTableName()` used to return the snake-cased *singular* (`order`), a table no generator
+  emits; it now returns `orders`, `colonies`, `boxes`. `effectivePath()`'s blank-path fallback used
+  to append a bare `s` (`/colonys`); it now agrees with the title and the table. The fallback is
+  unreachable from annotated source, where `path` is required. The three helpers freeze at 1.0.0,
+  and a later change would silently rename tables, so they are aligned before the freeze (Stellar
+  finding T6). A caller that relied on the old output sets `tableName` / `path` explicitly. The rule
+  knows endings, not words: `Person` → `persons`, `Settings` → `settingses`; the override is the
+  remedy. `exeris-tooling` still names its tables `snake_case(name) + "s"` and its Angular routes
+  with a bare `s`; switching both, with a warning per entity whose table would move, is its
+  change to make. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
+
+- **`SystemFieldsMetadata.builder()`.** All eleven components, preset to the names `defaults()`
+  returns, so a caller sets only the ones that differ. Every component is a field-name `String`, so
+  a positional call that swaps two of them compiles, round-trips and silently points a generated
+  column at the wrong field; the builder names each one. It was also the one record a consumer had
+  no non-positional way to fill with non-canonical names, which is how its 0.12.0 growth broke
+  `exeris-tooling`'s processor (Stellar finding S6 — see Changed). `defaults()` now returns
+  `builder().build()`. The processor, the only producer that fills this record with anything but
+  the defaults, may switch to it; the kept 10-argument constructor means it does not have to.
+
+- **`@ExerisDomain.tableName` — the author can name the table.** Default `""`, which means derive
+  it (`DomainMetadata.effectiveTableName()`). `DomainMetadata.tableName` has existed for a long
+  time, and `exeris-tooling`'s table naming honours it for the repository's SQL, the `CREATE TABLE`
+  and the migration file name, but no annotation fed it, so the override branch was unreachable
+  and an irregular or pre-existing table could not be named at all (Stellar finding T6). The `-io`
+  reader reads it; the `exeris-tooling` processor does not yet, so it is PARTIAL until the
+  processor release that extracts it. It is also how an existing table keeps its name when
+  tooling's default moves from the bare `s` to the English plural. The reader reads it ahead of the
+  processor on purpose: the two ship in one release train, and a reader that waited would miss it
+  and diverge the other way, as `@Saga.version` did.
 
 - **`@Channel` — the SDK can state that an entity's clients also speak.** `@Target(TYPE)`, two
   optional attributes (`messageType()`, `subprotocol()`), carried by the new nullable
@@ -92,9 +125,11 @@ for per-version upgrade steps.
   replaces maven-deploy-plugin and does not read that property, so the build-time
   `exeris-sdk-annotation-catalog` was being staged for upload and needed an `<excludeArtifacts>`
   entry (the readiness step now asserts the two lists agree, and fails when they do not). It does
-  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate stays CI-skipped for
-  one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore not
-  resolvable from Central; `-Djapicmp.skip=true` comes off `build.yml` when 0.13.0 opens.
+  not stop maven-gpg-plugin either, which signs at `verify`. **The semver gate does not run in CI
+  for one more milestone**: japicmp's baseline is 0.11.0, which predates the move and is therefore
+  not resolvable from Central. The gate is an opt-in `-Psemver` profile (see Changed), and
+  `build.yml` and `release.yml` add it when the 0.13.0 line opens against a 0.12.0 baseline
+  Central can serve.
 
 - **`@SharedScope` — the SDK can name the column a shared-world policy compares.** A field-level
   marker in `eu.exeris.sdk.annotation.system`, carried by the new trailing
@@ -116,9 +151,9 @@ for per-version upgrade steps.
 
   A bare marker with no attributes, deliberately: `@TenantId`'s four attributes are all inert, and
   reproducing them on a new annotation would manufacture surface with nothing to be inert against.
-  **Reserved**, on the same footing as the ten markers already in that package — the processor does
-  not scan fields for any of them — and `dataScope = UNIVERSE` is still refused at the declaration
-  site, so there is no build today in which the field would be read. It lands now because the other
+  **Reserved**: `exeris-tooling`'s processor reads every marker in that package except
+  `@PrimaryKey` and this one, and `dataScope = UNIVERSE` is still refused at the declaration site,
+  so there is no build today in which the field would be read. It lands now because the other
   two thirds are in place: the kernel published both session-variable constants in v0.12.0, and the
   only remaining piece for a transcription was the SDK saying which column to compare.
 
@@ -156,9 +191,11 @@ for per-version upgrade steps.
   role kind at all. **Reserved**, on ADR-072's three-part test and therefore outside the 1.0.0
   freeze: no processor extracts it, no generator emits a policy table from it, and the kernel
   holds route authorization at tier `preview`.
-- **`SchemaVersion.CURRENT` is `"0.12.0"`** for the two new trailing components. Additive and
-  by-name; a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established posture of
-  refusing a cross-shape baseline rather than assuming compatibility.
+- **`SchemaVersion.CURRENT` is `"0.12.0"`** for the new trailing components — `routeAccess` on
+  `DomainMetadata` and `ActionMetadata`, `DomainMetadata.channel`, and
+  `SystemFieldsMetadata.sharedScopeField`. By-name on the wire, and a recompile for positional
+  callers (see *Breaking*); a `"0.11.0"` baseline reads as `SCHEMA_VERSION_SKEW`, the established
+  posture of refusing a cross-shape baseline rather than assuming compatibility.
 
 - **`META-INF/exeris/ast-schema.json` ships inside `exeris-sdk-source-model`, and is attached
   to the GitHub Release.** A JSON Schema (draft 2020-12) for the build-time metadata hand-off
@@ -213,6 +250,74 @@ for per-version upgrade steps.
   The bar is Maven Central: nothing in the publish path checks completeness, the javadoc jar
   builds either way, and the artifact is permanent.
 
+- **`exeris-sdk-tck`: a saga-version case in all three metadata suites, and the SDK's own reader
+  is bound to the kit.** The changes:
+  - `Facet.SAGA`, which is optional.
+  - The corpus `Order` declares `@Saga(name = "OrderFulfillmentSaga", version = 3)`.
+  - `sagaVersionIsTheDeclaredOne` (reader), `sagaVersionReachesTheProducedMetadata` (producer)
+    and `sagaIdentityAgrees` (parity, name and version). Each is proven non-vacuous against a
+    binding broken the way the defect shipped.
+  - `exeris-sdk-source-model-io` binds `AbstractMetadataReaderTck` as `SourceModelReaderTckTest`,
+    at test scope.
+  Until now nothing bound the kit, not `exeris-tooling` and not this repository. That is why the
+  `@Saga.version` divergence shipped past green builds. With the reader's version read removed,
+  the bound case fails. Binders: a side that does not extract sagas yet declares `Facet.SAGA` in
+  `unsupportedFacets()`.
+
+
+### Changed
+
+- **The semver gate is a maintainer gate, not a build requirement: `mvn -Psemver verify`.** japicmp
+  was bound to `verify` in six modules, so a fresh-clone `mvn install` failed resolving its baseline,
+  `0.11.0`, which was never published to Maven Central and never will be. Every workflow and every
+  contributor carried `-Djapicmp.skip=true` to get past it. Now all of its configuration and both of
+  its bindings live in one opt-in `semver` profile in the root pom; `-io` and `composition-spec`
+  keep a same-named profile that only names their one relaxed record. A plain `mvn install` needs no
+  flag and resolves no baseline. Inside the profile an absent baseline still fails loudly
+  (`ignoreMissingOldVersion=false`). The baseline-free guards — `AnnotationSurfaceContractTest`,
+  `RecordComponentOrderTest`, `RecordConstructorLedgerTest` — stay in the default build. The flag is
+  gone from `build.yml`, `release.yml`, `release-assets.yml` and `guardrails.yml`, and from the
+  build instructions. CI does not pass `-Psemver` yet, since the baseline is unresolvable; adding it
+  to `build.yml` and `release.yml` when the 0.13.0 line opens against a 0.12.0 baseline is the edit
+  that starts 1.x binary enforcement. `japicmp.skip` survives only as the per-module opt-out the
+  annotations and catalog modules set. **Downstream:** a consumer that builds the SDK from source
+  (`exeris-tooling`'s CI does) can drop `-Djapicmp.skip=true`.
+
+- **`exeris-sdk-source-model`: a record that grows keeps its previous constructor, and the semver
+  gate stops calling a removed constructor compatible.** Three records grew a trailing component in
+  this release — `DomainMetadata` 39 → 41 (`routeAccess`, `channel`), `ActionMetadata` 17 → 18
+  (`routeAccess`), `SystemFieldsMetadata` 10 → 11 (`sharedScopeField`) — and each keeps its 0.11.0
+  shape as a public constructor that delegates with `null` for what was added. No caller changes:
+  builder calls are untouched, positional calls compile, and classes compiled against 0.11.0 link.
+  That is the record-growth stance in `MIGRATION-0.x-to-1.0.md` §3, rewritten for this release.
+
+  Until now growth replaced the canonical constructor, positional callers were told to recompile
+  with a trailing `null`, and `source-model`'s japicmp configuration labelled `CONSTRUCTOR_REMOVED`
+  binary- and source-compatible so the growth could pass. The label was false — a removed public
+  constructor is a `NoSuchMethodError` for every class compiled against it — and the rule broke the
+  one caller that had no builder to fall back on: `exeris-tooling`'s processor, which can only fill
+  `SystemFieldsMetadata` with non-canonical names positionally, did not compile against 0.12.0
+  (Stellar finding S6). It compiles unchanged now. The override is gone, so the gate
+  (`-Psemver`, see above) fails on a removed constructor; CI runs it from the 0.13.0 line, once a
+  baseline resolves. In every build meanwhile `RecordConstructorLedgerTest` holds the rule: it fails if a published arity loses its constructor, or if a record grows without
+  its new arity being appended to `record-arities.txt`. `ApplyResult` (`-io`) and `CapManifest`
+  (`composition-spec`) keep their named relaxation for now; whether they follow is open. See
+  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+
+### Deprecated
+
+- **`@ExerisDomain.apiVersion`** — `@Deprecated(since = "0.12.0", forRemoval = true)`, removal at
+  1.0.0, with no replacement. It reaches no emitted artifact: the router, the OpenAPI document and
+  every generated client serve and request the entity at its `path`, and have since the client was
+  aligned on it after its `/api/<version>` prefix produced a `404` against the generated server
+  (Stellar finding T38). It also could not be activated later, because its default is `"v1"` —
+  honouring it would move every route of every application that never set it. Deprecating it now
+  rather than at the freeze is the `tenantScoped` argument again: a deprecation and its removal
+  cannot share a release, so an attribute still live at 1.0.0 would stay for all of 1.x. Its
+  carrier goes with it: `DomainMetadata.apiVersion()` and `DomainMetadata.Builder.apiVersion(…)`
+  are deprecated for removal too. Both build paths keep reading the attribute until 1.0.0, so
+  nothing a build emits changes in the window; a source that sets it compiles with a `[removal]`
+  warning. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Security
 
@@ -230,6 +335,76 @@ for per-version upgrade steps.
   suite all pass on it.
 
 ### Fixed
+
+- **The derived names no longer depend on the JVM's default locale.**
+  `FieldMetadata.effectiveColumnName()` lower-cased its snake-cased fallback with
+  `String.toLowerCase()`, which under a Turkish default (`tr-TR`) maps `I` to a dotless `ı`: a field
+  `invoiceId` became the column `invoice_ıd` on that machine and `invoice_id` everywhere else.
+  `DomainMetadata.effectivePath()` and `effectiveTableName()` had the same defect until the
+  pluralization change above moved them to `Locale.ROOT`; found downstream by a tr-TR vs ROOT
+  byte-identity test, where an entity with no declared path was served at `/ınvoices` while the
+  generated TypeScript client called `/invoices`. All three now lower-case under `Locale.ROOT`, and
+  no case conversion without an explicit locale is left in `exeris-sdk-source-model` or
+  `exeris-sdk-source-model-io`. Pinned by `FieldMetadataTest.effectiveColumnNameDoesNotDependOnTheDefaultLocale`
+  and `DomainMetadataTest$PluralNaming.theDerivationDoesNotDependOnTheDefaultLocale`, which run the
+  helpers under `Locale.of("tr", "TR")` and restore the default afterwards; each fails with the
+  default-locale call put back.
+
+- **`SourceModelReader` reads `@Saga.version`, so the reader and the processor agree on a saga's
+  plan identity.** Kernel ADR-064 keys the plan catalog by `(name, version)`. The `exeris-tooling`
+  processor has extracted `@Saga.version` since 0.8.0. The `-io` reader never did, so
+  `@Saga(version = 3)` read back as `1` against a processor baseline of `3`. That is an ADR-042
+  parity break, and both sides still emitted well-formed metadata (Stellar finding K5, SDK half).
+  Absent stays `1`. A value below `1` is carried as written rather than repaired, as on the
+  processor path, and the kernel refuses it at `FlowDefinitionBuilder.version(int)`. A constant
+  reference or expression is not resolved by the syntactic reader and reads as `1`. The reader's
+  Limitations now say so: declare saga versions as literals. `@Saga.version`'s javadoc kept saying
+  "declared, not extracted" and "a hole in both" long after the processor half shipped. It now
+  says what each path does and how the value reaches the kernel. That route is
+  `FlowDefinitionBuilder.version(int)`, a setter the kernel added on its 0.12 line: before it, and
+  with any tooling build that predates the transcription into the generated `*SagaFlow`, a
+  declared version reached metadata and no plan.
+
+- **Nine system-field markers said the processor ignores them. It reads them.** `@TenantId`,
+  `@Version`, `@SoftDelete`, `@SoftDeleteTimestamp`, `@SoftDeletedBy` and the four `@Audit*` markers
+  each carried "Status: RESERVED — the `exeris-tooling` processor does not scan fields for this
+  marker", and the `system` package-info, the root `package-info` index, `@SharedScope` and
+  `@ExerisDomain.validationMode` repeated it. Checked against `exeris-tooling` `main` rather than
+  our own notes: the processor resolves all nine into `SystemFieldsMetadata` beside the override
+  attributes, the generators read the marked field's name in place of the canonical one, and a
+  marker repeated on two fields or contradicting its override is refused at the declaration. They
+  are now PARTIAL — a generator consumes them, but the `-io` reader does not read them and their 19
+  attributes are carried nowhere — and each says that a marker names the column while the entity
+  flag still decides whether it exists. `@PrimaryKey` and `@SharedScope` stay RESERVED, each with
+  its reason; `validationMode` stays RESERVED for the reason that is actually true, that no processor
+  reads it. This prose ships verbatim in `annotation-catalog.json`, so a wrong status label here is
+  a wrong answer served to every agent that reads the catalog.
+
+- **Three documentation gaps before the cut.** The root `package-info` sent readers to
+  `docs/guide/` three times, and no such directory exists on `main`; it now points at
+  `META-INF/exeris/annotation-catalog.json`, which ships in the same jar and carries the same
+  per-attribute text. The 1.0.0 freeze exception was four surfaces in `MIGRATION-0.x-to-1.0.md` §2
+  but three in the `ROADMAP.md` GA item and two in that guide's own §3; all three now name
+  `@Blob` / `@Schedule` / `@RouteAccess` / `@Channel`, per the ADR-072 amendment of 2026-09-03.
+  (A third gap — the build instructions omitting the `-Djapicmp.skip=true` a fresh clone needed —
+  was closed differently: no flag is needed any more. See Changed.)
+
+- **Javadoc that ships in the 0.12.0 jars said things that stop being true, or never were.**
+  - The root `package-info` quick start said there are no `eu.exeris` artifacts on Central and
+    publishing is not switched on — false inside the first jar meant for Central. It now says what
+    holds before and after the upload: from the 0.12.0 line on a release resolves from Central,
+    nothing at or below 0.11.0 is there, and anything Central does not carry is built from source.
+  - `@TenantId`, `@Version` and `@SoftDelete` listed as "not emitted today" behaviours the entity
+    flag does emit: the forced RLS policy and tenant stamping, the optimistic-lock predicate with its
+    409, soft delete as an update filtered out of every read. Each list is now split into what the
+    flag emits and what remains a target, checked against the generators. The JPA `@Version` item
+    is gone; Exeris emits no JPA.
+  - `@ExerisDomain.primaryKeyField` read as working; it carries a PARTIAL label now, since the
+    value reaches `SystemFieldsMetadata` and no generator reads it.
+  - The AST `package-info` had no section for the 0.12.0 components `routeAccess`, `channel` and
+    `sharedScopeField`, and now states each one's status. Only the first two are outside the
+    1.0.0 freeze.
+  - `EventSourcedMetadata.Builder` called itself a builder for `ProjectionConfig`.
 
 - **The record-growth snapshot could go stale without anything noticing, and had.**
   `RecordComponentOrderTest` compares each AST record against `record-components.txt` as a

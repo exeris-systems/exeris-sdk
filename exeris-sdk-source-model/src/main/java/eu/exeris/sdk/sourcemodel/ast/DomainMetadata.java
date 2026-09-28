@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Domain metadata extracted from {@code @ExerisDomain} annotation.
@@ -23,7 +24,8 @@ import java.util.List;
  * <p>Field names match {@code @ExerisDomain} annotation attributes.
  *
  * @param entityName the annotated class's simple name — the entity's identity throughout the
- *        generated tree, and what {@link #effectiveTableName()} falls back to
+ *        generated tree, and what {@link #pluralName()}, {@link #effectivePath()} and
+ *        {@link #effectiveTableName()} derive from
  *
  * @param packageName the package the annotated class is declared in; generated Java is emitted
  *        relative to it
@@ -35,7 +37,9 @@ import java.util.List;
  * @param apiVersion the declared API version. Carried on the wire and read by no generator —
  *                   no emitted artifact publishes an {@code /api/<version>} segment, so this
  *                   does not describe where an endpoint is served (see
- *                   {@code @ExerisDomain.apiVersion})
+ *                   {@code @ExerisDomain.apiVersion}). <strong>Deprecated for removal in
+ *                   1.0.0</strong>, with the attribute it carries; both producers fill it
+ *                   until then
  * @param tags grouping labels carried into the generated OpenAPI/AsyncAPI document
  * @param restApi whether REST endpoints are generated for this entity
  * @param graphqlApi whether a GraphQL schema and resolvers are generated
@@ -64,8 +68,9 @@ import java.util.List;
  * @param cacheRegion the cache region or namespace entries are placed in
  * @param fullTextSearch whether a full-text search index and query surface are generated
  * @param searchConfig the PostgreSQL text-search configuration the index is built with
- * @param tableName the physical table name. Optional: blank means "derive it", and
- *        {@link #effectiveTableName()} is the accessor that applies the snake-case default
+ * @param tableName the physical table name, from {@code @ExerisDomain.tableName}. Optional:
+ *        blank means "derive it", and {@link #effectiveTableName()} is the accessor that applies
+ *        the default — the snake-cased English plural of {@link #entityName()}
  *
  * @param fields the entity's persisted and presented fields, in declaration order
  * @param actions the domain actions callable on the entity
@@ -205,6 +210,101 @@ public record DomainMetadata(
         @JsonProperty("channel") ChannelMetadata channel
 ) {
 
+    /**
+     * The 0.11.0 shape — the 39 components before {@code routeAccess} and {@code channel} — kept
+     * as a delegating constructor so that code compiled or written against 0.11.0 still links and
+     * still compiles. Both of those components are {@code null}: no route access declared, and
+     * no duplex channel.
+     *
+     * <p>Prefer {@link #builder(String, String)}, which sets any component by name and does not
+     * change shape when the record grows.
+     *
+     * @param entityName the {@code entityName} the result carries
+     * @param packageName the {@code packageName} the result carries
+     * @param module the {@code module} the result carries
+     * @param path the {@code path} the result carries
+     * @param aggregate the {@code aggregate} the result carries
+     * @param description the {@code description} the result carries
+     * @param apiVersion the {@code apiVersion} the result carries
+     * @param tags the {@code tags} the result carries
+     * @param restApi the {@code restApi} the result carries
+     * @param graphqlApi the {@code graphqlApi} the result carries
+     * @param realTimeApi the {@code realTimeApi} the result carries
+     * @param internalClient the {@code internalClient} the result carries
+     * @param tenantScoped the {@code tenantScoped} the result carries
+     * @param softDelete the {@code softDelete} the result carries
+     * @param audited the {@code audited} the result carries
+     * @param versioned the {@code versioned} the result carries
+     * @param roles the {@code roles} the result carries
+     * @param permissions the {@code permissions} the result carries
+     * @param sensitive the {@code sensitive} the result carries
+     * @param cacheable the {@code cacheable} the result carries
+     * @param cacheTtl the {@code cacheTtl} the result carries
+     * @param cacheRegion the {@code cacheRegion} the result carries
+     * @param fullTextSearch the {@code fullTextSearch} the result carries
+     * @param searchConfig the {@code searchConfig} the result carries
+     * @param tableName the {@code tableName} the result carries
+     * @param fields the {@code fields} the result carries
+     * @param actions the {@code actions} the result carries
+     * @param events the {@code events} the result carries
+     * @param relationships the {@code relationships} the result carries
+     * @param projections the {@code projections} the result carries
+     * @param eventHandlers the {@code eventHandlers} the result carries
+     * @param uiMetadata the {@code uiMetadata} the result carries
+     * @param graphMetadata the {@code graphMetadata} the result carries
+     * @param sagaMetadata the {@code sagaMetadata} the result carries
+     * @param eventSourced the {@code eventSourced} the result carries
+     * @param internalApi the {@code internalApi} the result carries
+     * @param systemFields the {@code systemFields} the result carries
+     * @param rules the {@code rules} the result carries
+     * @param dataScope the {@code dataScope} the result carries
+     */
+    public DomainMetadata(String entityName, String packageName, String module, String path,
+                          String aggregate, String description, String apiVersion,
+                          List<String> tags, boolean restApi, boolean graphqlApi,
+                          boolean realTimeApi, boolean internalClient, boolean tenantScoped,
+                          boolean softDelete, boolean audited, boolean versioned,
+                          List<String> roles, List<String> permissions, boolean sensitive,
+                          boolean cacheable, String cacheTtl, String cacheRegion,
+                          boolean fullTextSearch, String searchConfig, String tableName,
+                          List<FieldMetadata> fields, List<ActionMetadata> actions,
+                          List<DomainEventMetadata> events,
+                          List<RelationshipMetadata> relationships,
+                          List<ProjectionMetadata> projections,
+                          List<EventHandlerMetadata> eventHandlers, UIMetadata uiMetadata,
+                          GraphMetadata graphMetadata, SagaMetadata sagaMetadata,
+                          EventSourcedMetadata eventSourced, InternalApiMetadata internalApi,
+                          SystemFieldsMetadata systemFields, List<RuleMetadata> rules,
+                          DataScope dataScope) {
+        this(entityName, packageName, module, path, aggregate, description, apiVersion, tags,
+                restApi, graphqlApi, realTimeApi, internalClient, tenantScoped, softDelete,
+                audited, versioned, roles, permissions, sensitive, cacheable, cacheTtl,
+                cacheRegion, fullTextSearch, searchConfig, tableName, fields, actions, events,
+                relationships, projections, eventHandlers, uiMetadata, graphMetadata, sagaMetadata,
+                eventSourced, internalApi, systemFields, rules, dataScope, null, null);
+    }
+
+    /**
+     * The declared API version — the carrier of {@code @ExerisDomain.apiVersion}.
+     *
+     * <p>Declared explicitly, rather than left to the record, only so it can carry the
+     * deprecation; it returns the component unchanged.
+     *
+     * @return the declared API version, {@code "v1"} unless the source set another
+     * @deprecated since 0.12.0, for removal in 1.0.0, together with
+     *         {@code @ExerisDomain.apiVersion}, which no generator reads: no emitted
+     *         artifact serves or requests an {@code /api/<version>} segment (see
+     *         {@code MIGRATION.md}). There is no replacement — the route an entity is
+     *         served at is {@link #effectivePath()}. The component stays on the wire, and
+     *         both the {@code exeris-tooling} processor and the {@code -io} reader keep
+     *         filling it, until 1.0.0, so baselines written before then read back
+     *         unchanged.
+     */
+    @Deprecated(since = "0.12.0", forRemoval = true)
+    public String apiVersion() {
+        return apiVersion;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONVENIENCE METHODS
     // ═══════════════════════════════════════════════════════════════════════
@@ -219,21 +319,45 @@ public record DomainMetadata(
     }
 
     /**
-     * Effective table name (explicit or derived from entityName).
+     * The table this entity is stored in: {@link #tableName()} when it is set, otherwise the
+     * snake-cased {@link #pluralName()} — {@code Order} → {@code orders},
+     * {@code OrderLineItem} → {@code order_line_items}, {@code Colony} → {@code colonies},
+     * {@code Box} → {@code boxes}.
      *
-     * @return the {@code String}
+     * <p>Snake case inserts {@code _} wherever a lower-case letter is followed by an upper-case
+     * one and then lower-cases the whole name under {@link Locale#ROOT}, so the result is the
+     * same on every JVM whatever its default locale (a Turkish default would otherwise turn
+     * {@code Item} into {@code ıtem}). An acronym is not split: {@code HTTPRoute} →
+     * {@code httproutes}.
+     *
+     * <p>A table whose existing name differs from the derived one — {@code colonys} where
+     * this gives {@code colonies}, say — keeps it through {@code @ExerisDomain.tableName}.
+     * See {@code MIGRATION.md}.
+     *
+     * @return the explicit table name, or the derived one
      */
     public String effectiveTableName() {
-        return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(entityName);
+        return (tableName != null && !tableName.isBlank()) ? tableName : toSnakeCase(pluralName());
     }
 
     /**
-     * Effective API path (explicit or derived from entityName).
+     * The base route of this entity's generated endpoints: {@link #path()} when it is set,
+     * otherwise {@code "/"} plus the kebab-cased {@link #pluralName()} — {@code Order} →
+     * {@code /orders}, {@code OrderLineItem} → {@code /order-line-items}, {@code Colony} →
+     * {@code /colonies}.
      *
-     * @return the {@code String}
+     * <p>{@code @ExerisDomain.path} is mandatory, so metadata extracted from annotated source
+     * always takes the first branch; the derivation serves metadata built by hand or by a
+     * tool. Kebab case follows the snake-case rule of {@link #effectiveTableName()} with
+     * {@code -} for {@code _}, under {@link Locale#ROOT}.
+     *
+     * <p>It takes the same plural as {@link #pluralName()} and {@link #effectiveTableName()},
+     * so the derived route, the derived table and the title agree.
+     *
+     * @return the explicit path, or the derived one
      */
     public String effectivePath() {
-        return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(entityName) + "s";
+        return (path != null && !path.isBlank()) ? path : "/" + toKebabCase(pluralName());
     }
 
     /**
@@ -246,23 +370,33 @@ public record DomainMetadata(
     }
 
     /**
-     * Plural name for entity (derived from entityName).
+     * The English plural of {@link #entityName()}, keeping its case — the one rule
+     * {@link #effectivePath()} and {@link #effectiveTableName()} derive from too.
      *
-     * @return the {@code String}
+     * <p>Applied to the end of the name, which in a camel-case compound is its last word:
+     * <ul>
+     *   <li>ends in {@code s}, {@code x}, {@code z}, {@code ch} or {@code sh} → {@code +es}
+     *       ({@code Status} → {@code Statuses}, {@code Box} → {@code Boxes},
+     *       {@code Branch} → {@code Branches});</li>
+     *   <li>ends in a consonant followed by {@code y} → {@code y} becomes {@code ies}
+     *       ({@code Colony} → {@code Colonies}, {@code Technology} →
+     *       {@code Technologies}); a vowel before the {@code y} takes a plain {@code s}
+     *       ({@code Day} → {@code Days});</li>
+     *   <li>anything else → {@code +s}.</li>
+     * </ul>
+     *
+     * <p>That is all it knows. An irregular noun gets the regular ending ({@code Person} →
+     * {@code Persons}), a name that is already plural gets another one ({@code Settings} →
+     * {@code Settingses}), and a {@code z} is not doubled ({@code Quiz} → {@code Quizes}).
+     * Those are what {@code @ExerisDomain.path} and {@code @ExerisDomain.tableName} are for;
+     * the rule itself stays small and deterministic, because its output is part of the
+     * frozen contract from 1.0.0 and a later change would silently rename tables. An empty
+     * or absent {@code entityName} yields {@code ""}.
+     *
+     * @return the plural entity name
      */
     public String pluralName() {
-        // Simple pluralization - add 's' to entityName
-        if (entityName.endsWith("s") || entityName.endsWith("x") || entityName.endsWith("z")
-                || entityName.endsWith("ch") || entityName.endsWith("sh")) {
-            return entityName + "es";
-        }
-        if (entityName.endsWith("y") && entityName.length() > 1) {
-            char beforeY = entityName.charAt(entityName.length() - 2);
-            if (!"aeiou".contains(String.valueOf(beforeY))) {
-                return entityName.substring(0, entityName.length() - 1) + "ies";
-            }
-        }
-        return entityName + "s";
+        return plural(entityName);
     }
 
     /**
@@ -430,14 +564,27 @@ public record DomainMetadata(
         return new Builder(entityName, packageName);
     }
 
+    private static String plural(String name) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        if (name.endsWith("s") || name.endsWith("x") || name.endsWith("z")
+                || name.endsWith("ch") || name.endsWith("sh")) {
+            return name + "es";
+        }
+        if (name.endsWith("y") && name.length() > 1
+                && "aeiou".indexOf(name.charAt(name.length() - 2)) < 0) {
+            return name.substring(0, name.length() - 1) + "ies";
+        }
+        return name + "s";
+    }
+
     private static String toSnakeCase(String s) {
-        if (s == null || s.isBlank()) return "";
-        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT);
     }
 
     private static String toKebabCase(String s) {
-        if (s == null || s.isBlank()) return "";
-        return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
+        return s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -500,6 +647,17 @@ public record DomainMetadata(
         public Builder path(String v) { this.path = v; return this; }
         public Builder aggregate(String v) { this.aggregate = v; return this; }
         public Builder description(String v) { this.description = v; return this; }
+        /**
+         * Sets {@link DomainMetadata#apiVersion()}.
+         *
+         * @param v the declared API version
+         * @return this builder
+         * @deprecated since 0.12.0, for removal in 1.0.0, with the component it sets — see
+         *         {@link DomainMetadata#apiVersion()}. Producers that mirror
+         *         {@code @ExerisDomain.apiVersion} keep calling it until then; nothing else
+         *         should start.
+         */
+        @Deprecated(since = "0.12.0", forRemoval = true)
         public Builder apiVersion(String v) { this.apiVersion = v; return this; }
         public Builder tags(List<String> v) { this.tags = v; return this; }
         public Builder restApi(boolean v) { this.restApi = v; return this; }

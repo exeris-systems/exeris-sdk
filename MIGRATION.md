@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-02
+last-verified: 2026-09-27
 ---
 
 # Migration guide
@@ -20,17 +20,67 @@ the upgrade steps required.
 
 ## 0.11.x → 0.12.x
 
-### `SchemaVersion.CURRENT` is `"0.12.0"` — baselines stamped `"0.11.0"` read as skew
+### Three AST records grew a trailing component + `SchemaVersion.CURRENT` is `"0.12.0"`
 
-Additive change, no code edit. `DomainMetadata` and `ActionMetadata` each gained
-a trailing nullable `routeAccess` component (`@RouteAccess`, reserved — see
-below), so the AST wire shape has a version of its own and the stamp moves with
-it. A baseline stamped by 0.11.0 now reads as
-`NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps it. That is the
-deliberate posture — refuse a cross-shape baseline rather than assume
+**Impact on code: none required.** Three records in `eu.exeris.sdk.sourcemodel.ast`
+gained trailing, nullable components, and each keeps its 0.11.0 constructor:
+
+| Record | Components 0.11.0 → 0.12.0 | Added | Kept constructor | Named construction |
+|---|---|---|---|---|
+| `DomainMetadata` | 39 → 41 | `routeAccess` (`@RouteAccess`), `channel` (`@Channel`) | 39 arguments | builder: `.routeAccess(…)`, `.channel(…)` |
+| `ActionMetadata` | 17 → 18 | `routeAccess` (`@RouteAccess`) | 17 arguments | builder: `.routeAccess(…)` |
+| `SystemFieldsMetadata` | 10 → 11 | `sharedScopeField` (`@SharedScope`) | 10 arguments | builder: **new**, `SystemFieldsMetadata.builder()` |
+
+The kept constructor delegates to the new canonical one with `null` for what was
+added, which is the 0.11.0 meaning. So builder callers change nothing, positional
+callers compile unchanged, and a class compiled against 0.11.0 still links rather
+than failing with `NoSuchMethodError` on a constructor that is no longer there.
+
+This is the record-growth stance in
+[`MIGRATION-0.x-to-1.0.md` §3](MIGRATION-0.x-to-1.0.md), **rewritten for 0.12.0**
+(Stellar finding S6). Until now growth replaced the canonical constructor,
+positional callers added one trailing argument per new component, and
+`source-model`'s semver gate was told to accept the removed constructor as a
+minor change. That broke the one caller with no alternative. `SystemFieldsMetadata`
+had no builder, and its only factory, `defaults()`, fixes the canonical names, so
+`exeris-tooling`'s processor, which sets non-canonical names from `@TenantId` and
+`tenantIdField`, could only build it positionally, and it stopped compiling against
+0.12.0. It compiles unchanged now. The semver gate no longer treats a removed
+constructor as compatible anywhere in `source-model`.
+
+**Optional: switch to the builder.** A caller that fills `SystemFieldsMetadata`
+with non-canonical names can name them instead of ordering them:
+
+```java
+// 0.11.0, and still compiles on 0.12.0
+new SystemFieldsMetadata("id", "createdAt", "createdBy", "modifiedAt", "updatedBy",
+        "orgId", "rev", "deleted", null, null);
+
+// 0.12.0: starts from defaults() and sets only what differs — the same value
+SystemFieldsMetadata.builder()
+        .updatedAtField("modifiedAt")
+        .tenantIdField("orgId")
+        .versionField("rev")
+        .softDeleteField("deleted")
+        .build();
+```
+
+All eleven components are `String`s, so a positional call that swaps two of them
+compiles and silently points a generated column at the wrong field. The builder
+cannot make that mistake. `exeris-tooling`'s processor is the natural first user:
+it is the only producer that fills this record with anything but the defaults.
+
+**On the wire nothing breaks.** Every new component is by-name and omitted when
+absent, so a 0.11.0 document reads back with them `null`. The AST shape still has
+a version of its own, and the stamp moves with it: a baseline stamped by 0.11.0
+now reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen re-stamps it. That
+is the deliberate posture — refuse a cross-shape baseline rather than assume
 compatibility — and it is the same one-milestone degradation the 0.10.0 and
 0.11.0 bumps caused. Note this is *not* the inlining bug below: that one made
 the two halves of a single build disagree; this one is the mechanism working.
+
+All three additions are reserved, and no processor populates them yet. Each has
+its own entry below.
 
 ### `@RouteAccess` is new, reserved, and outside the 1.0.0 freeze
 
@@ -48,6 +98,164 @@ Do not reach for `roles = {}` or `permissions = {}` to mean "public" — empty
 already means "nothing declared" on all four attributes, and `@Action.roles` has
 documented empty as "accessible to all authenticated users" since 0.1.0. That
 collision is the reason this annotation exists.
+
+### `@Channel` is new, reserved, and outside the 1.0.0 freeze
+
+Nothing to migrate — it is additive and nothing extracts it yet. Code that
+constructs `DomainMetadata` positionally keeps compiling through the kept 0.11.0
+constructor, which leaves `channel` absent (first entry above).
+
+- Declaring it has **no generated effect today**. No processor reads it, no
+  generator opens an endpoint from it, and the `-io` reader does not read it.
+- It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
+  amended 2026-09-03), because the kernel holds its WebSocket SPI (kernel
+  ADR-084) at tier `preview`. That tier is gated on evidence under load rather
+  than on the contract's shape, but it still bars freezing: a 1.x minor may
+  change or drop the annotation. Pin exactly if you adopt it early.
+
+It is not another spelling of `@ExerisDomain(realTimeApi = true)` or
+`@Action(streaming = true)`. Those are server push over SSE, one-directional by
+construction; `@Channel` declares a connection clients also write to. It
+deliberately declares no message-size limit, origin allowlist, frame format or
+reconnection behaviour — ADR-072 obligation 20 gives the reason for each.
+
+### `@SharedScope` is new and reserved — frozen as declared
+
+Nothing to migrate. Code that constructs `SystemFieldsMetadata` positionally
+keeps compiling through the kept 10-argument constructor, which leaves
+`sharedScopeField` `null`. To set it, use the 11-argument canonical constructor or
+the new builder's `.sharedScopeField(…)` (first entry above).
+
+- It marks the field holding the **shared-scope key** of a `DataScope.UNIVERSE`
+  entity — the column a generated policy would compare against the kernel's
+  `ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE` to widen reads across
+  tenants. It **accompanies** `@TenantId`, which keeps writes pinned to the owning
+  tenant; it does not replace it.
+- Declaring it has **no generated effect today**. The `exeris-tooling` processor
+  reads every `system` marker except `@PrimaryKey` and this one, and
+  `dataScope = UNIVERSE` is still refused at the declaration site, so no build
+  today reads the field.
+- Unlike `@RouteAccess` and `@Channel`, it is **not** on ADR-072's exception
+  list. Like the other reserved system markers it is frozen at 1.0.0 as declared
+  ([`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md)).
+
+### `@ExerisDomain.apiVersion` is deprecated — removal in 1.0.0
+
+**Why:** the attribute reaches no emitted artifact. The generated router registers
+each entity at its `path`, the OpenAPI document publishes the same, and every
+generated client requests the same; none of them has an `/api/<version>` segment.
+The client used to prefix one, which is how the mismatch was found: the first
+request from a generated client to a generated server answered `404` (Stellar
+finding T38), and the client was aligned on `path`. Since then the attribute has
+had no destination at all.
+
+It cannot be given one later either. Its default is `"v1"`, so a generator that
+started honouring it would move every route of every application that never wrote
+it. And 1.0.0 freezes everything public, with 1.x additive-only, so an attribute
+still live at the freeze could not be removed before 2.0. Deprecating it now is
+the only window in which removing it costs nothing.
+
+**Impact:** a source that sets it now compiles with a `[removal]` warning from
+javac. Nothing else changes before 1.0.0: both build paths keep reading it into
+`DomainMetadata.apiVersion`, so the generated output and the metadata stay what
+they were. Code that reads `DomainMetadata.apiVersion()` or calls the builder's
+`.apiVersion(…)` gets the same warning; both go at 1.0.0 with the attribute.
+
+```java
+// before — declares a version nothing serves
+@ExerisDomain(module = "sales", path = "/orders", apiVersion = "v2")
+public class Order { … }
+
+// after — say nothing; the route was always /orders
+@ExerisDomain(module = "sales", path = "/orders")
+public class Order { … }
+
+// if you need a versioned route today, it is part of the path
+@ExerisDomain(module = "sales", path = "/v2/orders")
+public class Order { … }
+```
+
+**There is no replacement attribute.** If generated versioned routes come back,
+they will come as a new opt-in attribute with no default, so that an entity that
+declares nothing keeps its route.
+
+- **Deprecated:** 0.12.0 (`@Deprecated(since = "0.12.0", forRemoval = true)`).
+- **Removed:** 1.0.0 — the attribute, the `DomainMetadata.apiVersion` component with
+  its accessor and builder setter, and the `-io` reader's read
+  ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` keeps reading it for the window, and its
+  `-Aexeris.strict` inert-attribute check already reports it. The read goes at 1.0.0.
+
+### `effectivePath()` and `effectiveTableName()` take the English plural; `@ExerisDomain.tableName` is new
+
+**Why:** three naming helpers on `DomainMetadata` disagreed about the same entity.
+`pluralName()` applied English endings (`Colony` → `Colonies`). `effectivePath()`'s
+fallback appended a bare `s` (`/colonys`). `effectiveTableName()` returned the
+*singular* (`colony`), a table no generator has ever emitted: `exeris-tooling`
+computes its own `snake_case(name) + "s"` and says in its source that it avoids this
+method for that reason. What a helper returns freezes at 1.0.0, and changing it in a
+1.x minor would be a silent break that no signature check can see, so the three are
+aligned now. The naive plural reached real output: `colonys`, `technologys` and
+`reassemblys` as table names, and `colonys` as an Angular route (Stellar finding T6).
+
+**What changed** — both helpers now derive from `pluralName()`, whose rule is
+unchanged (`+es` after `s`, `x`, `z`, `ch`, `sh`; consonant + `y` → `ies`; otherwise
+`+s`), and both lower-case under `Locale.ROOT`, so a Turkish default locale no longer
+turns `Item` into `ıtem` — or serves an entity with no declared path at `/ınvoices`
+while the generated client calls `/invoices`. `FieldMetadata.effectiveColumnName()`
+got the same fix (`invoiceId` was `invoice_ıd` under `tr-TR`). On a JVM whose default
+locale is not Turkish-like nothing changes; on one that is, derived names now match
+every other machine; tests run all three under `Locale.of("tr", "TR")`. What the
+plural changes:
+
+| Entity | `effectiveTableName()` 0.11 → 0.12 | `effectivePath()` fallback 0.11 → 0.12 |
+|---|---|---|
+| `Order` | `order` → `orders` | `/orders` (unchanged) |
+| `OrderLineItem` | `order_line_item` → `order_line_items` | `/order-line-items` (unchanged) |
+| `Colony` | `colony` → `colonies` | `/colonys` → `/colonies` |
+| `Status` | `status` → `statuses` | `/statuss` → `/statuses` |
+| `Box` | `box` → `boxes` | `/boxs` → `/boxes` |
+
+`effectiveTableName()` changed for every entity. `effectivePath()` changed only where
+English does not add a bare `s`, and only when `path` is blank, which metadata read
+from annotated source never is, since `@ExerisDomain.path` is required.
+
+**Who has to act:** code that calls either helper and relied on the old output. Set
+the value you relied on explicitly:
+
+```java
+// hand-built metadata that expected the old results
+DomainMetadata.builder("Colony", "com.acme.empire")
+        .tableName("colony")   // effectiveTableName() used to return this
+        .path("/colonys")      // effectivePath()'s old fallback
+        .build();
+```
+
+The rule does not know irregular or already-plural nouns (`Person` → `persons`,
+`Settings` → `settingses`); the explicit values are the remedy there too.
+
+**`@ExerisDomain.tableName`** (new, default `""` = derive) is the author's side of
+the same override, and until now there was none: `DomainMetadata.tableName` existed,
+and `exeris-tooling`'s table naming honoured it, but nothing could fill it. The `-io`
+reader reads it now. The `exeris-tooling` processor does not yet, so on the build path
+that generates code it has no effect until the processor release that extracts it.
+It is also how an existing table keeps its name once the default changes:
+
+```java
+// keeps the table exeris-tooling has created for Colony so far
+@ExerisDomain(module = "empire", path = "/colonies", tableName = "colonys")
+public class Colony { … }
+```
+
+**What follows in `exeris-tooling`, not in this release:** its own default table name
+and its Angular route segments switch from the bare `s` to this rule, and the
+processor warns once for each entity whose table name that changes, naming the
+`tableName` value that keeps the old one. On an existing database, an entity without
+that override gets a new table name and a new migration file name.
+
+The TCK has no case for `tableName`. Its only identity cases cover the class name and
+package, which come from the class and not from an attribute, and the parity suite
+that would catch a reader/processor disagreement is bound nowhere today.
 
 ### `SchemaVersion.CURRENT` is no longer a compile-time constant (bugfix)
 
@@ -87,6 +295,24 @@ constant that must succeed so the first assertion cannot pass on an unrelated
 compile error. The property is invisible to reflection and to japicmp — the
 semver gate compared 0.11.0 against this change and reported nothing at all —
 so measuring the compiler is the only way to hold it.
+
+### `SourceModelReader` reads `@Saga.version` (bugfix)
+
+The `-io` reader now carries `@Saga.version` into `SagaMetadata.version`, as the `exeris-tooling`
+processor has since tooling 0.8.0. Before, it left the builder default `1` for every saga, so for
+`@Saga(version = 3)` the reader and the processor's baseline disagreed. There is no AST shape
+change and no `SchemaVersion` move.
+
+What a caller sees: `read()` of a source that declares a version now returns it. A value below `1`
+is carried as written, as the processor carries it, and the kernel refuses it at
+`FlowDefinitionBuilder.version(int)`. One difference remains. A version given through a constant
+reference or expression (`version = Versions.CURRENT`) reads as `1`, because the reader is
+syntactic and only the processor sees javac's folded value. Declare saga versions as literals.
+
+TCK binders: `Facet.SAGA` is new, and the corpus `Order` now declares `@Saga(version = 3)`. The
+reader, producer and parity suites each gain a case under it. A binding whose side does not extract
+sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
+`Facet` needs a new arm.
 
 ---
 

@@ -13,8 +13,11 @@ import java.util.Objects;
  * @param description human-readable prose for generated documentation
  * @param version the plan version. The kernel keys its plan catalog by name and version: a
  *        parked saga resumes on the exact version it parked under, and an unregistered version
- *        fails closed rather than rebinding to the newest plan (kernel ADR-064)
- *
+ *        fails closed rather than rebinding to the newest plan (kernel ADR-064). Populated from
+ *        {@code @Saga.version} by both the processor and the {@code -io} reader, and {@code 1}
+ *        when the attribute is absent — the annotation's default and the kernel's initial
+ *        version. A value below {@code 1} is carried as declared, not corrected: the kernel's
+ *        {@code FlowDefinitionBuilder.version(int)} is where it is refused
  * @param steps the saga's steps, in order
  * @param compensationStrategy how compensation is driven when a step fails. <strong>Declared but
  *        not populated:</strong> {@code @Saga.compensationStrategy} exists and an author can set

@@ -47,11 +47,12 @@ import java.lang.annotation.Target;
  *   <li>{@code String} - for legacy systems</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
- * fields for this marker, so writing it changes nothing in the emitted output; it joins the
- * ten markers already in this package on the same footing. Declaring
- * {@code dataScope = UNIVERSE} is refused at the declaration site today, so there is
- * currently no build in which this field would be read.
+ * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor reads most of
+ * the markers in this package, {@link TenantId} included, but not this one, so
+ * {@code SystemFieldsMetadata.sharedScopeField} is never populated and writing the marker
+ * changes nothing in the emitted output. Declaring {@code dataScope = UNIVERSE} is refused
+ * at the declaration site today, so there is currently no build in which this field would
+ * be read; reading it belongs to the {@code UNIVERSE} transcription.
  *
  * <p><strong>Why it lands before the transcription that reads it.</strong> The kernel half is
  * complete only as of v0.12.0, and it completed in two steps that are easy to mistake for

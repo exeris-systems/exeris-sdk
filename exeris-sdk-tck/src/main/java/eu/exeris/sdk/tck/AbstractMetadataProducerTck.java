@@ -2,6 +2,7 @@ package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.mutation.SchemaVersion;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -157,6 +158,26 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
                                 + "which is what FieldMetadata carries.")
                 .isTrue();
         assertThat(total.get("min").asLong()).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("the saga version the source declares reaches the produced metadata")
+    void sagaVersionReachesTheProducedMetadata() {
+        requireSupported(Facet.SAGA);
+        SagaMetadata saga = read(TckCorpus.ORDER).sagaMetadata();
+        assertThat(saga)
+                .withFailMessage("Order declares @Saga; the produced JSON carries no sagaMetadata.")
+                .isNotNull();
+        assertThat(saga.version())
+                .withFailMessage(
+                        "Order declares @Saga(version = 3) and the produced baseline says %d. The "
+                                + "kernel addresses a saga plan by name and version (ADR-064), and "
+                                + "generation takes the version from this metadata — so a producer "
+                                + "that never reads the attribute, and reports the default 1, turns "
+                                + "a bump meant to protect in-flight sagas into no bump at all, "
+                                + "with nothing failing anywhere to say so.",
+                        saga.version())
+                .isEqualTo(3);
     }
 
     /**

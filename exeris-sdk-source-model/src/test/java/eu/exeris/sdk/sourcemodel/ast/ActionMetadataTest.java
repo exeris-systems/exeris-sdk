@@ -226,4 +226,27 @@ class ActionMetadataTest {
         assertThat(ActionMetadata.simple("ship").isPublicRoute()).isFalse();
         assertThat(ActionMetadata.simple("ship").routeAccess()).isNull();
     }
+
+    @Test
+    void theZeroElevenShapeStillConstructsAndLeavesRouteAccessUndeclared() {
+        // The 17-argument 0.11.0 constructor is kept so code written against 0.11.0 compiles and
+        // links (MIGRATION-0.x-to-1.0.md §3). It must be exactly the canonical call with a trailing
+        // null — anything else would make the two shapes disagree about the same action.
+        ScheduleMetadata nightly = ScheduleMetadata.cron("0 3 * * *");
+        ActionMetadata old = new ActionMetadata("reconcile", "Reconcile", "desc", "PUT", "Result",
+                true, true, true, true, null, List.of("ledger:write"), List.of("Reconciled"),
+                "doReconcile", true, "  ", true, nightly);
+        ActionMetadata canonical = new ActionMetadata("reconcile", "Reconcile", "desc", "PUT", "Result",
+                true, true, true, true, null, List.of("ledger:write"), List.of("Reconciled"),
+                "doReconcile", true, "  ", true, nightly, null);
+
+        assertThat(old).isEqualTo(canonical);
+        assertThat(old.routeAccess()).isNull();
+        // It delegates, so the compact constructor's normalization still runs.
+        assertThat(old.params()).isEmpty();
+        assertThat(old.streamEventType()).isNull();
+        assertThatThrownBy(() -> new ActionMetadata(null, null, null, null, null,
+                false, false, false, false, null, null, null, null, false, null, false, null))
+                .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
 }

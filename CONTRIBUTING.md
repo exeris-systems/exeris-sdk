@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-05
+last-verified: 2026-09-27
 ---
 
 # Contributing to Exeris SDK
@@ -20,6 +20,9 @@ mvn -pl exeris-sdk-source-model-io -am verify    # one module + dependencies
 
 cd exeris-sdk-ui-kit && npm ci && npm run test:coverage   # ui-kit (npm-only, 85% per-file gate)
 ```
+
+**Maintainers run `mvn -Psemver verify` before a release;** the default build runs the baseline-free
+guards (`AnnotationSurfaceContractTest`, `RecordComponentOrderTest`, `RecordConstructorLedgerTest`).
 
 **JDK 25 LTS is the baseline** across the reactor ([ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md)).
 Never lower or raise `maven.compiler.release` without an ecosystem-wide decision. Emitted class-file

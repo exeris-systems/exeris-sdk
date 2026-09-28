@@ -44,6 +44,9 @@ class AstJsonRoundTripTest {
 
     @Test
     @DisplayName("DomainMetadata round-trips with nested fields, actions, events")
+    // apiVersion is deprecated for removal at 1.0.0 but stays on the wire until then, so its
+    // round trip is still pinned here.
+    @SuppressWarnings("removal")
     void domainMetadataRoundTrips() {
         DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
                 .module("sales")
@@ -851,6 +854,42 @@ class AstJsonRoundTripTest {
                 "id", "createdAt", "createdBy", "updatedAt", "updatedBy",
                 "organizationId", "version", null, null, null,
                 "worldId"), SystemFieldsMetadata.class);
+    }
+
+    @Test
+    @DisplayName("a record with a compatibility constructor still binds through its canonical one")
+    void compatibilityConstructorsDoNotCaptureTheCreator() {
+        // These three records keep their 0.11.0 arity as a second public constructor
+        // (MIGRATION-0.x-to-1.0.md §3). A mapper that bound through the
+        // shorter one would not throw: @JsonIgnoreProperties(ignoreUnknown = true) would swallow
+        // the newer key and the component would read back null. So every case sets exactly the
+        // trailing component the compatibility constructor lacks — that is the value that would
+        // go missing — and the recursive comparison in assertRoundTrip pins it.
+        assertThat(SystemFieldsMetadata.class.getConstructors())
+                .as("the case is vacuous unless the second constructor is really there")
+                .hasSize(2);
+        assertThat(ActionMetadata.class.getConstructors()).hasSize(2);
+        assertThat(DomainMetadata.class.getConstructors()).hasSize(2);
+
+        assertRoundTrip(SystemFieldsMetadata.builder()
+                .tenantIdField("organizationId")
+                .sharedScopeField("worldId")
+                .build(), SystemFieldsMetadata.class);
+
+        assertRoundTrip(ActionMetadata.builder("login")
+                .routeAccess(RouteAccess.PUBLIC)
+                .build(), ActionMetadata.class);
+
+        assertRoundTrip(DomainMetadata.builder("Article", "com.example.cms")
+                .module("cms")
+                .path("/articles")
+                .systemFields(SystemFieldsMetadata.builder().sharedScopeField("worldId").build())
+                .actions(List.of(ActionMetadata.builder("publish")
+                        .routeAccess(RouteAccess.AUTHENTICATED)
+                        .build()))
+                .routeAccess(RouteAccess.PUBLIC)
+                .channel(new ChannelMetadata("ArticleEdit", "exeris.edit.v1"))
+                .build(), DomainMetadata.class);
     }
 
     @Test

@@ -71,7 +71,11 @@ import java.util.TreeSet;
  * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
- * {@code dataScope} tier. Domain {@code @DomainEvent}s are read
+ * {@code dataScope} tier, and so is {@code tableName}, which the reader reads
+ * ahead of the processor for the reason given at the read. Two of those are
+ * deprecated for removal at 1.0.0 and read only until then: {@code tenantScoped}
+ * (ADR-059) and {@code apiVersion} (see {@code MIGRATION.md}). Domain
+ * {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
@@ -111,8 +115,14 @@ import java.util.TreeSet;
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
  * resolution — activating JavaParser symbol-solving would pull heavy optional
- * deps and is out of scope. Instances are <b>not thread-safe</b> (they hold a
- * single {@code JavaParser}); use one per call-site or guard externally.
+ * deps and is out of scope. For the same reason attribute values are read
+ * syntactically: a string or number attribute is read from its literal, so a value
+ * supplied through a constant reference or a constant expression — which the
+ * processor receives already folded by javac — is not resolved here. For
+ * {@code @Saga.version} that means a constant-valued version reads as the default
+ * {@code 1}, a different kernel plan identity than the one the processor records, so
+ * declare it as a literal. Instances are <b>not thread-safe</b> (they hold a single
+ * {@code JavaParser}); use one per call-site or guard externally.
  *
  * @since 0.3
  */
@@ -322,16 +332,26 @@ public final class SourceModelReader {
      * {@code validationMode}/{@code ui} attributes are not read here — the processor
      * doesn't read them either, so they constitute no reader-vs-processor divergence
      * and {@link #unmodeledFacets} does not flag them.
+     *
+     * <p>{@code tableName} is the one read here that the processor does not make yet, and
+     * deliberately: the reader leads the processor on it rather than trailing it, because a
+     * reader that trails diverges the other way from the release in which the processor
+     * starts extracting, with no diagnostic on either side (see {@code CHANGELOG.md}). Until
+     * the processor extracts it, a source that sets it reads here with a table name the
+     * processor's baseline lacks. That cannot raise
+     * a mutation conflict — {@link SourceModelConflictDetector} compares fields, relationships
+     * and actions, not domain attributes — but a whole-record parity comparison would see it.
      */
     private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
         stringAttr(ann, "module").ifPresent(builder::module);
         stringAttr(ann, "path").ifPresent(builder::path);
         stringAttr(ann, "aggregate").ifPresent(builder::aggregate);
         stringAttr(ann, "description").ifPresent(builder::description);
-        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
+        deprecatedApiVersion(ann, builder);
         stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
+        stringAttr(ann, "tableName").ifPresent(builder::tableName);
         boolAttr(ann, "restApi").ifPresent(builder::restApi);
         boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
@@ -344,6 +364,19 @@ public final class SourceModelReader {
         boolAttr(ann, "sensitive").ifPresent(builder::sensitive);
         boolAttr(ann, "cacheable").ifPresent(builder::cacheable);
         boolAttr(ann, "fullTextSearch").ifPresent(builder::fullTextSearch);
+    }
+
+    /**
+     * {@code @ExerisDomain.apiVersion}, deprecated for removal in 1.0.0 together with its
+     * carrier, {@code DomainMetadata.apiVersion} (see {@code MIGRATION.md}). Still read,
+     * present-only, because the processor still reads it: dropping it here first would make the
+     * two paths disagree about every source that sets it (ADR-042). The read goes at 1.0.0, in
+     * the same change that removes the attribute and the component; the suppression is scoped to
+     * this one call so nothing else in the reader can lean on it.
+     */
+    @SuppressWarnings("removal")
+    private void deprecatedApiVersion(AnnotationExpr ann, DomainMetadata.Builder builder) {
+        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
     }
 
     /** Present-only boolean attribute (no default — absent leaves the builder default). */
@@ -750,8 +783,22 @@ public final class SourceModelReader {
     /**
      * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
      * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
-     * simple name; {@code description}/{@code timeout}/{@code maxRetries} are
-     * present-only; steps come from {@code @SagaStep} methods.
+     * simple name; {@code description}/{@code timeout}/{@code maxRetries}/{@code version}
+     * are present-only; steps come from {@code @SagaStep} methods.
+     *
+     * <p>{@code version} is the other half of the {@code (name, version)} key kernel
+     * ADR-064 addresses a saga plan by, and the processor reads it, so skipping it here
+     * would read {@code version = 3} back as {@code 1} against a processor baseline of
+     * {@code 3} — an ADR-042 parity break with no diagnostic on either side. Absent, it
+     * keeps the builder default {@code 1}, which is also the annotation default, exactly
+     * as the processor does. It is read <em>signed</em>, unlike the count-style
+     * attributes: {@code 0} or a negative literal is carried as written, because javac
+     * folds it into the processor's value just the same, and the kernel refuses a version
+     * below {@code 1} at {@code FlowDefinitionBuilder.version(int)} — a refusal that
+     * repairing the value to {@code 1} here would hide. One difference remains and is
+     * structural: a constant reference or expression ({@code version = Versions.CURRENT})
+     * is resolved by javac on the processor path and is not a literal to this reader, so it
+     * reads as absent (see the class-level limitations).
      */
     private SagaMetadata sagaMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> saga = type.getAnnotationByName("Saga");
@@ -763,6 +810,7 @@ public final class SourceModelReader {
         stringAttr(saga.get(), "description").ifPresent(builder::description);
         stringAttr(saga.get(), "timeout").ifPresent(builder::timeout);
         intAttr(saga.get(), "maxRetries").ifPresent(builder::maxRetries);
+        signedIntAttr(saga.get(), "version").ifPresent(builder::version);
         builder.steps(sagaSteps(type));
         return builder.build();
     }
@@ -822,6 +870,17 @@ public final class SourceModelReader {
         return value(annotation, attribute)
                 .filter(Expression::isIntegerLiteralExpr)
                 .map(value -> value.asIntegerLiteralExpr().asNumber().intValue());
+    }
+
+    /**
+     * Present-only signed int attribute: an integer literal, optionally negated. For
+     * an attribute where a sign is not meaningless and dropping it would change what
+     * the source says ({@code @Saga.version}); see {@link #sagaMetadata}. Read through
+     * {@link #longAttr} and narrowed, which is how javac folds a negated {@code int}
+     * constant — so {@code -2147483648} is {@link Integer#MIN_VALUE} on both paths.
+     */
+    private Optional<Integer> signedIntAttr(AnnotationExpr annotation, String attribute) {
+        return longAttr(annotation, attribute).map(Long::intValue);
     }
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {

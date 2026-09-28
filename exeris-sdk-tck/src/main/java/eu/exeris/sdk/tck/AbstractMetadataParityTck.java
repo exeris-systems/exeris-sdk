@@ -4,6 +4,7 @@ import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,7 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
     private static final String FIELDS = "fields/";
     private static final String RELATIONSHIPS = "relationships/";
     private static final String ACTIONS = "actions/";
+    private static final String SAGA = "saga";
 
     /**
      * Produces the build-time JSON for one entity — implement this with your own producer.
@@ -173,6 +175,34 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
                 }
                 compare(gaps, ACTIONS + entry.getKey() + "/httpMethod", p.httpMethod(), r.httpMethod());
             }
+            return gaps;
+        });
+    }
+
+    /**
+     * The saga's identity is the pair kernel ADR-064 addresses a plan by, so both halves are
+     * compared. The version is the half a side can skip without emitting anything malformed: it
+     * reports the default {@code 1}, the same source names two different plans, and — as with
+     * every divergence this suite exists for — only a comparison of the two sides sees it.
+     */
+    @Test
+    @DisplayName("producer and reader agree on the saga's identity, version included")
+    void sagaIdentityAgrees() {
+        requireSupported(Facet.SAGA);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            SagaMetadata p = produced.sagaMetadata();
+            SagaMetadata r = wasRead.sagaMetadata();
+            if (p == null && r == null) {
+                return gaps;
+            }
+            if (p == null || r == null) {
+                gaps.add(SAGA + " — " + (p == null ? "reader emitted one, producer did not"
+                        : "producer emitted one, reader did not"));
+                return gaps;
+            }
+            compare(gaps, SAGA + "/name", p.name(), r.name());
+            compare(gaps, SAGA + "/version", p.version(), r.version());
             return gaps;
         });
     }

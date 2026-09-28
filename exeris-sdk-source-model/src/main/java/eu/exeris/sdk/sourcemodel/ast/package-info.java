@@ -283,6 +283,52 @@
  * moves to {@code "0.11.0"} regardless — the schema names the shape, not its
  * population.
  *
+ * <h2>Route access, duplex channel, shared-scope key (0.12.0, reserved)</h2>
+ * <p>Three more trailing, nullable components, each the AST twin of a 0.12.0
+ * annotation:
+ * <ul>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.DomainMetadata#routeAccess()} /
+ *       {@link eu.exeris.sdk.sourcemodel.ast.ActionMetadata#routeAccess()}</strong>
+ *       ({@link eu.exeris.sdk.sourcemodel.ast.RouteAccess}: {@code PUBLIC} /
+ *       {@code AUTHENTICATED}) — {@code @RouteAccess}, whether a generated route
+ *       admits an unauthenticated caller (kernel ADR-061). There is no
+ *       {@code UNSPECIFIED} constant: absent means the author declared nothing and
+ *       the generated policy's default decides. {@code ActionMetadata} is
+ *       class-level {@code NON_DEFAULT} and {@code PUBLIC} is ordinal 0, so
+ *       {@code AstJsonRoundTripTest} asserts the key survives — a dropped
+ *       {@code PUBLIC} would read back as a route nobody spoke about.</li>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.DomainMetadata#channel()}</strong>
+ *       ({@link eu.exeris.sdk.sourcemodel.ast.ChannelMetadata}) — {@code @Channel},
+ *       a duplex connection over the kernel's WebSocket SPI (kernel ADR-084). A
+ *       record rather than a boolean, because its presence is the declaration: a
+ *       channel that declares nothing further is {@code "channel":{}} on the wire,
+ *       which {@code NON_NULL} keeps and {@code NON_EMPTY} would drop.</li>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata#sharedScopeField()}</strong>
+ *       — {@code @SharedScope}, the column a {@code DataScope.UNIVERSE} entity's
+ *       generated policy would compare against the kernel's shared-scope session
+ *       variable, while {@code tenantIdField} keeps writes owner-pinned. It
+ *       accompanies the owner field; it does not replace it.</li>
+ * </ul>
+ * <p>All three are <strong>reserved</strong>: no processor populates them, no
+ * generator reads them, and the {@code -io} reader does not read them — for
+ * {@code routeAccess} and {@code channel} by the ADR-042 rule that the reader
+ * reads what the processor writes, and {@code SystemFieldsMetadata} is not read by
+ * the reader at all. {@code routeAccess} and {@code channel} are also
+ * <strong>outside the 1.0.0 freeze</strong> (ADR-072): they encode kernel surfaces
+ * held at tier {@code preview}, so a 1.x minor may change or drop them.
+ * {@code sharedScopeField} is not on that list and is frozen as declared, like the
+ * other reserved system-field components. {@code SchemaVersion} is
+ * {@code "0.12.0"} for all three. Each is a trailing parameter of its record's
+ * canonical constructor, and each record keeps its 0.11.0 arity as a public
+ * constructor that delegates with {@code null} for the components it lacks, so code
+ * compiled or written against 0.11.0 links and compiles unchanged — the record-growth
+ * stance in
+ * {@code MIGRATION-0.x-to-1.0.md} §3, held by {@code RecordConstructorLedgerTest}.
+ * {@code SystemFieldsMetadata}, whose eleven components are all field-name
+ * {@code String}s, is built with
+ * {@link eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata#builder()}, which sets a
+ * non-canonical name by name rather than by position — see {@code MIGRATION.md}.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

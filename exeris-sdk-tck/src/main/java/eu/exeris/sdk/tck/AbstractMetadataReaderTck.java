@@ -3,6 +3,7 @@ package eu.exeris.sdk.tck;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The cases are not a wish list. Each one is a defect this ecosystem actually shipped: a reader
  * inventing an entity name from an attribute the annotation never declared, constraint values
  * landing on a carrier no generator reads, a zero bound dropped as if it were absent, a
- * relationship cardinality read under the wrong key so every edge came back as the builder default.
+ * relationship cardinality read under the wrong key so every edge came back as the builder default,
+ * a saga version never read at all so every saga came back as version 1.
  */
 /*
  * S5960 suppressed: in a TCK the assertions are the shipped artifact, not residue. Full rationale
@@ -168,6 +170,26 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                                 + "@Action(name) is the action identity and may differ from the Java "
                                 + "method name by design.")
                 .contains("submit");
+    }
+
+    @Test
+    @DisplayName("the saga carries the version the source declares")
+    void sagaVersionIsTheDeclaredOne() {
+        requireSupported(Facet.SAGA);
+        SagaMetadata saga = read(TckCorpus.sourceOf(TckCorpus.ORDER)).sagaMetadata();
+        assertThat(saga)
+                .withFailMessage("Order declares @Saga; the reader returned no saga metadata.")
+                .isNotNull();
+        assertThat(saga.version())
+                .withFailMessage(
+                        "Order declares @Saga(version = 3) and was read as version %d. The kernel "
+                                + "addresses a saga plan by name and version (ADR-064), so this is a "
+                                + "different plan identity, not an approximation of the right one. A "
+                                + "reader that skips the attribute does not fail: it yields the "
+                                + "default 1, and disagrees with every producer that reads it. The "
+                                + "SDK's own reader shipped exactly this defect.",
+                        saga.version())
+                .isEqualTo(3);
     }
 
     /**

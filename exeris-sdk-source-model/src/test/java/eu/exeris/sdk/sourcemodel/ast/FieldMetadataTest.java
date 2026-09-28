@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,6 +96,22 @@ class FieldMetadataTest {
         // Builder default for columnName is null → also falls through to snake_case.
         assertThat(FieldMetadata.builder("orderId", "Long").columnName("").build().effectiveColumnName())
                 .isEqualTo("order_id");
+    }
+
+    @Test
+    void effectiveColumnNameDoesNotDependOnTheDefaultLocale() {
+        // Under a Turkish default, String.toLowerCase() maps I to a dotless ı, so a default-locale
+        // conversion would derive "invoice_ıd" for invoiceId on a tr-TR JVM and "invoice_id"
+        // everywhere else — a generated schema that differs by the build machine's locale.
+        Locale saved = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.of("tr", "TR"));
+            assertThat(FieldMetadata.simple("invoiceId", "UUID").effectiveColumnName())
+                    .isEqualTo("invoice_id");
+            assertThat(FieldMetadata.simple("Id", "UUID").effectiveColumnName()).isEqualTo("id");
+        } finally {
+            Locale.setDefault(saved);
+        }
     }
 
     @Test

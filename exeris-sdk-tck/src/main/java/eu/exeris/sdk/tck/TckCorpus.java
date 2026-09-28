@@ -14,8 +14,8 @@ import java.util.Map;
  * <p>Shipped rather than left to the binder because a binder-supplied corpus measures the binder's
  * imagination. Each entity here carries a case with a defect behind it — a zero-valued bound that a
  * class-level {@code NON_DEFAULT} drops, a relationship whose cardinality attribute has been read
- * under the wrong key — so a binding that regresses one of them fails on the case rather than on a
- * fixture nobody thought to write.
+ * under the wrong key, a saga version that one side reads and the other skips — so a binding
+ * that regresses one of them fails on the case rather than on a fixture nobody thought to write.
  *
  * <p>The two entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship
  * to {@code Order}. A binder driving javac must present both sources together.
@@ -30,7 +30,10 @@ import java.util.Map;
  */
 public final class TckCorpus {
 
-    /** Simple name of the order entity — fields, validation bounds (including a zero), one action. */
+    /**
+     * Simple name of the order entity — fields, validation bounds (including a zero), one action, and
+     * a {@code @Saga} declaring a non-default {@code version}.
+     */
     public static final String ORDER = "Order";
 
     /** Simple name of the customer entity — validation bounds and a {@code ONE_TO_MANY} edge. */

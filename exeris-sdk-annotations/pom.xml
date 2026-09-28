@@ -21,6 +21,12 @@
         by exeris-tooling processors and generators.
     </description>
 
+    <properties>
+        <!-- Outside the semver gate, which the root pom's `semver` profile otherwise binds for
+             every jar module. Why, at the foot of this file. -->
+        <japicmp.skip>true</japicmp.skip>
+    </properties>
+
     <dependencies>
         <!-- Test-only: contract test for SOURCE retention + @Target invariants.
              No runtime/compile dependencies are added to this jar — the
@@ -138,7 +144,8 @@
                 </executions>
             </plugin>
 
-            <!-- No japicmp here, on purpose. These annotations are
+            <!-- No japicmp here, on purpose (japicmp.skip above keeps the root pom's opt-in
+                 `semver` profile off this module). These annotations are
                  @Retention(SOURCE): they have no runtime presence in a consumer's
                  image, so japicmp's binary-compatibility model answers a question
                  nobody is asking. Worse, it answers the real one wrongly — it

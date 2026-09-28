@@ -25,11 +25,13 @@ import java.lang.annotation.Target;
  *   <li>{@code ZonedDateTime}</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not scan
- * fields for this marker, so writing it changes nothing in the emitted output. What
- * generates the column is the entity-level flag set on {@code @ExerisDomain}, with the
- * field-name override attributes choosing its name. See the package javadoc for the live
- * path.
+ * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * marker and records the annotated field as
+ * {@code SystemFieldsMetadata.softDeleteTimestampField}, which the generators use in place
+ * of the canonical name. It names the field; the column exists only when
+ * {@code @ExerisDomain(softDelete = true)}. The attribute below is not carried, so setting
+ * it changes no emitted output, and the {@code -io} reader does not read the marker. See
+ * the package javadoc.
  *
  * @since 0.1
  * @see SoftDelete

@@ -26,8 +26,9 @@
  * them today — the {@code exeris-tooling} processor does not extract either
  * marker. The <em>live</em> tenancy path is
  * {@code @ExerisDomain(dataScope = DataScope.TENANT)} — which emits the tenant
- * column, the RLS policy and the query filter — plus the system-field override
- * attributes / canonical accessor names, not {@code @RowLevelSecurity}.
+ * column, the RLS policy and the query filter — with {@code @TenantId}, the
+ * {@code tenantIdField} override or the canonical accessor name saying which
+ * field holds the tenant; not {@code @RowLevelSecurity}.
  * ({@code tenantScoped = true} is the deprecated spelling of the same tier; see
  * ADR-059.) They ship as a reserved surface until a consumer lands.
  *

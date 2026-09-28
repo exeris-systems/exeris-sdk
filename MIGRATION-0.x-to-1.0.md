@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-09-07
+last-verified: 2026-09-27
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -14,9 +14,26 @@ last-verified: 2026-09-07
 > see [`ROADMAP.md`](ROADMAP.md) "Versioning policy"). This document collects,
 > ahead of time, everything a 0.x consumer must do to cross the freeze. It is
 > to be **validated against the consumers that cross the freeze** — the
-> `exeris-tooling` processor and codegen, and `exeris-platform-lsp` (ROADMAP
-> 1.0.0 GA item) — and finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
+> `exeris-tooling` processor and codegen, `exeris-platform-lsp`, and, for the
+> author-facing parts only, Stellar Tactics (ROADMAP 1.0.0 GA item) — and
+> finalized in the 1.0.0 release PR. Per-0.x-step upgrade notes stay
 > in [`MIGRATION.md`](MIGRATION.md).
+>
+> **Stellar Tactics validates the author side** (founder decision, 2026-09-26):
+> §1/§2 as they apply to annotated sources, and what §3 promises an author. It
+> is the one consumer that authors `@ExerisDomain` at scale — 36 classes across
+> two generated services — and where the SDK, `exeris-tooling` and the kernel
+> meet, which is how it found Stellar finding S6. It validates through tooling,
+> not through the Java API, so it does not replace the two consumers above.
+> "Validated" means, on the SDK 1.0.0-RC plus an `exeris-tooling` build and a
+> kernel build on that RC:
+> 1. `./build.sh` is green, with zero platform patches;
+> 2. the hand-written source diff contains only what this guide lists;
+> 3. every hunk in the generated trees is traced to this guide or to
+>    `exeris-tooling`'s changelog;
+> 4. any change in `-Aexeris.strict` warnings is explained;
+> 5. the pass is recorded as a dated entry in the Stellar findings log and a
+>    line in §5 of this guide.
 
 ---
 
@@ -38,6 +55,20 @@ survives into 1.x unchanged.
   sources still setting only the boolean silently lose their tier. The AST
   component `DomainMetadata.tenantScoped` goes with it — `dataScope` becomes
   the sole carrier and `effectiveDataScope()` collapses to returning it.
+- **`@ExerisDomain.apiVersion`** — deprecated since 0.12.0 (`forRemoval = true`,
+  Stellar finding T38). **No replacement:** the attribute reaches no emitted
+  artifact (router, OpenAPI document and generated clients all serve the entity
+  at its `path`), and its `"v1"` default means it could never be switched on
+  without moving every route. A versioned route, if wanted, is spelled in `path`.
+  Three things go together:
+  - the attribute itself;
+  - the AST component `DomainMetadata.apiVersion`, with its accessor and its
+    builder setter `DomainMetadata.Builder.apiVersion(String)` — which changes
+    every `DomainMetadata` constructor, as the `tenantScoped` removal does;
+  - the `-io` reader's read (`SourceModelReader.deprecatedApiVersion`), in
+    lockstep with the `exeris-tooling` processor dropping its own.
+  A 0.x baseline that carries `"apiVersion"` still reads, because the records
+  ignore unknown properties.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -128,34 +159,64 @@ removals and renames fail.
   `FAIL_ON_NULL_FOR_PRIMITIVES = false` (Jackson 3 defaults it to `true`).
   Canonical reference: `AstJsonRoundTripTest` + the
   `eu.exeris.sdk.sourcemodel.ast` package-info.
-- **Builders/factories over positional constructors** — canonical (all-args)
-  record constructors grow across 0.x minors; builders and `simple(...)` /
-  `of(...)` factories are the stable path and remain so in 1.x.
-- **Record growth stays legal after the freeze — the canonical constructor is
-  not the frozen surface.** Stated explicitly because the bullet above only
-  implies it, and because it is load-bearing: an AST record may gain a
-  **trailing** component in a 1.x minor (by-name on the wire, absent reads back
-  `null`, existing positional prefixes unchanged in order), accompanied by a
-  `SchemaVersion` bump. Positional callers recompile with one added trailing
-  argument; that recompile is the accepted cost, and it is why builders are
-  documented as the stable path. Consumers that must survive a minor without
-  recompiling should construct through builders and factories exclusively.
+- **Record growth stays legal after the freeze, and breaks no caller.** An AST
+  record may gain a **trailing** component in a 1.x minor (by-name on the wire,
+  absent reads back `null`, existing components unchanged in order), accompanied
+  by a `SchemaVersion` bump. The record **keeps its previous arity as a public
+  constructor** that delegates to the new canonical one with `null` for what was
+  added. `DomainEventMetadata` has done this since EV1; 0.12.0 made it the rule
+  (Stellar finding S6). So neither kind of caller breaks: a builder or factory
+  caller never saw the constructor, and a positional caller, in source or in a
+  compiled class, finds the shape it was built against. Every constructor a
+  record has published is part of the frozen surface. They accumulate across
+  1.x, roughly one per growth, and can only be pruned at 2.0.
+
+  Builders and `simple(...)` / `of(...)` factories remain the recommended path,
+  for readability rather than survival: they name what a positional call leaves
+  to argument order. That matters most on a record with a run of same-typed
+  components, which is why `SystemFieldsMetadata`, eleven `String`s, gained a
+  builder in 0.12.0. Not every record has one — 26 `ast` records have no builder
+  or factory that reaches every component — and under this rule none needs one
+  to be safe.
 
   **Why this has to be policy and not a footnote:** every surface the SDK
   expects to grow after 1.0 — the blob and job facets kernel 0.11 opened, flow
   await, graph multi-hop — arrives as a new component on an existing record.
-  If a trailing component counts as a break, all of it is blocked until 2.0.
-  The 1.0.0 GA japicmp/revapi gate must be configured to encode this
-  distinction (trailing-additive = allowed; reorder, rename, retype, or remove
-  = break). A gate configured on defaults will reject exactly the growth this
-  paragraph permits — see the ROADMAP 1.0.0 GA item.
+  If a trailing component counted as a break, all of it would wait for 2.0.
+
+  **How it is enforced.** japicmp on its plugin defaults (`-Psemver`, see §4),
+  which is what the rule makes possible: growth emits only `CONSTRUCTOR_ADDED` and
+  `METHOD_ADDED`, while removing a constructor, or removing, renaming or retyping a
+  component, fails the build. In every build, with or without that profile,
+  `RecordConstructorLedgerTest` fails if a published arity loses its constructor
+  or a growth goes unrecorded, and `RecordComponentOrderTest` pins the one change
+  no signature shows, a reorder of same-typed components.
+
+  **What this replaced, and why.** Through 0.11 the rule was that positional
+  callers "recompile with one added trailing argument; that recompile is the
+  accepted cost", with builders and factories named as the stable path, and
+  `source-model`'s japicmp configuration labelled `CONSTRUCTOR_REMOVED` binary-
+  and source-compatible so that growth could pass. The label was false: removing
+  a public constructor is a `NoSuchMethodError` for every class compiled against
+  it (JLS 13.4.12). The stable path was missing too — eight `ast` records had no
+  builder or factory that takes any value at all. `exeris-tooling`'s processor
+  builds `SystemFieldsMetadata` positionally because nothing else could set its
+  names, and it stopped compiling against 0.12.0 (Stellar finding S6). It runs on
+  each consumer's processor path, linked against whatever SDK version Maven
+  resolves there, so under the old rule a newer SDK minor meant a
+  `NoSuchMethodError` inside javac.
+
+  **The one exception is a major.** Removing a component from the middle of a
+  record changes every constructor it has. 1.0.0 does that to `DomainMetadata`
+  (§1), and its constructor history restarts from the 1.0.0 shape.
 - **There is no `internal/` package, and everything public is contract.** Said
   plainly because the phrase "everything not in `internal/` is contract" invites
   the assumption that some escape hatch exists. None does, and none is planned:
   every module here is a deliberate API surface, so there is no implementation
   detail for one to hold. Practical consequence for a consumer: if it is
   `public` in a publishable module, 1.0.0 freezes it — with the single stated
-  exception in §2 (`@Blob` / `@Schedule` and their AST carriers).
+  exception in §2 (`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and
+  their AST carriers).
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.
@@ -190,18 +251,22 @@ freeze or is explicitly re-dispositioned here.
   Those keep their assertions but lose the discriminator, because after this
   change there is no second candidate to distinguish from — their comments say
   so rather than claiming a distinction that no longer exists.
-- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, encoding the
-  record-growth stance in §3: `CONSTRUCTOR_REMOVED` is downgraded to a
-  MINOR-level compatible change, because that is the signal a trailing record
-  component produces, while removals, renames and retypes still break the build
-  through their accessors. Bound to `verify` in all five non-annotation
-  publishable modules — **strict by default**, with the relaxation declared
-  only where records actually live:
-  - `exeris-sdk-source-model` — module-wide, because `ast` + `mutation` *is*
-    the record surface end to end.
+- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, covering all
+  six non-annotation publishable modules (opt-in through `-Psemver` since
+  0.12.0, see below) and **strict by default**. As configured in 0.10.0 it encoded the record-growth stance of the
+  time by downgrading `CONSTRUCTOR_REMOVED` to a MINOR-level compatible change
+  where records live, since that is the signal a trailing component produced.
+  **Amended 2026-09-26 (Stellar finding S6):** the stance changed (§3), and with
+  it the configuration:
+  - `exeris-sdk-source-model` — **strict, no relaxation.** A record that grows
+    keeps its previous arity as a delegating constructor, so growth removes
+    nothing and the plugin defaults accept it. Until 0.12.0 this module carried
+    the downgrade module-wide.
   - `exeris-sdk-source-model-io` (`ApplyResult`) and
-    `exeris-sdk-composition-spec` (`CapManifest`) — two executions each, the
-    relaxed one naming the single record and the strict one excluding it.
+    `exeris-sdk-composition-spec` (`CapManifest`) — still two executions each,
+    the relaxed one naming the single record and the strict one excluding it.
+    Neither record has grown since; whether they move to the §3 rule is open
+    (`ROADMAP.md`, 0.12.0).
   - `exeris-sdk-composition-lifecycle` / `-runtime` — strict, no relaxation.
     They have no public records at all, and do have exception classes with
     meaningful constructor overloads, so a blanket relaxation would have
@@ -212,17 +277,20 @@ freeze or is explicitly re-dispositioned here.
   `includes`/`excludes` rather than inside the override itself.
 
   Two follow-ons, both deliberate:
-  - **CI runs it skipped** (`-Djapicmp.skip=true`) because the baseline is the
-    last released jar and no `eu.exeris` artifact is published anywhere yet.
-    An absent baseline is configured to fail, not to pass quietly, so the skip
-    is explicit in the workflow rather than implicit in the plugin.
-    **Corrected 2026-09-03:** this used to say the flag comes off "when the
-    Central wiring lands". It does not, and the difference is one milestone.
-    The wiring landed in 0.12.0, and 0.12.0 is the *first* version to reach
-    Central — so the baseline japicmp names, `0.11.0`, predates the move and is
-    not resolvable there either. The flag comes off when the 0.13.0 line opens
-    against a Central-resolvable `0.12.0` baseline. Turning Central on and
-    giving the gate something to resolve are two changes, not one.
+  - **The gate is opt-in: `mvn -Psemver verify`** (amended 2026-09-26). All of
+    its configuration and both bindings live in one `semver` profile in the
+    root pom; a maintainer runs it before a release, and the default build
+    runs only the baseline-free guards (`AnnotationSurfaceContractTest`,
+    `RecordComponentOrderTest`, `RecordConstructorLedgerTest`). Until then it
+    was bound to `verify`, so every workflow and every fresh clone had to pass
+    `-Djapicmp.skip=true`: the baseline is the last released jar, `0.11.0`,
+    and no release at or below it was ever published to Central. Inside the
+    profile an absent baseline still fails the build rather than passing
+    quietly. CI adds `-Psemver` to `build.yml` and `release.yml` when the
+    0.13.0 line opens against a Central-resolvable `0.12.0` baseline — the
+    first version that can be one — and that edit is what starts 1.x binary
+    enforcement. Turning Central on and giving the gate something to resolve
+    were two changes, not one (corrected 2026-09-03).
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it
@@ -230,18 +298,23 @@ freeze or is explicitly re-dispositioned here.
     `AnnotationSurfaceContractTest` gates it instead.
 
   What the gate cannot see is a same-arity, same-type component **reorder** —
-  invisible by construction, since the override stops reading exactly the
-  constructor signal a reorder would show up in. `RecordComponentOrderTest`
-  pins component order against a snapshot and closes it. The two are a pair;
-  removing either leaves the stance unenforced.
+  invisible by construction, because swapping two `String` components leaves
+  every accessor and every constructor descriptor exactly as it was.
+  `RecordComponentOrderTest` pins component order against a snapshot and closes
+  it; `RecordConstructorLedgerTest` holds the constructor half of §3 until the
+  gate has a baseline. Removing any of the three leaves the stance unenforced.
+  *(Corrected 2026-09-26: this said the reorder was invisible "since the override
+  stops reading exactly the constructor signal a reorder would show up in". That
+  held only for a reorder across different types; the same-type case is invisible
+  with or without the override, which is gone.)*
 - [x] **Public API surface review** — **done**; 103 public top-level types, the
   full result is in `ROADMAP.md` under 1.0.0 GA. The premise as seeded
   ("everything not in `internal/` is contract") describes a partition that does
   not exist — there is no `internal/` package anywhere in the repo, and there
   should not be. Each of the three seeded inputs, checked against the sources on
   both sides of the build-time hand-off rather than assumed:
-  - **Never-populated AST components — three, each with a different
-    disposition.** `ActionMetadata.realTimeUpdates` is **reserved and frozen as
+  - **Never-populated AST components — three seeded, each with a different
+    disposition; the full recount follows them.** `ActionMetadata.realTimeUpdates` is **reserved and frozen as
     declared**: the processor declines it by name ("deliberately NOT extracted
     here … extracting it would only create an inert `ActionMetadata` attribute")
     and the extraction lands with its consumer. `ActionMetadata.schedule` is
@@ -256,6 +329,38 @@ freeze or is explicitly re-dispositioned here.
     wire today, so unlike `ValidationMetadata` (removed outright in 0.9.0, ADR-054)
     there is a live producer, and narrowing it to the one populated component
     would be a wire-format break bought for nothing.
+
+    **Recounted 2026-09-26** against `exeris-tooling` `main` and the `-io`
+    reader. "Three" was the seeded list, never a census, and 0.12.0 added more.
+    Components that *neither* producer ever sets, on the four records at the top
+    of the wire:
+    - `DomainMetadata` — 8 of 41: `tags`, `roles`, `permissions`,
+      `projections`, `eventHandlers`, `rules`, `routeAccess`, `channel`.
+      *(Amended the same day: this list said 9, with `tableName` "no source at
+      all". `@ExerisDomain.tableName` now feeds it and the `-io` reader reads
+      it, so it moves to the one-producer list below until the processor
+      extracts it too — Stellar finding T6.)*
+    - `ActionMetadata` — 9 of 18: `resultType`, `idempotent`, `dangerous`,
+      `requiresConfirmation`, `permissions`, `producesEvents`,
+      `realTimeUpdates`, `schedule`, `routeAccess`.
+    - `FieldMetadata` — 10 of 31: `columnName`, `audited`, `hidden`,
+      `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
+      `derived`, `blob`.
+    - `SystemFieldsMetadata` — 1 of 11: `sharedScopeField`. (`primaryKeyField`
+      is populated and read by no generator, which is a different gap.)
+
+    That is 28. Five are the ADR-072 exception §2 already excludes from the
+    freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
+    `DomainMetadata.channel`); the other 23 are frozen as declared under §3's
+    rule that everything public is contract. Whole records no producer
+    populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
+    `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
+    `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
+    — are counted as records rather than components and follow the same two
+    rules. Not counted: components one producer sets and the other does not
+    (`DomainMetadata.systemFields`, `ActionMetadata.displayName`, and
+    `DomainMetadata.tableName` until the processor extracts it). Those are
+    ADR-042 parity questions, not population ones.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*
     (`consumers`, `rateLimit`, `requireMtls`, `timeout`, `documented`);
@@ -348,12 +453,17 @@ freeze or is explicitly re-dispositioned here.
 
   For consumers the module is additive and optional: test scope, nothing on a
   runtime classpath, and the surface it publishes freezes at 1.0.0 like any
-  other publishable module. `japicmp` is skipped there until a baseline artifact
-  exists, since none was released before the module did.
+  other publishable module. The semver gate covers it from 0.12.0, against the
+  0.11.0 release it first shipped in.
 
 ## 5. TBD at the 1.0.0 release PR
 
-- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the two
-  `@Validation` removals only).
-- Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`).
+- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the four §1
+  removals only — `@Validation.required`, `@Validation.validateOn`,
+  `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
+  `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
+  go with the last two).
+- Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`),
+  and one dated line for the Stellar Tactics author-side pass, recorded to the
+  definition in the status note at the top.
 - npm `@exeris/ui-kit` public-registry publish notes (GA item).

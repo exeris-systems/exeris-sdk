@@ -96,6 +96,61 @@ class SimpleAstRecordsTest {
             assertThat(sf.softDeleteField()).isNull();
             assertThat(sf.softDeleteTimestampField()).isNull();
             assertThat(sf.softDeletedByField()).isNull();
+            assertThat(sf.sharedScopeField()).isNull();
+        }
+
+        @Test
+        void builderStartsFromTheDefaults() {
+            assertThat(SystemFieldsMetadata.builder().build())
+                    .isEqualTo(SystemFieldsMetadata.defaults());
+        }
+
+        @Test
+        void builderSetsEveryComponentByName() {
+            // Eleven distinct values, one per component: a builder that wired any setter to the
+            // wrong field — the positional swap it exists to prevent — fails here.
+            SystemFieldsMetadata sf = SystemFieldsMetadata.builder()
+                    .primaryKeyField("pk")
+                    .createdAtField("born")
+                    .createdByField("author")
+                    .updatedAtField("touched")
+                    .updatedByField("editor")
+                    .tenantIdField("orgId")
+                    .versionField("rev")
+                    .softDeleteField("deleted")
+                    .softDeleteTimestampField("removedAt")
+                    .softDeletedByField("removedBy")
+                    .sharedScopeField("worldId")
+                    .build();
+
+            assertThat(sf).isEqualTo(new SystemFieldsMetadata(
+                    "pk", "born", "author", "touched", "editor", "orgId", "rev",
+                    "deleted", "removedAt", "removedBy", "worldId"));
+        }
+
+        @Test
+        void builderChangesOnlyWhatItIsTold() {
+            // The processor's common case: canonical names except the tenant column.
+            SystemFieldsMetadata sf = SystemFieldsMetadata.builder().tenantIdField("orgId").build();
+
+            assertThat(sf.tenantIdField()).isEqualTo("orgId");
+            assertThat(sf).usingRecursiveComparison().ignoringFields("tenantIdField")
+                    .isEqualTo(SystemFieldsMetadata.defaults());
+        }
+
+        @Test
+        void theZeroElevenShapeStillConstructsWithNoSharedScope() {
+            // The ten-argument 0.11.0 constructor, kept so code compiled against 0.11.0 links and
+            // code written against it compiles (MIGRATION-0.x-to-1.0.md §3). It is the canonical
+            // call with a trailing null.
+            SystemFieldsMetadata old = new SystemFieldsMetadata(
+                    "id", "createdAt", "createdBy", "modifiedAt", "updatedBy", "orgId",
+                    "rev", "deleted", null, null);
+
+            assertThat(old.sharedScopeField()).isNull();
+            assertThat(old).isEqualTo(new SystemFieldsMetadata(
+                    "id", "createdAt", "createdBy", "modifiedAt", "updatedBy", "orgId",
+                    "rev", "deleted", null, null, null));
         }
     }
 

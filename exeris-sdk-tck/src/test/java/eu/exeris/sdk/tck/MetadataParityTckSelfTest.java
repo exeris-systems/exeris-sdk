@@ -3,6 +3,7 @@ package eu.exeris.sdk.tck;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
@@ -35,6 +36,7 @@ class MetadataParityTckSelfTest {
             parity.fieldsAgree();
             parity.relationshipsAgree();
             parity.actionsAgree();
+            parity.sagaIdentityAgrees();
         }).doesNotThrowAnyException();
     }
 
@@ -92,6 +94,54 @@ class MetadataParityTckSelfTest {
     }
 
     @Test
+    @DisplayName("a saga version one side read and the other did not is caught")
+    void sagaVersionDivergenceIsCaught() {
+        // The divergence the case exists for: the producer carries the declared version, the
+        // reader never reads the attribute and reports the builder default. Both documents are
+        // well-formed.
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, SagaMetadata.builder(m.sagaMetadata().name())
+                                .steps(m.sagaMetadata().steps())
+                                .build()));
+        assertThatThrownBy(parity::sagaIdentityAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/version — producer: '3', reader: '1'");
+    }
+
+    @Test
+    @DisplayName("a saga name one side reads differently is caught")
+    void sagaNameDivergenceIsCaught() {
+        Parity parity = new Parity(
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, SagaMetadata.builder(m.entityName())
+                                .version(m.sagaMetadata().version())
+                                .steps(m.sagaMetadata().steps())
+                                .build()),
+                UnaryOperator.identity());
+        assertThatThrownBy(parity::sagaIdentityAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/name");
+    }
+
+    @Test
+    @DisplayName("a saga only one side emits is caught")
+    void oneSidedSagaIsCaught() {
+        Parity readerBlind = new Parity(UnaryOperator.identity(), m -> withSaga(m, null));
+        assertThatThrownBy(readerBlind::sagaIdentityAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("producer emitted one, reader did not");
+
+        Parity producerBlind = new Parity(m -> withSaga(m, null), UnaryOperator.identity());
+        assertThatThrownBy(producerBlind::sagaIdentityAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("reader emitted one, producer did not");
+    }
+
+    @Test
     @DisplayName("an unbuilt facet skips rather than failing")
     void anUnbuiltFacetSkips() {
         Parity notBuiltYet = new Parity(UnaryOperator.identity(), UnaryOperator.identity()) {
@@ -132,6 +182,12 @@ class MetadataParityTckSelfTest {
     private static DomainMetadata rebuild(DomainMetadata source, List<RelationshipMetadata> edges) {
         return DomainMetadata.builder(source.entityName(), source.packageName())
                 .fields(source.fields()).actions(source.actions()).relationships(edges).build();
+    }
+
+    private static DomainMetadata withSaga(DomainMetadata source, SagaMetadata saga) {
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields()).actions(source.actions()).relationships(source.relationships())
+                .sagaMetadata(saga).build();
     }
 
     private static DomainMetadata withFields(DomainMetadata source, List<FieldMetadata> fields) {

@@ -118,18 +118,27 @@ public @interface Saga {
      * version is registered again. Monotonic within a name; a definition built
      * without one is version {@code 1}.
      *
-     * <p><strong>Open-Core status — declared, not extracted (verified
-     * 2026-08-12).</strong> Neither AST producer reads this attribute:
-     * the build-time processor's saga extraction takes {@code name},
-     * {@code description}, {@code timeout} and {@code maxRetries} only, and the
-     * {@code -io} reader mirrors exactly that set. {@code SagaMetadata} does
-     * carry a {@code version} component, but it holds the builder default
-     * {@code 1} on every run — so writing {@code version = 3} produces an AST
-     * that says {@code 1}, silently, at any strictness. Both producers are
-     * blind in the same way, so this is not an ADR-042 divergence; it is a hole
-     * in both. Until extraction lands, the kernel contract above is reachable
-     * only by hand-written {@code FlowDefinition} code, not by declaring it
-     * here.
+     * <p><strong>Open-Core status — extracted on both build paths.</strong>
+     * The value reaches {@code SagaMetadata.version} through both the build-time
+     * processor and the {@code -io} reader, so the two AST producers agree on it
+     * as ADR-042 requires. Two edges, identical on both paths: an absent
+     * attribute is {@code 1}, and a value below {@code 1} is carried as
+     * written rather than repaired — the kernel refuses
+     * it, which is the diagnostic an author needs. One edge differs: the
+     * {@code -io} reader is syntactic, so a version supplied through a constant
+     * reference or expression, which the processor receives folded by javac,
+     * reads there as {@code 1}. Declare it as a literal.
+     *
+     * <p><strong>Reaching the kernel.</strong> {@code exeris-tooling}
+     * transcribes the value into the generated {@code *SagaFlow} through
+     * {@code FlowDefinitionBuilder.version(int)}. A generated flow that does not
+     * make that call carries the value in metadata and reaches no plan with it,
+     * so confirm the generated flow calls {@code version(...)} before relying on
+     * a bump to protect in-flight sagas. Do not work around its absence by
+     * rebuilding the {@code FlowDefinition} record by hand: for a name never
+     * assembled through the builder, that route compiles to a plan carrying its
+     * steps and no declared edges, with no diagnostic (the kernel's own note on
+     * that setter).
      *
      * @return saga version
      */

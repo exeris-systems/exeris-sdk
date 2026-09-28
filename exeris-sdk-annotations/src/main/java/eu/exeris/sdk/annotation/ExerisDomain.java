@@ -123,15 +123,24 @@ public @interface ExerisDomain {
      * typed client requests the same. Setting this attribute does not change where an
      * endpoint is served, and {@code -Aexeris.strict} reports it.
      *
-     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()} — so it is
-     * carried on the wire and available to a future consumer, unlike
-     * {@link Action#path()}, which reaches no AST component at all. Whether the router
-     * and the published contract should serve {@code /api/<version>/…} is an open
-     * design question; taking it would change every emitted route.
+     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()}, itself
+     * deprecated for removal alongside this attribute — and both build paths still read
+     * it until 1.0.0, so a source that sets it keeps producing the same metadata for the
+     * whole deprecation window.
      *
      * @return API version (e.g., "v1", "v2"); carried into the AST, read by no
-     *         generator today
+     *         generator
+     * @deprecated since 0.12.0, for removal in 1.0.0. It reaches no emitted artifact:
+     *         the router, the OpenAPI document and every generated client serve and
+     *         request the entity at its {@link #path()}, with no version segment. It
+     *         cannot be switched on either, because its default is {@code "v1"}:
+     *         honouring it would move every route of every application that never wrote
+     *         the attribute. <strong>There is no replacement — delete the
+     *         attribute;</strong> a versioned route is spelled in {@link #path()}. See
+     *         {@code MIGRATION.md} for why it goes before the 1.0.0 freeze and what a
+     *         generated versioned route would look like.
      */
+    @Deprecated(since = "0.12.0", forRemoval = true)
     String apiVersion() default "v1";
 
     /**
@@ -479,14 +488,56 @@ public @interface ExerisDomain {
     String searchConfig() default "english";
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // DATABASE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Physical table name for this entity, overriding the derived one.
+     *
+     * <p>Leave it empty to take the derived name, {@code DomainMetadata.effectiveTableName()}:
+     * the snake-cased English plural of the class name, by the same rule as
+     * {@code DomainMetadata.pluralName()} — {@code Order} → {@code orders},
+     * {@code ConstructionOrder} → {@code construction_orders}, {@code Colony} →
+     * {@code colonies}, {@code Box} → {@code boxes}. The rule knows the regular English
+     * endings and nothing else, so it is the override that covers an irregular noun
+     * ({@code Person} → {@code tableName = "people"}), a class name that is already plural,
+     * and a table that exists under a name no rule would produce.
+     *
+     * <p>It is also how an existing table keeps its name when the derived one differs —
+     * a table named as the snake-cased class name plus {@code "s"} ({@code colonys} where
+     * the rule gives {@code colonies}), for instance. Setting this attribute to the
+     * existing name keeps the table, and the Flyway migration that created it, where they
+     * are. See {@code MIGRATION.md}.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The {@code -io} reader reads it into
+     * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming
+     * honours that component when it is set, for the repository's SQL, the
+     * {@code CREATE TABLE} and the migration file name alike. The {@code exeris-tooling}
+     * processor does not extract it yet, so on the build path that generates code it has
+     * no effect until the processor release that does. Check that release's notes before
+     * relying on it.
+     *
+     * @return the table name, or empty to derive it from the class name
+     * @since 0.12
+     */
+    String tableName() default "";
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // FIELD NAME OVERRIDES
     // Use these when not using @TenantId, @SoftDelete, etc. annotations
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Name of the primary key field.
-     * <p>Only needed if not using {@code @PrimaryKey} annotation or if
-     * primary key field is not named "id".
+     * Name of the primary key field, for an entity whose key is not named
+     * {@code id}.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The {@code exeris-tooling} processor
+     * extracts the value into {@code SystemFieldsMetadata.primaryKeyField}, but no
+     * generator reads it: the emitted schema declares {@code id} as the primary key
+     * unconditionally, the repository identifies rows by {@code id}, and every
+     * by-id route binds {@code {id}} — so setting a different name changes no
+     * emitted output. The {@code -io} reader does not read it, and
+     * {@code @PrimaryKey} is RESERVED for the same reason.
      *
      * @return primary key field name
      */
@@ -589,13 +640,14 @@ public @interface ExerisDomain {
      *   <li>NONE: no validation</li>
      * </ul>
      *
-     * <p><strong>Open-Core status — RESERVED, inert by construction:</strong>
-     * this attribute governs the strictness of system-field <em>marker</em>
-     * validation ({@code @TenantId}, {@code @Version}, …), but the tooling
-     * processor does not scan fields for those markers, so no mode has
-     * anything to validate — the attribute governs nothing until marker
-     * scanning lands. The live system-field path is the field-name override
-     * attributes above / the canonical accessor names.
+     * <p><strong>Open-Core status — RESERVED:</strong> no {@code exeris-tooling}
+     * processor reads this attribute, so every mode behaves the same. The
+     * processor does read the system-field markers ({@code @TenantId},
+     * {@code @Version}, …), but the checks it applies to them are unconditional:
+     * a marker repeated on two fields, or naming a different field than the
+     * matching override attribute above, is a build error whatever this attribute
+     * says, and an absent marker is never one — the override attribute or the
+     * canonical accessor name applies instead.
      *
      * @return validation mode
      */

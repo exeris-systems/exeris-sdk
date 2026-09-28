@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,15 +37,15 @@ class DomainMetadataTest {
         }
 
         @Test
-        void effectiveTableNameDerivesSnakeCaseWhenBlank() {
+        void effectiveTableNameDerivesTheSnakeCasedPluralWhenBlank() {
             // Empty string is the Builder default for tableName.
-            assertThat(base().build().effectiveTableName()).isEqualTo("order");
+            assertThat(base().build().effectiveTableName()).isEqualTo("orders");
         }
 
         @Test
         void effectiveTableNameSnakeCasesCamelEntityName() {
             assertThat(DomainMetadata.builder("OrderLineItem", "p").build().effectiveTableName())
-                    .isEqualTo("order_line_item");
+                    .isEqualTo("order_line_items");
         }
 
         @Test
@@ -106,6 +107,102 @@ class DomainMetadataTest {
         void singleLetterYDoesNotTriggerIesRule() {
             // Branch coverage: length-1 guards the substring math from blowing up.
             assertThat(DomainMetadata.builder("Y", "p").build().pluralName()).isEqualTo("Ys");
+        }
+    }
+
+    @Nested
+    @DisplayName("the derived route and table take the English plural")
+    class PluralNaming {
+
+        private DomainMetadata entity(String name) {
+            return DomainMetadata.builder(name, "p").build();
+        }
+
+        @Test
+        void consonantYBecomesIesInTheTableAndTheRoute() {
+            // Consonant + y, where a bare "s" gives colonys / technologys / reassemblys.
+            assertThat(entity("Colony").effectiveTableName()).isEqualTo("colonies");
+            assertThat(entity("Colony").effectivePath()).isEqualTo("/colonies");
+            assertThat(entity("Technology").effectiveTableName()).isEqualTo("technologies");
+            assertThat(entity("Reassembly").effectiveTableName()).isEqualTo("reassemblies");
+            assertThat(entity("SupplyDepot").effectiveTableName()).isEqualTo("supply_depots");
+            assertThat(entity("DiplomaticPolicy").effectivePath()).isEqualTo("/diplomatic-policies");
+        }
+
+        @Test
+        void sibilantEndingsTakeEs() {
+            assertThat(entity("Box").effectiveTableName()).isEqualTo("boxes");
+            assertThat(entity("Status").effectiveTableName()).isEqualTo("statuses");
+            assertThat(entity("Status").effectivePath()).isEqualTo("/statuses");
+            assertThat(entity("Branch").effectiveTableName()).isEqualTo("branches");
+            assertThat(entity("FleetDispatch").effectiveTableName()).isEqualTo("fleet_dispatches");
+        }
+
+        @Test
+        void aVowelBeforeYTakesAPlainS() {
+            assertThat(entity("Survey").effectiveTableName()).isEqualTo("surveys");
+            assertThat(entity("Survey").effectivePath()).isEqualTo("/surveys");
+        }
+
+        @Test
+        void wherePlainSIsRightNothingMovesFromTheOldToolingDefault() {
+            // Against the naive snake_case(entityName) + "s": the rule differs only where English
+            // does not add a bare s, so every regular name gets the same table from both.
+            for (String name : List.of("Order", "ConstructionOrder", "Fleet", "Engagement",
+                    "GalaxyPresence", "Planet", "HTTPRoute")) {
+                String naive = name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT) + "s";
+                assertThat(entity(name).effectiveTableName()).as(name).isEqualTo(naive);
+            }
+        }
+
+        @Test
+        void anIrregularNounGetsTheRegularEndingAndTheOverrideFixesIt() {
+            // Pinned, not endorsed: the rule knows endings, not words. The override is the remedy,
+            // and it wins over the derivation on both helpers.
+            DomainMetadata person = entity("Person");
+            assertThat(person.pluralName()).isEqualTo("Persons");
+            assertThat(person.effectiveTableName()).isEqualTo("persons");
+
+            DomainMetadata overridden = DomainMetadata.builder("Person", "p")
+                    .tableName("people").path("/people").build();
+            assertThat(overridden.effectiveTableName()).isEqualTo("people");
+            assertThat(overridden.effectivePath()).isEqualTo("/people");
+        }
+
+        @Test
+        void anAlreadyPluralNameIsNotRecognisedAndTheOverrideFixesIt() {
+            DomainMetadata settings = entity("Settings");
+            assertThat(settings.pluralName()).isEqualTo("Settingses");
+            assertThat(settings.effectiveTableName()).isEqualTo("settingses");
+            assertThat(DomainMetadata.builder("Settings", "p").tableName("settings").build()
+                    .effectiveTableName()).isEqualTo("settings");
+        }
+
+        @Test
+        void theDerivationDoesNotDependOnTheDefaultLocale() {
+            // Under a Turkish default, String.toLowerCase() maps I to a dotless i, which would put
+            // "ıtems" into a table name on one machine and "items" on another, and serve an
+            // entity with no declared path at /ınvoices while a client generated elsewhere calls
+            // /invoices.
+            Locale saved = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.of("tr", "TR"));
+                assertThat(entity("Item").effectiveTableName()).isEqualTo("items");
+                assertThat(entity("InventoryItem").effectivePath()).isEqualTo("/inventory-items");
+                assertThat(entity("Invoice").effectivePath()).isEqualTo("/invoices");
+                assertThat(entity("Invoice").effectiveTableName()).isEqualTo("invoices");
+            } finally {
+                Locale.setDefault(saved);
+            }
+        }
+
+        @Test
+        void anAbsentEntityNameDerivesNothingRatherThanThrowing() {
+            DomainMetadata unnamed = DomainMetadata.builder(null, "p").build();
+            assertThat(unnamed.pluralName()).isEmpty();
+            assertThat(unnamed.effectiveTableName()).isEmpty();
+            assertThat(unnamed.effectivePath()).isEqualTo("/");
+            assertThat(DomainMetadata.builder("", "p").build().pluralName()).isEmpty();
         }
     }
 
@@ -230,6 +327,9 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("Builder default invariants")
     class BuilderDefaults {
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
+        @SuppressWarnings("removal")
         @Test
         void unsetFieldsHaveSafeDefaults() {
             DomainMetadata d = base().build();
@@ -250,6 +350,9 @@ class DomainMetadataTest {
             assertThat(d.uiMetadata()).isNull();
         }
 
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
+        @SuppressWarnings("removal")
         @Test
         void builderSettersAreFluent() {
             DomainMetadata d = base()
@@ -289,6 +392,81 @@ class DomainMetadataTest {
             assertThat(d.eventSourced()).isNotNull();
             assertThat(d.internalApi()).isNotNull();
             assertThat(d.systemFields()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("apiVersion is deprecated for removal at 1.0.0, and still carried until then")
+    class ApiVersionDeprecation {
+        @Test
+        void accessorAndBuilderSetterBothCarryTheDeprecation() throws Exception {
+            // The attribute, the accessor and the setter go together at 1.0.0 (MIGRATION-0.x-to-1.0.md
+            // §1). A carrier that lost its marker would let a consumer keep reading a component the
+            // removal list says is going, with no warning until the build that breaks.
+            for (var member : List.of(DomainMetadata.class.getMethod("apiVersion"),
+                    DomainMetadata.Builder.class.getMethod("apiVersion", String.class))) {
+                Deprecated deprecated = member.getAnnotation(Deprecated.class);
+                assertThat(deprecated).as("%s must be deprecated", member).isNotNull();
+                assertThat(deprecated.forRemoval()).as("%s must be marked for removal", member).isTrue();
+                assertThat(deprecated.since()).isEqualTo("0.12.0");
+            }
+        }
+
+        @Test
+        @SuppressWarnings("removal") // the point of the test is the deprecated accessor
+        void theComponentIsStillCarriedUnchanged() {
+            // Deprecation changes no behaviour inside the window: the builder default stays "v1",
+            // a set value comes back, and the explicit accessor returns the component itself.
+            assertThat(base().build().apiVersion()).isEqualTo("v1");
+            DomainMetadata d = base().apiVersion("v2").build();
+            assertThat(d.apiVersion()).isEqualTo("v2");
+            assertThat(d).isEqualTo(new DomainMetadata(
+                    "Order", "com.acme.domain", "", "", "", "", "v2", List.of(),
+                    true, false, false, false, false, false, false, false,
+                    List.of(), List.of(), false, false, "PT5M", "", false, "english", "",
+                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                    null, null, null, null, null, null, List.of(), null));
+        }
+    }
+
+    @Nested
+    @DisplayName("the 0.11.0 constructor shape is kept")
+    class PreviousArity {
+        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
+        // exercises the carrier on purpose.
+        @SuppressWarnings("removal")
+        @Test
+        void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {
+            // Kept so code compiled or written against 0.11.0 still links and compiles
+            // (MIGRATION-0.x-to-1.0.md §3). It must equal the builder's record with routeAccess
+            // and channel absent — two shapes that disagreed would be two contracts.
+            List<FieldMetadata> fields = List.of(FieldMetadata.builder("ref", "String").build());
+            DomainMetadata old = new DomainMetadata(
+                    "Order", "com.acme.domain", "sales", "/orders", "CustomerOrder", "desc", "v2",
+                    List.of("t"), false, true, true, true,
+                    true, true, true, true,
+                    List.of("ROLE_X"), List.of("p:r"), true,
+                    true, "PT10M", "region",
+                    true, "german", "orders",
+                    fields, List.of(), List.of(), List.of(), List.of(), List.of(),
+                    null, null, null, null, null, SystemFieldsMetadata.defaults(),
+                    List.of(), DataScope.TENANT);
+            DomainMetadata built = base()
+                    .module("sales").path("/orders").aggregate("CustomerOrder").description("desc")
+                    .apiVersion("v2").tags(List.of("t"))
+                    .restApi(false).graphqlApi(true).realTimeApi(true).internalClient(true)
+                    .tenantScoped(true).softDelete(true).audited(true).versioned(true)
+                    .roles(List.of("ROLE_X")).permissions(List.of("p:r")).sensitive(true)
+                    .cacheable(true).cacheTtl("PT10M").cacheRegion("region")
+                    .fullTextSearch(true).searchConfig("german").tableName("orders")
+                    .fields(fields)
+                    .systemFields(SystemFieldsMetadata.defaults())
+                    .dataScope(DataScope.TENANT)
+                    .build();
+
+            assertThat(old).isEqualTo(built);
+            assertThat(old.routeAccess()).isNull();
+            assertThat(old.channel()).isNull();
         }
     }
 

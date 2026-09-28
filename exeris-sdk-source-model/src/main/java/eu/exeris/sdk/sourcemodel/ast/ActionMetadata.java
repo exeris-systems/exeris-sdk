@@ -148,6 +148,44 @@ public record ActionMetadata(
     }
 
     /**
+     * The 0.11.0 shape — the 17 components before {@code routeAccess} — kept as a delegating
+     * constructor so that code compiled or written against 0.11.0 still links and still compiles.
+     * {@code routeAccess} is {@code null}: the author declared nothing, and the generated policy's
+     * default decides. The compact constructor's normalization applies as it does to every call.
+     *
+     * <p>Prefer {@link #builder(String)}, which sets any component by name and does not change
+     * shape when the record grows.
+     *
+     * @param name the {@code name} the result carries
+     * @param displayName the {@code displayName} the result carries
+     * @param description the {@code description} the result carries
+     * @param httpMethod the {@code httpMethod} the result carries
+     * @param resultType the {@code resultType} the result carries
+     * @param async the {@code async} the result carries
+     * @param idempotent the {@code idempotent} the result carries
+     * @param dangerous the {@code dangerous} the result carries
+     * @param requiresConfirmation the {@code requiresConfirmation} the result carries
+     * @param params the {@code params} the result carries
+     * @param permissions the {@code permissions} the result carries
+     * @param producesEvents the {@code producesEvents} the result carries
+     * @param methodName the {@code methodName} the result carries
+     * @param streaming the {@code streaming} the result carries
+     * @param streamEventType the {@code streamEventType} the result carries
+     * @param realTimeUpdates the {@code realTimeUpdates} the result carries
+     * @param schedule the {@code schedule} the result carries
+     */
+    public ActionMetadata(String name, String displayName, String description, String httpMethod,
+                          String resultType, boolean async, boolean idempotent, boolean dangerous,
+                          boolean requiresConfirmation, List<ActionParamMetadata> params,
+                          List<String> permissions, List<String> producesEvents, String methodName,
+                          boolean streaming, String streamEventType, boolean realTimeUpdates,
+                          ScheduleMetadata schedule) {
+        this(name, displayName, description, httpMethod, resultType, async, idempotent, dangerous,
+                requiresConfirmation, params, permissions, producesEvents, methodName, streaming,
+                streamEventType, realTimeUpdates, schedule, null);
+    }
+
+    /**
      * Creates a minimal {@code ActionMetadata}, with only the essentials set.
      *
      * @param name the {@code name} the result carries

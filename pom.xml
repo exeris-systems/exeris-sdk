@@ -122,44 +122,33 @@
         <jacoco.skip>${skipTests}</jacoco.skip>
         <maven.enforcer.version>3.5.0</maven.enforcer.version>
 
-        <!-- Semver gate (1.0.0 GA prerequisite). Configured before the freeze on
-             purpose: it has to encode the record-growth stance in
-             MIGRATION-0.x-to-1.0.md §3, and a gate written after the freeze would
-             be written against whatever the code already did.
+        <!-- Semver gate (1.0.0 GA prerequisite): japicmp, opt-in through the `semver` profile at
+             the foot of this file. Configured before the freeze on purpose: it has to encode the
+             record-growth stance in MIGRATION-0.x-to-1.0.md §3, and a gate written after the
+             freeze would be written against whatever the code already did.
 
-             The baseline is the last released version, and where it can be
-             resolved FROM is what decides whether this gate runs in CI. Until
-             0.12.0 the answer was nowhere: releases shipped as git tag + GitHub
-             Release, consumers resolved from a local `mvn install`, and the
-             baseline was therefore present on a developer machine and absent on a
-             runner — hence japicmp.skip below.
+             Opt-in rather than bound to every build: the gate compares each module with the last
+             released version, and that version has to be resolvable. The baseline named below,
+             0.11.0, is not on Maven Central, so a gate bound to `verify` would fail a fresh-clone
+             `mvn install` on artifact resolution. The default build runs the baseline-free guards
+             instead (AnnotationSurfaceContractTest, RecordComponentOrderTest,
+             RecordConstructorLedgerTest), and a maintainer runs `-Psemver` before a release.
 
-             The `release` profile at the foot of this file changes that going
-             forward but not retroactively. 0.12.0 is the first version to reach
-             Central, so the 0.11.0 baseline named here will never be resolvable
-             there and this gate cannot run anywhere for exactly one more
-             milestone.
+             Inside the profile an absent baseline fails the build, loudly
+             (ignoreMissingOldVersion=false): whoever turns the gate on has asked for a
+             comparison, and "no baseline found" must not read as "no breaks found".
 
-             The default below stays `false`, and every caller that cannot
-             resolve the baseline says so at the point of use — build.yml,
-             release.yml, release-assets.yml, and now guardrails.yml's javadoc job
-             through `extra-maven-args`. That is deliberate: an absent baseline
-             should fail loudly rather than pass because a default hid it.
-
-             `javadoc-gate.yml` briefly could not express that — it runs
-             `mvn install`, japicmp binds to `verify`, and the workflow took no
-             extra arguments, so the gate died on `exeris-sdk-source-model` with
-             "Could not find artifact eu.exeris:exeris-sdk-source-model:jar:0.11.0
-             in central" before reaching a doc comment. The fix belonged upstream
-             and landed there; the default never had to move.
-
-             It goes live when the 0.13.0 line opens against a 0.12.0 baseline
-             Central can serve — at which point the four -Djapicmp.skip=true flags
-             come off, and those flags are the thing to delete rather than this
-             comment. -->
+             It becomes binding in CI once the baseline is a version Central serves: move
+             japicmp.baseline.version to it and add -Psemver to build.yml and release.yml. That
+             one edit is what starts 1.x binary enforcement; the ROADMAP's 1.0.0 GA semver item
+             names the release. -->
         <japicmp.version>0.23.1</japicmp.version>
         <japicmp.baseline.version>0.11.0</japicmp.baseline.version>
-        <!-- Overridden to true where no baseline artifact can be resolved. -->
+        <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the
+             gate reactor-wide, and a module outside it sets this to true in its own pom
+             (exeris-sdk-annotations, which is @Retention(SOURCE) and gated by
+             AnnotationSurfaceContractTest instead; exeris-sdk-annotation-catalog, which is not
+             published and has no baseline). Nobody needs to pass it on the command line. -->
         <japicmp.skip>false</japicmp.skip>
     </properties>
 
@@ -271,42 +260,13 @@
                     <artifactId>maven-enforcer-plugin</artifactId>
                     <version>${maven.enforcer.version}</version>
                 </plugin>
+                <!-- Version only. Everything else about the semver gate — its configuration and
+                     its bindings — lives in the `semver` profile, so that nothing in the default
+                     build runs it. -->
                 <plugin>
                     <groupId>com.github.siom79.japicmp</groupId>
                     <artifactId>japicmp-maven-plugin</artifactId>
                     <version>${japicmp.version}</version>
-                    <configuration>
-                        <skip>${japicmp.skip}</skip>
-                        <oldVersion>
-                            <dependency>
-                                <groupId>${project.groupId}</groupId>
-                                <artifactId>${project.artifactId}</artifactId>
-                                <version>${japicmp.baseline.version}</version>
-                                <type>jar</type>
-                            </dependency>
-                        </oldVersion>
-                        <!-- Strict by default. The record-growth relaxation is NOT
-                             here: it is declared per module, and only where records
-                             actually live (exeris-sdk-source-model wholesale;
-                             ApplyResult / CapManifest by name elsewhere). Two gated
-                             modules — composition-lifecycle and composition-runtime —
-                             have no public records at all, and do have exception
-                             classes with meaningful constructor overloads, so a
-                             blanket override would quietly retire a real safety net
-                             in exchange for nothing. -->
-                        <parameter>
-                            <!-- Absent baseline must not read as "no breaks found".
-                                 It reads as "not checked", loudly, and the module's
-                                 own comment says where that is expected. -->
-                            <ignoreMissingOldVersion>false</ignoreMissingOldVersion>
-                            <onlyModified>true</onlyModified>
-                            <accessModifier>public</accessModifier>
-                            <breakBuildOnBinaryIncompatibleModifications>true
-                            </breakBuildOnBinaryIncompatibleModifications>
-                            <breakBuildOnSourceIncompatibleModifications>true
-                            </breakBuildOnSourceIncompatibleModifications>
-                        </parameter>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -426,6 +386,78 @@
                                 <artifact>exeris-sdk-annotation-catalog</artifact>
                             </excludeArtifacts>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+            The semver gate, opt-in: `mvn -Psemver verify`. Maintainers run it before a release;
+            the default build does not, and does not need a baseline. See the japicmp comment in
+            <properties> for why, and for the edit that makes it binding in CI.
+
+            Strict by default, and strict for the AST. Two bindings, both here so that one place
+            answers "does japicmp run": `semver-gate`, the strict comparison every jar module gets,
+            and `semver-gate-record-growth`, skipped unless a module switches it on. Two modules
+            do, for one named record each (ApplyResult in -io, CapManifest in composition-spec),
+            through a `semver` profile of their own that configures these two executions and binds
+            nothing: the strict run excludes the record and the relaxed run includes it, with
+            CONSTRUCTOR_REMOVED accepted as a MINOR change. japicmp 0.23.1's
+            overrideCompatibilityChangeParameter carries no class pattern, which is why the scoping
+            is two executions rather than one override.
+
+            exeris-sdk-source-model takes no relaxation: a record there that grows keeps its
+            previous arity as a delegating constructor, so growth removes nothing (see that
+            module's pom). The two
+            record-free composition modules have exception classes whose constructor overloads are
+            real API, so a blanket relaxation would retire a real safety net for nothing.
+            Pom-packaging modules are skipped by the plugin itself (skipPomModules defaults to
+            true); exeris-sdk-annotations and exeris-sdk-annotation-catalog set japicmp.skip.
+        -->
+        <profile>
+            <id>semver</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.siom79.japicmp</groupId>
+                        <artifactId>japicmp-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>${japicmp.skip}</skip>
+                            <oldVersion>
+                                <dependency>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${japicmp.baseline.version}</version>
+                                    <type>jar</type>
+                                </dependency>
+                            </oldVersion>
+                            <parameter>
+                                <!-- Absent baseline must not read as "no breaks found". It reads
+                                     as "not checked", loudly. -->
+                                <ignoreMissingOldVersion>false</ignoreMissingOldVersion>
+                                <onlyModified>true</onlyModified>
+                                <accessModifier>public</accessModifier>
+                                <breakBuildOnBinaryIncompatibleModifications>true
+                                </breakBuildOnBinaryIncompatibleModifications>
+                                <breakBuildOnSourceIncompatibleModifications>true
+                                </breakBuildOnSourceIncompatibleModifications>
+                            </parameter>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>semver-gate</id>
+                                <phase>verify</phase>
+                                <goals><goal>cmp</goal></goals>
+                            </execution>
+                            <execution>
+                                <id>semver-gate-record-growth</id>
+                                <phase>verify</phase>
+                                <goals><goal>cmp</goal></goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
