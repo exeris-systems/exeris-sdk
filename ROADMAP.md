@@ -439,6 +439,38 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [x] **ADR-073 (schema-history ledger) is `kernel/persistence`** and names no
   SDK or tooling consumer. Note it is unrelated to this repo's `SchemaVersion`,
   which versions the AST wire format, not a database
+- [x] **ADR-077 (a route declares how it executes) — a candidate facet, not a 0.12.0
+  surface.** `RouteRequirement` gains `Execution` — `PROMPT` (the default) or
+  `LONG_RUNNING` via `longRunning()` — and on a `LONG_RUNNING` route the Community
+  dispatcher binds no request-scoped persistence session, so a handler that blocks stops
+  holding a pooled connection across the block. Unlike the rest of the 0.12 list this
+  *does* have an Entity-First declaration site: whether an action blocks is known when
+  the action is written, and `@Action` is where it would be stated. It is not added in
+  0.12.0, for three reasons. **The carrier is not transcribed yet.** The facet lives on
+  the same `RouteRequirement` a generated `HttpRoutePolicy` returns, which is also where
+  `@RouteAccess` lands, and `@RouteAccess` has no `exeris-tooling` transcription; a second
+  facet on an untranscribed carrier would be two reserved surfaces waiting on one slice,
+  not one named gap. **The kernel has not settled what the declaration is for.** The
+  default stays `PROMPT`, the flip is gated on three measurements the kernel names, and
+  the kernel ships `eu.exeris.kernel.http.RouteExecution` precisely because a
+  declaration can go stale — so whether this is an author's statement, a deployment's
+  override or an inference is still open upstream. **The surface is `preview`.** Route
+  authorization (`HttpRoutePolicy`, `RouteRequirement`) is held at `preview` under
+  ADR-061 and ADR-077, the tier ADR-072 reserves against. Re-assessed at 0.13.0 on
+  ADR-072's three-part test, together with the `@RouteAccess` transcription; the likely
+  shape is an attribute on `@Action` carried by `ActionMetadata`, trailing and nullable,
+  under the record-growth rule
+- [x] **The rest of the 0.12 train has no SDK surface.** `RouteRequirement.abstain()`
+  (ADR-061 Amendment A2) composes route policies; no entity declares it, and it agrees
+  with `@RouteAccess`, where absence already means "declared nothing".
+  `StreamRouteResolver` / `StreamMatch` (ADR-043 Amendment A1) is driver-side route
+  resolution. `RowCursor.getString`'s type domain (ADR-080) is a persistence driver
+  contract, reached through `exeris-tooling`'s type mapping rather than an annotation.
+  The TLS peer verification and the JWKS fetch (ADR-074 Amendment A1, ADR-040) are
+  runtime security. The stability matrix still holds `storage.blob`, `scheduling`,
+  `websocket` and route authorization at `preview`, and the kernel's
+  `RFC-2026-09-02` on promoting them is open, so all four reserved facets stay outside
+  the 1.0.0 freeze
 - [ ] **Central publication — wiring landed, publication sequenced** — kernel
   0.12 builds the Maven Central publication path and states it has "produced
   nothing yet"; this repo built its own in the same milestone (the `release`
