@@ -20,12 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 /**
- * Round-trip property tests across the budgetHQ corpus — the 0.3.0 roadmap
- * line. The corpus under {@code src/test/resources/corpus/budgethq} is ported
- * from real budgetHQ entities (each file's header cites its JPA original);
- * budgetHQ does not author {@code @ExerisDomain} sources yet, so a port of the
- * real field surface is the closest available approximation until the 0.6.x
- * dogfood replaces it with sources read straight from the budgetHQ tree.
+ * Round-trip property tests across the budgetHQ corpus. The corpus under
+ * {@code src/test/resources/corpus/budgethq} is ported from real budgetHQ entities
+ * (each file's header cites its JPA original); budgetHQ does not author
+ * {@code @ExerisDomain} sources yet, so a port of the real field surface is the
+ * closest available approximation of them.
  *
  * <p>Every {@code .java} dropped into the corpus directory automatically joins
  * the property tests; per-entity fidelity spot-checks live alongside them.

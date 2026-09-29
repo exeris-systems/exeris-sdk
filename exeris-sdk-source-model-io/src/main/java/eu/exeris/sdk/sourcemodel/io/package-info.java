@@ -30,18 +30,17 @@
  *
  * <p><b>Status.</b> Reader (entity attributes, fields, {@code @Relationship}s,
  * actions, {@code @UI}, events, graph/saga/event-sourcing/internal-API, and via
- * {@code readEnums} enum declarations) and capability reader are complete (0.3.0
- * / 0.4.0). Writer does lexical-preserving field/relationship/action mutations.
- * The 0.5.0 mutation surface (ADR-042) is complete on the SDK side: slice 2
- * (the {@code SourceModelConflictDetector} two-{@code DomainMetadata}
- * {@code detect}) detects drift; slice 3 adds the baseline-trust gate (the
- * JSON/source {@code detect} overloads + {@code checkBaselineTrust}) mapping a
- * missing / unparseable / schema-skewed baseline to {@code NO_BASELINE}; slice 4
- * ({@code SourceModelMutationApplier}) applies conflict-aware, with the
- * {@code sourceDigest} as the apply-time {@code STALE_DIGEST} concurrency token.
+ * {@code readEnums} enum declarations) and capability reader are complete. Writer does
+ * lexical-preserving field/relationship/action mutations. The mutation surface (ADR-042) is
+ * complete on the SDK side: conflict detection (the {@code SourceModelConflictDetector} two-
+ * {@code DomainMetadata} {@code detect}) detects drift; baseline-trust gate (the JSON/source
+ * {@code detect} overloads + {@code checkBaselineTrust}) maps a missing / unparseable /
+ * schema-skewed baseline to {@code NO_BASELINE}; conflict-aware application
+ * ({@code SourceModelMutationApplier}) applies with the {@code sourceDigest} as the apply-time
+ * {@code STALE_DIGEST} concurrency token.
  *
- * <p><b>Cross-repo status — the baseline-trust stamp is live.</b> The tooling
- * half shipped: {@code ExerisDomainProcessor.buildMetadataNode} writes
+ * <p><b>Cross-repo status — the baseline-trust stamp is live.</b> On the tooling
+ * side, {@code ExerisDomainProcessor.buildMetadataNode} writes
  * {@code schemaVersion} and {@code sourceDigest} as sibling fields into each
  * {@code exeris-metadata/<entity>.json}
  * ({@code ExerisDomainProcessor.java:1969-1977}), on the {@code @ExerisDomain}

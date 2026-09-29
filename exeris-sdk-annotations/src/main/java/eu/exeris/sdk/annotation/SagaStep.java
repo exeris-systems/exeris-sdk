@@ -465,10 +465,10 @@ public @interface SagaStep {
      * steps sharing an {@link #order()} and both declaring {@code parallel = true} are emitted one
      * after the other.
      *
-     * <p>This is not a gap {@code exeris-tooling} can close on its own. Concurrency has to be
-     * expressible in the kernel's {@code FlowDefinition} before a generator can emit it; until it
-     * is, a linear chain is the only correct compilation of these steps, and the honest reading of
-     * this attribute is "recorded author intent", not "runs in parallel".
+     * <p>This is not a gap {@code exeris-tooling} can close on its own. Concurrency must be
+     * expressible in the kernel's {@code FlowDefinition} before a generator can emit it. Today,
+     * a linear chain is the only correct compilation of these steps, and this attribute is
+     * "recorded author intent", not "runs in parallel".
      *
      * @return true for parallel execution
      */

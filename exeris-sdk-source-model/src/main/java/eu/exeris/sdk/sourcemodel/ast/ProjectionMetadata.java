@@ -6,23 +6,16 @@ import java.util.List;
 
 /**
  * Metadata for a {@code @Projection} — a read-only view built from an
- * aggregate's events (the Query side of CQRS).
- *
- * <p>The record originally carried only {@code name} / {@code description} /
- * {@code fields} / {@code cacheable}: it could say <em>what</em> the view shows
- * but not <em>what it is a view of</em>. The 0.7.0 growth adds the source and
- * read-model framing so the "expose this subset of <em>this</em> aggregate as a
- * read-only view" pattern is expressible — the gap logged under the 0.6.0–0.9.0
- * AST-expressiveness roadmap items:
+ * aggregate's events (the Query side of CQRS). The record captures:
  *
  * <ul>
  *   <li>{@code aggregateTypes} — the source aggregate(s) the projection reads
- *       (from {@code @Projection.aggregateTypes}); the "of <em>this</em>
- *       aggregate" link that {@code fields} (the exposed subset) was missing.</li>
+ *       (from {@code @Projection.aggregateTypes})</li>
  *   <li>{@code events} / {@code eventClassNames} / {@code topicPattern} — the
- *       event subscription that drives the read model.</li>
+ *       event subscription that drives the read model</li>
  *   <li>{@code model} / {@code schema} — the read-model identity (the view class
- *       and its database schema).</li>
+ *       and its database schema)</li>
+ *   <li>{@code fields} — the exposed field subset of the source aggregate</li>
  * </ul>
  *
  * <p><strong>Scope.</strong> {@code @Projection} carries a large operational

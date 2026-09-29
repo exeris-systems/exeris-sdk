@@ -7,15 +7,9 @@ import java.util.List;
 /**
  * Metadata for an {@code @EventHandler} method — the <em>reaction</em> side of
  * the event surface, paired with the <em>emission</em> side captured by
- * {@link DomainEventMetadata}.
- *
- * <p>The {@code @EventHandler} annotation has shipped since 0.1.0, but until now
- * there was no AST record to extract it into: the processor could read the
- * annotation and had nowhere to put it, so the choreography backbone ("when
- * event X fires, do Y") was invisible to the AST and to codegen. This record
- * closes that gap (the SDK half — the build-time extraction + codegen consumer
- * are {@code exeris-tooling} work, tracked under the 0.6.0–0.9.0 AST-expressiveness
- * roadmap items).
+ * {@link DomainEventMetadata}. This record carries the extraction of
+ * {@code @EventHandler} into the AST, making the choreography ("when event X
+ * fires, do Y") visible to codegen.
  *
  * <p><strong>Scope.</strong> This first cut models the behaviourally meaningful
  * facets — identity, event selection, ordering, execution semantics, and the

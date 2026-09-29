@@ -62,10 +62,9 @@ import java.lang.annotation.Target;
  * </ul>
  *
  * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
- * <p>Declared shape, not yet a socket. The kernel side demonstrably exists —
- * {@code WebSocketProvider} / {@code WebSocketExchange} / {@code WebSocketSession}
- * shipped in kernel v0.12.0 with {@code AbstractWebSocketExchangeTck}, an RFC 6455
- * codec in Core and a Community transport binding — but no {@code exeris-tooling}
+ * <p>Declared shape, not yet a socket. The kernel provides {@code WebSocketProvider}
+ * / {@code WebSocketExchange} / {@code WebSocketSession} with {@code AbstractWebSocketExchangeTck},
+ * an RFC 6455 codec in Core and a Community transport binding — but no {@code exeris-tooling}
  * processor extracts {@code @Channel}, no generator opens an endpoint from it, and
  * the {@code exeris-sdk-source-model-io} reader does not read it, so declaring it
  * today has no generated effect.

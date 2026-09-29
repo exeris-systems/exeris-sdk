@@ -30,9 +30,8 @@ import static org.assertj.core.groups.Tuple.tuple;
  * attributes present-only — {@code min}/{@code max}/{@code minLength}/
  * {@code maxLength}/{@code pattern} — and the reader must carry the same values,
  * or every reattach over a field declaring one of them reports spurious drift.
- * {@code minLength}/{@code maxLength} were silently dropped on read until 0.9.0;
- * the budgetHQ corpus (14 {@code maxLength} occurrences, 5 patterns) pins the
- * fix to real values below.
+ * The budgetHQ corpus (14 {@code maxLength} occurrences, 5 patterns) provides
+ * real-world test cases for all five boundary attributes.
  */
 @DisplayName("reader↔processor @Validation parity: bounds land on FieldMetadata")
 class SourceModelReaderValidationParityTest {
@@ -218,8 +217,7 @@ class SourceModelReaderValidationParityTest {
     void everyValidationAttributeIsAppliedOrDocumentedUnextracted() {
         // AnnotationContractTest-style guard: the NEXT @Validation attribute added
         // without an extraction decision fails here instead of shipping silently
-        // unread (how the minLength/maxLength gap survived until 0.9.0).
-        // Deprecated attributes (required, validateOn) ride the deprecation
+        // unread. Deprecated attributes (required, validateOn) ride the deprecation
         // pipeline, not the extraction contract, so they are excluded.
         Set<String> declared = Arrays.stream(Validation.class.getDeclaredMethods())
                 .filter(method -> !method.isSynthetic())

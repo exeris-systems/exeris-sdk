@@ -177,15 +177,13 @@
  * an empty target set means the type cannot be applied to any construct and can
  * appear only as a member value.
  * <p>They also declare {@code @Retention(RetentionPolicy.SOURCE)}, like every
- * other annotation here. Sixteen of them declared neither until 0.12.0, on the
- * reasoning that a nested type is reachable only through its parent and inherits
- * its retention at the use site. The premise held and the conclusion did not:
- * nothing <em>made</em> them member-value-only, because a type with no
- * {@code @Target} may be applied anywhere, and one with no {@code @Retention}
- * defaults to {@code CLASS} rather than {@code SOURCE}. The two meta-annotations
- * turn what was a convention into something the compiler refuses to break.
- * <p>{@code AnnotationContractTest} now walks nested types too — it did not
- * before, which is why the gap survived as long as it did.
+ * other annotation here. Being reachable only through its parent does not make a
+ * nested type member-value-only: a type with no {@code @Target} may be applied
+ * anywhere, and one with no {@code @Retention} defaults to {@code CLASS} rather
+ * than {@code SOURCE}. The two meta-annotations turn the convention into something
+ * the compiler refuses to break.
+ * <p>{@code AnnotationContractTest} walks nested types too, so a nested type that
+ * drops either meta-annotation fails the build.
  *
  * <h2>Annotation index by status</h2>
  * <p>Annotation-level status. Attribute-level status is on each annotation's own
@@ -299,9 +297,9 @@
  * declaration. The markers' own attributes are not carried. The {@code system}
  * package javadoc has the per-marker status.
  *
- * <h2>Data scope (formerly {@code tenantScoped})</h2>
+ * <h2>Data scope (successor of {@code tenantScoped})</h2>
  * <p>{@link eu.exeris.sdk.annotation.ExerisDomain#tenantScoped()} is
- * {@code @Deprecated(forRemoval = true)} as of 0.10.0 (ADR-059). Its successor is
+ * {@code @Deprecated(since = "0.10.0", forRemoval = true)} (ADR-059). Its successor is
  * the three-tier {@link eu.exeris.sdk.annotation.ExerisDomain#dataScope()}:
  * <ul>
  *   <li>{@code GLOBAL} — one row set shared by every tenant. Today's
@@ -352,7 +350,7 @@
  *       field property, not a validation rule.</li>
  * </ul>
  * <p>The processor reads both as a fallback with a build warning until 1.0.0.
- * Note that only {@code min}, {@code max}, {@code minLength}, {@code maxLength}
+ * Only {@code min}, {@code max}, {@code minLength}, {@code maxLength}
  * and {@code pattern} are carried into the AST; the flag constraints
  * ({@code email}, {@code url}, {@code future}, {@code past}, …) are declared here
  * but not yet extracted — PARTIAL at best. Check
@@ -368,8 +366,7 @@
  * {@link eu.exeris.sdk.annotation.UI.ComponentType#CUSTOM} with
  * {@link eu.exeris.sdk.annotation.UI#customComponent()} declares the escape hatch
  * out of the closed component enum. Neither is extracted by any reader today, so
- * neither has a generated effect — they are RESERVED, not the live i18n path the
- * 0.6.0 notes described.
+ * neither has a generated effect — they are RESERVED, not a live i18n path.
  *
  * <h2>Declarative-behaviour layer — RESERVED</h2>
  * <p>{@link eu.exeris.sdk.annotation.Derived} and {@link eu.exeris.sdk.annotation.Rule}
@@ -388,12 +385,12 @@
  * object (an attachment) rather than an inline value, and
  * {@link eu.exeris.sdk.annotation.Schedule} declares that an
  * {@link eu.exeris.sdk.annotation.Action} also fires on a trigger rather than
- * only when called. They close the two Entity-First gaps kernel v0.11 named when
- * it shipped {@code …spi.storage.blob} (kernel ADR-056) and
- * {@code …spi.scheduling} (kernel ADR-057).
+ * only when called. They express the Entity-First shape for kernel packages
+ * {@code …spi.storage.blob} (kernel ADR-056) and {@code …spi.scheduling}
+ * (kernel ADR-057).
  *
  * <p>Unlike the other RESERVED entries above, the reservation here is not waiting
- * on a platform that does not exist — both kernel packages shipped with their
+ * on a platform that does not exist — both kernel packages are available with their
  * TCKs. It is waiting on the {@code exeris-tooling} transcription, and on the
  * kernel promoting each package out of tier {@code preview}. Until both happen,
  * <strong>neither surface enters the 1.0.0 freeze</strong> and a 1.x minor may
@@ -431,8 +428,8 @@
  * the ambiguity the annotation was added to remove.
  *
  * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
- * side shipped with {@code AbstractHttpRoutePolicyTck}, the remaining gap is the
- * {@code exeris-tooling} slice that emits a URL-to-policy table, and the kernel
+ * provides {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the
+ * {@code exeris-tooling} slice that emits a URL-to-policy table. The kernel
  * holds route authorization at tier {@code preview}. So this surface does
  * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
  *
@@ -440,7 +437,7 @@
  * <p>{@link eu.exeris.sdk.annotation.Channel} declares that an entity exposes a
  * connection its clients may <em>write</em> to, not only read from. It is the
  * Entity-First expression of the kernel's WebSocket seam (kernel ADR-084,
- * {@code eu.exeris.kernel.spi.websocket}, v0.12.0).
+ * {@code eu.exeris.kernel.spi.websocket}).
  *
  * <p><strong>It is not a fourth spelling of the streaming attributes.</strong>
  * {@link eu.exeris.sdk.annotation.ExerisDomain#realTimeApi()} and
@@ -457,9 +454,9 @@
  * nullable {@code ChannelMetadata} whose mere presence is the declaration.
  *
  * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape once more: the
- * kernel side shipped with {@code AbstractWebSocketExchangeTck}, the remaining gap
- * is the {@code exeris-tooling} slice that opens an endpoint from the declaration,
- * and the kernel holds {@code …spi.websocket} at tier {@code preview} — so this
+ * kernel provides {@code AbstractWebSocketExchangeTck}, and the remaining gap
+ * is the {@code exeris-tooling} slice that opens an endpoint from the declaration.
+ * The kernel holds {@code …spi.websocket} at tier {@code preview} — so this
  * surface does <strong>not</strong> enter the 1.0.0 freeze; see
  * {@code docs/adr/ADR-072}. Read that {@code preview} precisely: kernel ADR-084 §10
  * gates promotion on benchmark evidence a TCK cannot supply (concurrent connections,

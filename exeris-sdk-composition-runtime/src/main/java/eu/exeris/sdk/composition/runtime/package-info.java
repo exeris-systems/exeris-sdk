@@ -25,12 +25,12 @@
  * no {@code exeris-kernel} or {@code exeris-tooling} type — only the SDK composition-spec, the
  * composition-lifecycle interface, and a JSON mapper — and no kernel package calls into it.
  *
- * <p><b>The boot conductor (landed, SDK 0.9.0).</b> The larger composition-runtime piece — the boot
- * conductor (ADR-024 obligation 8a′, amendment 2026-07-21 "Boot Conductor Call Site"),
- * {@link eu.exeris.sdk.composition.runtime.CompositionConductor} — drives each cap through the
- * four-phase lifecycle ({@code initialize → ready → drain → terminate}) in the tooling-supplied
- * {@code initOrder}, replayed verbatim (stamp assertion first, then reflective hook discovery from
- * the manifest's per-module {@code lifecycleOwner}, then the phase loops — with no DAG
+ * <p><b>The boot conductor.</b> The larger composition-runtime piece — the boot conductor
+ * (ADR-024 obligation 8a′, amendment 2026-07-21 "Boot Conductor Call Site"),
+ * {@link eu.exeris.sdk.composition.runtime.CompositionConductor} — drives
+ * each cap through the four-phase lifecycle ({@code initialize → ready → drain → terminate}) in the
+ * tooling-supplied {@code initOrder}, replayed verbatim (stamp assertion first, then reflective hook
+ * discovery from the manifest's per-module {@code lifecycleOwner}, then the phase loops — with no DAG
  * re-resolution); a boot failure unwinds the touched caps and surfaces as
  * {@link eu.exeris.sdk.composition.runtime.CompositionBootException}. The hooks module is split on
  * purpose: the {@code CapabilityLifecycleHooks} interface lives in the zero-dependency
@@ -42,10 +42,9 @@
  * boots standalone (the code-detachment guarantee). Shutdown is SKU-entrypoint-driven: caps drain
  * and terminate in reverse {@code initOrder} (honouring the composition-wide drain deadline), then
  * the kernel stops. The composition-manifest format the conductor consumes is fixed as JSON
- * (ADR-053). Tooling-emitter status: the generated SKU bootstrap that emits this call site ships
- * with the {@code exeris-tooling} bootstrap emitter (gateway-caps plan, Phase 1/2); until then a
- * hand-written SKU entrypoint invokes the conductor directly — the library contract is identical in
- * both cases.
+ * (ADR-053). {@code exeris-tooling}'s {@code KernelApplicationGenerator} emits the call site for a
+ * build that declares caps (see {@code eu.exeris.sdk.composition.lifecycle}); a hand-written SKU
+ * entrypoint may invoke the conductor directly, and the library contract is identical in both cases.
  *
  * @since 0.8
  */

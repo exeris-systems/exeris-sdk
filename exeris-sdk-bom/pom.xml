@@ -21,17 +21,12 @@
              The pairing is dictated by jackson-bom: jackson-bom 3.2.2 sets
              jackson.version.annotations=2.22, so databind/datatype 3.2.2 pairs
              with annotations 2.22 (2.22 still ships JsonSerializeAs, the floor
-             the AST relies on). The 3.0-rc* annotations track was abandoned.
+             the AST relies on).
              Keep the two on their separate 3.x / 2.x lines — do not "unify" them.
-
-             History: 3.1.2/2.21 -> 3.2.0/2.22 (2026-06, security fixes).
-             3.2.0 -> 3.2.2 (2026-09): 3.2.0 is vulnerable to the @JsonView
-             bypass on @JsonUnwrapped container properties, fixed in 3.2.1.
-             3.2.2 rather than the minimal 3.2.1 because exeris-kernel-bom is
-             already there and this version is coordinated ecosystem-wide;
-             both pair with annotations 2.22, checked against each jackson-bom
-             rather than assumed. exeris-platform-bom is still on 3.2.0 and
-             carries the same advisory. -->
+             The floor is 3.2.1: 3.2.0 carries the @JsonView bypass on
+             @JsonUnwrapped container properties. 3.2.2 is the version
+             exeris-kernel-bom coordinates on, and it pairs with annotations
+             2.22, checked against jackson-bom rather than assumed. -->
         <jackson.annotations.version>2.22</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.7</assertj.version>

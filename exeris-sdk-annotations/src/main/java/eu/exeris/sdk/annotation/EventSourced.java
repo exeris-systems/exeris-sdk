@@ -45,9 +45,8 @@ import java.lang.annotation.*;
  *
  * <p><strong>Status: PARTIAL</strong> — extracted into {@code EventSourcedMetadata}, so it
  * survives onto the wire, and read by no generator: event-sourcing emission is not
- * implemented yet. This is a tooling gap rather than a kernel one — the kernel line ships
- * the replayable read and the optimistic-concurrency write with both Community bindings and
- * a TCK.
+ * implemented yet. The kernel provides replayable read and optimistic-concurrency write
+ * with Community bindings and a TCK; the gap is in tooling emission.
  * @since 0.1
  * @see DomainEvent
  */

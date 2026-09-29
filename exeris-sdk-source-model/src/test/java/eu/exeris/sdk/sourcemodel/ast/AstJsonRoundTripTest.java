@@ -25,17 +25,13 @@ class AstJsonRoundTripTest {
 
     /**
      * Jackson 3 defaults {@code FAIL_ON_NULL_FOR_PRIMITIVES=true}; Jackson 2
-     * defaulted it to {@code false}. AST records use primitive booleans
+     * defaults it to {@code false}. AST records use primitive booleans
      * heavily, so on a Jackson 3 mapper an explicit {@code null} standing where
-     * one of them is declared throws. Downstream consumers MUST configure their
-     * mapper the same way or read paths break.
-     *
-     * <p><strong>Corrected 2026-08-26:</strong> this said "absent fields land
-     * as {@code null} on the wire", which is measurably not so — an absent
-     * property binds the primitive's own default and raises nothing. The
-     * requirement stands; its trigger is an explicit null, which this SDK's own
-     * writer never emits and a third-party producer, a hand edit, or an
-     * {@code ALWAYS}-inclusion re-serialization all do. Pinned below by
+     * one of them is declared throws. An absent property binds the primitive's
+     * own default and raises nothing. Downstream consumers MUST configure their
+     * mapper the same way or read paths break: this SDK's own writer never emits
+     * an explicit null, but a third-party producer, a hand edit, or an
+     * {@code ALWAYS}-inclusion re-serialization can. Pinned below by
      * {@link #absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag()}.
      */
     private final ObjectMapper mapper = JsonMapper.builder()
@@ -94,11 +90,10 @@ class AstJsonRoundTripTest {
     @DisplayName("DomainMetadata.dataScope survives the wire for every tier, including GLOBAL")
     void dataScopeRoundTripsForEveryTier() {
         // DomainMetadata is class-level @JsonInclude(NON_NULL) — the deliberate
-        // ViewMetadata posture — so a non-null tier is not at risk today, and the
-        // ordinal-0 / boxed-zero trap that cost the FieldMetadata bounds a fix in
-        // 0.9.0 is NOT armed here. Every tier is still pinned because the cost of
-        // that changing is asymmetric: under NON_DEFAULT it is GLOBAL (ordinal 0)
-        // that drops, and a dropped explicit GLOBAL is not a lost hint — it falls
+        // ViewMetadata posture — so a non-null tier is not at risk. Every tier is
+        // pinned because the cost of that changing is asymmetric: under NON_DEFAULT
+        // it is GLOBAL (ordinal 0) that drops, and a dropped explicit GLOBAL is not
+        // a lost hint — it falls
         // back through effectiveDataScope() and reads the entity back as TENANT.
         // A silent tenancy flip is exactly what the tier that looks least
         // interesting would cause, so it is the one worth asserting.
@@ -115,9 +110,9 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("DomainMetadata with no dataScope reads back absent, not defaulted")
     void absentDataScopeStaysAbsentOnTheWire() {
-        // A pre-0.10.0 baseline carries only tenantScoped. The absent tier must
-        // stay absent so effectiveDataScope() applies the documented fallback,
-        // rather than being materialised into a concrete tier by the reader.
+        // The absent tier must stay absent so effectiveDataScope() applies the
+        // documented fallback, rather than being materialised into a concrete tier
+        // by the reader.
         DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")
                 .tenantScoped(true)
                 .build();
@@ -141,7 +136,7 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("FieldMetadata round-trips (NON_DEFAULT inclusion)")
     void fieldMetadataRoundTrips() {
-        // Bounds may be any value incl. 0 since 0.9.0 (per-component NON_NULL);
+        // Bounds may be any value incl. 0 (per-component NON_NULL);
         // the zero-bound wire contract is pinned in fieldMetadataZeroBoundsRoundTrip.
         FieldMetadata original = FieldMetadata.builder("amount", "BigDecimal")
                 .required(true)
@@ -169,13 +164,12 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("FieldMetadata zero-valued bounds survive the wire (0.9.0, per-component NON_NULL)")
+    @DisplayName("FieldMetadata zero-valued bounds survive the wire (per-component NON_NULL)")
     void fieldMetadataZeroBoundsRoundTrip() {
-        // min = 0 is a legitimate non-negativity floor. Under the pre-0.9.0
-        // class-level NON_DEFAULT, Jackson 3 treated boxed zero as "empty" and
-        // silently dropped all four bound keys; per-component NON_NULL keeps
-        // them. The deep-equality round trip alone would catch the drop
-        // (null != 0), but the JSON-key assertions document the wire contract.
+        // min = 0 is a legitimate non-negativity floor. Per-component NON_NULL
+        // keeps zero-valued bounds on the wire. The deep-equality round trip alone
+        // would catch a dropped zero (null != 0), but the JSON-key assertions
+        // document the wire contract.
         FieldMetadata original = FieldMetadata.builder("amount", "Long")
                 .min(0L)
                 .max(0L)
@@ -250,7 +244,7 @@ class AstJsonRoundTripTest {
     }
 
     @Test
-    @DisplayName("ActionMetadata round-trips streaming fields (0.8.0, NON_DEFAULT inclusion)")
+    @DisplayName("ActionMetadata round-trips streaming fields (NON_DEFAULT inclusion)")
     void streamingActionMetadataRoundTrips() {
         ActionMetadata original = ActionMetadata.builder("generate-report")
                 .description("Stream report progress")
@@ -266,14 +260,11 @@ class AstJsonRoundTripTest {
     @DisplayName("NON_DEFAULT drops boxed zero, but NOT an ordinal-0 enum — measured, not assumed")
     void nonDefaultDropsBoxedZeroNotOrdinalZeroEnums() {
         // This pins the actual Jackson 3 semantics that several inclusion choices
-        // in this package are justified by, because one of those justifications
-        // was wrong and nothing checked it. The repo-wide caveat is correct as
-        // CLAUDE.md states it — NON_DEFAULT treats a boxed numeric zero as
-        // "empty" and drops it, which is what cost the FieldMetadata bounds a fix
-        // in 0.9.0. The extension of that to enums is not: an ordinal-0 constant
-        // is not "empty" to Jackson and survives NON_DEFAULT untouched. Measured
-        // here so the next inclusion decision reasons from the behaviour rather
-        // than from the folklore.
+        // in this package rely on: NON_DEFAULT treats a boxed numeric zero as
+        // "empty" and drops it. The extension to enums is not: an ordinal-0
+        // constant is not "empty" to Jackson and survives NON_DEFAULT untouched.
+        // Measured here so inclusion decisions reason from behaviour rather than
+        // assumption.
         String json;
         try {
             json = mapper.writeValueAsString(new InclusionProbe(Probe.FIRST, 0L, "", false));
@@ -295,11 +286,9 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("absent primitive defaults quietly; only an explicit null needs the flag — measured")
     void absentPrimitiveDefaultsWhileExplicitNullNeedsTheFlag() {
-        // Pins what FAIL_ON_NULL_FOR_PRIMITIVES actually governs. The consumer contract has always
-        // required the flag and always will; what was wrong, in five files at once, was the reason
-        // given for it — that NON_DEFAULT omitting a false-valued boolean is what makes a read
-        // throw. It is not. Nothing checked it because this SDK's writer never emits a null, so the
-        // stated mechanism was never on any wire it produced.
+        // Pins what FAIL_ON_NULL_FOR_PRIMITIVES actually governs: the flag controls
+        // whether an explicit null throws when deserialized to a primitive. An absent
+        // property (no key on the wire) binds the primitive's default and raises nothing.
         ObjectMapper stock = JsonMapper.builder().build();
 
         DomainMetadata absent = stock.readValue(
@@ -779,7 +768,7 @@ class AstJsonRoundTripTest {
     @Test
     @DisplayName("SagaTransition omits a normalized-away blank target on the wire")
     void sagaTransitionBlankTargetOmittedFromJson() {
-        // Regression (PR #61): a blank `to` must normalize to null so the key is
+        // A blank `to` must normalize to null so the key is
         // absent on the wire (NON_NULL), not serialized as the whitespace string
         // "to": "   " that a downstream `to == null` check would miss.
         String json;

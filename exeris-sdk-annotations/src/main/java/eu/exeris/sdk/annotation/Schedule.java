@@ -49,14 +49,14 @@ import java.lang.annotation.Target;
  * here. Event-driven work is already expressible — see {@link EventHandler}.
  *
  * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
- * <p>Declared shape, not yet a running job. The kernel side demonstrably exists —
- * {@code JobScheduler} / {@code JobDescriptor} / {@code JobTrigger} shipped on the
- * kernel 0.11 line with {@code AbstractJobSchedulerTck} — but no
- * {@code exeris-tooling} processor extracts {@code @Schedule}, no generator submits
- * a job from it, and the {@code exeris-sdk-source-model-io} reader does not read it,
- * so declaring it today has no generated effect. The kernel holds
- * {@code …spi.scheduling} at tier {@code preview}, so this surface is
- * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still change
+ * <p>Declared shape, not yet a running job. The kernel provides
+ * {@code JobScheduler} / {@code JobDescriptor} / {@code JobTrigger} with
+ * {@code AbstractJobSchedulerTck} — but no {@code exeris-tooling} processor
+ * extracts {@code @Schedule}, no generator submits a job from it, and the
+ * {@code exeris-sdk-source-model-io} reader does not read it, so declaring it
+ * today has no generated effect. The kernel holds {@code …spi.scheduling} at
+ * tier {@code preview}, so this surface is <strong>excluded from the 1.0.0
+ * freeze</strong> and a 1.x minor may still change
  * it; it is promoted when the kernel package leaves {@code preview} <em>and</em> the
  * tooling transcription exists. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *

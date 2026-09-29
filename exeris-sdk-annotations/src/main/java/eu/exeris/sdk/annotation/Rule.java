@@ -36,7 +36,7 @@ import java.lang.annotation.Target;
  * reserved while the {@code RuleMetadata} record, the {@code exeris-tooling}
  * processor extraction, the {@code exeris-sdk-source-model-io} reader (in
  * lock-step parity), and the codegen consumer are wired; see {@code ROADMAP.md}
- * and the declarative-behaviour RFC {@code RFC-2026-06-18} (ACCEPTED).
+ * and RFC-2026-06-18 (ACCEPTED) for the design direction.
  *
  * @since 0.7
  * @see Derived

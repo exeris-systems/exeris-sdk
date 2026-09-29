@@ -15,7 +15,7 @@ import java.util.Objects;
  * A single, serializable metadata mutation that LSP / Studio / IDE plugins ask
  * the {@code -io} layer to apply (ADR-042, obligation 1). The sealed family
  * covers the eight mutations the {@code -io} writer already applies idempotently
- * (ADR-037, PRs #23–#25) plus relationship-cardinality change.
+ * (ADR-037) plus relationship-cardinality change.
  *
  * <p>Every op is <strong>path-addressed</strong> ({@link #path()}, grammar in
  * {@link MutationPath}) and carries only the payload its kind needs. Slice 4

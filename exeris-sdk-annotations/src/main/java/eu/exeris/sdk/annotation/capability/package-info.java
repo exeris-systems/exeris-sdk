@@ -55,22 +55,22 @@
  *       responsibilities of {@code exeris-tooling}.</li>
  * </ul>
  *
- * <h2>Open-Core status — LIVE; extracted and conducted, generated call site pending</h2>
+ * <h2>Open-Core status — LIVE; extracted, conducted, and called from generated code</h2>
  * <p>This surface is consumed end-to-end today. Build-time: the
  * {@code exeris-tooling} processor extracts {@code @CapabilityModule} /
  * {@code @Provides} / {@code @Requires} and the {@code @CapabilityLifecycle}
  * owner, validates the dependency DAG, and emits {@code cap-manifest.json}
  * (with the validation stamp, the topological {@code initOrder}, and each
- * module's {@code lifecycleOwner}). Boot-time (SDK 0.9.0): the
+ * module's {@code lifecycleOwner}). Boot-time: the
  * {@code exeris-sdk-composition-runtime} asserter verifies the stamp, and the
  * boot conductor drives the four-phase lifecycle
  * ({@code initialize → ready → drain → terminate}) from the manifest —
  * instantiating each {@code lifecycleOwner} reflectively and replaying
- * {@code initOrder} verbatim. The remaining not-yet piece is the
- * <em>generated call site</em>: the SKU bootstrap that invokes the conductor
- * inside {@code kernelMain} after {@code KERNEL READY} ships with the
- * {@code exeris-tooling} bootstrap emitter (gateway-caps plan); until then a
- * hand-written SKU entrypoint invokes the conductor directly — the library
+ * {@code initOrder} verbatim. The call site is generated too:
+ * {@code exeris-tooling}'s {@code KernelApplicationGenerator} emits the conductor
+ * inside {@code KernelBootstrap.boot(...)}, after {@code KERNEL READY}, for a build
+ * that declares caps (see {@code eu.exeris.sdk.composition.lifecycle}). A
+ * hand-written SKU entrypoint may invoke the conductor directly — the library
  * contract is identical in both cases.
  *
  * @since 0.4

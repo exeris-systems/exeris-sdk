@@ -27,102 +27,11 @@ public final class SchemaVersion {
      * and understands. Bump only on an AST/JSON shape change, with a note in
      * {@code MIGRATION.md} — not on routine artifact-version bumps.
      *
-     * <p>History:
-     * <ul>
-     *   <li>{@code "0.5.0"} — initial baseline-trust schema (ADR-042).</li>
-     *   <li>{@code "0.6.0"} — bumped for the 0.6.0 AST shape growth that added
-     *       JSON-affecting record components: {@code FieldMetadata.dataType}
-     *       (B5), {@code FieldMetadata.displayNameKey} / {@code descriptionKey},
-     *       {@code UIFieldMetadata.customComponent} / {@code placeholderKey} /
-     *       {@code helpTextKey}, and {@code ComponentType.CUSTOM} (B4). The
-     *       additions are by-name and back-compatible to read, but the schema
-     *       names the shape, and the ADR posture is to refuse cross-shape
-     *       baselines rather than assume compatibility — so a {@code "0.5.0"}
-     *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
-     *   <li>{@code "0.7.0"} — bumped for the next JSON-affecting AST shape
-     *       growth: {@code ProjectionMetadata} gained the source / subscription /
-     *       read-model components ({@code aggregateTypes}, {@code events},
-     *       {@code eventClassNames}, {@code topicPattern}, {@code model},
-     *       {@code schema}). Same posture as the 0.6.0 bump — the additions are
-     *       by-name and back-compatible to read, but the schema names the shape,
-     *       so a {@code "0.6.0"} baseline reads as {@code SCHEMA_VERSION_SKEW}.
-     *       (The 0.6.0 schema already covered {@code DomainMetadata.eventHandlers},
-     *       which landed within the 0.6.0 release.) The 0.7.0 schema likewise
-     *       also covers the saga state-machine growth that landed within the same
-     *       0.7.0 release: {@code SagaMetadata.transitions} (typed, outcome-edged
-     *       transitions) and {@code SagaStepMetadata.kind}, and the
-     *       declarative-behaviour growth — {@code FieldMetadata.derived}
-     *       ({@code DerivedMetadata}) and {@code DomainMetadata.rules}
-     *       ({@code RuleMetadata}) — all additive, by-name, so no further bump
-     *       within 0.7.0.</li>
-     *   <li>{@code "0.8.0"} — bumped for the streaming AST growth: {@code
-     *       ActionMetadata} gained {@code streaming} / {@code streamEventType} /
-     *       {@code realTimeUpdates}, the per-action twin of the {@code @Action}
-     *       streaming attributes, unblocking the tooling per-action SSE stream
-     *       emitter (ADR-043 / RFC-2026-06-22). Same posture as the prior bumps —
-     *       the additions are by-name and back-compatible to read, but the schema
-     *       names the shape, so a {@code "0.7.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}.</li>
-     *   <li>{@code "0.9.0"} — bumped for the {@code FieldMetadata} bounds
-     *       inclusion fix: {@code min} / {@code max} / {@code minLength} /
-     *       {@code maxLength} moved from the class-level
-     *       {@code @JsonInclude(NON_DEFAULT)} to per-component
-     *       {@code NON_NULL}, so zero-valued bounds (e.g. {@code min = 0} as a
-     *       non-negativity floor) survive serialization instead of being
-     *       dropped as boxed-zero "empty". No component changed name or type,
-     *       but the wire can now carry keys it previously dropped — the schema
-     *       names the shape, so a {@code "0.8.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}.</li>
-     *   <li>{@code "0.10.0"} — bumped for the data-scope tier:
-     *       {@code DomainMetadata} gained {@code dataScope}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.DataScope}), the
-     *       mutually-exclusive successor of the deprecated {@code tenantScoped}
-     *       boolean (RFC-2026-06-24 / ADR-059). Additive and by-name, and an
-     *       absent {@code dataScope} still reads correctly through
-     *       {@code DomainMetadata.effectiveDataScope()}'s {@code tenantScoped}
-     *       fallback — but the schema names the shape, so a {@code "0.9.0"}
-     *       baseline reads as {@code SCHEMA_VERSION_SKEW}.</li>
-     *   <li>{@code "0.11.0"} — bumped for the kernel-0.11 design-time facets:
-     *       {@code FieldMetadata} gained {@code blob}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.BlobMetadata}) and
-     *       {@code ActionMetadata} gained {@code schedule}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.ScheduleMetadata}), the AST
-     *       twins of {@code @Blob} and {@code @Schedule} (ADR-072). Both are
-     *       trailing, additive and by-name, and both are <em>reserved</em> —
-     *       nothing populates them yet — so a {@code "0.10.0"} baseline loses
-     *       no information in practice. The bump is taken anyway, because the
-     *       schema names the shape rather than its population, and the posture
-     *       is to refuse a cross-shape baseline rather than assume
-     *       compatibility: a {@code "0.10.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}.</li>
-     *   <li>{@code "0.12.0"} — bumped for the route-authorization facet:
-     *       {@code DomainMetadata} and {@code ActionMetadata} each gained
-     *       {@code routeAccess}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.RouteAccess}), the AST twin of
-     *       {@code @RouteAccess} (kernel ADR-061; ADR-072 as amended). Trailing,
-     *       additive, by-name and <em>reserved</em> on the same terms as the
-     *       0.11.0 pair, so a {@code "0.11.0"} baseline loses no information in
-     *       practice — and the bump is taken anyway, for the same reason it was
-     *       taken then. A {@code "0.11.0"} baseline reads as
-     *       {@code SCHEMA_VERSION_SKEW}. The 0.12.0 schema likewise also covers
-     *       two further additions that landed within the same 0.12.0 release,
-     *       both trailing, additive, by-name and reserved on the same terms, so
-     *       neither took a further bump.
-     *       <p>{@code DomainMetadata.channel}
-     *       ({@link eu.exeris.sdk.sourcemodel.ast.ChannelMetadata}) is the AST
-     *       twin of {@code @Channel} (kernel ADR-084; ADR-072 as amended). It
-     *       carries one wire shape the earlier reserved facets do not: a declared
-     *       channel with neither attribute set serializes as an empty object
-     *       ({@code "channel":{}}) rather than being dropped, which is what keeps
-     *       "declared, nothing further" distinguishable from "not declared".
-     *       <p>{@code SystemFieldsMetadata.sharedScopeField} is the AST twin of
-     *       {@code @SharedScope} (RFC-2026-06-24 / ADR-059), and differs from
-     *       every reserved facet listed beside it in one way worth knowing: the
-     *       kernel half it names is not pending. A {@code DataScope.UNIVERSE}
-     *       policy compares this column against the session variable kernel
-     *       v0.12.0 publishes as {@code SESSION_KEY_SHARED_SCOPE}; what is still
-     *       missing is only the tooling emitter that reads the component.</li>
-     * </ul>
+     * <p>The value names an AST shape, not its population: a trailing, additive,
+     * by-name component still takes a bump, and a baseline stamped with any other
+     * value reads as {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}
+     * rather than being assumed compatible (ADR-042). The shape each value names
+     * is recorded against its bump in {@code MIGRATION.md}.
      */
     public static final String CURRENT = currentVersion();
 
@@ -140,16 +49,12 @@ public final class SchemaVersion {
      * {@link #isCurrent(String)} answers from the new jar while a caller's
      * inlined {@code CURRENT.equals(stamp)} answers from the old one, and a
      * baseline the build has just stamped reads back as
-     * {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}.
+     * {@link MutationResult.NoBaselineCause#SCHEMA_VERSION_SKEW}. Computing the
+     * value in a method keeps it out of every caller's constant pool.
      *
-     * <p>Found downstream in {@code exeris-platform}, where an SDK bump was
-     * green under {@code mvn clean test} and dropped three tests to
-     * {@code NO_BASELINE} without {@code clean} — stale test classes still
-     * carrying the inlined {@code "0.10.0"}. That is a build-hygiene trap with
-     * a confusing name on it, and it is this constant's to remove rather than
-     * every consumer's to know about. It is separate from, and was easy to
-     * mistake for, the deliberate cross-shape refusal documented on
-     * {@link #CURRENT} — that one is a real skew and is meant to be reported.
+     * <p>This is separate from the deliberate cross-shape refusal documented on
+     * {@link #CURRENT}: that one is a real skew and is meant to be reported.
+     * {@code MIGRATION.md} records the downstream case that surfaced the trap.
      */
     // java:S3400 ("methods should not return constants") asks for exactly the shape this
     // method exists to prevent: folding the literal back into CURRENT's initializer makes it

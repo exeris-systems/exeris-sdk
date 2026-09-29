@@ -282,8 +282,7 @@ class DomainMetadataTest {
             assertThat(base().internalApi(InternalApiMetadata.hidden("legacy")).build().isInternal()).isFalse();
             assertThat(base().internalApi(InternalApiMetadata.internal("svc")).build().isInternal()).isTrue();
             // The shape both extraction paths actually emit: presence-only, every
-            // other component left at its default. This is the case that was false
-            // through 0.10.0, which made the predicate dead on every real build.
+            // other component left at its default.
             assertThat(base().internalApi(InternalApiMetadata.builder().internal(true).build())
                     .build().isInternal()).isTrue();
         }
@@ -430,14 +429,14 @@ class DomainMetadataTest {
     }
 
     @Nested
-    @DisplayName("the 0.11.0 constructor shape is kept")
+    @DisplayName("the 39-component constructor shape is kept")
     class PreviousArity {
         // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
         // exercises the carrier on purpose.
         @SuppressWarnings("removal")
         @Test
         void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {
-            // Kept so code compiled or written against 0.11.0 still links and compiles
+            // Kept so code compiled against the 39-component shape still links and compiles
             // (MIGRATION-0.x-to-1.0.md §3). It must equal the builder's record with routeAccess
             // and channel absent — two shapes that disagreed would be two contracts.
             List<FieldMetadata> fields = List.of(FieldMetadata.builder("ref", "String").build());
