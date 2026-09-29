@@ -5,19 +5,17 @@ import { fileURLToPath } from 'node:url';
 import preset from '../tailwind.preset.js';
 
 /**
- * The Tailwind v4 `@theme` entry (`src/styles/theme.css`, B1) must stay in sync
+ * The Tailwind v4 `@theme` entry (`src/styles/theme.css`) must stay in sync
  * with the v3 `tailwind.preset.js` and the raw `--exeris-*` tokens in
- * `index.css`: a v3 consumer (preset) and a v4 consumer (this @theme) must get
+ * `index.css`: a v3 consumer (preset) and a v4 consumer (@theme) must get
  * the same `exeris-*` utility namespace, or generated components render
  * differently depending on the host's Tailwind major. This is the drift guard.
- * Also pins the B2 `package.json` exports so the documented imports resolve.
+ * Also verifies the `package.json` exports so the documented imports resolve.
  *
  * Scope note: this file guards the *shape* of theme.css — which entries exist,
- * and that its token block still mirrors `index.css`. What those entries compile
- * to is `tests/tailwind-v4-compile.test.js`, which runs a real v4 over this file.
- * The split matters: an earlier version of this test asserted that each v4
- * colour literal equalled the light-theme channels in `index.css`, which read
- * like parity but was the bug — a literal cannot follow `.dark`.
+ * and that its token block mirrors `index.css` exactly. What those entries
+ * compile to is tested in `tests/tailwind-v4-compile.test.js`, which runs a
+ * real v4 compiler over this file.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const themeCss = readFileSync(join(root, 'src/styles/theme.css'), 'utf8');
@@ -101,10 +99,9 @@ describe('Tailwind v4 @theme entry (B1)', () => {
 });
 
 /**
- * theme.css repeats the `--exeris-*` declarations because a v4 build cannot
- * consume `index.css` (it opens with `@tailwind` directives and its component
- * layer uses `@apply exeris-btn`). The copy is only safe while it is identical,
- * so this is the guard that makes the duplication acceptable.
+ * The `theme.css` file replicates the `--exeris-*` declarations from `index.css`.
+ * This duplication is only safe while the two remain identical, so this guard
+ * ensures they stay in sync.
  */
 describe('theme.css token blocks mirror index.css', () => {
   for (const selector of [':root', '.dark']) {

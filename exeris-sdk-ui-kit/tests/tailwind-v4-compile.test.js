@@ -5,21 +5,16 @@ import preset from '../tailwind.preset.js';
 import { DECLARED_V3_RANGE, PACKAGE_ROOT, V4_VERSION, compileWithV4 } from './support/tailwind.js';
 
 /**
- * The B1 follow-up: `src/styles/theme.css` compiled by a real Tailwind v4.
+ * The `src/styles/theme.css` Tailwind v4 `@theme` entry, compiled by a real v4.
  *
- * `tests/theme.test.js` guards the same file at the text level — it checks that
- * a declaration is *present*. That is not the same as checking that v4 turns it
- * into the utility the README promises, nor that the utility resolves to the
- * value a v3 consumer would get. Both gaps were real: v4's namespace was never
- * exercised by a compiler here (the package's only `tailwindcss` devDep is v3,
- * and `index.css`'s `@tailwind` directives and `@apply exeris-btn` mean v4
- * cannot compile it), and the text guard's own assertion — v4 literal equals the
- * light-theme channel in `index.css` — was what encoded the bug it missed:
- * hard-coded literals compile fine and make `.dark` a no-op.
+ * The companion `tests/theme.test.js` verifies the theme entry's shape at the text
+ * level. This test verifies the stronger property: that v4 transforms it into the
+ * utilities that the README documents, and that each utility resolves to the value
+ * a v3 consumer would get.
  *
- * Everything asserted below is derived from `tailwind.preset.js`, so the v3
- * preset stays the single source of truth for what the namespace contains and
- * for which entries indirect through a runtime `--exeris-*` property.
+ * Everything asserted below is derived from `tailwind.preset.js`, ensuring the v3
+ * preset remains the single source of truth for the namespace contents and which
+ * entries use runtime `--exeris-*` properties.
  */
 const root = PACKAGE_ROOT;
 
