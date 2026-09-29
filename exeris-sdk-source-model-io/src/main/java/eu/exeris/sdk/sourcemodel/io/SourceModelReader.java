@@ -67,13 +67,14 @@ import java.util.TreeSet;
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention). The domain-level
  * {@code @ExerisDomain} string + boolean attributes the processor reads
- * (module, path, aggregate, description, apiVersion, the {@code *Api} flags,
+ * (module, path, aggregate, description, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
  * {@code dataScope} tier, and so is {@code tableName}, which the reader reads
- * ahead of the processor for the reason given at the read. Two of those are
+ * ahead of the processor for the reason given at the read. One of those is
  * deprecated for removal at 1.0.0 and read until then: {@code tenantScoped}
- * (ADR-059) and {@code apiVersion} (see {@code MIGRATION.md}). Domain
+ * (ADR-059). {@code apiVersion}, deprecated for removal too, is not read, as the
+ * processor does not read it (see {@code MIGRATION.md}). Domain
  * {@code @DomainEvent}s are read
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
@@ -345,7 +346,6 @@ public final class SourceModelReader {
         stringAttr(ann, "path").ifPresent(builder::path);
         stringAttr(ann, "aggregate").ifPresent(builder::aggregate);
         stringAttr(ann, "description").ifPresent(builder::description);
-        deprecatedApiVersion(ann, builder);
         stringAttr(ann, "cacheTtl").ifPresent(builder::cacheTtl);
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
@@ -362,19 +362,6 @@ public final class SourceModelReader {
         boolAttr(ann, "sensitive").ifPresent(builder::sensitive);
         boolAttr(ann, "cacheable").ifPresent(builder::cacheable);
         boolAttr(ann, "fullTextSearch").ifPresent(builder::fullTextSearch);
-    }
-
-    /**
-     * {@code @ExerisDomain.apiVersion}, deprecated for removal in 1.0.0 together with its
-     * carrier, {@code DomainMetadata.apiVersion} (see {@code MIGRATION.md}). Still read,
-     * present-only, because the processor still reads it: dropping it here first would make the
-     * two paths disagree about every source that sets it (ADR-042). The read goes at 1.0.0, in
-     * the same change that removes the attribute and the component; the suppression is scoped to
-     * this one call so nothing else in the reader can lean on it.
-     */
-    @SuppressWarnings("removal")
-    private void deprecatedApiVersion(AnnotationExpr ann, DomainMetadata.Builder builder) {
-        stringAttr(ann, "apiVersion").ifPresent(builder::apiVersion);
     }
 
     /** Present-only boolean attribute (no default — absent leaves the builder default). */

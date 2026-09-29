@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-27
+last-verified: 2026-09-29
 ---
 
 # Migration guide
@@ -156,10 +156,14 @@ still live at the freeze could not be removed before 2.0. Deprecating it now is
 the only window in which removing it costs nothing.
 
 **Impact:** a source that sets it now compiles with a `[removal]` warning from
-javac. Nothing else changes before 1.0.0: both build paths keep reading it into
-`DomainMetadata.apiVersion`, so the generated output and the metadata stay what
-they were. Code that reads `DomainMetadata.apiVersion()` or calls the builder's
-`.apiVersion(…)` gets the same warning; both go at 1.0.0 with the attribute.
+javac. Neither build path carries it: the `-io` reader and the `exeris-tooling`
+processor both leave it unread, and `DomainMetadata.Builder` has no default for
+it. So `DomainMetadata.apiVersion` is `null` and the metadata JSON has no
+`"apiVersion"` key. No generator read it, so the generated output does not
+change, and a baseline that carries `"apiVersion"` still reads back. Code that
+reads `DomainMetadata.apiVersion()` gets `null` where it got `"v1"`, with the
+same `[removal]` warning as code that calls the builder's `.apiVersion(…)`; both
+go at 1.0.0 with the attribute.
 
 ```java
 // before — declares a version nothing serves
@@ -180,11 +184,11 @@ they will come as a new opt-in attribute with no default, so that an entity that
 declares nothing keeps its route.
 
 - **Deprecated:** 0.12.0 (`@Deprecated(since = "0.12.0", forRemoval = true)`).
-- **Removed:** 1.0.0 — the attribute, the `DomainMetadata.apiVersion` component with
-  its accessor and builder setter, and the `-io` reader's read
+- **Removed:** 1.0.0 — the attribute, and the `DomainMetadata.apiVersion` component
+  with its accessor and builder setter
   ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
-- **Processor:** `exeris-tooling` keeps reading it for the window, and its
-  `-Aexeris.strict` inert-attribute check already reports it. The read goes at 1.0.0.
+- **Processor:** `exeris-tooling` does not read it, and its `-Aexeris.strict`
+  inert-attribute check reports it.
 
 ### `effectivePath()` and `effectiveTableName()` take the English plural; `@ExerisDomain.tableName` is new
 

@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-27
+last-verified: 2026-09-29
 ---
 
 # Changelog
@@ -315,9 +315,11 @@ for per-version upgrade steps.
   rather than at the freeze is the `tenantScoped` argument again: a deprecation and its removal
   cannot share a release, so an attribute still live at 1.0.0 would stay for all of 1.x. Its
   carrier goes with it: `DomainMetadata.apiVersion()` and `DomainMetadata.Builder.apiVersion(…)`
-  are deprecated for removal too. Both build paths keep reading the attribute until 1.0.0, so
-  nothing a build emits changes in the window; a source that sets it compiles with a `[removal]`
-  warning. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+  are deprecated for removal too. Neither build path carries it: the `-io` reader and the
+  `exeris-tooling` processor leave the attribute unread, and the builder has no default for it, so
+  `DomainMetadata.apiVersion()` is `null` unless a caller sets it and the metadata JSON has no
+  `"apiVersion"` key. No generator read it, so nothing a build emits changes; a source that sets it
+  compiles with a `[removal]` warning. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Security
 

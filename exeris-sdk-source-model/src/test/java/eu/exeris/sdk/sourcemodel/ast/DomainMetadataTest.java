@@ -326,15 +326,15 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("Builder default invariants")
     class BuilderDefaults {
-        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
-        // exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and stays on the record until then; this
+        // test exercises the component on purpose.
         @SuppressWarnings("removal")
         @Test
         void unsetFieldsHaveSafeDefaults() {
             DomainMetadata d = base().build();
             assertThat(d.entityName()).isEqualTo("Order");
             assertThat(d.packageName()).isEqualTo("com.acme.domain");
-            assertThat(d.apiVersion()).isEqualTo("v1");
+            assertThat(d.apiVersion()).isNull();
             assertThat(d.cacheTtl()).isEqualTo("PT5M");
             assertThat(d.searchConfig()).isEqualTo("english");
             assertThat(d.restApi()).isTrue();
@@ -349,8 +349,8 @@ class DomainMetadataTest {
             assertThat(d.uiMetadata()).isNull();
         }
 
-        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
-        // exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and stays on the record until then; this
+        // test exercises the component on purpose.
         @SuppressWarnings("removal")
         @Test
         void builderSettersAreFluent() {
@@ -395,7 +395,7 @@ class DomainMetadataTest {
     }
 
     @Nested
-    @DisplayName("apiVersion is deprecated for removal at 1.0.0, and still carried until then")
+    @DisplayName("apiVersion is deprecated for removal at 1.0.0, and has no default")
     class ApiVersionDeprecation {
         @Test
         void accessorAndBuilderSetterBothCarryTheDeprecation() throws Exception {
@@ -413,10 +413,10 @@ class DomainMetadataTest {
 
         @Test
         @SuppressWarnings("removal") // the point of the test is the deprecated accessor
-        void theComponentIsStillCarriedUnchanged() {
-            // Deprecation changes no behaviour inside the window: the builder default stays "v1",
-            // a set value comes back, and the explicit accessor returns the component itself.
-            assertThat(base().build().apiVersion()).isEqualTo("v1");
+        void theComponentHasNoDefaultAndKeepsASetValue() {
+            // No SDK producer fills the component, so the builder leaves it null. A value a caller
+            // sets still comes back, and the explicit accessor returns the component itself.
+            assertThat(base().build().apiVersion()).isNull();
             DomainMetadata d = base().apiVersion("v2").build();
             assertThat(d.apiVersion()).isEqualTo("v2");
             assertThat(d).isEqualTo(new DomainMetadata(
@@ -431,8 +431,8 @@ class DomainMetadataTest {
     @Nested
     @DisplayName("the 39-component constructor shape is kept")
     class PreviousArity {
-        // apiVersion is deprecated for removal at 1.0.0 and still carried until then; this test
-        // exercises the carrier on purpose.
+        // apiVersion is deprecated for removal at 1.0.0 and stays on the record until then; this
+        // test exercises the component on purpose.
         @SuppressWarnings("removal")
         @Test
         void thirtyNineArgumentsBuildTheSameRecordWithNoRouteAccessOrChannel() {

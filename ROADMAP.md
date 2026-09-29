@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-27
+last-verified: 2026-09-29
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA
@@ -505,13 +505,13 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   without moving every route, so it would have frozen as a promise that does nothing for the
   whole 1.x line. Deprecated in 0.12.0 with no replacement; the attribute, the
   `DomainMetadata.apiVersion` component (accessor and builder setter, both
-  `@Deprecated(forRemoval = true)`) and the `-io` reader's read are listed in
-  `MIGRATION-0.x-to-1.0.md` §1. The reader keeps reading it, under a suppression scoped to that
-  one call, because the processor does (ADR-042). Activating it instead (option A) was rejected:
-  it would have to happen before 1.0 with the default changed to `""`, which is a new opt-in
-  attribute in all but name. **Tooling:** keep reading it through the window — the
-  `-Aexeris.strict` inert-attribute entry already reports it, and javac now warns on every use —
-  and drop the read, the inert-registry entry and the TS model field at 1.0.0
+  `@Deprecated(forRemoval = true)`) are listed in `MIGRATION-0.x-to-1.0.md` §1. No producer
+  carries it: the `-io` reader and the `exeris-tooling` processor leave it unread, so the two build
+  paths agree (ADR-042), and the builder has no default, so the component is `null` and off the
+  wire (founder decision 2026-09-29). Activating it instead (option A) was rejected: it would have
+  to happen before 1.0 with the default changed to `""`, which is a new opt-in attribute in all but
+  name. **Tooling:** the `-Aexeris.strict` inert-attribute entry reports it, and javac warns on
+  every use; the inert-registry entry and the TS model field go at 1.0.0
 - [x] **Pluralization is fixed before 1.0 — SDK half (Stellar finding T6)** — the three naming
   helpers on `DomainMetadata` disagreed: `pluralName()` applied English endings,
   `effectivePath()`'s fallback appended a bare `s`, and `effectiveTableName()` returned the

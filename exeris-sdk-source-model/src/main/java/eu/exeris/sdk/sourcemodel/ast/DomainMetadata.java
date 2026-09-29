@@ -34,12 +34,13 @@ import java.util.Locale;
  * @param path the base API path for the entity's generated endpoints
  * @param aggregate the aggregate root this entity belongs to, when it is not one itself
  * @param description human-readable prose for generated documentation
- * @param apiVersion the declared API version. Carried on the wire and read by no generator —
- *                   no emitted artifact publishes an {@code /api/<version>} segment, so this
- *                   does not describe where an endpoint is served (see
- *                   {@code @ExerisDomain.apiVersion}). <strong>Deprecated for removal in
- *                   1.0.0</strong>, with the attribute it carries; both producers fill it
- *                   until then
+ * @param apiVersion an API version, which no SDK producer fills: neither the
+ *                   {@code exeris-tooling} processor nor the {@code -io} reader reads
+ *                   {@code @ExerisDomain.apiVersion}, so this is {@code null}, and absent from
+ *                   the JSON, unless a caller sets it. A baseline that carries it still reads
+ *                   back. No generator reads it, and no emitted artifact publishes an
+ *                   {@code /api/<version>} segment. <strong>Deprecated for removal in
+ *                   1.0.0</strong>, with {@code @ExerisDomain.apiVersion}
  * @param tags grouping labels carried into the generated OpenAPI/AsyncAPI document
  * @param restApi whether REST endpoints are generated for this entity
  * @param graphqlApi whether a GraphQL schema and resolvers are generated
@@ -281,20 +282,20 @@ public record DomainMetadata(
     }
 
     /**
-     * The declared API version — the carrier of {@code @ExerisDomain.apiVersion}.
+     * An API version, which no SDK producer fills.
      *
      * <p>Declared explicitly, rather than left to the record, only so it can carry the
      * deprecation; it returns the component unchanged.
      *
-     * @return the declared API version, {@code "v1"} unless the source set another
+     * @return the API version a caller set, or {@code null}: neither the
+     *         {@code exeris-tooling} processor nor the {@code -io} reader reads
+     *         {@code @ExerisDomain.apiVersion}, and the builder has no default for it
      * @deprecated since 0.12.0, for removal in 1.0.0, together with
      *         {@code @ExerisDomain.apiVersion}, which no generator reads: no emitted
      *         artifact serves or requests an {@code /api/<version>} segment (see
      *         {@code MIGRATION.md}). There is no replacement — the route an entity is
-     *         served at is {@link #effectivePath()}. The component stays on the wire, and
-     *         both the {@code exeris-tooling} processor and the {@code -io} reader keep
-     *         filling it, until 1.0.0, so baselines written before then read back
-     *         unchanged.
+     *         served at is {@link #effectivePath()}. The component stays until 1.0.0, so a
+     *         baseline that carries {@code "apiVersion"} reads back unchanged.
      */
     @Deprecated(since = "0.12.0", forRemoval = true)
     public String apiVersion() {
@@ -598,7 +599,7 @@ public record DomainMetadata(
         private String path = "";
         private String aggregate = "";
         private String description = "";
-        private String apiVersion = "v1";
+        private String apiVersion;
         private List<String> tags = List.of();
         private boolean restApi = true;
         private boolean graphqlApi = false;
@@ -649,9 +650,8 @@ public record DomainMetadata(
          * @param v the declared API version
          * @return this builder
          * @deprecated since 0.12.0, for removal in 1.0.0, with the component it sets — see
-         *         {@link DomainMetadata#apiVersion()}. Producers that mirror
-         *         {@code @ExerisDomain.apiVersion} keep calling it until then; nothing else
-         *         should start.
+         *         {@link DomainMetadata#apiVersion()}. Neither SDK producer calls it, and
+         *         nothing should start.
          */
         @Deprecated(since = "0.12.0", forRemoval = true)
         public Builder apiVersion(String v) { this.apiVersion = v; return this; }

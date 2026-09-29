@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-09-27
+last-verified: 2026-09-29
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -60,14 +60,13 @@ survives into 1.x unchanged.
   artifact (router, OpenAPI document and generated clients all serve the entity
   at its `path`), and its `"v1"` default means it could never be switched on
   without moving every route. A versioned route, if wanted, is spelled in `path`.
-  Three things go together:
+  Two things go together:
   - the attribute itself;
   - the AST component `DomainMetadata.apiVersion`, with its accessor and its
     builder setter `DomainMetadata.Builder.apiVersion(String)` — which changes
-    every `DomainMetadata` constructor, as the `tenantScoped` removal does;
-  - the `-io` reader's read (`SourceModelReader.deprecatedApiVersion`), in
-    lockstep with the `exeris-tooling` processor dropping its own.
-  A 0.x baseline that carries `"apiVersion"` still reads, because the records
+    every `DomainMetadata` constructor, as the `tenantScoped` removal does.
+  No producer reads the attribute in 0.12.x: neither the `-io` reader nor the
+  `exeris-tooling` processor. A 0.x baseline that carries `"apiVersion"` still reads, because the records
   ignore unknown properties.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —

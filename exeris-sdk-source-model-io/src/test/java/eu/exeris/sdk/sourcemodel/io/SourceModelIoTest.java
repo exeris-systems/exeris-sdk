@@ -153,11 +153,10 @@ class SourceModelIoTest {
 
         @Test
         @SuppressWarnings("removal") // the deprecated carrier is what this test pins
-        void readsTheDeprecatedApiVersionUntilItsRemoval() {
-            // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0, and the processor still
-            // reads it. Until both drop it together the reader keeps
-            // reading it, present-only: a declared value survives and an absent one stays the
-            // builder's "v1". Stopping early would make the two paths disagree (ADR-042).
+        void doesNotReadTheDeprecatedApiVersion() {
+            // @ExerisDomain.apiVersion is deprecated for removal at 1.0.0, and neither build path
+            // carries it: the processor does not read it either, so a declared value and an
+            // absent one both leave the component null, and the two paths agree (ADR-042).
             String declared = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -170,8 +169,8 @@ class SourceModelIoTest {
                     @ExerisDomain(module = "billing")
                     public class Invoice {}
                     """;
-            assertThat(reader.read(declared).orElseThrow().apiVersion()).isEqualTo("v2");
-            assertThat(reader.read(absent).orElseThrow().apiVersion()).isEqualTo("v1");
+            assertThat(reader.read(declared).orElseThrow().apiVersion()).isNull();
+            assertThat(reader.read(absent).orElseThrow().apiVersion()).isNull();
         }
 
         @Test
