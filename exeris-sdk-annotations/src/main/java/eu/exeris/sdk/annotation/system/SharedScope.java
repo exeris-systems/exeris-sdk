@@ -47,20 +47,16 @@ import java.lang.annotation.Target;
  *   <li>{@code String} - for legacy systems</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor reads most of
- * the markers in this package, {@link TenantId} included, but not this one, so
- * {@code SystemFieldsMetadata.sharedScopeField} is never populated and writing the marker
- * changes nothing in the emitted output. Declaring {@code dataScope = UNIVERSE} is refused
- * at the declaration site today, so there is currently no build in which this field would
- * be read; reading it belongs to the {@code UNIVERSE} transcription.
- *
- * <p><strong>Why it lands before the transcription that reads it.</strong> The kernel half is
- * complete only as of v0.12.0, and it completed in two steps that are easy to mistake for
- * one. {@code StorageContext.sharedScopeKey()} — what an application reads — has existed
- * since the 0.11 line. The session-variable <em>name</em>, which is what emitted SQL writes,
- * became a published constant only in v0.12.0; before that a generator would have been
- * transcribing a string no kernel surface defined. With both halves published, the one thing
- * still missing for a transcription is the SDK saying which column to compare — which is this.
+ * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * marker on a {@code DataScope.UNIVERSE} entity into
+ * {@code SystemFieldsMetadata.sharedScopeField}, and the generators key the entity's
+ * read-widening policy and its repository's shared-scope stamp on that field. On an entity of
+ * any other tier the marker has no effect: the processor warns and does not record it. On a
+ * {@code UNIVERSE} entity the processor refuses a missing marker, the marker on more than one
+ * field, a field typed other than {@code UUID} or {@code String}, the marker on the owner
+ * field itself, and a marked field declared {@code @Field(required = true)} — the repository
+ * fills an absent shared scope from the bound storage context, and a row with none is
+ * owner-private. The marker carries no attributes.
  *
  * @since 0.12
  * @see TenantId

@@ -50,16 +50,24 @@ import java.lang.annotation.Target;
  * verbatim and interprets nothing (zero runtime coupling); evaluating it is
  * build-time / runtime tooling's job.
  *
- * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, gated on kernel routing</h2>
  * <p>The AST twin already exists: {@code SagaMetadata.transitions} (a list of
- * {@code SagaMetadata.SagaTransition} edges, since 0.7.0) is this annotation's
- * canonical carrier, and {@link #on()} maps by name onto the AST-owned
- * {@code SagaMetadata.TransitionOutcome}. What is still missing is the wiring:
- * no build-time processor extracts this annotation into the record yet, and the
- * {@code -io} reader deliberately stays in parity by omission — the two flip
- * together in {@code exeris-tooling} (ADR-042 lock-step parity), followed by
- * the codegen consumer that turns the graph into the generated body. Until that
- * coordinated flip, declaring transitions has no generated effect.
+ * {@code SagaMetadata.SagaTransition} edges) is this annotation's canonical
+ * carrier, and {@link #on()} maps by name onto the AST-owned
+ * {@code SagaMetadata.TransitionOutcome}. No build-time processor extracts this
+ * annotation into the record, and the {@code -io} reader deliberately stays in
+ * parity by omission (ADR-042 lock-step parity).
+ *
+ * <p>What gates the extraction is the kernel, not the tooling. The kernel's flow
+ * plan precomputes exactly one next step per step — the {@code "default"}-tagged
+ * transition, else the first declared one, else the following step — and never
+ * routes on an outcome or a condition tag; a failure unwinds the compensation
+ * stack rather than following an edge. So only an unguarded {@code SUCCESS} edge
+ * is expressible there: a {@code FAILURE}, {@code TIMEOUT} or {@code COMPENSATED}
+ * edge, a {@link #guard()}, or a second {@code SUCCESS} edge out of one step is
+ * not. Until the kernel routes by outcome or tag, the {@code exeris-tooling}
+ * saga generator chains the steps in declaration order, and declaring
+ * transitions has no generated effect.
  *
  * @since 0.9
  * @see Saga

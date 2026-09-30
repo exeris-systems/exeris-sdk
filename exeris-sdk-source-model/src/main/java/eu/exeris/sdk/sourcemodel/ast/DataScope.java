@@ -32,38 +32,21 @@ public enum DataScope {
      * Shared world — rows owned by a tenant but readable across tenants; reads
      * widen beyond the owning tenant, writes stay pinned to it.
      *
-     * <p><strong>Open-Core status — declarable, and refused:</strong> declaring
-     * this tier fails the build at the declaration site. {@code exeris-tooling}'s
-     * {@code ExerisDomainProcessor.errorReservedUniverseTier} raises an error
-     * naming the tier and the reason, instead of emitting for it. The refusal is
-     * unconditional on the tier, suppressed only when the declaration is already
-     * contradicted by {@code tenantScoped} — one line does not raise two errors.
-     *
-     * <p>It replaced a warning at {@code exeris-tooling} 0.8.0, and what the
-     * warning missed is worth carrying, because it is also why the fail-closed
-     * predicate below stays. Every emitter asks one question —
-     * {@code DataScopeSupport.isTenantPartitioned}, which answers
-     * {@code effectiveDataScope() != GLOBAL} and is therefore {@code true} for
-     * {@code UNIVERSE} — so the shape this tier would emit is the full
-     * {@link #TENANT} one: owner column, owner-pinned RLS policy, owner index,
-     * tenant migration tier. That predicate is correct and stays: an
-     * "is {@code TENANT}" test would have routed the tier down the
-     * {@link #GLOBAL} path and published rows the author scoped to an owner. But
-     * an output strictly narrower than declared is not thereby a usable one. A
-     * shared-world row is precisely one with no tenant property, and the
-     * {@code TENANT} shape binds {@code getTenantId()} in the emitted repository,
-     * so the archetypal entity for this tier did not merely under-deliver — it
-     * failed to compile, with {@code cannot find symbol} inside generated code
-     * its author is told not to edit. A diagnostic at the declaration is strictly
-     * better than a compile error two artefacts downstream.
-     *
-     * <p>What the untranscribed half waits on is a kernel contract distinct from
-     * the carrier: an emitted RLS policy writes a PostgreSQL session-variable
-     * name into SQL, and that name is published as
-     * {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE} from kernel v0.12.0.
-     * {@code StorageContext.sharedScopeKey()} — the accessor an application reads
-     * — has existed since 0.11 and is a different contract. See the Open-Core
-     * status note on {@code @ExerisDomain.dataScope()}, and ADR-059.
+     * <p><strong>Open-Core status — live:</strong> {@code exeris-tooling}'s
+     * processor transcribes this tier onto the kernel's shared-scope carrier. A
+     * {@code UNIVERSE} row is owned: the entity gets the whole {@link #TENANT}
+     * emission — owner column, owner-pinned RLS policy, the owner stamped on
+     * write — which is why every emitter's
+     * {@code DataScopeSupport.isTenantPartitioned} answers
+     * {@code effectiveDataScope() != GLOBAL}. On top of it, one additive
+     * {@code FOR SELECT} policy widens reads to rows whose
+     * {@link SystemFieldsMetadata#sharedScopeField()} column equals the session
+     * variable the kernel publishes as
+     * {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE}; {@code INSERT},
+     * {@code UPDATE} and {@code DELETE} stay under the owner-pinned policy. The
+     * processor refuses the declaration when the entity names no owner field or
+     * no {@code @SharedScope} field. See the Open-Core status note on
+     * {@code @ExerisDomain.dataScope()}, and ADR-059.
      */
     UNIVERSE
 }

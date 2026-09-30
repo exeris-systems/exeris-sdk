@@ -335,30 +335,25 @@ freeze or is explicitly re-dispositioned here.
     of the wire:
     - `DomainMetadata` — 8 of 41: `tags`, `roles`, `permissions`,
       `projections`, `eventHandlers`, `rules`, `routeAccess`, `channel`.
-      *(Amended the same day: this list said 9, with `tableName` "no source at
-      all". `@ExerisDomain.tableName` now feeds it and the `-io` reader reads
-      it, so it moves to the one-producer list below until the processor
-      extracts it too — Stellar finding T6.)*
     - `ActionMetadata` — 9 of 18: `resultType`, `idempotent`, `dangerous`,
       `requiresConfirmation`, `permissions`, `producesEvents`,
       `realTimeUpdates`, `schedule`, `routeAccess`.
     - `FieldMetadata` — 10 of 31: `columnName`, `audited`, `hidden`,
       `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
       `derived`, `blob`.
-    - `SystemFieldsMetadata` — 1 of 11: `sharedScopeField`. (`primaryKeyField`
-      is populated and read by no generator, which is a different gap.)
+    - `SystemFieldsMetadata` — 0 of 11. (`primaryKeyField` is populated and
+      read by no generator, which is a different gap.)
 
-    That is 28. Five are the ADR-072 exception §2 already excludes from the
+    That is 27. Five are the ADR-072 exception §2 already excludes from the
     freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
-    `DomainMetadata.channel`); the other 23 are frozen as declared under §3's
+    `DomainMetadata.channel`); the other 22 are frozen as declared under §3's
     rule that everything public is contract. Whole records no producer
     populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
     `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
     `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
     — are counted as records rather than components and follow the same two
     rules. Not counted: components one producer sets and the other does not
-    (`DomainMetadata.systemFields`, `ActionMetadata.displayName`, and
-    `DomainMetadata.tableName` until the processor extracts it). Those are
+    (`DomainMetadata.systemFields`, `ActionMetadata.displayName`). Those are
     ADR-042 parity questions, not population ones.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*

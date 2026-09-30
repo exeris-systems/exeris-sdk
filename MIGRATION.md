@@ -119,7 +119,7 @@ construction; `@Channel` declares a connection clients also write to. It
 deliberately declares no message-size limit, origin allowlist, frame format or
 reconnection behaviour — ADR-072 obligation 20 gives the reason for each.
 
-### `@SharedScope` is new and reserved — frozen as declared
+### `@SharedScope` is new — frozen as declared
 
 Nothing to migrate. Code that constructs `SystemFieldsMetadata` positionally
 keeps compiling through the kept 10-argument constructor, which leaves
@@ -127,16 +127,19 @@ keeps compiling through the kept 10-argument constructor, which leaves
 the new builder's `.sharedScopeField(…)` (first entry above).
 
 - It marks the field holding the **shared-scope key** of a `DataScope.UNIVERSE`
-  entity — the column a generated policy would compare against the kernel's
+  entity — the column a generated policy compares against the kernel's
   `ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE` to widen reads across
   tenants. It **accompanies** `@TenantId`, which keeps writes pinned to the owning
   tenant; it does not replace it.
-- Declaring it has **no generated effect today**. The `exeris-tooling` processor
-  reads every `system` marker except `@PrimaryKey` and this one, and
-  `dataScope = UNIVERSE` is still refused at the declaration site, so no build
-  today reads the field.
+- The `exeris-tooling` processor reads it on a `dataScope = UNIVERSE` entity
+  into `SystemFieldsMetadata.sharedScopeField`, and transcribes the tier: the
+  `TENANT` emission pins writes to the owner, and an additive `FOR SELECT`
+  policy widens reads on this column. A `UNIVERSE` entity without a
+  `@SharedScope` field, or without an owner field, is refused at the
+  declaration site. On an entity of any other tier the marker has no effect:
+  the processor warns and does not record it.
 - Unlike `@RouteAccess` and `@Channel`, it is **not** on ADR-072's exception
-  list. Like the other reserved system markers it is frozen at 1.0.0 as declared
+  list. Like the other system markers it is frozen at 1.0.0 as declared
   ([`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md)).
 
 ### `@ExerisDomain.apiVersion` is deprecated — removal in 1.0.0

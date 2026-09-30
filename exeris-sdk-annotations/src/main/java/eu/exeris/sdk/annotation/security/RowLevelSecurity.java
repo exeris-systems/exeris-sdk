@@ -68,8 +68,11 @@ import java.lang.annotation.*;
  * }
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
- * extract this marker, so writing it changes nothing in the emitted output. See the package
- * javadoc for the live path.
+ * extract this marker, so writing it changes nothing in the emitted output. There is no AST
+ * carrier for it, and extraction is gated on the kernel rather than the tooling: a
+ * principal-scoped policy needs a principal session key, and the kernel publishes only the
+ * tenant and shared-scope keys to the database session. Tenant isolation itself is live
+ * through {@code @ExerisDomain(dataScope = DataScope.TENANT)}; see the package javadoc.
  *
  * @since 0.1
  * @see Encrypted
