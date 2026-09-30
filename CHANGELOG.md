@@ -367,6 +367,22 @@ for per-version upgrade steps.
   with any tooling build that predates the transcription into the generated `*SagaFlow`, a
   declared version reached metadata and no plan.
 
+- **`SourceModelReader` reads `systemFields` and graph edges, the two facets the processor wrote
+  and the reader dropped.** Both were ADR-042 parity breaks that `unmodeledFacets()` did not report,
+  because the reader's javadoc listed them among facets "neither side reads". The processor builds
+  `SystemFieldsMetadata` from the nine `system` markers, the `@ExerisDomain` `*Field` overrides and,
+  on a `UNIVERSE` entity, `@SharedScope`; the reader now resolves the same sources the same way —
+  marker, then override, then the `defaults()` name; no record when nothing is declared; a role the
+  processor refuses (a marker on two fields, a marker contradicting its override) left to the
+  override; `sharedScopeField` only under an explicit `dataScope = UNIVERSE`; `@PrimaryKey` read by
+  neither. The processor has extracted `@GraphEdge` into `GraphMetadata.edges` since `exeris-tooling`
+  0.8.0; the reader now reads it with the processor's mapping — the field name as the identity,
+  `targetLabel`, then `target`'s simple name, then `targetName` as the label, `type` as the relation
+  type — and drops a field that declares more than one edge, as the processor refuses it. With both readers
+  handling them, `@GraphEdge` and the ten markers (the nine plus `@SharedScope`) are LIVE;
+  `@GraphEdges` stays PARTIAL, since it admits one edge. `SourceModelReaderProcessorParityTest` pins each case against the JSON the
+  processor emits for it.
+
 - **Nine system-field markers said the processor ignores them. It reads them.** `@TenantId`,
   `@Version`, `@SoftDelete`, `@SoftDeleteTimestamp`, `@SoftDeletedBy` and the four `@Audit*` markers
   each carried "Status: RESERVED — the `exeris-tooling` processor does not scan fields for this

@@ -1,0 +1,11 @@
+{
+  "systemFields": {
+    "primaryKeyField": "id",
+    "createdAtField": "born",
+    "createdByField": "author",
+    "updatedAtField": "updatedAt",
+    "updatedByField": "updatedBy",
+    "tenantIdField": "owner",
+    "versionField": "revision"
+  }
+}

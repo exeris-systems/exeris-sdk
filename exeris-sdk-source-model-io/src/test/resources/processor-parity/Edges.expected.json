@@ -1,0 +1,40 @@
+{
+  "graphMetadata": {
+    "label": "EdgeNode",
+    "edges": [
+      {
+        "name": "car",
+        "targetLabel": "Car",
+        "relationType": "OWNS"
+      },
+      {
+        "name": "friend",
+        "targetLabel": "Plain",
+        "relationType": "KNOWS"
+      },
+      {
+        "name": "thing",
+        "targetLabel": "Thing",
+        "relationType": "LIKES"
+      },
+      {
+        "name": "tag",
+        "relationType": "TAGGED"
+      },
+      {
+        "name": "held",
+        "targetLabel": "Plain",
+        "relationType": "HELD"
+      },
+      {
+        "name": "left",
+        "relationType": "PAIR"
+      },
+      {
+        "name": "right",
+        "relationType": "PAIR"
+      }
+    ],
+    "queries": []
+  }
+}

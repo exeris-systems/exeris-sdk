@@ -1,0 +1,12 @@
+{
+  "systemFields": {
+    "primaryKeyField": "id",
+    "createdAtField": "createdAt",
+    "createdByField": "createdBy",
+    "updatedAtField": "updatedAt",
+    "updatedByField": "updatedBy",
+    "tenantIdField": "owner",
+    "versionField": "version",
+    "sharedScopeField": "world"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "systemFields": {
+    "primaryKeyField": "code",
+    "createdAtField": "createdAt",
+    "createdByField": "createdBy",
+    "updatedAtField": "updatedAt",
+    "updatedByField": "updatedBy",
+    "tenantIdField": "tenantId",
+    "versionField": "revision",
+    "softDeleteField": "gone"
+  }
+}
