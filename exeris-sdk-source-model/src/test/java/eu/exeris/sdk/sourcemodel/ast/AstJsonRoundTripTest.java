@@ -39,9 +39,20 @@ class AstJsonRoundTripTest {
             .build();
 
     @Test
+    @DisplayName("an unset apiVersion is absent from the DomainMetadata JSON")
+    @SuppressWarnings("removal") // the deprecated component is what this test pins
+    void unsetApiVersionIsAbsentFromTheJson() {
+        // No SDK producer fills apiVersion, and NON_NULL keeps the null off the wire.
+        DomainMetadata unset = DomainMetadata.builder("Order", "com.acme.domain").build();
+        String json = mapper.writeValueAsString(unset);
+        assertThat(json).doesNotContain("apiVersion");
+        assertThat(mapper.readValue(json, DomainMetadata.class).apiVersion()).isNull();
+    }
+
+    @Test
     @DisplayName("DomainMetadata round-trips with nested fields, actions, events")
-    // apiVersion is deprecated for removal at 1.0.0 but stays on the wire until then, so its
-    // round trip is still pinned here.
+    // apiVersion is deprecated for removal at 1.0.0 and no SDK producer fills it, but the
+    // component stays until then, so a baseline that carries it must still round-trip.
     @SuppressWarnings("removal")
     void domainMetadataRoundTrips() {
         DomainMetadata original = DomainMetadata.builder("Order", "com.acme.domain")

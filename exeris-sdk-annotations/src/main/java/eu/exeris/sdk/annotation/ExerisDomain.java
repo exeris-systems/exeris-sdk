@@ -123,12 +123,11 @@ public @interface ExerisDomain {
      * typed client requests the same. Setting this attribute does not change where an
      * endpoint is served, and {@code -Aexeris.strict} reports it.
      *
-     * <p>The value does reach the AST — {@code DomainMetadata.apiVersion()}, itself
-     * deprecated for removal alongside this attribute — and both build paths read
-     * it during the deprecation window, so a source that sets it keeps producing the
-     * same metadata.
+     * <p>The value does not reach the metadata either: neither the {@code exeris-tooling}
+     * processor nor the {@code -io} reader reads it, so {@code DomainMetadata.apiVersion()},
+     * deprecated for removal alongside this attribute, is {@code null} for every source.
      *
-     * @return API version (e.g., "v1", "v2"); carried into the AST, read by no
+     * @return API version (e.g., "v1", "v2"); carried into no metadata, read by no
      *         generator
      * @deprecated since 0.12.0, for removal in 1.0.0. It reaches no emitted artifact:
      *         the router, the OpenAPI document and every generated client serve and
