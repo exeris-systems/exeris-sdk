@@ -430,7 +430,10 @@
  *
  * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
  * provides {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the
- * {@code exeris-tooling} slice that emits a URL-to-policy table. The kernel
+ * {@code exeris-tooling} slice that emits a URL-to-policy table. The processor
+ * already validates the declaration — {@code PUBLIC} beside a non-empty
+ * {@code permissions} is refused — but does not extract it, so no generated route
+ * changes. The kernel
  * holds route authorization at tier {@code preview}. So this surface does
  * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
  *

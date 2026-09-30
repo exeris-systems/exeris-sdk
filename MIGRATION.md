@@ -84,12 +84,16 @@ its own entry below.
 
 ### `@RouteAccess` is new, reserved, and outside the 1.0.0 freeze
 
-Nothing to migrate — it is additive and nothing extracts it yet. Two things to
+Nothing to migrate — it is additive and nothing extracts it yet. Three things to
 know before you write it:
 
-- Declaring it has **no generated effect today**. No processor reads it, no
-  generator emits a route policy from it, and the `-io` reader does not read it.
-  It records author intent for the `exeris-tooling` slice that will.
+- Declaring it has **no generated effect on routes**. The `exeris-tooling`
+  processor does not extract it and no generator emits a route policy from it,
+  and the `-io` reader does not read it. It records author intent for the
+  `exeris-tooling` slice that will.
+- The processor **does validate it**: `@RouteAccess(PUBLIC)` beside a non-empty
+  `permissions` fails the build — on the entity, on an action, and on an action
+  that declares `permissions` while inheriting the entity's `PUBLIC`.
 - It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
   as amended), because the kernel holds route authorization at tier `preview`.
   A 1.x minor may change or drop it. Pin exactly if you adopt it early.
