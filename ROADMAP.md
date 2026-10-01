@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-30
+last-verified: 2026-10-01
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA
@@ -555,13 +555,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   to it. `@ExerisDomain.tableName` (default `""`) is the author's override that
   `DomainMetadata.tableName` had lacked; the `-io` reader reads it. No irregular-noun map: the rule
   knows endings, the override covers the rest, and a map would be one more behaviour frozen at 1.0
-- [ ] **T6, tooling half (`exeris-tooling`, not SDK work)** — (1) the processor extracts
-  `@ExerisDomain.tableName` into `DomainMetadata.tableName`, in the tooling release paired with
-  SDK 0.12.0, since the `-io` reader already reads it; (2) `KernelTableNaming.effectiveTable`
-  delegates its default to `effectiveTableName()` instead of `snake_case(name) + "s"`, and the
-  processor warns once for each entity whose default table changes, naming the
-  `tableName = "<old>"` that keeps it; (3) `exeris-codegen-ts`'s `app-structure-gen.ts` takes
-  `pluralName()`'s rule for Angular route segments instead of `endsWith('s') ? name : name + 's'`.
+- [x] **T6, tooling half (`exeris-tooling`, not SDK work)** — landed in `exeris-tooling#234`, in
+  the tooling 0.9.0 line paired with SDK 0.12.0: (1) the processor extracts
+  `@ExerisDomain.tableName` into `DomainMetadata.tableName`, as the `-io` reader does; (2)
+  `KernelTableNaming.effectiveTable` delegates its default to `effectiveTableName()` instead of
+  `snake_case(name) + "s"`, and the processor warns once for each entity whose default table
+  changes, naming the `tableName = "<old>"` that keeps it; (3) `exeris-codegen-ts`'s
+  `app-structure-gen.ts` takes `pluralName()`'s rule (`DslMapper.pluralName`) for Angular route
+  segments instead of `endsWith('s') ? name : name + 's'`.
   Server routes are unaffected: `@ExerisDomain.path` is required
 - [x] **japicmp is a maintainer gate, not a build requirement** — its configuration and both
   bindings move into one opt-in `semver` profile in the root pom (`mvn -Psemver verify`), so a
