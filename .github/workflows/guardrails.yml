@@ -168,7 +168,7 @@ jobs:
       build-modules: exeris-sdk-annotation-catalog
       trivial-accessors: exempt
   # ADR-085 §F.21a–c. The TypeScript half of the same rule, and this repository owns one of the
-  # three surfaces the ADR names by hand: `@exeris-systems/ui-kit`.
+  # three surfaces the ADR names by hand: `@exeris/ui-kit`.
   #
   # `lint-scope: package`, not `diff`. The bundle offers `diff` for Angular applications and
   # internal tooling — rule 11 — where a backlog nobody in the current pull request created would

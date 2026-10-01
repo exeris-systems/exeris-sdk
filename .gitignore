@@ -58,3 +58,7 @@ working-notes/eval-report.json
 # The digest check ignores it — it covers the bytes that were vendored — but an untracked
 # directory inside a digest-verified tree is the kind of thing a reader stops to work out.
 __pycache__/
+
+# Copied from the repository LICENSE by exeris-sdk-ui-kit's `prepack`, so the npm tarball
+# carries the licence text; the root file is the one that is maintained.
+exeris-sdk-ui-kit/LICENSE

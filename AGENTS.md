@@ -43,7 +43,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
   routes. Never overload empty roles/permissions. Never add `UNSPECIFIED` ([policy](.agents/policies/route-access.md)).
 - **JDK baseline:** `maven.compiler.release=25` across reactor (ADR-069, tracking kernel GA LTS).
   Class-file major ≤ 69 guarded by `ClassFileBaselineTest` ([policy](.agents/policies/jdk-baseline.md)).
-- **UI kit is npm-only:** Standalone npm package (`@exeris-systems/ui-kit`), excluded from Maven reactor.
+- **UI kit is npm-only:** Standalone npm package (`@exeris/ui-kit`), excluded from Maven reactor.
   Dark mode declared in both `tailwind.preset.js` and `theme.css`. Versions independently ([policy](.agents/policies/ui-kit.md)).
 - **Distribution:** Maven Central via Sonatype Central Portal (NOT GitHub Packages). Build-time
   tools excluded via `maven.deploy.skip` and `<excludeArtifacts>` ([reference](.agents/references/maven-central-distribution.md)).
@@ -54,7 +54,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
   `source-model` uses `JavadocCompletenessTest`, which exempts a builder setter only when its body
   is the bare assignment — one that copies, normalises, appends or renames is documented
   ([policy](.agents/policies/javadoc-and-contract-emitters.md)).
-- **TSDoc + API golden:** `@exeris-systems/ui-kit` is a gated TypeScript surface under ADR-085
+- **TSDoc + API golden:** `@exeris/ui-kit` is a gated TypeScript surface under ADR-085
   §F.21a–c. Every export carries a release tag and a doc comment, and `api/ui-kit.api.md` is
   committed — CI fails on drift, so a removed name is a major for that package's own version
   ([policy](.agents/policies/ui-kit.md)).
