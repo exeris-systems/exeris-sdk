@@ -17,12 +17,12 @@ import java.lang.annotation.Target;
  * private Instant updatedAt;
  * }
  *
- * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor reads this
  * marker and records the annotated field as {@code SystemFieldsMetadata.updatedAtField},
  * which the generators use in place of the canonical name. It names the field; the column
  * exists only when {@code @ExerisDomain(audited = true)}. The attribute below is not
- * carried, so setting it changes no emitted output, and the {@code -io} reader does not
- * read the marker. See the package javadoc.
+ * carried, so setting it changes no emitted output. The {@code -io} reader reads the
+ * marker the same way. See the package javadoc.
  *
  * @since 0.1
  */

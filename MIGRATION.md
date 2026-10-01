@@ -567,8 +567,8 @@ a source-file reorganisation, not an API change.
 way to declare two edges. The processor unwraps the container and then refuses
 two edges at the declaration, because `GraphEdgeMetadata` cannot express the
 shape — a build error rather than a silent loss. A single `@GraphEdge` is
-extracted by the processor and consumed by the graph-sync generator; the `-io`
-reader reads neither. If you worked around the old accessibility defect by
+extracted by the processor and by the `-io` reader alike, and consumed by the
+graph-sync generator. If you worked around the old accessibility defect by
 hand-writing a container, that workaround can go.
 
 This is the same defect fixed for `@SagaSteps` in 0.9.0. `AnnotationContractTest`

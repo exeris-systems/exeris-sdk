@@ -30,10 +30,12 @@ import java.lang.annotation.Target;
  * graph-sync generator. Its siblings under {@code @Graph} —
  * {@code @GraphProperty} and {@code @GraphQuery} — are read by nobody, so
  * {@code GraphMetadata} carries a null property list and an empty query list.
- * The {@code -io} reader reads none of the three.
+ * The {@code -io} reader reads {@code @GraphEdge} as the processor does, this
+ * container included, and neither sibling.
  *
- * <p><strong>Status: PARTIAL</strong> — one of the two readers handles this
- * container, and it admits only one edge. Compiler-synthesized; authors write
+ * <p><strong>Status: PARTIAL</strong> — both readers handle this container, and
+ * both admit only one edge in it, while the compiler writes it only for two or
+ * more, which the processor refuses. Compiler-synthesized; authors write
  * repeated {@code @GraphEdge} directly and never this type.
  * @since 0.10
  * @see GraphEdge

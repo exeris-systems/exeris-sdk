@@ -47,11 +47,11 @@ import java.lang.annotation.Target;
  *   <li>{@code String} - for legacy systems</li>
  * </ul>
  *
- * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
- * marker on a {@code DataScope.UNIVERSE} entity into
+ * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor and the
+ * {@code -io} reader both read this marker on a {@code DataScope.UNIVERSE} entity into
  * {@code SystemFieldsMetadata.sharedScopeField}, and the generators key the entity's
  * read-widening policy and its repository's shared-scope stamp on that field. On an entity of
- * any other tier the marker has no effect: the processor warns and does not record it. On a
+ * any other tier the marker has no effect: the processor warns and neither reader records it. On a
  * {@code UNIVERSE} entity the processor refuses a missing marker, the marker on more than one
  * field, a field typed other than {@code UUID} or {@code String}, the marker on the owner
  * field itself, and a marked field declared {@code @Field(required = true)} — the repository

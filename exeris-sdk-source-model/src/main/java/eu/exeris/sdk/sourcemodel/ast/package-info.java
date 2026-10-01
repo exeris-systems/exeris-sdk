@@ -300,10 +300,10 @@
  * processor populates them and no generator reads them. {@code sharedScopeField} is
  * populated by the {@code exeris-tooling} processor on a {@code DataScope.UNIVERSE}
  * entity only, and read by its shared-scope migration and repository generators.
- * The {@code -io} reader does not read them — for
- * {@code routeAccess} and {@code channel} by the ADR-042 rule that the reader
- * reads what the processor writes, and {@code SystemFieldsMetadata} is not read by
- * the reader at all. {@code routeAccess} and {@code channel} are also
+ * The {@code -io} reader reads {@code SystemFieldsMetadata}, {@code sharedScopeField}
+ * included, as the processor builds it; it leaves {@code routeAccess} and
+ * {@code channel} unread by the ADR-042 rule that the reader reads what the
+ * processor writes. {@code routeAccess} and {@code channel} are also
  * <strong>outside the 1.0.0 freeze</strong> (ADR-072): they encode kernel surfaces
  * held at tier {@code preview}, so a 1.x minor may change or drop them.
  * {@code sharedScopeField} is not on that list and is frozen as declared, like the

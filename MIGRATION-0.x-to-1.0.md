@@ -353,8 +353,8 @@ freeze or is explicitly re-dispositioned here.
     `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
     — are counted as records rather than components and follow the same two
     rules. Not counted: components one producer sets and the other does not
-    (`DomainMetadata.systemFields`, `ActionMetadata.displayName`). Those are
-    ADR-042 parity questions, not population ones.
+    (`ActionMetadata.displayName`). That is an ADR-042 parity question, not a
+    population one.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*
     (`consumers`, `rateLimit`, `requireMtls`, `timeout`, `documented`);
@@ -380,11 +380,11 @@ freeze or is explicitly re-dispositioned here.
   - **Graph sub-annotations — the seeded premise was stale.** `@GraphEdge` /
     `@GraphProperty` / `@GraphQuery` **do** have AST twins now
     (`GraphEdgeMetadata` / `GraphPropertyMetadata` / `GraphQueryMetadata`, all
-    carried by `GraphMetadata`). Neither the processor nor the `-io` reader reads
-    the member annotations, so `GraphMetadata` arrives with `properties = null`
-    and empty `edges` / `queries` — but symmetrically, on both sides, which makes
-    it an ADR-042 parity pair rather than a divergence, and the reader says so
-    (`SourceModelReader.java:704`). `@QueryParam` is the one with no AST twin:
+    carried by `GraphMetadata`). Both the processor and the `-io` reader read
+    `@GraphEdge` into `edges`; neither reads `@GraphProperty` or `@GraphQuery`,
+    so `GraphMetadata` arrives with `properties = null` and empty `queries` —
+    symmetrically, on both sides, which makes it an ADR-042 parity pair rather
+    than a divergence. `@QueryParam` is the one with no AST twin:
     it binds parameters of a `@GraphQuery` method, and its twin belongs to the
     change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same
     lockstep shape as the entry below, not SDK work now.

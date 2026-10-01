@@ -40,12 +40,12 @@ import java.lang.annotation.Target;
  *   <li>Optional: hard delete for compliance (GDPR right to erasure)</li>
  * </ul>
  *
- * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor reads this
  * marker and records the annotated field as {@code SystemFieldsMetadata.softDeleteField},
  * which the generators use in place of the canonical name. It names the field; the column
  * exists only when {@code @ExerisDomain(softDelete = true)}. None of the attributes below is
- * carried, so setting one changes no emitted output, and the {@code -io} reader does not
- * read the marker. See the package javadoc.
+ * carried, so setting one changes no emitted output. The {@code -io} reader reads the
+ * marker the same way. See the package javadoc.
  *
  * @since 0.1
  * @see SoftDeleteTimestamp

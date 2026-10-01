@@ -200,7 +200,8 @@
  *       {@link eu.exeris.sdk.annotation.DomainEvent @DomainEvent},
  *       {@link eu.exeris.sdk.annotation.Saga @Saga},
  *       {@link eu.exeris.sdk.annotation.SagaStep @SagaStep},
- *       {@link eu.exeris.sdk.annotation.Graph @Graph},
+ *       {@link eu.exeris.sdk.annotation.Graph @Graph} with
+ *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge},
  *       {@link eu.exeris.sdk.annotation.View @View} with
  *       {@link eu.exeris.sdk.annotation.Region @Region} /
  *       {@link eu.exeris.sdk.annotation.Block @Block} /
@@ -208,6 +209,12 @@
  *       and the {@code capability} subpackage
  *       ({@code @CapabilityModule}, {@code @Provides}, {@code @Requires},
  *       {@code @CapabilityLifecycle}), which drives {@code cap-manifest.json}.
+ *       The {@code system} markers other than {@code @PrimaryKey} —
+ *       {@code @TenantId}, {@code @Version}, the three soft-delete markers, the
+ *       four {@code @Audit*} markers and {@code @SharedScope} (recorded on a
+ *       {@code UNIVERSE} entity only) — are LIVE as markers: both readers record
+ *       the field each one marks, and the generators name the column after it;
+ *       their attributes are not carried.
  *       Not every attribute of a LIVE annotation is itself LIVE.</dd>
  *
  *   <dt><strong>PARTIAL</strong> — reach the AST, read by no generator</dt>
@@ -222,17 +229,7 @@
  *       {@code InternalApiMetadata} and is named by no generator on either
  *       side. {@link eu.exeris.sdk.annotation.EventSourced @EventSourced} lands
  *       in {@code EventSourcedMetadata}; event-sourcing emission is a tooling
- *       gap, not a kernel one — the kernel ships both halves with a TCK.
- *       {@link eu.exeris.sdk.annotation.GraphEdge @GraphEdge} is PARTIAL for
- *       the other reason in the definition: a generator does consume it
- *       ({@code KernelGraphSyncGenerator}), but only the processor extracts it
- *       — the {@code -io} reader does not, so the two readers disagree. The
- *       {@code system} markers other than {@code @PrimaryKey} —
- *       {@code @TenantId}, {@code @Version}, the three soft-delete markers, the
- *       four {@code @Audit*} markers and {@code @SharedScope} (recorded on a
- *       {@code UNIVERSE} entity only) — are PARTIAL for the same reason: the processor records the field each one marks
- *       and the generators name the column after it, but the {@code -io}
- *       reader reads none of them.</dd>
+ *       gap, not a kernel one — the kernel ships both halves with a TCK.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
@@ -268,8 +265,9 @@
  * {@code @Provides.List}, …) is compiler-synthesized and has the status of the
  * annotation it holds — <em>capped</em> by how far container handling itself has
  * got. {@code @DomainEvents} and the capability containers are handled by both
- * readers; {@code @SagaSteps} and {@code @GraphEdges} only by the processor, so
- * both are PARTIAL even though {@code @SagaStep} is LIVE. A <strong>member-value-only type</strong> has the status
+ * readers; {@code @SagaSteps} only by the processor, so it is PARTIAL even though
+ * {@code @SagaStep} is LIVE. {@code @GraphEdges} is handled by both readers but
+ * admits one edge, so it is PARTIAL even though {@code @GraphEdge} is LIVE. A <strong>member-value-only type</strong> has the status
  * of the attribute that carries it, which is often narrower than its parent's:
  * {@code @Saga} is LIVE and {@code @Saga.SagaTrigger} is RESERVED, because
  * {@code trigger()} is not extracted.
@@ -288,7 +286,8 @@
  * flag alone.
  *
  * <p>A {@code system} marker says <em>which field</em> holds a role the flag
- * switched on. The processor reads every marker except {@code @PrimaryKey}, and
+ * switched on. The processor and the {@code -io} reader read every marker except
+ * {@code @PrimaryKey}, and
  * the generators use the marked field's name for the column in place of the
  * canonical one; {@code @SharedScope} has no canonical name and names the
  * read-widening column of a {@code UNIVERSE} entity. The {@code @ExerisDomain} field-name

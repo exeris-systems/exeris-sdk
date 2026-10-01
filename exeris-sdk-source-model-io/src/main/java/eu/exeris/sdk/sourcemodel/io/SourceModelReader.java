@@ -28,6 +28,7 @@ import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
 import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
@@ -36,11 +37,14 @@ import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata;
 import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -79,11 +83,13 @@ import java.util.TreeSet;
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
- * {@code @Graph}, {@code @EventSourced}, {@code @Saga} (with {@code @SagaStep}
- * methods), and {@code @InternalApi} are read into the matching
- * {@link DomainMetadata} facets, each mirroring the processor's extraction
- * (including its {@code streamPrefix→aggregateType} translation and presence-only
- * {@code @InternalApi}).
+ * {@code @Graph} (with its fields' {@code @GraphEdge}s), {@code @EventSourced},
+ * {@code @Saga} (with {@code @SagaStep} methods), and {@code @InternalApi} are read
+ * into the matching {@link DomainMetadata} facets, each mirroring the processor's
+ * extraction (including its {@code streamPrefix→aggregateType} translation and
+ * presence-only {@code @InternalApi}). {@link DomainMetadata#systemFields} is read
+ * from the {@code annotation.system} field markers and the {@code @ExerisDomain}
+ * {@code *Field} override attributes, resolved as the processor resolves them.
  *
  * <p>Capability scope: {@link #readCapabilityModule} is the capability counterpart of {@link #read}:
  * it locates the first {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
@@ -106,8 +112,8 @@ import java.util.TreeSet;
  * is non-empty — that is how a <em>future</em> processor facet (e.g. a new
  * annotation) re-arms the guard before the reader catches up. (Facets the processor
  * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
- * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery}, {@code system}/
- * {@code security} annotations — were never divergences.) The guard is
+ * {@code @GraphProperty}/{@code @GraphQuery}, {@code @PrimaryKey}, the
+ * {@code security} annotations — are not divergences.) The guard is
  * annotation-level: attribute completeness of the <em>other</em> read annotations
  * (e.g. {@code @Relationship}, {@code @Action}) is verified per-slice, not by it.
  *
@@ -135,9 +141,9 @@ public final class SourceModelReader {
      * output, so a facet the processor keeps and the reader drops would be
      * misread as a user edit.
      *
-     * <p><b>Now empty</b>: every facet the processor emits is read (Slices A–D —
-     * domain attributes, events, graph/saga/event-sourcing/internal-API, and the
-     * field {@code @Field}/{@code @Validation} surface). The set is retained as the
+     * <p><b>Empty</b>: every facet the processor emits is read — domain attributes,
+     * events, graph (with its edges)/saga/event-sourcing/internal-API, system fields,
+     * and the field {@code @Field}/{@code @Validation} surface. The set is retained as the
      * guard's contract: a future processor facet (a new annotation the reader does
      * not yet read) is added here, which re-arms {@link #unmodeledFacets} until the
      * reader catches up. Matched by simple name (no import resolution).
@@ -236,10 +242,10 @@ public final class SourceModelReader {
      * 0.4.0 capability surface), so this returns an empty set for every
      * {@code @ExerisDomain} / {@code @CapabilityModule} source today. It re-arms
      * only when a future processor facet is registered in that set ahead of the
-     * reader. <b>Not</b> flagged (and never were): facets neither side reads
+     * reader. <b>Not</b> flagged: facets neither side reads
      * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
-     * {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery},
-     * {@code @Tab}/{@code @UIGroup}, the {@code system}/{@code security} annotations).
+     * {@code @GraphProperty}/{@code @GraphQuery}, {@code @Tab}/{@code @UIGroup},
+     * {@code @PrimaryKey}, the {@code security} annotations).
      *
      * <p>This guard is <em>annotation-level</em>: it does not report attribute-level
      * loss <em>within</em> a read annotation. That gap is now closed for
@@ -298,7 +304,13 @@ public final class SourceModelReader {
                 .relationships(relationships(type))
                 .actions(actions(type))
                 .events(events(type));
-        type.getAnnotationByName("ExerisDomain").ifPresent(ann -> applyDomainAttributes(ann, builder));
+        type.getAnnotationByName("ExerisDomain").ifPresent(ann -> {
+            applyDomainAttributes(ann, builder);
+            SystemFieldsMetadata systemFields = systemFields(type, ann);
+            if (systemFields != null) {
+                builder.systemFields(systemFields);
+            }
+        });
         UIMetadata ui = uiMetadata(type);
         if (ui != null) {
             builder.uiMetadata(ui);
@@ -327,10 +339,11 @@ public final class SourceModelReader {
      * (string + boolean) into the builder, present-only — an absent attribute keeps
      * the builder default, exactly matching {@code ExerisDomainProcessor}'s
      * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
-     * ({@code tags}/{@code roles}/{@code permissions}) and the {@code *Field}/
-     * {@code validationMode}/{@code ui} attributes are not read here — the processor
+     * ({@code tags}/{@code roles}/{@code permissions}) and the
+     * {@code validationMode}/{@code ui} attributes are not read — the processor
      * doesn't read them either, so they constitute no reader-vs-processor divergence
-     * and {@link #unmodeledFacets} does not flag them.
+     * and {@link #unmodeledFacets} does not flag them. The {@code *Field} attributes
+     * are read by {@link #systemFields}, together with the field markers they override.
      *
      * <p>{@code tableName} is stored as written, exactly as the processor stores it: a blank
      * value means "derive it", and {@code DomainMetadata.effectiveTableName()} is the one place
@@ -364,6 +377,117 @@ public final class SourceModelReader {
         // exact "true" match (JavaParser renders boolean literals lowercase),
         // consistent with isRequired's style.
         return value(ann, attribute).map(Expression::toString).map("true"::equals);
+    }
+
+    /**
+     * One system-field role: the {@code annotation.system} marker that declares it on a field,
+     * and the {@code @ExerisDomain} attribute that names the same field remotely.
+     * {@code @SharedScope} has no override attribute; its key is the component name, which no
+     * {@code @ExerisDomain} attribute carries, so its override lookup is always empty.
+     */
+    private record SystemFieldRole(String annotation, String overrideAttribute) {
+    }
+
+    /**
+     * The roles {@link #systemFields} reads, in the processor's order ({@code SYSTEM_FIELD_ROLES}).
+     * {@code @PrimaryKey} is absent on both sides: {@code primaryKeyField} comes from the override
+     * attribute only.
+     */
+    private static final List<SystemFieldRole> SYSTEM_FIELD_ROLES = List.of(
+            new SystemFieldRole("TenantId", "tenantIdField"),
+            new SystemFieldRole("Version", "versionField"),
+            new SystemFieldRole("SoftDelete", "softDeleteField"),
+            new SystemFieldRole("SoftDeleteTimestamp", "softDeleteTimestampField"),
+            new SystemFieldRole("SoftDeletedBy", "softDeletedByField"),
+            new SystemFieldRole("AuditCreatedAt", "createdAtField"),
+            new SystemFieldRole("AuditCreatedBy", "createdByField"),
+            new SystemFieldRole("AuditUpdatedAt", "updatedAtField"),
+            new SystemFieldRole("AuditUpdatedBy", "updatedByField"),
+            new SystemFieldRole("SharedScope", "sharedScopeField"));
+
+    /**
+     * {@link SystemFieldsMetadata} from its two sources, mirroring the processor's
+     * {@code resolveSystemFields}: an {@code annotation.system} marker on a field, and the
+     * matching {@code @ExerisDomain} {@code *Field} override attribute. Each role resolves to the
+     * marker's field, else the override, else the {@link SystemFieldsMetadata#defaults()} value.
+     *
+     * <p>Returns {@code null} when neither source declared anything, so an entity that declares
+     * nothing reads with no record, as it is emitted.
+     *
+     * <p>A role the processor refuses is left to the override here, as the refusal leaves it
+     * there: a marker on more than one field, and a marker whose field differs from a non-blank
+     * override. {@code sharedScopeField} is recorded under an explicit
+     * {@code dataScope = UNIVERSE} only; on any other tier the processor drops the marker with a
+     * warning. Markers are matched by simple name, as every annotation here is, so another
+     * library's {@code @Version} on an entity field reads as the system marker.
+     */
+    private SystemFieldsMetadata systemFields(ClassOrInterfaceDeclaration type, AnnotationExpr domain) {
+        Map<String, String> declared = new LinkedHashMap<>();
+        for (SystemFieldRole role : SYSTEM_FIELD_ROLES) {
+            List<String> carriers = fieldsAnnotated(type, role.annotation());
+            if (carriers.size() != 1) {
+                continue;
+            }
+            String annotated = carriers.getFirst();
+            Optional<String> override = nonBlankStringAttr(domain, role.overrideAttribute());
+            if (override.isPresent() && !override.get().equals(annotated)) {
+                continue;
+            }
+            declared.put(role.overrideAttribute(), annotated);
+        }
+        if (dataScope(domain).orElse(null) != DataScope.UNIVERSE) {
+            declared.remove("sharedScopeField");
+        }
+
+        boolean anyOverride = SYSTEM_FIELD_ROLES.stream()
+                .anyMatch(role -> nonBlankStringAttr(domain, role.overrideAttribute()).isPresent())
+                || nonBlankStringAttr(domain, "primaryKeyField").filter(name -> !"id".equals(name)).isPresent();
+        if (!anyOverride && declared.isEmpty()) {
+            return null;
+        }
+
+        SystemFieldsMetadata d = SystemFieldsMetadata.defaults();
+        return new SystemFieldsMetadata(
+                nonBlankStringAttr(domain, "primaryKeyField").orElse(d.primaryKeyField()),
+                resolvedSystemField(declared, domain, "createdAtField", d.createdAtField()),
+                resolvedSystemField(declared, domain, "createdByField", d.createdByField()),
+                resolvedSystemField(declared, domain, "updatedAtField", d.updatedAtField()),
+                resolvedSystemField(declared, domain, "updatedByField", d.updatedByField()),
+                resolvedSystemField(declared, domain, "tenantIdField", d.tenantIdField()),
+                resolvedSystemField(declared, domain, "versionField", d.versionField()),
+                resolvedSystemField(declared, domain, "softDeleteField", d.softDeleteField()),
+                resolvedSystemField(declared, domain, "softDeleteTimestampField", d.softDeleteTimestampField()),
+                resolvedSystemField(declared, domain, "softDeletedByField", d.softDeletedByField()),
+                declared.get("sharedScopeField"));
+    }
+
+    /** One role's field: the marker's, else the override, else {@code fallback}. */
+    private String resolvedSystemField(Map<String, String> declared, AnnotationExpr domain,
+                                       String attribute, String fallback) {
+        String fromMarker = declared.get(attribute);
+        return fromMarker != null ? fromMarker : nonBlankStringAttr(domain, attribute).orElse(fallback);
+    }
+
+    /** A string attribute that is present and not blank; a blank one means "not overridden". */
+    private Optional<String> nonBlankStringAttr(AnnotationExpr annotation, String attribute) {
+        return stringAttr(annotation, attribute).filter(value -> !value.isBlank());
+    }
+
+    /**
+     * The names of {@code type}'s fields carrying {@code annotationSimpleName}, in declaration
+     * order — one per variable, since javac gives each variable of a multi-variable declaration
+     * its own copy of the annotation.
+     */
+    private List<String> fieldsAnnotated(ClassOrInterfaceDeclaration type, String annotationSimpleName) {
+        List<String> names = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            boolean carries = field.getAnnotations().stream()
+                    .anyMatch(annotation -> annotationSimpleName.equals(simpleName(annotation.getNameAsString())));
+            if (carries) {
+                field.getVariables().forEach(variable -> names.add(variable.getNameAsString()));
+            }
+        }
+        return names;
     }
 
     /**
@@ -582,8 +706,8 @@ public final class SourceModelReader {
      * The inner annotations of a hand-written container annotation — either
      * {@code @Container({...})} (single-member) or {@code @Container(value = {...})}
      * (normal); a lone non-array element is also tolerated. Used for
-     * {@code @DomainEvents} and the capability {@code @Provides.List} /
-     * {@code @Requires.List} containers.
+     * {@code @DomainEvents}, {@code @GraphEdges} and the capability
+     * {@code @Provides.List} / {@code @Requires.List} containers.
      */
     private List<AnnotationExpr> containedAnnotations(AnnotationExpr container) {
         Optional<Expression> value = container.isSingleMemberAnnotationExpr()
@@ -723,10 +847,10 @@ public final class SourceModelReader {
     /**
      * Class-level {@code @Graph} → {@link GraphMetadata}, or {@code null} when
      * absent. Mirrors {@code extractGraphMetadata}: the label is
-     * {@code @Graph(nodeClass)} falling back to the class simple name, and — as in
-     * the processor — properties stay {@code null} while edges/queries are empty.
-     * The {@code @GraphEdge}/{@code @GraphProperty}/{@code @GraphQuery} member
-     * annotations are read by neither side (so they are not guard divergences).
+     * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
+     * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
+     * properties stay {@code null} and queries empty. The {@code @GraphProperty} /
+     * {@code @GraphQuery} member annotations are read by neither side.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
@@ -734,7 +858,53 @@ public final class SourceModelReader {
             return null;
         }
         String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
-        return new GraphMetadata(label, null, List.of(), List.of());
+        return new GraphMetadata(label, null, graphEdges(type), List.of());
+    }
+
+    /**
+     * The fields' {@code @GraphEdge}s → {@link GraphEdgeMetadata}, in field declaration order,
+     * mirroring the processor's {@code graphEdges}. A field carries at most one edge, counted
+     * across the direct annotation and a {@code @GraphEdges} container together, whether javac
+     * wrote the container or the author did. A field declaring more than one is dropped, as the
+     * processor refuses it: {@code GraphEdgeMetadata} identifies an edge by its field, so it
+     * cannot hold two.
+     */
+    private List<GraphEdgeMetadata> graphEdges(ClassOrInterfaceDeclaration type) {
+        List<GraphEdgeMetadata> edges = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            List<AnnotationExpr> declared = new ArrayList<>();
+            for (AnnotationExpr annotation : field.getAnnotations()) {
+                String name = simpleName(annotation.getNameAsString());
+                if ("GraphEdge".equals(name)) {
+                    declared.add(annotation);
+                } else if ("GraphEdges".equals(name)) {
+                    declared.addAll(containedAnnotations(annotation));
+                }
+            }
+            if (declared.size() != 1) {
+                continue;
+            }
+            for (VariableDeclarator variable : field.getVariables()) {
+                edges.add(graphEdge(declared.getFirst(), variable.getNameAsString()));
+            }
+        }
+        return List.copyOf(edges);
+    }
+
+    /**
+     * One {@code @GraphEdge} → {@link GraphEdgeMetadata}, mirroring the processor's
+     * {@code graphEdge}: the identity is the field name, the relation type is {@code type}, and
+     * the target label is the first of a non-blank {@code targetLabel}, the simple name of
+     * {@code target} (not {@code void.class}), and a non-blank {@code targetName}.
+     */
+    private GraphEdgeMetadata graphEdge(AnnotationExpr annotation, String fieldName) {
+        String label = nonBlankStringAttr(annotation, "targetLabel")
+                .or(() -> classAttr(annotation, "target")
+                        .filter(target -> !"void".equals(target))
+                        .map(this::simpleName))
+                .or(() -> nonBlankStringAttr(annotation, "targetName"))
+                .orElse(null);
+        return new GraphEdgeMetadata(fieldName, label, nonBlankStringAttr(annotation, "type").orElse(null));
     }
 
     /**

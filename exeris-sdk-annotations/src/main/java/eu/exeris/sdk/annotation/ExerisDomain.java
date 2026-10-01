@@ -39,10 +39,10 @@ import java.lang.annotation.*;
  * <h2>Full Example with System Fields:</h2>
  * <p>System columns are derived from the <em>entity-level flags</em> below. The
  * {@code eu.exeris.sdk.annotation.system} annotations ({@code @TenantId},
- * {@code @SoftDelete}, {@code @Version}, {@code @Audit*}, …) are PARTIAL: the
- * {@code exeris-tooling} processor reads each one except {@code @PrimaryKey}, but a
- * marker only names <em>which field</em> plays a system role — it does not switch the
- * role on. See the {@code eu.exeris.sdk.annotation.system} package documentation for
+ * {@code @SoftDelete}, {@code @Version}, {@code @Audit*}, …) are LIVE: the
+ * {@code exeris-tooling} processor and the {@code -io} reader read each one except
+ * {@code @PrimaryKey}, but a marker only names <em>which field</em> plays a system
+ * role — it does not switch the role on. See the {@code eu.exeris.sdk.annotation.system} package documentation for
  * each marker's status. They are omitted here, so that the example shows what
  * generates the columns:
  * {@snippet lang="java" :
@@ -525,7 +525,7 @@ public @interface ExerisDomain {
      * generator reads it: the emitted schema declares {@code id} as the primary key
      * unconditionally, the repository identifies rows by {@code id}, and every
      * by-id route binds {@code {id}} — so setting a different name changes no
-     * emitted output. The {@code -io} reader does not read it, and
+     * emitted output. The {@code -io} reader reads it the same way, and
      * {@code @PrimaryKey} is RESERVED for the same reason.
      *
      * @return primary key field name

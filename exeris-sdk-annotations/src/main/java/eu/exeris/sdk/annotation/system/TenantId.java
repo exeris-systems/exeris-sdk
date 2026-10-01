@@ -48,15 +48,15 @@ import java.lang.annotation.Target;
  *   <li>A composite tenant + primary-key index</li>
  * </ul>
  *
- * <p><strong>Status: PARTIAL</strong> — the {@code exeris-tooling} processor reads this
+ * <p><strong>Status: LIVE</strong> — the {@code exeris-tooling} processor reads this
  * marker and records the annotated field as {@code SystemFieldsMetadata.tenantIdField},
  * which the generators use for the tenant column in place of the canonical name. It names
  * the field; it does not partition the entity — that is {@code dataScope = TENANT} on
  * {@code @ExerisDomain}. The processor refuses the marker on more than one field, and a
  * {@code tenantIdField} override that names a different field. None of the attributes
  * below is carried ({@code SystemFieldsMetadata} holds one field name per role), so
- * setting one changes no emitted output, and the {@code -io} reader does not read the
- * marker. See the package javadoc.
+ * setting one changes no emitted output. The {@code -io} reader reads the marker the
+ * same way. See the package javadoc.
  *
  * @since 0.1
  * @see eu.exeris.sdk.annotation.ExerisDomain#dataScope()
