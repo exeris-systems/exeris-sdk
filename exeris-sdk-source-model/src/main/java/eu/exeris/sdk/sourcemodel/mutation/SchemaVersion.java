@@ -64,7 +64,7 @@ public final class SchemaVersion {
     // that uses CURRENT where only a constant expression is legal, and asserting it fails.
     @SuppressWarnings("java:S3400")
     private static String currentVersion() {
-        return "0.12.0";
+        return "0.13.0";
     }
 
     /**
