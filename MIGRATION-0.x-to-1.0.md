@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-09-30
+last-verified: 2026-10-01
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -136,7 +136,8 @@ is a visual regression — and binding a design system's release cadence to a co
 contract's would hold back the half Studio and a headless CMS drive hardest.
 
 **What the GA list requires of it is publication, not a version.** `@exeris/ui-kit` reaching the
-public registry is the GA item; the number on it is that package's own business.
+public registry is the GA item; the number on it is that package's own business. It is published
+there from 0.12.0 on, at its own `0.1.0`.
 
 **Its own 1.0, when it comes, freezes names and not values:**
 

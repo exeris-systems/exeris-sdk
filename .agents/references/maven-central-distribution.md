@@ -16,7 +16,7 @@
 | `exeris-sdk-composition-runtime` | jar | **Yes** | SKU boot conductor and stamp checker |
 | `exeris-sdk-tck` | jar | **Yes** | Test harness for downstream consumers |
 | `exeris-sdk-annotation-catalog` | jar | **No** | Build-time processor; excluded via `maven.deploy.skip` and `<excludeArtifacts>` |
-| `exeris-sdk-ui-kit` | npm | **No** (npm registry) | Standalone npm package; published to GitHub Packages / npm |
+| `exeris-sdk-ui-kit` | npm | **No** (npm registry) | Standalone npm package; published to the public npm registry as `@exeris/ui-kit` |
 
 ## Requirements for Central
 

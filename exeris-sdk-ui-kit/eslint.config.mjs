@@ -1,4 +1,4 @@
-// Flat ESLint config for @exeris-systems/ui-kit.
+// Flat ESLint config for @exeris/ui-kit.
 //
 // The doc-comment rules are NOT written here: they come from the shared bundle
 // (exeris-systems/.github), and this import IS the adoption — a flat config cannot be injected

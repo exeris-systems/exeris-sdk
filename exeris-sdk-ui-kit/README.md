@@ -1,4 +1,4 @@
-# @exeris-systems/ui-kit
+# @exeris/ui-kit
 
 > Exeris UI Kit - Base styles and design tokens for generated components
 
@@ -23,10 +23,12 @@ to override, and they may change in a minor.
 ## Installation
 
 ```bash
-npm install @exeris-systems/ui-kit
+npm install @exeris/ui-kit
 ```
 
-> **Note:** this package is published to **GitHub Packages**, which requires authentication even for reads. Add `@exeris-systems:registry=https://npm.pkg.github.com` to your `.npmrc` and authenticate with a token that has `read:packages`. This requirement is lifted once the package moves to the public npm registry.
+The package is on the public npm registry, so it needs no `.npmrc` entry and no token. It was
+published to GitHub Packages as `@exeris-systems/ui-kit` before; to move, change the dependency name
+and drop the `@exeris-systems:registry` line from `.npmrc`.
 
 ## Usage
 
@@ -39,7 +41,7 @@ ships two ways — pick the one matching your Tailwind major.
 **Tailwind v3** — JS preset in `tailwind.config.js`:
 
 ```javascript
-import exerisPreset from '@exeris-systems/ui-kit/tailwind.preset.js';
+import exerisPreset from '@exeris/ui-kit/tailwind.preset.js';
 
 export default {
   presets: [exerisPreset],
@@ -53,8 +55,8 @@ apply). Import both of this package's entries next to Tailwind:
 
 ```css
 @import "tailwindcss";
-@import "@exeris-systems/ui-kit/theme";   /* token namespace + the `dark` variant */
-@import "@exeris-systems/ui-kit/styles";  /* the .exeris-* component classes */
+@import "@exeris/ui-kit/theme";   /* token namespace + the `dark` variant */
+@import "@exeris/ui-kit/styles";  /* the .exeris-* component classes */
 ```
 
 Both are required on v4 — see [Import Base Styles](#import-base-styles) for what
@@ -86,14 +88,14 @@ copy the block for your major rather than the first one you see:
 
 ```css
 /* Tailwind v3 — the preset in tailwind.config.js carries the token namespace */
-@import '@exeris-systems/ui-kit/styles';
+@import '@exeris/ui-kit/styles';
 ```
 
 ```css
 /* Tailwind v4 — both entries, every time */
 @import "tailwindcss";
-@import "@exeris-systems/ui-kit/theme";
-@import "@exeris-systems/ui-kit/styles";
+@import "@exeris/ui-kit/theme";
+@import "@exeris/ui-kit/styles";
 ```
 
 `styles` works on both majors. The file is written against v3 — it opens with the `@tailwind`
@@ -112,7 +114,7 @@ Or in Angular's `angular.json`:
 ```json
 {
   "styles": [
-    "node_modules/@exeris-systems/ui-kit/src/styles/index.css",
+    "node_modules/@exeris/ui-kit/src/styles/index.css",
     "src/styles.css"
   ]
 }
