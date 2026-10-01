@@ -227,10 +227,10 @@
  *       the other reason in the definition: a generator does consume it
  *       ({@code KernelGraphSyncGenerator}), but only the processor extracts it
  *       — the {@code -io} reader does not, so the two readers disagree. The
- *       {@code system} markers other than {@code @PrimaryKey} and
- *       {@code @SharedScope} — {@code @TenantId}, {@code @Version}, the three
- *       soft-delete markers and the four {@code @Audit*} markers — are PARTIAL
- *       for the same reason: the processor records the field each one marks
+ *       {@code system} markers other than {@code @PrimaryKey} —
+ *       {@code @TenantId}, {@code @Version}, the three soft-delete markers, the
+ *       four {@code @Audit*} markers and {@code @SharedScope} (recorded on a
+ *       {@code UNIVERSE} entity only) — are PARTIAL for the same reason: the processor records the field each one marks
  *       and the generators name the column after it, but the {@code -io}
  *       reader reads none of them.</dd>
  *
@@ -256,7 +256,7 @@
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
  *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu};
- *       {@code @PrimaryKey} and {@code @SharedScope} from the {@code system}
+ *       {@code @PrimaryKey} from the {@code system}
  *       subpackage; and <strong>the whole {@code security} subpackage</strong> —
  *       {@code @Encrypted}, {@code @RowLevelSecurity}. See the note below on
  *       system fields.</dd>
@@ -288,9 +288,10 @@
  * flag alone.
  *
  * <p>A {@code system} marker says <em>which field</em> holds a role the flag
- * switched on. The processor reads every marker except {@code @PrimaryKey} and
- * {@code @SharedScope}, and the generators use the marked field's name for the
- * column in place of the canonical one. The {@code @ExerisDomain} field-name
+ * switched on. The processor reads every marker except {@code @PrimaryKey}, and
+ * the generators use the marked field's name for the column in place of the
+ * canonical one; {@code @SharedScope} has no canonical name and names the
+ * read-widening column of a {@code UNIVERSE} entity. The {@code @ExerisDomain} field-name
  * override attributes ({@code tenantIdField}, {@code versionField}, …) say the
  * same thing from the class; with neither, the canonical name applies, and a
  * marker and an override that name different fields are refused at the
@@ -307,12 +308,12 @@
  *   <li>{@code TENANT} — partitioned; no tenant can read another's rows. Today's
  *       {@code tenantScoped = true}. Emits the tenant column, the RLS policy and
  *       the query filter.</li>
- *   <li>{@code UNIVERSE} — the cross-tenant shared-world tier. <strong>Read the
- *       status note on {@code dataScope()} before using it:</strong> declaring it
- *       fails the build. The processor refuses the tier at the declaration site
- *       rather than emitting the {@code TENANT} shape for it — that shape binds
- *       {@code getTenantId()}, and a shared-world row is precisely one with no
- *       tenant property.</li>
+ *   <li>{@code UNIVERSE} — the cross-tenant shared-world tier. A row is owned by
+ *       a tenant and readable across its shared scope: the {@code TENANT} emission
+ *       pins writes to the owner, and a read-only policy widens reads on the field
+ *       marked {@code @SharedScope}. The processor refuses the tier when the entity
+ *       declares no owner field or no {@code @SharedScope} field; the status note
+ *       on {@code dataScope()} has the details.</li>
  * </ul>
  * <p>{@code UNSPECIFIED} defers to {@code tenantScoped} for the remainder of the
  * deprecation window, which closes at 1.0.0. Declaring both with contradicting
@@ -429,7 +430,10 @@
  *
  * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
  * provides {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the
- * {@code exeris-tooling} slice that emits a URL-to-policy table. The kernel
+ * {@code exeris-tooling} slice that emits a URL-to-policy table. The processor
+ * already validates the declaration — {@code PUBLIC} beside a non-empty
+ * {@code permissions} is refused — but does not extract it, so no generated route
+ * changes. The kernel
  * holds route authorization at tier {@code preview}. So this surface does
  * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
  *

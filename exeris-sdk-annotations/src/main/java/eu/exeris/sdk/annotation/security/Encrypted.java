@@ -71,8 +71,10 @@ import java.lang.annotation.*;
  * </ul>
  *
  * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
- * extract this marker, so writing it changes nothing in the emitted output. See the package
- * javadoc for the live path.
+ * extract this marker, so writing it changes nothing in the emitted output. There is no AST
+ * carrier for it, and extraction is gated on the kernel rather than the tooling: the kernel
+ * defines no encryption-at-rest seam — no contract for field keys or a converter that
+ * generated code could bind to. See the package javadoc.
  *
  * @since 0.1
  * @see RowLevelSecurity

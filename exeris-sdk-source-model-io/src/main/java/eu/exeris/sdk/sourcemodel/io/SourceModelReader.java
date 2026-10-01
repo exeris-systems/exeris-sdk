@@ -70,8 +70,8 @@ import java.util.TreeSet;
  * (module, path, aggregate, description, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
  * cache/search config) are read present-only, as is the ADR-059
- * {@code dataScope} tier, and so is {@code tableName}, which the reader reads
- * ahead of the processor for the reason given at the read. One of those is
+ * {@code dataScope} tier, and so is {@code tableName}, stored as written as
+ * the processor stores it. One of those is
  * deprecated for removal at 1.0.0 and read until then: {@code tenantScoped}
  * (ADR-059). {@code apiVersion}, deprecated for removal too, is not read, as the
  * processor does not read it (see {@code MIGRATION.md}). Domain
@@ -332,14 +332,9 @@ public final class SourceModelReader {
      * doesn't read them either, so they constitute no reader-vs-processor divergence
      * and {@link #unmodeledFacets} does not flag them.
      *
-     * <p>{@code tableName} is the one read here that the processor does not make yet, and
-     * deliberately: the reader leads the processor on it rather than trailing it, because a
-     * reader that trails diverges the other way from the release in which the processor
-     * starts extracting, with no diagnostic on either side (see {@code CHANGELOG.md}). Until
-     * the processor extracts it, a source that sets it reads here with a table name the
-     * processor's baseline lacks. That cannot raise
-     * a mutation conflict — {@link SourceModelConflictDetector} compares fields, relationships
-     * and actions, not domain attributes — but a whole-record parity comparison would see it.
+     * <p>{@code tableName} is stored as written, exactly as the processor stores it: a blank
+     * value means "derive it", and {@code DomainMetadata.effectiveTableName()} is the one place
+     * that applies that rule, so neither side derives a name the other does not.
      */
     private void applyDomainAttributes(AnnotationExpr ann, DomainMetadata.Builder builder) {
         stringAttr(ann, "module").ifPresent(builder::module);

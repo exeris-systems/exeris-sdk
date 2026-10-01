@@ -38,11 +38,13 @@ import java.lang.annotation.*;
  *
  * <h2>Full Example with System Fields:</h2>
  * <p>System columns are derived from the <em>entity-level flags</em> below. The
- * {@code eu.exeris.sdk.annotation.system} annotations ({@code @PrimaryKey},
- * {@code @TenantId}, {@code @SoftDelete}, {@code @Version}, {@code @Audit*}) are
- * RESERVED — no reader extracts them, so adding them changes nothing. They are
- * omitted here deliberately, so that the example shows what actually generates
- * the columns:
+ * {@code eu.exeris.sdk.annotation.system} annotations ({@code @TenantId},
+ * {@code @SoftDelete}, {@code @Version}, {@code @Audit*}, …) are PARTIAL: the
+ * {@code exeris-tooling} processor reads each one except {@code @PrimaryKey}, but a
+ * marker only names <em>which field</em> plays a system role — it does not switch the
+ * role on. See the {@code eu.exeris.sdk.annotation.system} package documentation for
+ * each marker's status. They are omitted here, so that the example shows what
+ * generates the columns:
  * {@snippet lang="java" :
  * @ExerisDomain(
  *     module = "sales",
@@ -224,40 +226,34 @@ public @interface ExerisDomain {
      * here and a contradicting {@code tenantScoped} is a build-time error the
      * processor reports rather than silently resolving.
      *
-     * <p><strong>Open-Core status — {@code GLOBAL} / {@code TENANT} live,
-     * {@code UNIVERSE} refused:</strong> {@code GLOBAL} and {@code TENANT} carry
-     * exactly the semantics {@code tenantScoped} already carried, and are live
-     * through the same path. <em>Declaring {@code UNIVERSE} fails the build</em> —
-     * the processor refuses it at the declaration site, naming the tier and the
-     * reason.
+     * <p><strong>Open-Core status — live:</strong> {@code GLOBAL} and
+     * {@code TENANT} carry exactly the semantics {@code tenantScoped} already
+     * carried, through the same path. The {@code exeris-tooling} processor
+     * transcribes {@code UNIVERSE} onto the kernel's shared-scope carrier
+     * ({@code sharedScopeKey} + a {@code SHARED_WORLD} row-visibility mode composing
+     * with the physical isolation strategy, kernel ADR-012 §4b): reads widen across
+     * the shared scope, writes stay pinned to the owner.
      *
-     * <p>The kernel carrier for the shared tier ({@code sharedScopeKey} + a
-     * {@code SHARED_WORLD} row-visibility mode composing with the physical
-     * isolation strategy, read-widen + owner-scoped write) is fixed by the kernel
-     * ADR-012 §4b amendment and implemented with its read-widen/write-pin TCK.
+     * <p><strong>A {@code UNIVERSE} row is owned.</strong> The kernel makes a
+     * shared-scope key without an isolation key unrepresentable, so a
+     * {@code UNIVERSE} entity gets the whole {@code TENANT} emission — owner column,
+     * owner-pinned RLS policy, the owner stamped on write — and, on top of it, the
+     * read widening, keyed on the field marked
+     * {@link eu.exeris.sdk.annotation.system.SharedScope @SharedScope}. The policy
+     * is per command: the owner-pinned policy still governs {@code INSERT},
+     * {@code UPDATE} and {@code DELETE}, and one additive {@code FOR SELECT} policy
+     * admits a row whose shared-scope column equals the session variable the kernel
+     * publishes as {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE}. The
+     * generated repository fills an absent shared scope from the bound storage
+     * context and refuses a row tagged with a scope other than the bound one; a
+     * row with no shared scope is owner-private.
      *
-     * <p><strong>Two kernel contracts stand behind this tier, and a transcription
-     * needs the second one.</strong> {@code StorageContext.sharedScopeKey()} is
-     * what an application reads. An emitted RLS policy reads neither the accessor
-     * nor the carrier — it writes a PostgreSQL session-variable <em>name</em> into
-     * SQL. Kernel v0.12.0 publishes that name as
-     * {@code ConnectionInterceptor.SESSION_KEY_SHARED_SCOPE} beside
-     * {@code SESSION_KEY_TENANT_ID}, so a transcription is pinned to a kernel that
-     * carries the constant: the policy then references a published contract rather
-     * than retyping the literal one Community driver happens to set.
-     *
-     * <p>The {@code exeris-tooling} transcription mapping
-     * {@code UNIVERSE} onto that carrier is not built, and without it the tier is
-     * not inert: it falls through to the {@code TENANT} emission — owner column,
-     * owner-pinned policy, a repository binding {@code getTenantId()}. A
-     * shared-world row is precisely the row with no owner property, so that build
-     * fails inside generated code its author is told not to edit. Refusing the
-     * declaration is what replaces that.
-     *
-     * <p><strong>What to do instead:</strong> there is no way to obtain
-     * cross-tenant read-widening from this build. If the entity really is
-     * partitioned by an owner, declare {@code TENANT} and give it a tenant
-     * property; otherwise leave the tier undeclared until the transcription lands.
+     * <p>The processor refuses a {@code UNIVERSE} declaration at the declaration
+     * site when the entity declares no owner field ({@code tenantId}, or the field
+     * marked {@code @TenantId}), no {@code @SharedScope} field, a
+     * {@code @SharedScope} field whose type is neither {@code UUID} nor
+     * {@code String}, {@code @SharedScope} on the owner field itself, or a
+     * {@code @SharedScope} field declared {@code @Field(required = true)}.
      *
      * @return the data-scope tier, or {@link DataScope#UNSPECIFIED} to defer to
      *         {@link #tenantScoped()}
@@ -303,11 +299,10 @@ public @interface ExerisDomain {
          * (a common reference dataset, a cross-tenant collaboration space).
          * Reads widen beyond the owning tenant; writes stay pinned to it.
          *
-         * <p><strong>Reserved — declaring it fails the build.</strong> The
-         * tooling transcription onto the kernel carrier is not built, so the
-         * processor refuses the tier rather than half-emitting the {@code TENANT}
-         * shape for it. See the Open-Core status note on
-         * {@link ExerisDomain#dataScope()} for what to declare instead.
+         * <p>Requires an owner field (as {@link #TENANT} does) and a field
+         * marked {@code @SharedScope}. See the Open-Core status note on
+         * {@link ExerisDomain#dataScope()} for what the tooling emits and what
+         * it refuses.
          */
         UNIVERSE
     }
@@ -504,12 +499,12 @@ public @interface ExerisDomain {
      * existing name keeps the table, and the Flyway migration that created it, where they
      * are. See {@code MIGRATION.md}.
      *
-     * <p><strong>Status: PARTIAL.</strong> The {@code -io} reader reads it into
+     * <p><strong>Status: LIVE.</strong> The {@code -io} reader reads it into
      * {@code DomainMetadata.tableName}, and {@code exeris-tooling}'s table naming
      * honours that component when it is set, for the repository's SQL, the
      * {@code CREATE TABLE} and the migration file name alike. The {@code exeris-tooling}
-     * processor does not extract it, so on the build path that generates code the
-     * attribute has no effect.
+     * processor extracts it into the same component, so the attribute takes effect on
+     * the build path that generates code.
      *
      * @return the table name, or empty to derive it from the class name
      * @since 0.12

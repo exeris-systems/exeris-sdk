@@ -8,9 +8,9 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a field as the tenant identifier for multi-tenant isolation.
- * <p>When {@code @ExerisDomain(dataScope = TENANT)}, at most one field may carry
- * {@code @TenantId}; with none, the {@code tenantIdField} override or the canonical
- * name {@code tenantId} applies.
+ * <p>When {@code @ExerisDomain(dataScope = TENANT)} — or {@code UNIVERSE}, whose rows
+ * are owned too — at most one field may carry {@code @TenantId}; with none, the
+ * {@code tenantIdField} override or the canonical name {@code tenantId} applies.
  *
  * <h2>Usage:</h2>
  * {@snippet lang="java" :
@@ -69,6 +69,9 @@ public @interface TenantId {
     /**
      * Whether to automatically set tenant ID from security context on create.
      * <p>Default: {@code true}
+     * <p><strong>Not carried — no effect.</strong> The generated repository stamps an
+     * absent tenant from the bound {@code StorageContext} whatever this says, so
+     * {@code false} does not turn the stamp off.
      *
      * @return true if auto-populated
      */
@@ -77,6 +80,9 @@ public @interface TenantId {
     /**
      * Whether to validate tenant ID matches current user's tenant on update/delete.
      * <p>Default: {@code true}
+     * <p><strong>Not carried — no effect.</strong> The generated repository refuses a
+     * write naming a tenant other than the bound one, and the row-level-security policy
+     * confines mutations to the current tenant, whatever this says.
      *
      * @return true if validated
      */
@@ -86,6 +92,8 @@ public @interface TenantId {
      * Whether to include tenant ID in composite unique constraints.
      * <p>When true, unique constraints are scoped to tenant.
      * <p>Default: {@code true}
+     * <p><strong>Not carried — no effect.</strong> The generated migration emits no
+     * tenant-scoped unique constraint, whatever this says.
      *
      * @return true if included in unique constraints
      */
@@ -94,6 +102,9 @@ public @interface TenantId {
     /**
      * Whether to expose tenant ID in API responses.
      * <p>Default: {@code false} (security best practice)
+     * <p><strong>Not carried — no effect.</strong> The emitted OpenAPI marks the tenant
+     * field read-only and leaves it out of the create and update DTOs, and a read
+     * answers with the entity, tenant field included, whatever this says.
      *
      * @return true if exposed in responses
      */

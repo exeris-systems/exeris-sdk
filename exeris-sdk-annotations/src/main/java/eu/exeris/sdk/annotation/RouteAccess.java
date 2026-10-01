@@ -64,17 +64,22 @@ import java.lang.annotation.Target;
  * element is contradictory, not merely redundant. A permit-all route runs its
  * handler with <strong>no {@code PrincipalContext} bound</strong> — the kernel binds
  * identity only on the path that demands it, so a scope check on a public route can
- * never be satisfied rather than merely passing vacuously. Rejecting the pair is a
- * build-time job for {@code exeris-tooling}; it is recorded here so the combination
- * is not written in the first place.
+ * never be satisfied rather than merely passing vacuously. The {@code exeris-tooling}
+ * processor refuses the pair at the declaration site, at the level each route gets:
+ * the entity's own {@code @RouteAccess} against {@code @ExerisDomain.permissions}, an
+ * action's own {@code @RouteAccess} against {@code @Action.permissions}, and an action
+ * without one — which inherits the entity's level — against its
+ * {@code @Action.permissions}.
  *
- * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
+ * <h2>Open-Core status — RESERVED, validated but not compiled into a route</h2>
  * <p>Declared shape, not yet an enforced route. The kernel provides
  * {@code HttpRoutePolicy} / {@code RouteRequirement} with
- * {@code AbstractHttpRoutePolicyTck} — but no {@code exeris-tooling} processor
- * extracts {@code @RouteAccess}, no generator emits a URL-to-policy table from it,
- * and the {@code exeris-sdk-source-model-io} reader does not read it, so declaring
- * it today has no generated effect. The kernel holds route authorization at tier
+ * {@code AbstractHttpRoutePolicyTck}. The {@code exeris-tooling} processor validates
+ * the declaration — the refusal above — but does not extract {@code @RouteAccess}
+ * into {@code DomainMetadata.routeAccess} or {@code ActionMetadata.routeAccess}, and
+ * no generator emits a URL-to-policy table from it, so every generated route is
+ * registered as if the annotation were absent. The
+ * {@code exeris-sdk-source-model-io} reader does not read it. The kernel holds route authorization at tier
  * {@code preview} in its {@code docs/stability-matrix.md}, so this surface is
  * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
  * change it; it is promoted when the kernel moves the surface out of
