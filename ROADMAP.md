@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-29
+last-verified: 2026-09-30
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA

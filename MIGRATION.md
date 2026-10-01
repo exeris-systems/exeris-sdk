@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-29
+last-verified: 2026-09-30
 ---
 
 # Migration guide
@@ -79,8 +79,9 @@ compatibility — and it is the same one-milestone degradation the 0.10.0 and
 0.11.0 bumps caused. Note this is *not* the inlining bug below: that one made
 the two halves of a single build disagree; this one is the mechanism working.
 
-All three additions are reserved, and no processor populates them yet. Each has
-its own entry below.
+`@RouteAccess` and `@Channel` are reserved, and no processor populates them;
+`@SharedScope` is read by the `exeris-tooling` processor on a `UNIVERSE` entity.
+Each has its own entry below.
 
 ### `@RouteAccess` is new, reserved, and outside the 1.0.0 freeze
 

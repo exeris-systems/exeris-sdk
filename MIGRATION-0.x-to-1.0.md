@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-09-29
+last-verified: 2026-09-30
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
