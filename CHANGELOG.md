@@ -23,7 +23,7 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.12.0] — 2026-10-02
 
 ### Breaking
 
@@ -50,6 +50,19 @@ for per-version upgrade steps.
   remedy. `exeris-tooling` still names its tables `snake_case(name) + "s"` and its Angular routes
   with a bare `s`; switching both, with a warning per entity whose table would move, is its
   change to make. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+
+- **`@exeris/ui-kit` 0.2.0 is Tailwind v4 only.** The v3 JS preset (`tailwind.preset.js`) and its
+  export are removed; the `@theme` block in `theme.css` is the single source of truth for the
+  `exeris` utility namespace, and the drift, compile and public-surface tests derive from it. The
+  peer dependency is `tailwindcss >= 4`. `index.css` drops the `@tailwind` directives v4 ignores.
+  The class and token names are unchanged, and the TypeScript API golden is too; the public-surface
+  snapshot records the `@theme` variables (`theme-var:`) in place of the preset keys. A consumer's
+  own `@custom-variant dark` after the import still overrides the `.dark` signal, now asserted on
+  v4. The README no longer shows the `angular.json` `styles` form, which fails on v4 because the
+  component layer is compiled without Tailwind. The removed export and the narrowed peer range are
+  accepted in `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094, which records the
+  package's public npm distribution, its own version line and its Tailwind v4 support. See
+  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
 
@@ -263,7 +276,6 @@ for per-version upgrade steps.
   the bound case fails. Binders: a side that does not extract sagas yet declares `Facet.SAGA` in
   `unsupportedFacets()`.
 
-
 ### Changed
 
 - **The UI kit is `@exeris/ui-kit` on the public npm registry.** It was `@exeris-systems/ui-kit` on
@@ -274,19 +286,6 @@ for per-version upgrade steps.
   otherwise. The tarball carries the repository `LICENSE`; `exports` lists `types` first and exposes
   `./package.json`. The package keeps its own version line, and its API golden changes only in
   the name. The ui-kit CI job moves from Node 20, past end of life, to Node 24. See
-  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
-
-- **`@exeris/ui-kit` 0.2.0 is Tailwind v4 only.** The v3 JS preset (`tailwind.preset.js`) and its
-  export are removed; the `@theme` block in `theme.css` is the single source of truth for the
-  `exeris` utility namespace, and the drift, compile and public-surface tests derive from it. The
-  peer dependency is `tailwindcss >= 4`. `index.css` drops the `@tailwind` directives v4 ignores.
-  The class and token names are unchanged, and the TypeScript API golden is too; the public-surface
-  snapshot records the `@theme` variables (`theme-var:`) in place of the preset keys. A consumer's
-  own `@custom-variant dark` after the import still overrides the `.dark` signal, now asserted on
-  v4. The README no longer shows the `angular.json` `styles` form, which fails on v4 because the
-  component layer is compiled without Tailwind. The removed export and the narrowed peer range are
-  accepted in `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094, which records the
-  package's public npm distribution, its own version line and its Tailwind v4 support. See
   [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 - **The semver gate is a maintainer gate, not a build requirement: `mvn -Psemver verify`.** japicmp
