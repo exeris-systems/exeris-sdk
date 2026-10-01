@@ -6,7 +6,7 @@
 
 - 🎨 **CSS Design Tokens** - Centralized theme via CSS Custom Properties
 - 🌙 **Dark Mode Support** - Automatic dark theme via `.dark` class
-- 🧩 **Tailwind Preset** - Drop-in preset for Tailwind CSS projects
+- 🧩 **Tailwind v4 theme** - `@theme` entry that generates the `exeris-*` utilities
 - 📦 **Zero Runtime** - Pure CSS, no JavaScript runtime
 
 ## Versioning
@@ -32,26 +32,8 @@ and drop the `@exeris-systems:registry` line from `.npmrc`.
 
 ## Usage
 
-### With Tailwind CSS
-
-The `exeris-*` design-token namespace (`bg-exeris-primary`, `font-exeris`,
-`p-exeris-md`, `rounded-exeris-md`, `shadow-exeris-lg`, `animate-exeris-spin`, …)
-ships two ways — pick the one matching your Tailwind major.
-
-**Tailwind v3** — JS preset in `tailwind.config.js`:
-
-```javascript
-import exerisPreset from '@exeris/ui-kit/tailwind.preset.js';
-
-export default {
-  presets: [exerisPreset],
-  content: ['./src/**/*.{html,ts}'],
-  // ... your config
-};
-```
-
-**Tailwind v4** — CSS-first (v4 removed JS presets, so the preset above does not
-apply). Import both of this package's entries next to Tailwind:
+The package targets **Tailwind CSS v4**. Import Tailwind and both of this package's entries in
+your global stylesheet — in an Angular application, `src/styles.css`:
 
 ```css
 @import "tailwindcss";
@@ -59,66 +41,37 @@ apply). Import both of this package's entries next to Tailwind:
 @import "@exeris/ui-kit/styles";  /* the .exeris-* component classes */
 ```
 
-Both are required on v4 — see [Import Base Styles](#import-base-styles) for what
-each one carries and what a build missing `…/theme` loses.
+Both entries are required, every time:
 
-Both entries declare the same tokens and both resolve them through the same
-`--exeris-*` custom properties, so a utility follows a runtime override on either
-major. Two tests keep it that way: one compares the two declarations, the other
-compiles `theme.css` with a real Tailwind v4 and checks the utilities it produces.
+- **`…/theme`** declares the `exeris-*` design-token namespace through `@theme`, so Tailwind
+  generates `bg-exeris-primary`, `font-exeris`, `p-exeris-md`, `rounded-exeris-md`,
+  `shadow-exeris-lg`, `animate-exeris-spin`, …, and it defines the `dark` variant. Without it the
+  component classes fall back to the operating system's dark setting while your `.dark` toggle
+  moves the tokens — see [Dark Mode](#dark-mode).
+- **`…/styles`** declares the `.exeris-*` component classes. It uses `@apply` and `dark:`
+  variants, so Tailwind has to process it in the same stylesheet as `@import "tailwindcss"`. Do
+  not list `node_modules/@exeris/ui-kit/src/styles/index.css` on its own in `angular.json`'s
+  `styles` array: that file is then compiled without Tailwind and fails.
 
-**Scoped overrides on v4 need one extra line.** Re-pointing a token on `:root`
-works as you would expect. Re-pointing it on a *container* — a `.dark` wrapper, a
-tenant scope — also needs the colour it maps to, because v4 resolves a `@theme`
-value where it is declared:
+The `--exeris-*` design tokens come with either entry; both declare them with identical values,
+which is harmless and guarded by a test.
+
+Every `exeris` utility resolves through an `--exeris-*` custom property, so it follows a runtime
+override. One test compiles `theme.css` with a real Tailwind v4 and checks that each utility
+still reaches its property.
+
+**Scoped overrides need one extra line.** Re-pointing a token on `:root` works as you would
+expect. Re-pointing it on a *container* — a `.dark` wrapper, a tenant scope — also needs the
+colour it maps to, because Tailwind v4 resolves a `@theme` value where it is declared:
 
 ```css
 .tenant-acme {
   --exeris-primary: 220 38 38;
-  --color-exeris-primary: rgb(var(--exeris-primary)); /* v4 only; v3 needs no repeat */
+  --color-exeris-primary: rgb(var(--exeris-primary));
 }
 ```
 
 The kit already does this for its own `.dark`, so dark mode needs nothing from you.
-
-### Import Base Styles
-
-In your main CSS file. **On v3 this one import is the whole story; on v4 it is half of it** —
-copy the block for your major rather than the first one you see:
-
-```css
-/* Tailwind v3 — the preset in tailwind.config.js carries the token namespace */
-@import '@exeris/ui-kit/styles';
-```
-
-```css
-/* Tailwind v4 — both entries, every time */
-@import "tailwindcss";
-@import "@exeris/ui-kit/theme";
-@import "@exeris/ui-kit/styles";
-```
-
-`styles` works on both majors. The file is written against v3 — it opens with the `@tailwind`
-directives, which are no-ops under v4 — and every `.exeris-*` component class it declares is
-emitted by a v4 build too, checked by compiling it with each major on every CI run.
-
-> **Why v4 needs `…/theme` as well**, even if you never write a `bg-exeris-*` utility: only
-> `theme.css` carries the v4 `@theme` mapping (v4 has no JS preset to read it from) **and** the
-> `dark` variant definition. Drop it and the component classes silently fall back to the
-> operating system's dark setting while your `.dark` toggle moves the tokens — see
-> [Dark Mode](#dark-mode). The `--exeris-*` design tokens come along either way: both files
-> declare them, with identical values, which is harmless and guarded by a test.
-
-Or in Angular's `angular.json`:
-
-```json
-{
-  "styles": [
-    "node_modules/@exeris/ui-kit/src/styles/index.css",
-    "src/styles.css"
-  ]
-}
-```
 
 ## CSS Classes
 
@@ -216,38 +169,19 @@ That class is the only signal, and it drives both halves of the package: the des
 classes' own dark styling. Toggling it re-themes everything at once — no OS coordination needed,
 and no flash of light chrome on a dark-themed page.
 
-It applies to `dark:` utilities *you* write too, not just the ones this package ships: with the
-preset (v3) or the theme entry (v4) in your build, `dark:bg-exeris-primary` in your own markup
-follows the same class.
+It applies to `dark:` utilities *you* write too, not just the ones this package ships:
+`dark:bg-exeris-primary` in your own markup follows the same class. The theme entry declares it
+with `@custom-variant dark (&:where(.dark, .dark *))`, and `tests/dark-mode-signal.test.js`
+asserts the compiled output against it.
 
-**If you would rather follow the OS**, override it in your own config — a consumer's setting wins
-over the preset's:
+**If you would rather follow the OS**, declare your own variant after the theme import:
 
-```javascript
-export default {
-  presets: [exerisPreset],
-  darkMode: 'media',      // or ['selector', '[data-theme="dark"]'] for your own attribute
-};
+```css
+@import "tailwindcss";
+@import "@exeris/ui-kit/theme";
+@import "@exeris/ui-kit/styles";
+@custom-variant dark (@media (prefers-color-scheme: dark));
 ```
-
-<details>
-<summary>Why this is stated so explicitly</summary>
-
-Until recently the two halves answered to *different* signals. The tokens followed `.dark`, while
-the component classes' `dark:` variants fell back to Tailwind's default,
-`@media (prefers-color-scheme: dark)`. An app that toggled the class got dark tokens and light
-component chrome unless the operating system happened to agree — dark text on a light input.
-
-It is now one switch: `darkMode: 'class'` in the v3 preset, and
-`@custom-variant dark (&:where(.dark, .dark *))` in `theme.css` for v4, which has no JS preset to
-read the former from. Both are asserted against real compiler output on every CI run
-(`tests/dark-mode-signal.test.js`), including that your override above still works.
-
-**On v4 this needs the `…/theme` import.** A v4 build that pulls in `…/styles` alone keeps the
-media query for the component classes, because the `@custom-variant` line lives in the theme
-entry. It is not in `index.css` because that file is also v3's entry, and v3 does not consume
-`@custom-variant` — it copies the at-rule straight into every v3 consumer's compiled output.
-</details>
 
 ## License
 

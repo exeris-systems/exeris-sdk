@@ -1,49 +1,21 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import preset from '../tailwind.preset.js';
-import { DECLARED_V3_RANGE, PACKAGE_ROOT, V4_VERSION, compileWithV4 } from './support/tailwind.js';
+import { PACKAGE_ROOT, THEME_UTILITIES, V4_VERSION, compileWithV4 } from './support/tailwind.js';
 
 /**
  * The `src/styles/theme.css` Tailwind v4 `@theme` entry, compiled by a real v4.
  *
  * The companion `tests/theme.test.js` verifies the theme entry's shape at the text
- * level. This test verifies the stronger property: that v4 transforms it into the
- * utilities that the README documents, and that each utility resolves to the value
- * a v3 consumer would get.
- *
- * Everything asserted below is derived from `tailwind.preset.js`, ensuring the v3
- * preset remains the single source of truth for the namespace contents and which
- * entries use runtime `--exeris-*` properties.
+ * level. This test verifies the stronger property: that v4 turns every `exeris`
+ * variable in the `@theme` block into the utility the README documents, and that
+ * each utility still reaches the `--exeris-*` runtime property its variable names —
+ * the property a host overrides to re-theme the application.
  */
 const root = PACKAGE_ROOT;
 
-/** Preset family → the v4 `@theme` namespace and the utility prefix it feeds. */
-const FAMILIES = [
-  { entries: () => preset.theme.extend.colors.exeris, themeVar: (k) => `--color-exeris-${k}`, utility: (k) => `bg-exeris-${k}` },
-  { entries: () => preset.theme.extend.fontFamily, themeVar: (k) => `--font-${k}`, utility: (k) => `font-${k}` },
-  { entries: () => preset.theme.extend.spacing, themeVar: (k) => `--spacing-${k}`, utility: (k) => `p-${k}` },
-  { entries: () => preset.theme.extend.borderRadius, themeVar: (k) => `--radius-${k}`, utility: (k) => `rounded-${k}` },
-  { entries: () => preset.theme.extend.boxShadow, themeVar: (k) => `--shadow-${k}`, utility: (k) => `shadow-${k}` },
-  { entries: () => preset.theme.extend.transitionDuration, themeVar: (k) => `--transition-duration-${k}`, utility: (k) => `duration-${k}` },
-  { entries: () => preset.theme.extend.animation, themeVar: (k) => `--animate-${k}`, utility: (k) => `animate-${k}` },
-];
-
-/**
- * Every utility the preset implies, paired with the theme var behind it and
- * with the runtime property the v3 preset resolves against — `--exeris-shadow-lg`
- * for `boxShadow['exeris-lg']`, and so on. `runtimeVar` is null for the two
- * families the v3 preset writes literally (the font stack and the animation
- * shorthands); v4 must be literal in exactly those places and indirect in all
- * the others, or the two majors disagree about what is themeable at runtime.
- */
-const EXPECTED = FAMILIES.flatMap(({ entries, themeVar, utility }) =>
-  Object.entries(entries()).map(([key, presetValue]) => ({
-    utility: utility(key),
-    themeVar: themeVar(key),
-    runtimeVar: (String(presetValue).match(/--exeris-[a-z0-9-]+/) ?? [null])[0],
-  })),
-);
+/** Every utility the `@theme` block implies — see `THEME_UTILITIES`. */
+const EXPECTED = THEME_UTILITIES;
 
 /** Candidates with no token behind them — the compile must ignore them. */
 const NONEXISTENT = ['bg-exeris-nonesuch', 'p-exeris-nonesuch', 'rounded-exeris-nonesuch', 'duration-exeris-nonesuch'];
@@ -81,15 +53,14 @@ function resolved(utility) {
 }
 
 describe('theme.css through a real Tailwind v4 compile', () => {
-  it('runs against v4, not the package\'s v3 devDep', () => {
+  it('runs against Tailwind v4', () => {
     expect(V4_VERSION, `resolved Tailwind for the compile guard is ${V4_VERSION}`).toMatch(/^4\./);
-    expect(DECLARED_V3_RANGE, 'the v3 devDep stays: index.css and the preset are written against v3').toMatch(/3\./);
   });
 
-  it('generates every utility the v3 preset declares', () => {
+  it('generates every utility the @theme block declares', () => {
     const missing = EXPECTED.filter((e) => rulesForUtility(e.utility).length === 0).map((e) => e.utility);
-    expect(missing, 'v4 produced no rule for these — the @theme namespace does not match the preset').toEqual([]);
-    expect(EXPECTED.length).toBeGreaterThan(20);
+    expect(missing, 'v4 produced no rule for these @theme variables').toEqual([]);
+    expect(EXPECTED.length, 'the @theme walk looks too short to be real').toBeGreaterThan(20);
   });
 
   it('ignores candidates with no token behind them', () => {
@@ -97,16 +68,22 @@ describe('theme.css through a real Tailwind v4 compile', () => {
     expect(spurious, 'these have no @theme entry, so a rule for them means the guard proves nothing').toEqual([]);
   });
 
-  it('resolves each utility against the same runtime property the v3 preset uses', () => {
+  it('resolves each utility against the runtime property its @theme variable names', () => {
     for (const { utility, runtimeVar } of EXPECTED.filter((e) => e.runtimeVar)) {
-      expect(resolved(utility), `${utility} does not read ${runtimeVar}, so it cannot be re-themed at runtime the way v3 can`)
+      expect(resolved(utility), `${utility} does not read ${runtimeVar}, so a host cannot re-theme it at runtime`)
         .toContain(`var(${runtimeVar})`);
     }
   });
 
-  it('leaves the literal entries literal, as the v3 preset has them', () => {
+  it('indirects every family but the font stack and the animation shorthands', () => {
+    // The literal families are a decision, not an accident: a font stack and an
+    // animation shorthand are not values a host re-themes per tenant, so they have
+    // no `--exeris-*` property. Everything else must, or it is not themeable.
+    const literal = EXPECTED.filter((e) => !e.runtimeVar).map((e) => e.themeVar);
+    expect(literal.every((name) => name.startsWith('--font-') || name.startsWith('--animate-')),
+      `only fonts and animations may be literal, found: ${literal.join(', ')}`).toBe(true);
     for (const { utility } of EXPECTED.filter((e) => !e.runtimeVar)) {
-      expect(resolved(utility), `${utility} indirects through a runtime property, but the v3 preset writes it literally`)
+      expect(resolved(utility), `${utility} is literal in @theme but indirects through a runtime property`)
         .not.toMatch(/var\(--exeris-/);
     }
   });
@@ -126,9 +103,10 @@ describe('the .dark scope survives the compile and still re-themes', () => {
     // resolved by the time a nested .dark re-points its channels — .dark has to
     // re-declare the mapping to move it. Verified in a browser: without these,
     // bg-exeris-primary inside .dark computes the light colour.
-    const repointed = Object.keys(preset.theme.extend.colors.exeris)
+    const repointed = EXPECTED.filter((e) => e.themeVar.startsWith('--color-exeris-'))
+      .map((e) => e.key.replace(/^exeris-/, ''))
       .filter((key) => new RegExp(`--exeris-${key}:`).test(darkBlock));
-    expect(repointed, 'expected .dark to re-point at least one preset colour').not.toEqual([]);
+    expect(repointed, 'expected .dark to re-point at least one @theme colour').not.toEqual([]);
 
     for (const key of repointed) {
       expect(darkBlock, `.dark re-points --exeris-${key} but does not recompute --color-exeris-${key}, so bg-exeris-${key} stays light`)

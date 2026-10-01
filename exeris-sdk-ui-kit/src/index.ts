@@ -3,8 +3,8 @@
  *
  * @remarks
  * The package ships three artifacts that name the same tokens three ways: CSS custom properties
- * (`src/styles/index.css`), a Tailwind preset (`tailwind.preset.js`), and the TypeScript values
- * below. The names are the contract and are pinned by `tests/public-surface.txt`; the values are
+ * (`src/styles/index.css`), the Tailwind v4 `@theme` entry (`src/styles/theme.css`), and the
+ * TypeScript values below. The names are the contract and are pinned by `tests/public-surface.txt`; the values are
  * the theming surface an application is meant to override.
  *
  * @packageDocumentation
@@ -16,7 +16,7 @@
  *
  * @remarks
  * A theme is data, not a class: consumers spread {@link defaultTheme} and override the tokens they
- * need. Every token here has a CSS custom property and a Tailwind preset key of the same name, so
+ * need. Every token here has a CSS custom property and a Tailwind `@theme` key of the same name, so
  * a value can be read from whichever of the three surfaces a consumer already uses. Removing or
  * renaming a token is a MAJOR change for this package; adding one is MINOR.
  *
@@ -32,8 +32,8 @@ export interface ExerisTheme {
      * The hover state of `primary`.
      *
      * @remarks
-     * Kebab-cased, matching `--exeris-primary-hover` in `index.css` and the `primary-hover` key in
-     * the Tailwind preset. All three name design tokens, and naming them identically is what lets
+     * Kebab-cased, matching `--exeris-primary-hover` in `index.css` and `--color-exeris-primary-hover`
+     * in the Tailwind `@theme` entry. All three name design tokens, and naming them identically is what lets
      * the drift test map one onto another without a translation step — a camel-cased `primaryHover`
      * here would need one, and a translation is a place two sides can disagree.
      */

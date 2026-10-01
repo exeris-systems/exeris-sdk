@@ -17,15 +17,14 @@ import { defineConfig } from 'vitest/config';
  * worth being exact about what that buys, because it is easy to read as more:
  *
  *   - src/index.ts is ONE statement (the `defaultTheme` const; the interface is a type
- *     and is erased), and tailwind.preset.js is ZERO (a single object literal). Measured,
- *     not estimated — see coverage/coverage-summary.json.
- *   - So for today's two files the threshold cannot fail. It reports that the module was
+ *     and is erased). Measured, not estimated — see coverage/coverage-summary.json.
+ *   - So for today's one file the threshold cannot fail. It reports that the module was
  *     imported, which the tests would fail without anyway.
  *
  * Its value is therefore prospective: the first source file with real logic is held to
  * 85% from the moment it lands, per-file so the others cannot carry it. What actually
  * detects regressions in the current files is the derived drift tests — theme.test.js
- * (preset vs @theme vs index.css) and default-theme-drift.test.js (defaultTheme vs
+ * (@theme vs index.css) and default-theme-drift.test.js (defaultTheme vs
  * index.css) — which compare the two sides against each other rather than counting lines.
  */
 export default defineConfig({
@@ -35,7 +34,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary'],
-      include: ['src/**/*.ts', 'tailwind.preset.js'],
+      include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'dist/**', 'node_modules/**'],
       thresholds: {
         // perFile so the 85% gate holds for each source file individually
