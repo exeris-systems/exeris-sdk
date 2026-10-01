@@ -4,14 +4,14 @@ import { defineConfig } from 'vitest/config';
  * Vitest config for @exeris/ui-kit.
  *
  * This package is overwhelmingly CSS + design tokens; the only TypeScript
- * is an interface declaration and a constant object in src/index.ts, plus
- * the Tailwind preset module. Tests guard that:
+ * is an interface declaration and the defaultTheme constant in src/index.ts.
+ * Tests guard that:
  *
  *   - the defaultTheme constant has the documented shape and stays in sync
  *     with the CSS custom properties consumers depend on; and
- *   - the Tailwind preset exposes the expected theme.extend keys (any
- *     accidental rename would silently break downstream `bg-exeris-primary`
- *     class lookups).
+ *   - the Tailwind v4 @theme entry stays in sync with those properties and
+ *     compiles to the `exeris` utilities (a renamed token would silently
+ *     break downstream `bg-exeris-primary` lookups).
  *
  * Coverage thresholds are applied per-file at 85% to match the Java side, and it is
  * worth being exact about what that buys, because it is easy to read as more:
