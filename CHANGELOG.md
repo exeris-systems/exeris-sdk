@@ -151,11 +151,10 @@ for per-version upgrade steps.
 
   A bare marker with no attributes, deliberately: `@TenantId`'s four attributes are all inert, and
   reproducing them on a new annotation would manufacture surface with nothing to be inert against.
-  **Reserved**: `exeris-tooling`'s processor reads every marker in that package except
-  `@PrimaryKey` and this one, and `dataScope = UNIVERSE` is still refused at the declaration site,
-  so there is no build today in which the field would be read. It lands now because the other
-  two thirds are in place: the kernel published both session-variable constants in v0.12.0, and the
-  only remaining piece for a transcription was the SDK saying which column to compare.
+  **LIVE on a `UNIVERSE` entity**: the `exeris-tooling` processor and the `-io` reader both read it
+  into `sharedScopeField`, and the generated read-widening policy and repository stamp key on that
+  column. On any other tier the processor warns and neither reader records it. The kernel side is
+  the two session-variable constants it published in v0.12.0.
 
 - **`META-INF/exeris/annotation-catalog.json` ships inside `exeris-sdk-annotations`, and is
   attached to the GitHub Release.** Every `@interface` the module declares — 74 as this release
@@ -391,11 +390,11 @@ for per-version upgrade steps.
   our own notes: the processor resolves all nine into `SystemFieldsMetadata` beside the override
   attributes, the generators read the marked field's name in place of the canonical one, and a
   marker repeated on two fields or contradicting its override is refused at the declaration. They
-  are now PARTIAL — a generator consumes them, but the `-io` reader does not read them and their 19
-  attributes are carried nowhere — and each says that a marker names the column while the entity
-  flag still decides whether it exists. `@PrimaryKey` and `@SharedScope` stay RESERVED, each with
-  its reason; `validationMode` stays RESERVED for the reason that is actually true, that no processor
-  reads it. This prose ships verbatim in `annotation-catalog.json`, so a wrong status label here is
+  are now LIVE — a generator consumes them and both readers resolve them (see the `SourceModelReader`
+  entry above), while their 19 attributes are carried nowhere — and each says that a marker names
+  the column while the entity flag still decides whether it exists. `@SharedScope` is LIVE on the
+  same terms, on a `UNIVERSE` entity only. `@PrimaryKey` stays RESERVED with its reason;
+  `validationMode` stays RESERVED for the reason that is actually true, that no processor reads it. This prose ships verbatim in `annotation-catalog.json`, so a wrong status label here is
   a wrong answer served to every agent that reads the catalog.
 
 - **Three documentation gaps before the cut.** The root `package-info` sent readers to
@@ -450,8 +449,8 @@ for per-version upgrade steps.
   Kernel v0.12.0 closes it — `ConnectionInterceptor` publishes `SESSION_KEY_SHARED_SCOPE` beside
   `SESSION_KEY_TENANT_ID` (kernel `5b45dbd2`) — so the claim is **re-pinned to 0.12 rather than
   withdrawn**: the accessor and the variable name are two contracts met one release apart, and
-  these files conflated them. Nothing about the shipped surface changes; `UNIVERSE` stays refused
-  at the declaration site and the tooling transcription stays unbuilt. Found from the tooling side
+  these files conflated them. The tooling 0.9.0 transcription writes that published constant into
+  the policy it emits. Found from the tooling side
   and reported upstream, where the kernel's release notes had the same gap and now carry the fact
   (kernel `db115106`).
 
@@ -462,14 +461,12 @@ for per-version upgrade steps.
   declaring it "has no generated effect yet" (never right — the tier always fell through to
   `DataScopeSupport.isTenantPartitioned`, which answers `effectiveDataScope() != GLOBAL`). A reader
   stopping at the enum walked away expecting a build that warns and then emits owner-pinned
-  artefacts; what they meet is a compile error at the declaration. Checked against
+  artefacts; what they met was a compile error at the declaration. Checked against
   `exeris-tooling` `origin/main` rather than against our own notes — which is how the disagreement
   surfaced, since the ROADMAP already claimed all of it corrected in a 2026-09-02 pass that in fact
-  moved one of the four sites. The enum and `package-info` javadoc now state the refusal and keep the part that is
-  still load-bearing (the fail-closed predicate, and why refusing beats narrowing: a shared-world
-  row has no tenant property, so the `TENANT` shape's `getTenantId()` binding fails to compile
-  inside generated code its author is told not to edit); ADR-059 and the ROADMAP carry dated
-  corrections. It also cites the tooling method by name instead of by line — both line references
+  moved one of the four sites. The enum and `package-info` javadoc now describe the tooling 0.9.0
+  transcription and keep the part that is still load-bearing, the fail-closed predicate; ADR-059
+  and the ROADMAP carry dated corrections. It also cites the tooling method by name instead of by line — both line references
   it carried had gone stale.
 
 - **Twenty-seven javadoc examples taught the nested form the package javadoc calls a no-op.**
@@ -501,16 +498,15 @@ for per-version upgrade steps.
   step is what caught `@InternalApi`: it is extracted, so an extraction registry calls it read, but
   `InternalApiMetadata` is named by no generator on either side — only by the TypeScript schema
   module. A type declaration is not a consumer, so it is PARTIAL. The index in `package-info`
-  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → PARTIAL,
+  disagreed with three measurements and was corrected with them (`@GraphEdge` RESERVED → LIVE,
   `@EventSourced` RESERVED → PARTIAL, `@InternalApi` LIVE → PARTIAL).
 
-  `@GraphEdge` is PARTIAL rather than LIVE for the second half of that word's definition, which is
-  easy to read past: "or only one of the two readers (processor / `-io`) handles it". A generator
-  *does* consume it — `KernelGraphSyncGenerator` — but only the processor extracts it, and the
-  `-io` reader still lists it among the facets neither side reads. The same asymmetry makes
-  `@SagaSteps` and `@GraphEdges` PARTIAL even though `@SagaStep` is LIVE: container handling landed
-  in the processor and not in `-io`, so repeating `@SagaStep` is read on one path and silently
-  reduced to one step on the other. Both container javadocs asserted the pre-processor state and
+  `@GraphEdge` is LIVE: `KernelGraphSyncGenerator` consumes it, and both readers extract it (see
+  the `SourceModelReader` entry above). PARTIAL has a second half that is easy to read past: "or
+  only one of the two readers (processor / `-io`) handles it". That is what keeps `@SagaSteps`
+  PARTIAL even though `@SagaStep` is LIVE: container handling landed in the processor and not in
+  `-io`, so repeating `@SagaStep` is read on one path and silently reduced to one step on the
+  other. `@GraphEdges` is handled by both readers and stays PARTIAL because it admits one edge. Both container javadocs asserted the pre-processor state and
   have been corrected; `MIGRATION.md` carried the same stale claim about `@GraphEdge` and now
   describes what actually happens — one edge extracted, two refused at the declaration.
 
@@ -528,18 +524,15 @@ for per-version upgrade steps.
   against the tooling source rather than taken on report, which changed what one of the fixes had to
   say.
 
-  **`@ExerisDomain.dataScope = UNIVERSE` said "no generated effect today". Declaring it fails the
-  build.** The tier is reserved pending the `exeris-tooling` transcription onto the kernel's
-  `sharedScopeKey` carrier, and "reserved" was written as though it meant "inert" — the posture the
-  streaming attributes had before ADR-043. It never did. Without the transcription the tier falls
-  through to the `TENANT` emission (owner column, owner-pinned policy, a repository binding
-  `getTenantId()`), and a shared-world row is exactly the row with no owner property, so the
-  archetypal `UNIVERSE` entity failed with `cannot find symbol` inside generated code its author is
-  told not to edit. Tooling replaced that with a refusal at the declaration site — a warning until
-  0.8.0, an unconditional error since. So the sentence a reader trusts before trying the tier was
-  wrong when written and is further from the truth now: the honest reading of "reserved" here is
-  *rejected*, not *ignored*. Corrected on `dataScope()`, on the `UNIVERSE` constant, in
-  `MIGRATION.md`, and in the `ROADMAP.md` bullet that still described the warning.
+  **`@ExerisDomain.dataScope = UNIVERSE` said "no generated effect today". It was never inert.**
+  "Reserved" was written as though it meant "inert" — the posture the streaming attributes had
+  before ADR-043. Without an `exeris-tooling` transcription the tier fell through to the `TENANT`
+  emission, and a shared-world row is exactly the row with no owner property, so the archetypal
+  `UNIVERSE` entity failed with `cannot find symbol` inside generated code. The tooling 0.9.0
+  processor transcribes the tier: a `UNIVERSE` row is owned, writes stay owner-pinned, and reads
+  widen on the `@SharedScope` column; a `UNIVERSE` entity without an owner field or a
+  `@SharedScope` field is refused at the declaration. `dataScope()`, the `UNIVERSE` constant,
+  `MIGRATION.md` and `ROADMAP.md` say so.
 
   **`@ExerisDomain.apiVersion` said "used in URL path: `/api/{version}/{path}`". Nothing serves that
   prefix.** The generated router registers routes at the derived domain path and the OpenAPI document
