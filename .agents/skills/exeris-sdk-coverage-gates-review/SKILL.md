@@ -10,7 +10,7 @@ Enforce the coverage gates and, more importantly, *where new tests belong* so th
 
 ## When to Use
 - Any change adding code or branches to `exeris-sdk-source-model` (`ast.*`, `mutation.*`).
-- Any change adding code/branches to `exeris-sdk-ui-kit` (`src/**/*.ts`, `tailwind.preset.js`).
+- Any change adding code/branches to `exeris-sdk-ui-kit` (`src/**/*.ts`).
 - Any change adding, moving, or restructuring a test.
 - Any JaCoCo or Vitest coverage-gate failure in CI or locally.
 
@@ -21,7 +21,7 @@ Enforce the coverage gates and, more importantly, *where new tests belong* so th
 ## Canonical Rules (per repo `CLAUDE.md`)
 - **`exeris-sdk-source-model`** — `jacoco-maven-plugin` ≥ 0.8.14, bound to `verify`, **0.85 BUNDLE-level** on both `INSTRUCTION` and `LINE`. Thresholds are properties (`jacoco.instruction.coverage.minimum`, `jacoco.line.coverage.minimum`) — a one-off debug override (`-Djacoco.instruction.coverage.minimum=0`) is fine but MUST NOT be committed.
 - **`exeris-sdk-annotations`** — gate deliberately NOT applied (method-less `@interface` → meaningless metric). Its real gate is `AnnotationContractTest`. See [[exeris-sdk-annotation-contract-review]].
-- **`exeris-sdk-ui-kit`** — Vitest v8 provider, **85% per-file** on lines / statements / functions / branches; scope `src/**/*.ts` + `tailwind.preset.js` (the rest is CSS).
+- **`exeris-sdk-ui-kit`** — Vitest v8 provider, **85% per-file** on lines / statements / functions / branches; scope `src/**/*.ts` (the rest is CSS).
 - **Where new tests go** (source-model `ast.*`): wire-format concern → extend `AstJsonRoundTripTest`; builder / convenience-method concern → extend the focused `<Type>MetadataTest`. Mutation surface (`mutation.*`) → extend `MutationWireFormatTest`. Prefer extending over a parallel class.
 
 ## Review Procedure

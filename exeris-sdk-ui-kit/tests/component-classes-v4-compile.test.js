@@ -2,16 +2,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { COMPONENT_TYPE_CLASS, RENDERABLE_CLASSES } from './support/component-types.js';
-import { PACKAGE_ROOT, compileWithV3, compileWithV4, rulesFor, selectorsFor } from './support/tailwind.js';
+import { PACKAGE_ROOT, compileWithV4, rulesFor, selectorsFor } from './support/tailwind.js';
 
 /**
- * The `.exeris-*` component layer, compiled through both Tailwind v3 and v4.
+ * The `.exeris-*` component layer, compiled through Tailwind v4.
  *
- * This guard asserts two invariants: that v4 emits all component classes, and that
- * v3 — the major this file is written against and the one consumers presently use —
- * continues to emit exactly what it did before. The button variants share their base
- * declarations through a selector list, not `@apply` of a custom class, which v4
- * rejects; so they are asserted on both compilers.
+ * This guard asserts that v4 emits every component class, at rest and not only in
+ * some state. The button variants share their base declarations through a selector
+ * list, not `@apply` of a custom class, which v4 rejects; that they still carry the
+ * base is asserted below.
  */
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
 
@@ -56,14 +55,10 @@ const carriesBase = (rules, className) =>
     .some((decl) => decl.prop === BASE_MARKER.prop && decl.value === BASE_MARKER.value);
 
 let v4;
-let v3;
 
 beforeAll(async () => {
   const candidates = [...DECLARED, NONEXISTENT];
-  [v4, v3] = await Promise.all([
-    compileWithV4('src/styles/index.css', candidates),
-    compileWithV3('src/styles/index.css', candidates),
-  ]);
+  v4 = await compileWithV4('src/styles/index.css', candidates);
 }, 60_000);
 
 describe('index.css compiles on Tailwind v4', () => {
@@ -100,14 +95,12 @@ describe('index.css compiles on Tailwind v4', () => {
 });
 
 /**
- * The selector-list refactor is only safe while a variant used on its own still
- * behaves like `.exeris-btn .exeris-btn-primary` did. Asserted on both compilers
- * because the change was made for v4 and the risk lands on v3.
+ * The selector list is only safe while a variant used on its own still behaves
+ * like `.exeris-btn .exeris-btn-primary` would.
  */
-describe.each([
-  ['v4', () => v4],
-  ['v3', () => v3],
-])('button variants keep the base declarations (%s)', (_major, compiled) => {
+describe('button variants keep the base declarations', () => {
+  const compiled = () => v4;
+
   it('gives the base class the base declarations', () => {
     expect(carriesBase(compiled().rules, BUTTON_BASE)).toBe(true);
   });

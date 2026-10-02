@@ -11,7 +11,7 @@ import { COMPONENT_TYPE_CLASS } from './support/component-types.js';
  * ensuring a rename or deletion cannot silently leave a control unstyled.
  *
  * The companion test `component-classes-v4-compile.test.js` verifies the stronger
- * property: that a real Tailwind build on both v3 and v4 emits a rule for each.
+ * property: that a real Tailwind v4 build emits a rule for each.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const indexCss = readFileSync(join(root, 'src/styles/index.css'), 'utf8');

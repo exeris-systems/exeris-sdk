@@ -6,7 +6,7 @@ name: publish-ui-kit
 # the dependency — installs it with no `.npmrc` entry and no token. It versions independently of
 # the Java modules (MIGRATION-0.x-to-1.0.md §2b), so it has its own tag.
 #
-# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.1.0) publishes. A manual dispatch is a dry
+# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.2.0) publishes. A manual dispatch is a dry
 # run unless `dry-run` is unchecked: it installs, gates and runs `npm publish --dry-run`, which
 # prints the tarball and touches nothing remote. Bump exeris-sdk-ui-kit/package.json `version`
 # before tagging — npm refuses to publish over an existing version.

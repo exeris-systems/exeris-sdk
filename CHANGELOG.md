@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-09-29
+last-verified: 2026-10-02
 ---
 
 # Changelog
@@ -272,8 +272,21 @@ for per-version upgrade steps.
   registry.npmjs.org from a `ui-kit-v*` tag, with npm provenance through the workflow's OIDC token and
   the same gates the PR build runs; a manual dispatch is a `npm publish --dry-run` unless told
   otherwise. The tarball carries the repository `LICENSE`; `exports` lists `types` first and exposes
-  `./package.json`. The package keeps its own version, `0.1.0`, and its API golden changes only in
+  `./package.json`. The package keeps its own version line, and its API golden changes only in
   the name. The ui-kit CI job moves from Node 20, past end of life, to Node 24. See
+  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+
+- **`@exeris/ui-kit` 0.2.0 is Tailwind v4 only.** The v3 JS preset (`tailwind.preset.js`) and its
+  export are removed; the `@theme` block in `theme.css` is the single source of truth for the
+  `exeris` utility namespace, and the drift, compile and public-surface tests derive from it. The
+  peer dependency is `tailwindcss >= 4`. `index.css` drops the `@tailwind` directives v4 ignores.
+  The class and token names are unchanged, and the TypeScript API golden is too; the public-surface
+  snapshot records the `@theme` variables (`theme-var:`) in place of the preset keys. A consumer's
+  own `@custom-variant dark` after the import still overrides the `.dark` signal, now asserted on
+  v4. The README no longer shows the `angular.json` `styles` form, which fails on v4 because the
+  component layer is compiled without Tailwind. The removed export and the narrowed peer range are
+  accepted in `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094, which records the
+  package's public npm distribution, its own version line and its Tailwind v4 support. See
   [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 - **The semver gate is a maintainer gate, not a build requirement: `mvn -Psemver verify`.** japicmp
