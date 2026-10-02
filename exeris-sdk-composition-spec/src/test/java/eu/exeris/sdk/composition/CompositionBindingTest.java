@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * independently of this code (shell {@code printf … | sha256sum} over the canonical form), so a
  * drift in {@link CompositionBinding} — sort order, separators, the {@code "  provides "} prefix,
  * the trailing newline, or the unversioned-provide normalization — fails here rather than silently
- * false-failing a deploy. The versioned vector is the same value the tooling emitter and the
- * (now-superseded) platform port both produced.
+ * false-failing a deploy. The versioned vector is the same value the tooling emitter produces.
  */
 class CompositionBindingTest {
 

@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wire-format guard for the 0.5.0 mutation surface (ADR-042 slice 1), the
+ * Wire-format guard for the mutation surface (ADR-042 slice 1), the
  * sibling of {@code AstJsonRoundTripTest} for {@link MutationOp} /
  * {@link MutationResult}. Each value is serialized and deserialized
  * <strong>through its sealed-interface type</strong> — the way the transport
@@ -165,8 +165,8 @@ class MutationWireFormatTest {
      *                    MUST appear in the serialized body. Asserting the
      *                    payload is actually on the wire — not just that the
      *                    round trip happens to be equal for the values chosen —
-     *                    is what would catch the historical Jackson-3
-     *                    silent-field-drop bug (see CLAUDE.md).
+     *                    is what catches Jackson 3 silently dropping a
+     *                    field from the serialized body.
      */
     private void assertOpRoundTrip(MutationOp original, Class<? extends MutationOp> concrete, String discriminator,
                                    String... payloadKeys) {

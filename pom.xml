@@ -292,9 +292,9 @@
           and failOnError=false to get past ~160 findings it carries; importing it would switch
           off a gate this repo currently passes clean.
 
-        - The cyclonedx SBOM. The kernel ships one, this reactor has never produced one, and
-          adding it is its own slice rather than a rider on the change that first makes
-          publishing possible. The trap to read before adding it is the kernel's own
+        - The cyclonedx SBOM. The kernel ships one, this reactor does not produce one, and
+          adding it is a change of its own, not a rider on another. The trap to read before
+          adding it is the kernel's own
           `skipNotDeployed` comment: <extensions>true</extensions> sets maven.deploy.skip, the
           SBOM goal skips on that by default, and a release build therefore produces none while
           the ordinary CI SBOM gate stays green.

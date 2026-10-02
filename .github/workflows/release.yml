@@ -186,8 +186,8 @@ jobs:
         # splitting. So the gates and the upload run in the same lifecycle.
         #
         # (Setting `outputTimestamp` and adopting the kernel's shape is the better end state. It
-        # changes every published jar's bytes, so it belongs to its own slice with its own
-        # reproducibility check — not to the change that first makes publishing possible.)
+        # changes every published jar's bytes, so it belongs to a change of its own with its own
+        # reproducibility check.)
         #
         # No -Psemver: the semver gate is an opt-in profile in the root pom, and its configured
         # baseline is not one Central serves. A maintainer runs `mvn -Psemver verify` before

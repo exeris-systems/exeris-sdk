@@ -259,8 +259,8 @@ public final class SourceModelReader {
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
-        // The guard arms for both modelled roots: @ExerisDomain entities (0.3.0)
-        // and @CapabilityModule caps (0.4.0 Slice 3).
+        // The guard arms for both modelled roots: @ExerisDomain entities and
+        // @CapabilityModule caps.
         Optional<ClassOrInterfaceDeclaration> root = cu.findFirst(ClassOrInterfaceDeclaration.class,
                 type -> type.isAnnotationPresent("ExerisDomain")
                         || type.isAnnotationPresent("CapabilityModule"));
@@ -549,7 +549,7 @@ public final class SourceModelReader {
                     .filter(s -> !s.isBlank())
                     .ifPresent(builder::description);
             stringAttr(action.get(), "httpMethod").ifPresent(builder::httpMethod);
-            // Per-action streaming driver (ADR-043, tooling Slice 2 parity).
+            // Per-action streaming driver (ADR-043).
             // The reader mirrors the processor, which extracts the streaming
             // flag and the stream event type but deliberately skips
             // realTimeUpdates until that attribute has a generator consumer.
@@ -1268,9 +1268,8 @@ public final class SourceModelReader {
         // five into FieldMetadata, guarded on explicit presence in source, so an
         // absent attribute never floods in the annotation default and stays null on
         // FieldMetadata here too. Note: min == 0 is not wire-safe under
-        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that boxed-zero
-        // fix is handled separately — the documented Field/Validation overlap
-        // follow-up, not introduced here.
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that belongs
+        // to the documented Field/Validation overlap, not to this reader.
         longAttr(validation, "min").ifPresent(builder::min);
         longAttr(validation, "max").ifPresent(builder::max);
         intAttr(validation, "minLength").ifPresent(builder::minLength);

@@ -87,9 +87,8 @@ schemas:
 nested: []
 
 renderer:
-  # One implementation, shared across repositories (ADR-085 §C.11 as amended 2026-09-08: a
-  # repository does not carry its own renderer). This replaced tools/agent-adapter-check/, which
-  # was exactly the second implementation the amendment names.
+  # One implementation, shared across repositories (ADR-085 §C.11: a repository does not carry
+  # its own renderer).
   source: exeris-systems/exeris-agents
   entrypoint: tools/agents_render.py
   check: tools/agents_file_check.py

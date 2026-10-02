@@ -11,10 +11,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Proves {@link AbstractMapperPostureTck}'s case is not vacuous.
  *
- * <p>This self-test earned its keep before the suite shipped: written against four cases, it showed
- * three of them passing on a deliberately misconfigured mapper, and those three were removed rather
- * than kept as decoration. What is left is the one configuration a consumer can genuinely get
- * wrong — and the non-conforming binding below is not a contrivance but the mapper a consumer gets
+ * <p>A case that passes on a deliberately misconfigured mapper measures nothing, so the suite holds
+ * only cases this self-test sees fail on one. What it holds is the one configuration a consumer can
+ * genuinely get wrong — and the non-conforming binding below is not a contrivance but the mapper a consumer gets
  * by reaching for the obvious constructor.
  */
 @DisplayName("the mapper posture TCK rejects a misconfigured mapper")

@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * an inline column value.
  *
  * <p>This is the Entity-First expression of the kernel's blob-storage seam
- * (kernel ADR-056, {@code eu.exeris.kernel.spi.storage.blob}). Before it, a domain
- * could not say "this entity has an attachment" at all: {@link Field#dataType()} is
+ * (kernel ADR-056, {@code eu.exeris.kernel.spi.storage.blob}). Without it, a domain
+ * cannot say "this entity has an attachment" at all: {@link Field#dataType()} is
  * a free-form presentation hint and the ui-kit's {@code .exeris-file} class is
- * styling. {@code @Blob} is the declaration; {@code @Field.dataType} keeps the role
- * it always had and is not superseded.
+ * styling. {@code @Blob} is the declaration; {@code @Field.dataType} keeps its own
+ * role beside it.
  *
  * <h2>Basic usage</h2>
  * {@snippet lang="java" :

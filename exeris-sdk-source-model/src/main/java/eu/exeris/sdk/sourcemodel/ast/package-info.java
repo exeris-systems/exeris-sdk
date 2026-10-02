@@ -89,7 +89,7 @@
  * detection (ADR-042).
  *
  * <h2>i18n message keys + custom-component escape hatch</h2>
- * <p>Two additive extensibility fields were added to the field-rendering AST:
+ * <p>The field-rendering AST carries two additive extensibility fields:
  * <ul>
  *   <li><strong>i18n message keys</strong> — {@code FieldMetadata.displayNameKey}
  *       / {@code descriptionKey} and {@code UIMetadata.UIFieldMetadata.placeholderKey}
@@ -101,7 +101,7 @@
  *       Keys are added only where the AST already carries the corresponding
  *       string — entity-level {@code @UI} titles are not AST-carried, so they
  *       have no key here (carrying those titles is a separate prerequisite, and
- *       group/domain-description keys are a deferred follow-up using this same
+ *       group/domain-description keys are not carried and would use this same
  *       pattern).</li>
  *   <li><strong>Custom-component escape hatch</strong> — {@code ComponentType.CUSTOM}
  *       plus {@code UIFieldMetadata.customComponent}. {@code customComponent} is
