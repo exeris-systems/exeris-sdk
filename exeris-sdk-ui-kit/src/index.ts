@@ -16,8 +16,9 @@
  *
  * @remarks
  * A theme is data, not a class: consumers spread {@link defaultTheme} and override the tokens they
- * need. Every token here has a CSS custom property and a Tailwind `@theme` key of the same name, so
- * a value can be read from whichever of the three surfaces a consumer already uses. Removing or
+ * need. Every token here has a CSS custom property of the same name (`--exeris-<name>`), and the
+ * Tailwind `@theme` entry maps it under its namespace prefix (`--color-exeris-<name>` for a colour),
+ * so a value can be read from whichever of the three surfaces a consumer already uses. Removing or
  * renaming a token is a MAJOR change for this package; adding one is MINOR.
  *
  * @public
@@ -32,10 +33,12 @@ export interface ExerisTheme {
      * The hover state of `primary`.
      *
      * @remarks
-     * Kebab-cased, matching `--exeris-primary-hover` in `index.css` and `--color-exeris-primary-hover`
-     * in the Tailwind `@theme` entry. All three name design tokens, and naming them identically is what lets
-     * the drift test map one onto another without a translation step — a camel-cased `primaryHover`
-     * here would need one, and a translation is a place two sides can disagree.
+     * Kebab-cased, matching `--exeris-primary-hover` in `index.css`; the Tailwind `@theme` entry adds
+     * its namespace prefix, `--color-exeris-primary-hover`. Sharing the name is what lets the drift
+     * tests map the surfaces onto each other without a translation step — `default-theme-drift.test.js`
+     * compares this constant with `index.css`, and `theme.test.js` compares `@theme` with `index.css`.
+     * A camel-cased `primaryHover` here would need a translation, and a translation is a place two
+     * sides can disagree.
      */
     'primary-hover': string;
     /** The supporting colour for actions that must not compete with `primary`. */
