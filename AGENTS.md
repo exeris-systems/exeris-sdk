@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-07
+last-verified: 2026-10-02
 ---
 
 # exeris-sdk

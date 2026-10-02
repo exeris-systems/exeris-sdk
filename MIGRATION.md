@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-01
+last-verified: 2026-10-02
 ---
 
 # Migration guide
