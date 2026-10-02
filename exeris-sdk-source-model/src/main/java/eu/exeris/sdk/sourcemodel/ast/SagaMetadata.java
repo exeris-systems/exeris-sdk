@@ -26,7 +26,8 @@ import java.util.Objects;
  * @param compensationOrder the order compensations run in. Declared but not populated, on the
  *        same terms as {@link #compensationStrategy()}
  * @param timeout how long the whole saga may run, as an ISO-8601 duration
- * @param compensationTimeout the same bound for the compensation phase
+ * @param compensationTimeout the same bound for the compensation phase. Declared but not
+ *        populated, on the same terms as {@link #compensationStrategy()}
  * @param maxRetries how many times a failed step is retried before compensating
  * @param retryBackoff the backoff strategy between retries
  * @param trigger what starts the saga
@@ -35,6 +36,25 @@ import java.util.Objects;
  * @param permissions the permissions required to start the saga
  * @param monitoring the metrics, tracing and alerting configuration
  * @param transitions the state-machine edges between steps
+ * @param compensationMaxRetries how many times a failed compensation step is retried, from
+ *        {@code @Saga.compensationMaxRetries}; {@code null} when the author did not declare it,
+ *        and the annotation default ({@code 5}) is then the value. No producer populates it yet
+ * @param compensationRetryDelay the delay between compensation retries, as an ISO-8601 duration,
+ *        from {@code @Saga.compensationRetryDelay}; {@code null} when not declared (annotation
+ *        default {@code "PT5S"}). No producer populates it yet
+ * @param continueCompensationOnFailure whether compensation continues past a compensation step
+ *        that fails, from {@code @Saga.continueCompensationOnFailure}; {@code null} when not
+ *        declared (annotation default {@code true}). No producer populates it yet
+ * @param compensationDlq the dead-letter topic unrecoverable compensation failures go to, from
+ *        {@code @Saga.compensationDlq}; {@code null} when not declared or blank, which means no
+ *        dead-letter topic. No producer populates it yet
+ * @param compensationFailureHandler the fully-qualified name of the handler called when
+ *        automatic compensation fails, from {@code @Saga.compensationFailureHandler};
+ *        {@code null} when not declared or {@code void.class}, which means no handler. No producer
+ *        populates it yet
+ * @param manualInterventionOnCompensationFailure whether a compensation failure raises a manual
+ *        intervention, from {@code @Saga.manualInterventionOnCompensationFailure}; {@code null}
+ *        when not declared (annotation default {@code true}). No producer populates it yet
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -55,13 +75,54 @@ public record SagaMetadata(
         String stateClass,
         List<String> permissions,
         MonitoringConfig monitoring,
-        List<SagaTransition> transitions
+        List<SagaTransition> transitions,
+        Integer compensationMaxRetries,
+        String compensationRetryDelay,
+        Boolean continueCompensationOnFailure,
+        String compensationDlq,
+        String compensationFailureHandler,
+        Boolean manualInterventionOnCompensationFailure
 ) {
     /**
      * Compact constructor; applies this record's normalization rules.
      */
     public SagaMetadata {
         transitions = AstLists.copyOfNoNulls(transitions, "transitions");
+    }
+
+    /**
+     * A delegating constructor for backward compatibility with code compiled against a previous
+     * version of this record. Omits the six compensation components added after
+     * {@code transitions}, each of which defaults to {@code null}: not declared.
+     *
+     * <p>Prefer {@link #builder(String)}, which sets any component by name and does not change
+     * shape when the record grows.
+     *
+     * @param name the {@code name} the result carries
+     * @param description the {@code description} the result carries
+     * @param version the {@code version} the result carries
+     * @param steps the {@code steps} the result carries
+     * @param compensationStrategy the {@code compensationStrategy} the result carries
+     * @param compensationOrder the {@code compensationOrder} the result carries
+     * @param timeout the {@code timeout} the result carries
+     * @param compensationTimeout the {@code compensationTimeout} the result carries
+     * @param maxRetries the {@code maxRetries} the result carries
+     * @param retryBackoff the {@code retryBackoff} the result carries
+     * @param trigger the {@code trigger} the result carries
+     * @param persistent the {@code persistent} the result carries
+     * @param stateClass the {@code stateClass} the result carries
+     * @param permissions the {@code permissions} the result carries
+     * @param monitoring the {@code monitoring} the result carries
+     * @param transitions the {@code transitions} the result carries
+     */
+    public SagaMetadata(String name, String description, int version, List<SagaStepMetadata> steps,
+                        CompensationStrategy compensationStrategy, CompensationOrder compensationOrder,
+                        String timeout, String compensationTimeout, int maxRetries, String retryBackoff,
+                        SagaTrigger trigger, boolean persistent, String stateClass, List<String> permissions,
+                        MonitoringConfig monitoring, List<SagaTransition> transitions) {
+        this(name, description, version, steps, compensationStrategy, compensationOrder, timeout,
+                compensationTimeout, maxRetries, retryBackoff, trigger, persistent, stateClass, permissions,
+                monitoring, transitions, null, null, null, null, null, null);
     }
 
     /**
@@ -371,6 +432,12 @@ public record SagaMetadata(
         private List<String> permissions = List.of();
         private MonitoringConfig monitoring;
         private List<SagaTransition> transitions = List.of();
+        private Integer compensationMaxRetries;
+        private String compensationRetryDelay;
+        private Boolean continueCompensationOnFailure;
+        private String compensationDlq;
+        private String compensationFailureHandler;
+        private Boolean manualInterventionOnCompensationFailure;
 
         private Builder(String name) { this.name = name; }
 
@@ -389,6 +456,12 @@ public record SagaMetadata(
         public Builder permissions(List<String> v) { this.permissions = v; return this; }
         public Builder monitoring(MonitoringConfig v) { this.monitoring = v; return this; }
         public Builder transitions(List<SagaTransition> v) { this.transitions = v; return this; }
+        public Builder compensationMaxRetries(Integer v) { this.compensationMaxRetries = v; return this; }
+        public Builder compensationRetryDelay(String v) { this.compensationRetryDelay = v; return this; }
+        public Builder continueCompensationOnFailure(Boolean v) { this.continueCompensationOnFailure = v; return this; }
+        public Builder compensationDlq(String v) { this.compensationDlq = v; return this; }
+        public Builder compensationFailureHandler(String v) { this.compensationFailureHandler = v; return this; }
+        public Builder manualInterventionOnCompensationFailure(Boolean v) { this.manualInterventionOnCompensationFailure = v; return this; }
 
         /**
          * Builds the {@code SagaMetadata} from this builder's current state.
@@ -398,7 +471,9 @@ public record SagaMetadata(
         public SagaMetadata build() {
             return new SagaMetadata(name, description, version, steps, compensationStrategy, compensationOrder,
                     timeout, compensationTimeout, maxRetries, retryBackoff, trigger, persistent, stateClass,
-                    permissions, monitoring, transitions);
+                    permissions, monitoring, transitions, compensationMaxRetries, compensationRetryDelay,
+                    continueCompensationOnFailure, compensationDlq, compensationFailureHandler,
+                    manualInterventionOnCompensationFailure);
         }
     }
 }

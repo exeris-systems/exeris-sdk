@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -774,6 +775,35 @@ class AstJsonRoundTripTest {
                 .build();
 
         assertRoundTrip(original, SagaMetadata.class);
+    }
+
+    @Test
+    @DisplayName("SagaMetadata's compensation components round-trip, and stay off the wire undeclared")
+    void sagaMetadataCompensationComponentsRoundTrip() {
+        SagaMetadata declared = SagaMetadata.builder("RefundSaga")
+                .compensationMaxRetries(0)
+                .compensationRetryDelay("PT2S")
+                .continueCompensationOnFailure(false)
+                .compensationDlq("refunds.compensation.dlq")
+                .compensationFailureHandler("com.example.RefundFailureHandler")
+                .manualInterventionOnCompensationFailure(false)
+                .build();
+        // 0 and false are declarable values, not "absent": the record is NON_NULL, so a boxed
+        // zero or false is written and reads back as declared.
+        assertRoundTrip(declared, SagaMetadata.class);
+        JsonNode declaredJson = mapper.valueToTree(declared);
+        assertThat(declaredJson.get("compensationMaxRetries").asInt()).isZero();
+        assertThat(declaredJson.get("continueCompensationOnFailure").asBoolean()).isFalse();
+
+        // Undeclared, the six are null and absent from the JSON, so a producer that does not
+        // extract them writes the same document it wrote before they existed.
+        JsonNode undeclared = mapper.valueToTree(SagaMetadata.builder("RefundSaga").build());
+        assertThat(undeclared.has("compensationMaxRetries")).isFalse();
+        assertThat(undeclared.has("compensationRetryDelay")).isFalse();
+        assertThat(undeclared.has("continueCompensationOnFailure")).isFalse();
+        assertThat(undeclared.has("compensationDlq")).isFalse();
+        assertThat(undeclared.has("compensationFailureHandler")).isFalse();
+        assertThat(undeclared.has("manualInterventionOnCompensationFailure")).isFalse();
     }
 
     @Test

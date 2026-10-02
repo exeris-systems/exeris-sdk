@@ -20,6 +20,7 @@
 #   ActionMetadata=17            0.11.0 (routeAccess added in 0.12.0)
 #   DomainMetadata=39            0.11.0 (routeAccess, channel added in 0.12.0)
 #   SystemFieldsMetadata=10      0.11.0 (sharedScopeField added in 0.12.0)
+#   SagaMetadata=16              0.12.0 (six compensation components added in 0.13.0)
 #   DomainEventMetadata=4,6      pre-EV1 and pre-EV2 (payload lists, then the trigger triple)
 
 eu.exeris.sdk.sourcemodel.ast.ActionMetadata=17,18
@@ -49,7 +50,7 @@ eu.exeris.sdk.sourcemodel.ast.RegionMetadata=2
 eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata=14
 eu.exeris.sdk.sourcemodel.ast.RequiresMetadata=3
 eu.exeris.sdk.sourcemodel.ast.RuleMetadata=5
-eu.exeris.sdk.sourcemodel.ast.SagaMetadata=16
+eu.exeris.sdk.sourcemodel.ast.SagaMetadata=16,22
 eu.exeris.sdk.sourcemodel.ast.SagaMetadata$MonitoringConfig=4
 eu.exeris.sdk.sourcemodel.ast.SagaMetadata$SagaTransition=4
 eu.exeris.sdk.sourcemodel.ast.SagaMetadata$SagaTrigger=5

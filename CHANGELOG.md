@@ -27,6 +27,12 @@ for per-version upgrade steps.
 
 ### Breaking
 
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.12.0"` → `"0.13.0"`** — a baseline
+  stamped `"0.12.0"` now reads as schema skew, and ADR-042 conflict detection refuses it. Regenerate
+  baselines against 0.13.0. The growth behind the bump is additive: `SagaMetadata`'s six new
+  components are by-name and nullable, and the record keeps its 16-component constructor. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.11.0"` → `"0.12.0"`** — a baseline
   stamped `"0.11.0"` now reads as schema skew, so ADR-042 conflict detection refuses it rather than
   trusting it. Regenerate baselines against 0.12.0. The AST growth behind the bump is additive on the
@@ -52,6 +58,17 @@ for per-version upgrade steps.
   change to make. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 ### Added
+
+- **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
+  named after their attributes: `compensationMaxRetries`, `compensationRetryDelay`,
+  `continueCompensationOnFailure`, `compensationDlq`, `compensationFailureHandler` (a fully-qualified
+  name) and `manualInterventionOnCompensationFailure`. Each is boxed and `null` when the author
+  declared nothing, so the annotation default applies and a producer that does not extract them
+  writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
+  pinned by `AstJsonRoundTripTest`. Builder setters for all six. No producer populates them yet:
+  the `exeris-tooling` processor and the `-io` reader extract them together (ADR-042). `@Saga`'s
+  seven compensation attributes without an extractor, `compensationTimeout` included, say so in
+  their status notes (RESERVED, carried but not extracted).
 
 - **`SystemFieldsMetadata.builder()`.** All eleven components, preset to the names `defaults()`
   returns, so a caller sets only the ones that differ. Every component is a field-name `String`, so

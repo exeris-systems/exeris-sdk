@@ -307,8 +307,8 @@
  * <strong>outside the 1.0.0 freeze</strong> (ADR-072): they encode kernel surfaces
  * held at tier {@code preview}, so a 1.x minor may change or drop them.
  * {@code sharedScopeField} is not on that list and is frozen as declared, like the
- * other system-field components. {@code SchemaVersion} is
- * {@code "0.12.0"} for all three. Each is a trailing parameter of its record's
+ * other system-field components. All three arrived with {@code SchemaVersion}
+ * {@code "0.12.0"}. Each is a trailing parameter of its record's
  * canonical constructor, and each record keeps its 0.11.0 arity as a public
  * constructor that delegates with {@code null} for the components it lacks, so code
  * compiled or written against 0.11.0 links and compiles unchanged — the record-growth
@@ -318,6 +318,20 @@
  * {@code String}s, is built with
  * {@link eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata#builder()}, which sets a
  * non-canonical name by name rather than by position — see {@code MIGRATION.md}.
+ *
+ * <h2>Saga compensation</h2>
+ * <p>{@link eu.exeris.sdk.sourcemodel.ast.SagaMetadata} carries the whole compensation section of
+ * {@code @Saga}: {@code compensationStrategy}, {@code compensationOrder} and
+ * {@code compensationTimeout}, and six trailing components named after their attributes —
+ * {@code compensationMaxRetries}, {@code compensationRetryDelay},
+ * {@code continueCompensationOnFailure}, {@code compensationDlq},
+ * {@code compensationFailureHandler} (a fully-qualified name) and
+ * {@code manualInterventionOnCompensationFailure}. The six are boxed and {@code null} when the
+ * author declared nothing, and the annotation default is then the value; a declared {@code 0} or
+ * {@code false} is written, because the record is {@code NON_NULL}. No producer populates them
+ * yet: the processor and the {@code -io} reader extract them together (ADR-042), and the record
+ * keeps its 16-component constructor, which passes {@code null} for all six. They arrived with
+ * {@code SchemaVersion} {@code "0.13.0"}.
  *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
