@@ -19,7 +19,7 @@ import { defaultTheme } from '../src/index.ts';
  * drifts from the CSS does not fail anywhere — it renders differently, quietly, in the
  * half of the surface that took the fallback.
  *
- * This test derives from the CSS instead, the way `theme.test.js` derives from the preset:
+ * This test derives from the CSS instead, the way `theme.test.js` derives from the `@theme` block:
  * nothing is listed twice, so a token added on either side has to be added on both.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

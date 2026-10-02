@@ -7,25 +7,21 @@ import tailwindV4 from '@tailwindcss/postcss';
 
 /**
  * Shared plumbing for the guards that put this package's CSS through a real
- * Tailwind: `tailwind-v4-compile.test.js` (the `@theme` token entry) and
- * `component-classes-v4-compile.test.js` (the `.exeris-*` component layer, on
- * both majors).
+ * Tailwind v4: `tailwind-v4-compile.test.js` (the `@theme` token entry),
+ * `component-classes-v4-compile.test.js` (the `.exeris-*` component layer) and
+ * `dark-mode-signal.test.js`.
  *
- * The package's own `tailwindcss` devDep is v3 and stays that way — `index.css`
- * is written against v3 and the preset is a v3 preset. v4 comes in through
- * `@tailwindcss/postcss`, which nests its own copy of the engine, so both majors
- * are installed at once without an alias, and the same stylesheet can be put
- * through each of them in one test run.
+ * It also reads the `@theme` block of `src/styles/theme.css`, which is the single
+ * source of truth for the utility namespace: every `exeris` utility a consumer can
+ * write exists because a `--<namespace>-exeris…` variable is declared there.
  */
 export const PACKAGE_ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 const require = createRequire(import.meta.url);
 
 /**
- * v4's CSS entry, resolved from the copy `@tailwindcss/postcss` itself loads.
- * A consumer writes `@import "tailwindcss"`; here that bare specifier would hit
- * the top-level v3 devDep (which has no `index.css`), so the absolute path to
- * the engine's own entry is what keeps the two halves on one version.
+ * v4's CSS entry, resolved from the copy `@tailwindcss/postcss` itself loads, so
+ * the compiler and the stylesheet it imports are always the same version.
  */
 export const V4_ENTRY = require.resolve('tailwindcss/index.css', {
   paths: [require.resolve('@tailwindcss/postcss')],
@@ -35,8 +31,65 @@ export const V4_VERSION = require(
   require.resolve('tailwindcss/package.json', { paths: [require.resolve('@tailwindcss/postcss')] }),
 ).version;
 
-/** The `tailwindcss` range this package declares as a devDep (expected to be v3). */
-export const DECLARED_V3_RANGE = require(join(PACKAGE_ROOT, 'package.json')).devDependencies.tailwindcss;
+/** The body of the first `<opener> {` … `}` block in `css`, comments and all. */
+export function block(css, opener) {
+  const start = css.indexOf(`${opener} {`);
+  if (start < 0) throw new Error(`no '${opener}' block found`);
+  let depth = 0;
+  for (let i = css.indexOf('{', start); i < css.length; i += 1) {
+    if (css[i] === '{') depth += 1;
+    else if (css[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return css.slice(css.indexOf('{', start) + 1, i);
+    }
+  }
+  throw new Error(`unterminated '${opener}' block`);
+}
+
+/** `--name: value` pairs in a block, comments stripped and whitespace collapsed. */
+export function declarations(body) {
+  const found = new Map();
+  for (const [, name, value] of body.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
+    found.set(name, value.trim().replace(/\s+/g, ' '));
+  }
+  return found;
+}
+
+/** The `@theme` declarations of `src/styles/theme.css`, by variable name. */
+export const THEME = declarations(block(readFileSync(join(PACKAGE_ROOT, 'src/styles/theme.css'), 'utf8'), '@theme'));
+
+/**
+ * Each `@theme` namespace this package fills, and the utility a variable in it
+ * produces. `exeris` is the prefix every key carries, so `--spacing-exeris-md`
+ * is the key `exeris-md` and produces `p-exeris-md`.
+ */
+export const NAMESPACES = [
+  { prefix: '--color-', utility: (k) => `bg-${k}` },
+  { prefix: '--font-', utility: (k) => `font-${k}` },
+  { prefix: '--spacing-', utility: (k) => `p-${k}` },
+  { prefix: '--radius-', utility: (k) => `rounded-${k}` },
+  { prefix: '--shadow-', utility: (k) => `shadow-${k}` },
+  { prefix: '--transition-duration-', utility: (k) => `duration-${k}` },
+  { prefix: '--animate-', utility: (k) => `animate-${k}` },
+];
+
+/**
+ * Every `exeris` utility the `@theme` block implies: the utility, the theme
+ * variable behind it, its declared value, and the `--exeris-*` runtime property
+ * the value reads (null where the theme writes it literally).
+ */
+export const THEME_UTILITIES = NAMESPACES.flatMap(({ prefix, utility }) =>
+  [...THEME].filter(([name]) => name.startsWith(`${prefix}exeris`)).map(([name, value]) => {
+    const key = name.slice(prefix.length);
+    return {
+      key,
+      utility: utility(key),
+      themeVar: name,
+      value,
+      runtimeVar: (value.match(/--exeris-[a-z0-9-]+/) ?? [null])[0],
+    };
+  }),
+);
 
 /**
  * Compiles one — or, for a setup that needs both entries, several — of this
@@ -48,11 +101,13 @@ export const DECLARED_V3_RANGE = require(join(PACKAGE_ROOT, 'package.json')).dev
  * package's own docs and tests, and something could appear to compile because a
  * comment mentioned it.
  */
-export async function compileWithV4(stylesheet, candidates = []) {
+export async function compileWithV4(stylesheet, candidates = [], consumerCss = '') {
   const sheets = Array.isArray(stylesheet) ? stylesheet : [stylesheet];
   const input = [
     `@import "${V4_ENTRY}" source(none);`,
     ...sheets.map((sheet) => `@import "${join(PACKAGE_ROOT, sheet)}";`),
+    // What a consumer writes after the imports, in the same stylesheet.
+    consumerCss,
     candidates.length ? `@source inline("${candidates.join(' ')}");` : '',
   ].filter(Boolean).join('\n');
 
@@ -98,28 +153,4 @@ export function selectorsFor(rules, className) {
 /** Flattens `rules` back to every rule that mentions `.<className>`. */
 export function rulesFor(rules, className) {
   return selectorsFor(rules, className).flatMap((selector) => rules.get(selector));
-}
-
-/**
- * The same stylesheet through the package's *own* Tailwind — v3, the major
- * `index.css` is written against. Used to assert that a change made for v4's
- * sake did not move v3, which is the majority consumer today.
- *
- * v3 needs the candidates up front (there is no `@source inline`), and it reads
- * the preset the way a consumer's `tailwind.config.js` would.
- */
-export async function compileWithV3(stylesheet, candidates = [], overrides = {}) {
-  const { default: tailwindV3 } = await import('tailwindcss');
-  const { default: preset } = await import('../../tailwind.preset.js');
-  const config = {
-    presets: [preset],
-    content: [{ raw: candidates.join(' '), extension: 'html' }],
-    // `overrides` stands in for the rest of a consumer's own tailwind.config.js.
-    // Only the dark-mode guard uses it, to show a preset default stays overridable.
-    ...overrides,
-  };
-  const file = join(PACKAGE_ROOT, stylesheet);
-  const { css } = await postcss([tailwindV3(config)]).process(readFileSync(file, 'utf8'), { from: file });
-
-  return { css, rules: index(css) };
 }

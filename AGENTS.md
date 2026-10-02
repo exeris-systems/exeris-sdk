@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-07
+last-verified: 2026-10-02
 ---
 
 # exeris-sdk
@@ -44,7 +44,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
 - **JDK baseline:** `maven.compiler.release=25` across reactor (ADR-069, tracking kernel GA LTS).
   Class-file major ≤ 69 guarded by `ClassFileBaselineTest` ([policy](.agents/policies/jdk-baseline.md)).
 - **UI kit is npm-only:** Standalone npm package (`@exeris/ui-kit`), excluded from Maven reactor.
-  Dark mode declared in both `tailwind.preset.js` and `theme.css`. Versions independently ([policy](.agents/policies/ui-kit.md)).
+  Tailwind v4 only; dark mode declared in `theme.css`. Versions independently ([policy](.agents/policies/ui-kit.md)).
 - **Distribution:** Maven Central via Sonatype Central Portal (NOT GitHub Packages). Build-time
   tools excluded via `maven.deploy.skip` and `<excludeArtifacts>` ([reference](.agents/references/maven-central-distribution.md)).
 - **Stability & deprecation:** 0.x line is unstable; 1.0.0 freezes public API. Deprecations require

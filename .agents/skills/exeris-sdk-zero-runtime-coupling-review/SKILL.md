@@ -28,7 +28,7 @@ Enforce: this is the most upstream Exeris repo. Nothing here depends on kernel, 
    - `org.springframework.*` / `jakarta.servlet.*` / `io.netty.*` / `io.projectreactor.*` (framework / runtime) → hard reject.
 4. **BOM elevation audit** — `exeris-sdk-bom` MUST NOT manage kernel / framework versions; if such a row appears, hard reject (would imply downstream consumers see this dep as managed by us).
 5. **Transitive audit** — new third-party deps need transitive-deps inspection; flag pulls of kernel / framework / runtime classes.
-6. **UI kit** — `package.json` deps don't pull React / Angular framework runtime into the published `@exeris/ui-kit` (Tailwind preset + CSS + minimal TS).
+6. **UI kit** — `package.json` deps don't pull React / Angular framework runtime into the published `@exeris/ui-kit` (Tailwind v4 theme + CSS + minimal TS).
 7. **Decision and report** — `APPROVE` / `CONDITIONAL` / `REJECT`.
 
 ## Decision Logic

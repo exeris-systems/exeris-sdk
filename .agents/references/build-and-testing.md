@@ -35,7 +35,7 @@ cd exeris-sdk-ui-kit && npm ci && npm run test:coverage
 - **Wire-Format:** `AstJsonRoundTripTest` exercises Jackson serialization, deserialization, and deep equality on all AST records.
 - **Polymorphic Mutations:** `MutationWireFormatTest` validates round-trip serialization through sealed `MutationOp` and `MutationResult` hierarchies.
 - **UI Kit Drift Tests:**
-  - `theme.test.js`: Checks parity between v3 preset, v4 `@theme`, and `index.css`.
+  - `theme.test.js`: Checks that every `@theme` entry in `theme.css` reads a token `index.css` declares, and that the two token blocks match.
   - `default-theme-drift.test.js`: Validates `defaultTheme` vs `index.css` bidirectionally.
   - `tailwind-v4-compile.test.js`: Compiles `theme.css` via real Tailwind v4 and validates utility mapping.
   - `dark-mode-signal.test.js`: Asserts absence of `@media (prefers-color-scheme: dark)` when `.dark` class mode is configured.

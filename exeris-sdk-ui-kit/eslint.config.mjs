@@ -11,7 +11,7 @@ import tseslint from 'typescript-eslint';
 import exerisTsdoc from './.guardrails/ts/eslint.tsdoc.mjs';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'build/**', '.guardrails/**', 'tailwind.preset.js'] },
+  { ignores: ['dist/**', 'coverage/**', 'build/**', '.guardrails/**'] },
   ...tseslint.configs.recommended,
   // `gated` names the published surface — tsdoc-conventions.md rule 1 is an error there and a
   // warning elsewhere. `src/index.ts` is the whole of it: package.json points `types` at the

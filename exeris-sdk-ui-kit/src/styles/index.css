@@ -1,13 +1,9 @@
 /**
  * Exeris UI Kit
  *
- * Base styles and utilities for generated components.
- * Compatible with Tailwind CSS 3.4+
+ * Design tokens and the `.exeris-*` component layer for generated components.
+ * Tailwind CSS v4: import it after `tailwindcss` and `@exeris/ui-kit/theme`.
  */
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* ============================================================================
    Base Layer - CSS Custom Properties (Design Tokens)
@@ -90,14 +86,10 @@
 @layer components {
   /* Buttons
      The base is a selector list rather than `@apply exeris-btn` inside each
-     variant. `@apply` of a *custom* class is the one construct in this file a
-     Tailwind v4 build rejects outright ("Cannot apply unknown utility class"),
-     and it was the only thing standing between a v4 consumer and this whole
-     stylesheet — v4 tolerates the `@tailwind` directives above and understands
-     everything else here. A selector list needs no v4-only syntax, keeps one
-     copy of the base declarations, and leaves v3 behaviour untouched: a variant
-     used on its own still carries the base, exactly as `@apply exeris-btn` gave
-     it. See tests/component-classes-v4-compile.test.js. */
+     variant: Tailwind v4 rejects `@apply` of a custom class ("Cannot apply
+     unknown utility class"). The list keeps one copy of the base declarations,
+     and a variant used on its own still carries the base. See
+     tests/component-classes-v4-compile.test.js. */
   .exeris-btn,
   .exeris-btn-primary,
   .exeris-btn-secondary,

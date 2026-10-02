@@ -2,20 +2,21 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import postcss from 'postcss';
-import { PACKAGE_ROOT, compileWithV3, compileWithV4 } from './support/tailwind.js';
+import { PACKAGE_ROOT, compileWithV4 } from './support/tailwind.js';
 
 /**
  * Dark mode responds to a `.dark` class, not the system preference.
  *
  * This package has two dark surfaces, both responding to the same signal:
  * the `--exeris-*` design tokens take their dark values from a `.dark` *class*,
- * and the `.exeris-*` component classes do the same via Tailwind's `darkMode: 'class'`
- * preset setting (v3) and `@custom-variant` (v4).
+ * and the `.exeris-*` component classes do the same through the
+ * `@custom-variant dark` that `theme.css` declares.
  *
- * Two files must stay in sync for one rule: the v3 `tailwind.preset.js` and the v4
- * `theme.css`. This guard compiles the real setup on each major and verifies two
+ * This guard compiles the documented setup with Tailwind v4 and verifies two
  * invariants: the absence of `prefers-color-scheme` media queries (the failure
- * mode), and the presence of `.dark`-scoped rules (the success case).
+ * mode), and the presence of `.dark`-scoped rules (the success case). A consumer
+ * who wants the OS signal back declares their own `@custom-variant dark` after
+ * importing the theme.
  */
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
 
@@ -34,18 +35,15 @@ const V4_SHEETS = ['src/styles/theme.css', 'src/styles/index.css'];
 /**
  * Every selector chain in the output that reaches `text`, ancestors included.
  *
- * The two majors shape the same rule differently and a flat selector index sees
- * only one of them: v3 emits a sibling rule (`.exeris-input:is(.dark *)`), while
  * v4 *nests* the variant inside the base rule (`.exeris-input { &:where(.dark,
- * .dark *) { … } }`), where neither half names the other. Joining the chain is
- * what lets one assertion run against both.
+ * .dark *) { … } }`), where neither half names the other, so a flat selector
+ * index cannot see it. Joining the chain is what lets one assertion see it.
  *
  * `DARK_SCOPE` deliberately refuses to match the escaped *class name* Tailwind
  * generates for a `dark:` utility. `.dark\:bg-exeris-primary` contains the
  * literal `.dark`, so a plain substring test passed whenever the utility was
  * emitted at all — including under `@media (prefers-color-scheme: dark)`, which
- * is the state this guard exists to fail on. Mutating the preset is what
- * surfaced it: the assertion stayed green with the fix removed.
+ * is the state this guard exists to fail on.
  */
 const DARK_SCOPE = /\.dark(?![\w\\-])/;
 
@@ -64,11 +62,9 @@ function chainsMatching(css, text) {
 }
 
 describe('dark mode answers to the `.dark` class, not the OS', () => {
-  let v3;
   let v4;
 
   beforeAll(async () => {
-    v3 = await compileWithV3('src/styles/index.css', CANDIDATES);
     v4 = await compileWithV4(V4_SHEETS, CANDIDATES);
   });
 
@@ -78,10 +74,9 @@ describe('dark mode answers to the `.dark` class, not the OS', () => {
     expect(indexCss).toMatch(/dark:/);
   });
 
-  describe.each([
-    ['v3', () => v3],
-    ['v4', () => v4],
-  ])('%s', (_major, compiled) => {
+  describe('Tailwind v4', () => {
+    const compiled = () => v4;
+
     it('emits no prefers-color-scheme query', () => {
       expect(compiled().css).not.toContain('prefers-color-scheme');
     });
@@ -103,21 +98,21 @@ describe('dark mode answers to the `.dark` class, not the OS', () => {
 });
 
 /**
- * The preset sets a default, not a policy. A consumer who wants the OS signal
- * back — or a different attribute entirely — must be able to say so in their
- * own config, because a preset that could not be overridden would be a
- * breaking change rather than a new default.
+ * The theme entry sets a default, not a policy. A consumer who wants the OS
+ * signal back — or a different attribute entirely — declares their own `dark`
+ * variant after the imports, and theirs must win, because a default that could
+ * not be overridden would be a breaking change rather than a new default.
  */
-describe('a v3 consumer can override the signal', () => {
-  it('darkMode: media puts the media query back', async () => {
-    const { css } = await compileWithV3('src/styles/index.css', CANDIDATES, { darkMode: 'media' });
+describe('a consumer can override the signal', () => {
+  it('a media variant after the imports puts the media query back', async () => {
+    const { css } = await compileWithV4(V4_SHEETS, CANDIDATES,
+      '@custom-variant dark (@media (prefers-color-scheme: dark));');
     expect(css).toContain('prefers-color-scheme');
   });
 
-  it('a custom selector strategy wins too', async () => {
-    const { css } = await compileWithV3('src/styles/index.css', CANDIDATES, {
-      darkMode: ['selector', '[data-theme="dark"]'],
-    });
+  it('a custom selector variant wins too', async () => {
+    const { css } = await compileWithV4(V4_SHEETS, CANDIDATES,
+      '@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));');
     expect(css).not.toContain('prefers-color-scheme');
     expect(css).toContain('[data-theme="dark"]');
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import preset from '../tailwind.preset.js';
+import { THEME } from './support/tailwind.js';
 import { defaultTheme } from '../src/index.ts';
 
 /**
@@ -12,7 +12,7 @@ import { defaultTheme } from '../src/index.ts';
  * `theme.test.js`, `default-theme-drift.test.js` and `component-classes.test.js` all compare
  * two of this package's artifacts against each other, and they are good at what they do: a
  * token added on one side and forgotten on another fails. None of them notices a *coordinated*
- * rename — change `--exeris-primary` to `--exeris-brand` in the CSS, the preset and the theme
+ * rename — change `--exeris-primary` to `--exeris-brand` in the CSS, the `@theme` block and the theme
  * entry together and every one of them stays green, because they agree with each other.
  *
  * A coordinated rename is exactly what breaks a consumer. `bg-exeris-primary` sits in generated
@@ -50,11 +50,10 @@ function surface() {
     names.add(`class:${cls}`);
   }
 
-  const extend = preset.theme.extend;
-  for (const [group, values] of Object.entries(extend)) {
-    const keys = group === 'colors' ? Object.keys(values.exeris).map((k) => `exeris.${k}`)
-                                    : Object.keys(values);
-    for (const key of keys) names.add(`preset:${group}.${key}`);
+  // Each `@theme` variable is a Tailwind key: `--color-exeris-primary` is what makes
+  // `bg-exeris-primary`, `text-exeris-primary` and `border-exeris-primary` exist.
+  for (const name of THEME.keys()) {
+    if (/^--[a-z-]+-exeris/.test(name)) names.add(`theme-var:${name}`);
   }
 
   for (const [group, values] of Object.entries(defaultTheme)) {

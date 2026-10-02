@@ -15,7 +15,7 @@ Delivery agent for writing and refactoring SDK code without re-litigating archit
 ## Primary Responsibilities
 - **annotations** (`exeris-sdk-annotations/`): pure `@interface` declarations with `@Retention(SOURCE)` + `@Target`, across `eu.exeris.sdk.annotation.*` (root + `system` + `security` subpackages). `AnnotationContractTest` is the live inventory — don't hardcode a count here, it drifts.
 - **source-model** (`exeris-sdk-source-model/`): Jackson-serializable AST records under `eu.exeris.sdk.sourcemodel.ast.*`. ALWAYS records (never classes). `@JsonInclude(NON_DEFAULT)` aware (boxed-zero hazard).
-- **ui-kit** (`exeris-sdk-ui-kit/`): Tailwind preset + CSS + minimal TS helpers. Standalone npm package (`@exeris/ui-kit`), NOT in Maven reactor.
+- **ui-kit** (`exeris-sdk-ui-kit/`): Tailwind v4 theme + CSS + minimal TS helpers. Standalone npm package (`@exeris/ui-kit`), NOT in Maven reactor.
 - **bom / parent**: version + plugin config; mirror `attach-sources` + `attach-javadocs` executions from `exeris-sdk-annotations/pom.xml` for any new publishable Maven module.
 
 ## Coding Defaults

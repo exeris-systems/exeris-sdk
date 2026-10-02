@@ -32,7 +32,7 @@ severity are judgement this skill applies rather than fields it emits: they deci
 ## Classification Heuristics
 - `ANNOTATION_CONTRACT`: `@interface` add / change / remove in `exeris-sdk-annotations`; `AnnotationContractTest` impact.
 - `AST_WIRE_FORMAT`: AST record add / change / remove in `exeris-sdk-source-model`; `AstJsonRoundTripTest` impact; Jackson 3 quirks.
-- `UI_KIT`: TS / CSS / Tailwind preset change in `exeris-sdk-ui-kit`.
+- `UI_KIT`: TS / CSS / Tailwind v4 theme change in `exeris-sdk-ui-kit`.
 - `STABILITY_DEPRECATION`: public-API removal / rename; deprecation pipeline application.
 - `DOCS_ADR`: `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003.
 - `PUBLISH_READINESS`: Sonatype Central Portal, POM metadata, sources/javadoc attachments, version bump.

@@ -1,0 +1,14 @@
+[
+  {
+    "signature": "@exeris/ui-kit exports[\"./tailwind.preset.js\"]",
+    "since": "0.2",
+    "adr": "ADR-094",
+    "justification": "The Tailwind v3 JS preset and its export are removed: the package supports Tailwind v4 only, and the @theme entry in src/styles/theme.css generates the same exeris utilities under the same names. Generated applications are on v4, where the preset was never loaded. A consumer importing the preset moves to the theme entry (@import \"tailwindcss\"; @import \"@exeris/ui-kit/theme\"; @import \"@exeris/ui-kit/styles\"); MIGRATION.md §0.11.x → 0.12.x carries the step. A 0.x minor under the package's own version line."
+  },
+  {
+    "signature": "@exeris/ui-kit peerDependencies.tailwindcss \">=3.4.0\" -> \">=4.0.0\"",
+    "since": "0.2",
+    "adr": "ADR-094",
+    "justification": "The peer range narrows to Tailwind v4, the only major the package compiles against after the preset's removal; theme.css and index.css use v4 constructs (@theme, @custom-variant). A host on Tailwind v3 stays on @exeris-systems/ui-kit 0.1.0 or moves to v4."
+  }
+]

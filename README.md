@@ -18,7 +18,7 @@ by the tooling (`exeris-tooling`) and the platform (`exeris-platform`).
 | [`exeris-sdk-composition-lifecycle`](exeris-sdk-composition-lifecycle) | Cap-facing `CapabilityLifecycleHooks` interface — the four-phase `initialize`/`ready`/`drain`/`terminate` contract, zero dependencies by design (ADR-024). |
 | [`exeris-sdk-composition-runtime`](exeris-sdk-composition-runtime) | Boot-time composition validation-stamp assertion + the boot conductor driving the cap lifecycle, shipped into each SKU artifact and invoked by the SKU bootstrap (ADR-024). |
 | [`exeris-sdk-tck`](exeris-sdk-tck) | Technology Compatibility Kit for the build-time metadata hand-off: abstract JUnit bases a producer, a reader and a consumer of the AST wire format extend to prove they satisfy the contract, making the ADR-042 parity discipline an executable gate. Test scope. |
-| [`exeris-sdk-ui-kit`](exeris-sdk-ui-kit) | Tailwind preset and base styles for generated Angular components (TypeScript / npm). |
+| [`exeris-sdk-ui-kit`](exeris-sdk-ui-kit) | Tailwind v4 theme and base styles for generated Angular components (`@exeris/ui-kit`, TypeScript / npm). |
 | `exeris-sdk-bom` | Bill of materials for module versions and third-party deps. |
 | `exeris-sdk-parent` | Common Maven build configuration. |
 
