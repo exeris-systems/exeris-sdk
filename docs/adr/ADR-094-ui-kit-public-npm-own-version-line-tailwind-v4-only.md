@@ -56,9 +56,11 @@ Tailwind major does it support?
 
 **Concrete obligations:**
 
-1. **Public registry, one name.** The package is `@exeris/ui-kit` on registry.npmjs.org, published
-   with npm provenance from a `ui-kit-v<version>` tag by `.github/workflows/publish-ui-kit.yml`. It
-   installs with no `.npmrc` entry and no token. The GitHub Packages copy is not updated.
+1. **Public registry, one name.** The package is `@exeris/ui-kit` on registry.npmjs.org, ~~published~~
+   staged with npm provenance from a `ui-kit-v<version>` tag by `.github/workflows/publish-ui-kit.yml`
+   *(amended 2026-10-02: CI stages the version and a maintainer approves it with 2FA — see
+   `## Amendments`)*. It installs with no `.npmrc` entry and no token. The GitHub Packages copy is
+   not updated.
 2. **Own version line.** The package's version is independent of the SDK's Java modules and moves
    by its own semver: a removal from the exported surface is a minor while the package is `0.x`
    and a major after its 1.0. The SDK's 1.0.0 freeze does not cover it.
@@ -94,7 +96,8 @@ Tailwind major does it support?
 - **[-] Two version numbers to read.** The SDK and the UI kit carry different numbers, and a reader
   has to know which line a change belongs to. The CHANGELOG and MIGRATION entries name the package.
 - **[-] A new publishing credential.** Publication needs the `@exeris` npm organisation and an
-  `NPM_TOKEN` repository secret, which did not exist before.
+  `NPM_TOKEN` repository secret, which did not exist before. *(amended 2026-10-02: the token is
+  stage-only, and every version needs a maintainer's 2FA approval to go live — see `## Amendments`)*
 
 ### 📋 What is NOT in scope
 
@@ -133,5 +136,18 @@ Tailwind major does it support?
 2. `tests/theme.test.js` asserts the package exports no `./tailwind.preset.js` and ships no preset.
 3. `api/ui-kit.api.md` (api-extractor, `tsdoc-gate`) fails on a TypeScript surface change that is not
    accepted in the same PR.
-4. `publish-ui-kit.yml` runs the package's gates before `npm publish` and refuses to publish without
-   `NPM_TOKEN`.
+4. `publish-ui-kit.yml` runs the package's gates before ~~`npm publish`~~ `npm stage publish` and
+   refuses to ~~publish~~ stage without `NPM_TOKEN` *(amended 2026-10-02 — see `## Amendments`)*.
+
+## Amendments
+
+- **2026-10-02 — publication is staged and approved with 2FA.** Obligation 1, the credential
+  trade-off and protocol step 4 named a direct `npm publish` with a token. npm restricts granular
+  tokens that bypass 2FA and removes their direct publish in January 2027, so a CI token that
+  publishes on its own is a credential with an end date. `publish-ui-kit.yml` runs `npm stage
+  publish` with a stage-only `NPM_TOKEN`; the version goes live when a maintainer approves it with
+  2FA (`npm stage approve <stage-id>`, or the package's Staged Packages tab on npmjs.com). The
+  registry, the name, the provenance statement, the gates and the tag trigger are unchanged.
+  Rejected: a token with 2FA bypass, which stops publishing in January 2027. Trusted publishing
+  (OIDC) is compatible with this flow and is the next step once the package exists on the registry;
+  it removes the `NPM_TOKEN` secret, not the approval.
