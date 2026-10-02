@@ -25,7 +25,7 @@
  *   <dd>Marks the class owning the cap's lifecycle hooks (marker only — the
  *       {@code CapabilityLifecycleHooks} interface lives SDK-side in the
  *       zero-dependency composition-lifecycle module, driven by the
- *       composition-runtime boot conductor; ADR-024 obligation 8).</dd>
+ *       composition-runtime boot conductor; ADR-024 obligations 8a and 8a′).</dd>
  * </dl>
  *
  * <h2>Service references</h2>
