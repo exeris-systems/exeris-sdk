@@ -1,6 +1,6 @@
 # Policy: UI Kit Architecture & Invariants
 
-`exeris-sdk-ui-kit` is a standalone npm package (`@exeris/ui-kit`) providing the Tailwind CSS v4 theme entry, component styling, and design tokens for generated Exeris frontends.
+`exeris-sdk-ui-kit` is a standalone npm package (`@exeris/ui-kit`) providing the Tailwind CSS v4 theme entry, component styling, and design tokens for generated Exeris frontends. Its distribution, version line and Tailwind support are decided by [ADR-094](../../docs/adr/ADR-094-ui-kit-public-npm-own-version-line-tailwind-v4-only.md); an accepted break to its exported surface is listed in `exeris-sdk-ui-kit/api/accepted-api-changes.json`.
 
 ## Hard Rules
 

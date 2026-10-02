@@ -284,7 +284,10 @@ for per-version upgrade steps.
   snapshot records the `@theme` variables (`theme-var:`) in place of the preset keys. A consumer's
   own `@custom-variant dark` after the import still overrides the `.dark` signal, now asserted on
   v4. The README no longer shows the `angular.json` `styles` form, which fails on v4 because the
-  component layer is compiled without Tailwind. See [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
+  component layer is compiled without Tailwind. The removed export and the narrowed peer range are
+  accepted in `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094, which records the
+  package's public npm distribution, its own version line and its Tailwind v4 support. See
+  [`MIGRATION.md` §0.11.x → 0.12.x](MIGRATION.md).
 
 - **The semver gate is a maintainer gate, not a build requirement: `mvn -Psemver verify`.** japicmp
   was bound to `verify` in six modules, so a fresh-clone `mvn install` failed resolving its baseline,
