@@ -89,7 +89,7 @@ describe('package exports', () => {
   });
 
   it('ships no Tailwind v3 preset', () => {
-    expect(pkg.exports['./tailwind.preset.js'], 'the v3 preset is gone; only the v4 @theme entry is supported')
+    expect(pkg.exports['./tailwind.preset.js'], 'only the v4 @theme entry is exported; the package has no Tailwind preset')
       .toBeUndefined();
     expect(pkg.files).not.toContain('tailwind.preset.js');
   });
