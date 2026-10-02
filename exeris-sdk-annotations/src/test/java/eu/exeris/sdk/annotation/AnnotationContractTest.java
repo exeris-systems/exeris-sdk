@@ -92,10 +92,10 @@ class AnnotationContractTest {
         // fails at every external use site ("GraphEdges.value() is defined in an
         // inaccessible class or interface"), because the compiler requires the
         // container to be at least as accessible as the repeatable annotation.
-        // The SDK's own tests could never have caught it — they live in this
-        // package. Two top-level containers carried the defect (@SagaSteps,
-        // fixed in 0.9.0; @GraphEdges, fixed in 0.10.0) and every other one is
-        // nested inside a public @interface, hence implicitly public.
+        // A test in this package cannot see it by using the annotation, because
+        // it is inside the package. @SagaSteps and @GraphEdges are top-level
+        // containers and must be declared public; every other one is nested
+        // inside a public @interface, hence implicitly public.
         //
         // Read from @Repeatable rather than from the package walk on purpose: this
         // asks which containers are actually reachable from a repeatable annotation,

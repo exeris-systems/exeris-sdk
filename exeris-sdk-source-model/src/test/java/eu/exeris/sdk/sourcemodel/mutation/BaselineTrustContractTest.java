@@ -56,7 +56,7 @@ class BaselineTrustContractTest {
         // the property that lets javac bake the value into a consumer's own class file and keep it
         // there across an SDK bump. Asserting on the compiler is the only way to see this: a
         // ConstantValue attribute is invisible to reflection, and CURRENT reads identically either
-        // way from inside this module, which is why the defect surfaced downstream and not here.
+        // way from inside this module, so only a consumer's compile can tell the two apart.
         List<String> reported = compile(classes, """
                 package probe;
 

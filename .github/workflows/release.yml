@@ -147,9 +147,9 @@ jobs:
           # settings.xml is precisely what DECIDES which variable maven-gpg-plugin reads. Omitting
           # it does not fall back to a plugin default — the action still configures the plugin,
           # using its own default name `GPG_PASSPHRASE`, while the build step below exports
-          # `MAVEN_GPG_PASSPHRASE`, and the plugin then reads a variable nobody set. In the kernel
-          # that surfaced as `gpg: signing failed: No pinentry` — a message about the agent that
-          # names nothing about a passphrase.
+          # `MAVEN_GPG_PASSPHRASE`, and the plugin then reads a variable nobody set. The failure
+          # reads `gpg: signing failed: No pinentry` — a message about the agent that names
+          # nothing about a passphrase.
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Set the release version — or, on a tag, check it

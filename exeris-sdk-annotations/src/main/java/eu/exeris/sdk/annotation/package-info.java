@@ -71,8 +71,8 @@
  *       into a generated app structure.</li>
  * </ul>
  *
- * <p><strong>Not generated, despite what older javadoc in this package used to
- * claim:</strong> there is no GraphQL emitter anywhere in the toolchain.
+ * <p><strong>Not generated:</strong> there is no GraphQL emitter anywhere in the
+ * toolchain.
  * {@code @ExerisDomain(graphqlApi = true)} reaches the AST and is read by no
  * generator — it is PARTIAL, not LIVE. The {@code @Graph*} family is about
  * graph-<em>database</em> projection, not GraphQL.
@@ -337,7 +337,7 @@
  * {@code FieldMetadata}, like every other bound.
  *
  * <p>The AST carrier for both is a single record, {@code FieldMetadata}; there is
- * no parallel validation record (ADR-054 removed it in 0.9.0). Database
+ * no parallel validation record (ADR-054). Database
  * NOT NULL / not-blank semantics are <em>derived</em> from
  * {@code FieldMetadata.required} at generator level rather than separately
  * declared.
@@ -416,16 +416,17 @@
  * {@link eu.exeris.sdk.annotation.Action} and are inert pending extraction — a
  * downstream job. The gap {@code @RouteAccess} closes is at the declaration site
  * itself: an empty {@code roles} / {@code permissions} already means "nothing
- * declared", and {@code @Action.roles} has documented empty as "accessible to all
- * authenticated users" since 0.1.0, so neither could be overloaded to mean
- * "public" without colliding with a published meaning. No amount of extraction
- * would have produced a statement the surface cannot make.
+ * declared", and {@code @Action.roles} documents empty as "accessible to all
+ * authenticated users", so neither can also mean "public" without colliding with a
+ * published meaning. No amount of extraction produces a statement the surface
+ * cannot make.
  *
  * <p><strong>No {@code UNSPECIFIED} constant, on either side.</strong> An element
  * with no {@code @RouteAccess} has declared nothing; one that carries it has
  * decided. The AST twin {@code sourcemodel.ast.RouteAccess} is nullable for the
- * same reason. Re-introducing a sentinel would rebuild, one level down, exactly
- * the ambiguity the annotation was added to remove.
+ * same reason. A sentinel would rebuild, one level down, the ambiguity between
+ * "declared nothing" and "declared on purpose" that the annotation exists to
+ * remove.
  *
  * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
  * provides {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the

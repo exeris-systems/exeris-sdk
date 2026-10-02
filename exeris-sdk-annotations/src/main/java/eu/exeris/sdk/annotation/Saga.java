@@ -96,11 +96,10 @@ public @interface Saga {
     /**
      * Saga version — part of the saga's runtime identity.
      *
-     * <p><strong>Kernel contract (v0.11, ADR-064).</strong> This attribute used
-     * to be documented as a free-form "increment on breaking changes" marker.
-     * It is not one any more: the kernel keys its plan catalog by
-     * {@code (name, version)}, so registering v2 no longer evicts v1 and both
-     * serve traffic — new instances start on the newest registered version,
+     * <p><strong>Kernel contract (ADR-064).</strong> This attribute is not a
+     * free-form "increment on breaking changes" marker: the kernel keys its plan
+     * catalog by {@code (name, version)}, so registering v2 leaves v1 registered
+     * and both serve traffic — new instances start on the newest registered version,
      * parked ones resume on the exact version they parked under. A snapshot
      * whose version is not registered <em>fails closed</em> rather than being
      * rebound to the newest plan, and moving a parked saga across versions

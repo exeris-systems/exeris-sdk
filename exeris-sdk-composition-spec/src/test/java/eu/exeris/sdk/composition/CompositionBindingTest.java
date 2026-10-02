@@ -88,7 +88,7 @@ class CompositionBindingTest {
 
     @Test
     void unversionedDiffersFromLiteralNullVersion() {
-        // Guards the exact bug the old platform port had: "service@" must NOT equal "service@null".
+        // An unversioned module renders as "service@", never "service@null"; the two must not collide.
         String unversioned = CompositionBinding.compute(List.of(
                 new CapManifest.Module("com.app.Solo", new CapManifest.ModuleBody(
                         Collections.singletonList(new CapManifest.Provided("com.api.Thing", null)), null))));

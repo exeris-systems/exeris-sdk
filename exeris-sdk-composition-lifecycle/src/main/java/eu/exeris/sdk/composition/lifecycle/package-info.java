@@ -25,7 +25,7 @@
  * <em>generated</em>: {@code exeris-tooling}'s {@code KernelApplicationGenerator} emits
  * {@code try (CompositionConductor conductor = CompositionConductor.from(capManifest()).start())}
  * inside {@code KernelBootstrap.boot(...)} — after {@code KERNEL READY}, never as a kernel
- * {@code Subsystem} (ADR-024, 2026-07-21 amendment; {@code KernelApplicationGenerator.java:449-458},
+ * {@code Subsystem} (ADR-024 obligation 8a′; {@code KernelApplicationGenerator.java:449-458},
  * pinned end-to-end by {@code CapCompositionE2ETest.java:145-150}).
  *
  * <p><b>The one case with no generated call site is a cap-less build.</b> The emitter is gated on

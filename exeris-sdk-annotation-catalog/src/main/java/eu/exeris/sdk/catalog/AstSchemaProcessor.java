@@ -41,10 +41,9 @@ import java.util.TreeMap;
  * into the jar of whatever module it processes.
  *
  * <p>The AST records in {@code eu.exeris.sdk.sourcemodel.ast} are the format the processor
- * writes and every generator reads ({@code exeris-metadata/<entity>.json}). Until now the
- * only description of that format was the Java sources themselves, which is fine for a
- * consumer that compiles against the jar and useless for one that does not — an agent
- * reading the AST, a non-JVM generator, a validator in CI.
+ * writes and every generator reads ({@code exeris-metadata/<entity>.json}). The Java sources
+ * describe that format to a consumer that compiles against the jar; this schema describes it
+ * to one that does not — an agent reading the AST, a non-JVM generator, a validator in CI.
  *
  * <p><b>Why a processor rather than a schema library.</b> A generator built on Jackson's
  * own schema module recovers the property names and types and stops there. It cannot
@@ -102,8 +101,8 @@ public final class AstSchemaProcessor extends AbstractProcessor {
      * Set by the build to the AST wire-format version — {@code SchemaVersion.CURRENT}.
      * Distinct from the SDK version: the wire shape changes on its own schedule, and a
      * consumer pairs a baseline stamp against <em>this</em> number. It is passed in rather
-     * than read from {@code SchemaVersion} because that constant is deliberately no longer
-     * a compile-time constant (it is initialized from a method, so it does not inline into
+     * than read from {@code SchemaVersion} because that constant is deliberately not a
+     * compile-time constant (it is initialized from a method, so it does not inline into
      * consumers), which also puts it out of reach of the declaration model. The duplication
      * is guarded: {@code AstSchemaContractTest} fails if the two disagree.
      */
@@ -384,7 +383,7 @@ public final class AstSchemaProcessor extends AbstractProcessor {
      * field are both javac-derived and carry no source position, so neither helps.
      *
      * <p>{@code @param} on the record does resolve, and is the canonical Java way to document
-     * a record component. It is now the only form this package uses, and every component has
+     * a record component. It is the only form this package uses, and every component has
      * one: {@code AstComponentProseConventionTest} fails if a header comment comes back, and
      * {@code AstSchemaContractTest} fails if any definition or property loses its prose.
      */

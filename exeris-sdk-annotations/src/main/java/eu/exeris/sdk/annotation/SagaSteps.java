@@ -11,11 +11,10 @@ import java.lang.annotation.Target;
  * the compiler when {@code @SagaStep} is repeated. The AST flattens step
  * metadata — consumers see a list of steps, never the container annotation.
  *
- * <p>Public since 0.9.0: the container was previously package-private (a
- * top-level type declared inside {@code SagaStep.java}), which made repeating
- * {@code @SagaStep} a compile error from any other package — the compiler
- * requires the container to be at least as accessible as the repeatable
- * annotation at every use site.
+ * <p>Public, in its own file: the compiler requires a container to be at least
+ * as accessible as its repeatable annotation at every use site, so a
+ * package-private container makes repeating {@code @SagaStep} a compile error
+ * from any other package.
  *
  * <p><strong>Repeating a step is read by one reader and loses steps in the
  * other.</strong> The build-time processor unwraps the container and extracts

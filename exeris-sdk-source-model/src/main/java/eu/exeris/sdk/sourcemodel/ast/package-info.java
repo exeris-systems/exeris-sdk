@@ -228,8 +228,8 @@
  * the wire": the planned numeric component / binding fields would hit the
  * boxed-zero trap {@code NON_DEFAULT} carries, and {@code NON_NULL} +
  * blank/null-list normalization in the compact constructors avoids it by
- * construction. The surface is <strong>structurally live</strong> since the
- * tooling caught up: the {@code exeris-tooling} processor extracts the
+ * construction. The surface is <strong>structurally live</strong>: the
+ * {@code exeris-tooling} processor extracts the
  * {@code @View} family into these records and the codegen-ts Angular view
  * generator emits the component tree (RFC-2026-06-28, tooling). The remaining
  * piece is the ADR-047 leaf-field facet ({@code ComponentNodeMetadata.field} —

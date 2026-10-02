@@ -28,8 +28,8 @@ import java.util.Objects;
  * normalize to {@code null}, a null {@code regions} normalizes to an immutable
  * empty list, and a null {@code kind} is tolerated on the wire with
  * {@link #effectiveKind()} applying the {@link ViewKind#PAGE} default. Part of the
- * presentation IR surface, <strong>structurally live</strong> since the tooling
- * caught up: the {@code exeris-tooling} processor extracts {@code @View} /
+ * presentation IR surface, <strong>structurally live</strong>: the
+ * {@code exeris-tooling} processor extracts {@code @View} /
  * {@code @Region} / {@code @Block} / {@code @Bind} into these records and the
  * codegen-ts Angular view generator emits the component tree (RFC-2026-06-28,
  * tooling). The remaining piece is the ADR-047 leaf-field facet — the

@@ -25,7 +25,7 @@ const BUTTON_VARIANTS = ['exeris-btn-primary', 'exeris-btn-secondary', 'exeris-b
 /**
  * `display: inline-flex` comes only from the shared button base, so its presence
  * on a variant is what tells us the variant still carries that base — the
- * property `@apply exeris-btn` used to provide and the selector list has to keep.
+ * property the selector list gives every variant.
  */
 const BASE_MARKER = { prop: 'display', value: 'inline-flex' };
 
