@@ -3,7 +3,7 @@
  * schema ({@link eu.exeris.sdk.composition.CapManifest}) and content-binding algorithm
  * ({@link eu.exeris.sdk.composition.CompositionBinding}), depended on by both the build-time
  * tooling that <em>emits</em> the manifest and the SKU-boot runtime that <em>asserts</em> it
- * (ADR-024 obligation 8b, 2026-06-25 "Composition Runtime Placement" amendment).
+ * (ADR-024 obligation 8b, "Composition Runtime Placement").
  *
  * <h2>What this is, and is not</h2>
  * <ul>

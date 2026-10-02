@@ -25,7 +25,7 @@
  *   <dd>Marks the class owning the cap's lifecycle hooks (marker only — the
  *       {@code CapabilityLifecycleHooks} interface lives SDK-side in the
  *       zero-dependency composition-lifecycle module, driven by the
- *       composition-runtime boot conductor; ADR-024 amendment 2026-06-25).</dd>
+ *       composition-runtime boot conductor; ADR-024 obligations 8a and 8a′).</dd>
  * </dl>
  *
  * <h2>Service references</h2>
@@ -44,8 +44,8 @@
  *   <li><strong>The lifecycle interface</strong> — not an annotation:
  *       {@code CapabilityLifecycleHooks} is a runtime type living in the
  *       zero-dependency {@code exeris-sdk-composition-lifecycle} module, driven
- *       by the boot conductor in {@code exeris-sdk-composition-runtime} (ADR-024
- *       amendments 2026-06-25 / 2026-07-21, landed 0.9.0); this module ships
+ *       by the boot conductor in {@code exeris-sdk-composition-runtime} (ADR-024's
+ *       boot-conductor obligations); this module ships
  *       only the {@code @CapabilityLifecycle} marker.</li>
  *   <li><strong>Licensing</strong> — {@code community} / {@code commercial} /
  *       {@code enterprise-private} is a per-cap-repository property, never an

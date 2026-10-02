@@ -19,7 +19,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The boot conductor (ADR-024 obligation 8a′, amendment 2026-07-21 "Boot Conductor Call Site"):
+ * The boot conductor (ADR-024 obligation 8a′, "Boot Conductor Call Site"):
  * drives every cap in the composition through the four-phase lifecycle declared by
  * {@link CapabilityLifecycleHooks} — {@code initialize → ready} on boot, {@code drain → terminate}
  * on shutdown — in the tooling-emitted manifest {@code initOrder}, replayed <b>verbatim</b> (no

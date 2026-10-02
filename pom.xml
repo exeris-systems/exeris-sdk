@@ -227,8 +227,8 @@
                             Javadoc comment at column 0 has parse error.
                             Details: mismatched input ' *' expecting JAVADOC_INLINE_TAG_END
 
-                        Measured on exeris-sdk-annotations the moment rule 8 was actually followed:
-                        77 such errors on 9.3, 0 on 13.8.0, with every other finding identical. The
+                        On exeris-sdk-annotations, 9.3 reports 77 such errors and 13.8.0 none, with
+                        every other finding identical. The
                         standard mandates `{@snippet}` and the default engine cannot parse it, so on
                         9.3 the gate punishes compliance — and the errors name MissingDeprecated,
                         a check that has nothing to do with any of it.
@@ -292,15 +292,15 @@
           and failOnError=false to get past ~160 findings it carries; importing it would switch
           off a gate this repo currently passes clean.
 
-        - The cyclonedx SBOM. The kernel ships one, this reactor has never produced one, and
-          adding it is its own slice rather than a rider on the change that first makes
-          publishing possible. The trap to read before adding it is the kernel's own
+        - The cyclonedx SBOM. The kernel ships one, this reactor does not produce one, and
+          adding it is a change of its own, not a rider on another. The trap to read before
+          adding it is the kernel's own
           `skipNotDeployed` comment: <extensions>true</extensions> sets maven.deploy.skip, the
           SBOM goal skips on that by default, and a release build therefore produces none while
           the ordinary CI SBOM gate stays green.
 
-        OSSRH shut down on 2025-06-30. nexus-staging-maven-plugin and the oss.sonatype.org URLs
-        it needs no longer exist; anything describing that flow describes a dead system.
+        Publication goes through the Central Portal only. The OSSRH flow — nexus-staging-maven-plugin
+        and the oss.sonatype.org URLs it needs — is not available and is not used here.
     -->
     <profiles>
         <profile>
@@ -311,22 +311,19 @@
                         Central verifies a detached GPG signature on every file it accepts — jar,
                         sources, javadoc and pom alike.
 
-                        No `gpgArguments`, and the absence is the point. The kernel's block used to
-                        pass a loopback pinentry argument described as "what lets the passphrase
-                        arrive from the environment instead of a terminal prompt", and its first
-                        dry run showed the argument was dead in both directions: with a passphrase
-                        available the plugin already emits loopback pinentry and a passphrase file
-                        descriptor of its own accord, and without one it appends its own pinentry
-                        mode of `error` AFTER the supplied argument, which gpg honours as the last
-                        occurrence. Configuration that is redundant when it works and ignored when
-                        it does not is worse than none, because it reads as the thing making
-                        signing work.
+                        No `gpgArguments`, and the absence is the point. A loopback pinentry
+                        argument is dead in both directions: with a passphrase available the
+                        plugin already emits loopback pinentry and a passphrase file descriptor of
+                        its own accord, and without one it appends its own pinentry mode of `error`
+                        AFTER the supplied argument, which gpg honours as the last occurrence.
+                        Configuration that is redundant when it works and ignored when it does not
+                        is worse than none, because it reads as the thing making signing work.
 
                         What carries the passphrase is the environment variable named by
                         `passphraseEnvName`, and that name is chosen by actions/setup-java's
-                        `gpg-passphrase` input, not here. The two have to agree; when they did not,
-                        the kernel's failure surfaced as "gpg: signing failed: No pinentry" — a
-                        message about the agent that says nothing about a name mismatch.
+                        `gpg-passphrase` input, not here. The two have to agree; when they do not,
+                        signing fails with "gpg: signing failed: No pinentry" — a message about
+                        the agent that says nothing about a name mismatch.
                     -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -350,23 +347,18 @@
                         validation results, and waitUntil=validated makes the build block until
                         there is something to review rather than exiting green on an upload.
 
-                        <excludeArtifacts> is required, and this comment used to say the opposite.
-                        exeris-sdk-annotation-catalog is a build-time generator nobody resolves and
-                        must not reach Central; it holds itself back from `deploy` with
-                        <maven.deploy.skip>true</maven.deploy.skip> in its own pom, and the first
-                        draft here reasoned that naming it a second time would put one fact in two
-                        places that can disagree.
+                        <excludeArtifacts> is required. exeris-sdk-annotation-catalog is a
+                        build-time generator nobody resolves and must not reach Central; it holds
+                        itself back from `deploy` with <maven.deploy.skip>true</maven.deploy.skip>
+                        in its own pom, but maven.deploy.skip governs maven-deploy-plugin, and this
+                        plugin REPLACES maven-deploy-plugin and does not read that property.
+                        Without the exclusion it stages the module's jar, pom and both signatures
+                        into `target/central-deferred` — the directory whose contents become the
+                        upload.
 
-                        A dry run refuted that. maven.deploy.skip governs maven-deploy-plugin, and
-                        this plugin is not maven-deploy-plugin: it REPLACES it, and does not read
-                        that property. In the log, `central-publishing:0.11.0:publish` ran on the
-                        module and then reported "Installing" for all four of its files (jar, pom
-                        and both signatures) into `target/central-deferred` — the staging directory
-                        whose contents become the upload.
-
-                        Left alone it would upload a coordinate with no sources jar and no javadoc
-                        jar, which Central rejects per artifact — so one build-time module would
-                        fail the validation of every other module's release.
+                        Uploaded, that is a coordinate with no sources jar and no javadoc jar,
+                        which Central rejects per artifact — so one build-time module would fail
+                        the validation of every other module's release.
 
                         The two settings are therefore not duplicates: they address different
                         plugins, and neither implies the other. Because that is exactly the kind of

@@ -5,9 +5,8 @@
  *
  * <p>The SDK publishes a format and a discipline. The format is
  * {@code exeris-metadata/<entity>.json}; the discipline is ADR-042's "the reader reads what the
- * processor writes". Until now the discipline was enforced by whoever remembered it, and the record
- * of that is not good: three separate parity defects shipped, each with the same shape — one side
- * reading an attribute under a key the other did not use — and each caught by hand, long after.
+ * processor writes". This kit turns the discipline into a gate. The defect it exists for has one
+ * shape: one side reads an attribute under a key the other does not use.
  *
  * <p>They are hard to catch for one reason worth stating plainly: <strong>nothing fails.</strong>
  * Both sides emit well-formed metadata, no exception is raised, no diagnostic appears, and the
@@ -37,13 +36,11 @@
  * <p><strong>The corpus is compiled code.</strong> A producer binding drives javac over it, so
  * {@code CorpusCompilesTest} does too — under {@code -Werror -Xlint:deprecation}, which enforces
  * both that every mandatory attribute is supplied and that nothing deprecated for removal is used.
- * The corpus failed that guard the moment it existed, on both counts.
  *
  * <p><strong>No case that cannot fail.</strong> Every case is driven, in this module's own tests,
  * against a conforming binding and one broken in exactly the way the case describes — the second
- * must fail. The rule is not ceremony: it removed three of the four cases originally written for
- * {@code AbstractMapperPostureTck}, each of which asserted something true that no binding could get
- * wrong, and would have shipped as coverage that covered nothing.
+ * must fail. A case that asserts something true no binding can get wrong is coverage that covers
+ * nothing, and the rule keeps such a case out of the kit.
  *
  * @since 0.11
  */

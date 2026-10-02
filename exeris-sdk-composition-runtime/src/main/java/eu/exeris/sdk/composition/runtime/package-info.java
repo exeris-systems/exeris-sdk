@@ -11,11 +11,11 @@
  * <p><b>What this is NOT.</b> Not a re-validation: no {@code @Requires}→{@code @Provides} DAG
  * re-resolution (that stays a build-time concern in the tooling). Not a security or licensing gate —
  * the SKU runtime is source-available and forkable, so this is a correctness / operability assertion
- * that catches honest config drift early (ADR-024 amendment, 2026-06-17). A hardened,
+ * that catches honest config drift early (ADR-024 obligation 8). A hardened,
  * signature-backed boot gate would be a sealed-enterprise-substrate concern with its own ADR.
  *
- * <p><b>Placement (ADR-024 re-amendment, 2026-06-25).</b> This is the SDK-side runtime module that
- * realizes obligation 8 — shipped <em>into</em> each SKU artefact, not hosted in {@code exeris-platform}
+ * <p><b>Placement (ADR-024 obligation 8b).</b> This is the SDK-side runtime module that
+ * realizes obligation 8b — shipped <em>into</em> each SKU artefact, not hosted in {@code exeris-platform}
  * (which is the deploy-time control plane that only <em>consumes</em> this library, obligation 8c). The
  * content-binding it recomputes is the one canonical {@link eu.exeris.sdk.composition.CompositionBinding}
  * in {@code exeris-sdk-composition-spec} (obligation 8b) — there is no byte-verbatim port; the spec's
@@ -26,7 +26,7 @@
  * composition-lifecycle interface, and a JSON mapper — and no kernel package calls into it.
  *
  * <p><b>The boot conductor.</b> The larger composition-runtime piece — the boot conductor
- * (ADR-024 obligation 8a′, amendment 2026-07-21 "Boot Conductor Call Site"),
+ * (ADR-024 obligation 8a′, "Boot Conductor Call Site"),
  * {@link eu.exeris.sdk.composition.runtime.CompositionConductor} — drives
  * each cap through the four-phase lifecycle ({@code initialize → ready → drain → terminate}) in the
  * tooling-supplied {@code initOrder}, replayed verbatim (stamp assertion first, then reflective hook

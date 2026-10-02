@@ -105,8 +105,8 @@ import java.util.TreeSet;
  * build-time tooling to link (the processor sees the whole round).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
- * {@code read()} no longer drops any annotation-level facet the processor emits:
- * {@link #unmodeledFacets} is now empty for every source, and the field facet is
+ * {@code read()} drops no annotation-level facet the processor emits:
+ * {@link #unmodeledFacets} is empty for every source, and the field facet is
  * attribute-complete against {@code extractFieldMetadata}. A round-trip / reattach
  * caller should still consult {@link #unmodeledFacets} and refuse (or warn) when it
  * is non-empty — that is how a <em>future</em> processor facet (e.g. a new
@@ -238,8 +238,8 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
-     * which is <b>now empty</b> — every processor facet is read (Slices A–D, plus the
-     * 0.4.0 capability surface), so this returns an empty set for every
+     * which is <b>empty</b> — every processor facet is read, the capability surface
+     * included, so this returns an empty set for every
      * {@code @ExerisDomain} / {@code @CapabilityModule} source today. It re-arms
      * only when a future processor facet is registered in that set ahead of the
      * reader. <b>Not</b> flagged: facets neither side reads
@@ -248,11 +248,10 @@ public final class SourceModelReader {
      * {@code @PrimaryKey}, the {@code security} annotations).
      *
      * <p>This guard is <em>annotation-level</em>: it does not report attribute-level
-     * loss <em>within</em> a read annotation. That gap is now closed for
-     * {@code @Field}/{@code @Validation} (read attribute-complete in Slice D);
-     * completeness of the other read annotations ({@code @Relationship},
-     * {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is verified per-slice
-     * rather than by this method. Matching is by simple name (no import resolution).
+     * loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
+     * attribute-complete; completeness of the other read annotations
+     * ({@code @Relationship}, {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is
+     * verified by their own tests rather than by this method. Matching is by simple name (no import resolution).
      * Re-parses {@code javaSource} independently of {@link #read}.
      *
      * @param javaSource the entity's Java source text
@@ -260,8 +259,8 @@ public final class SourceModelReader {
      */
     public Set<String> unmodeledFacets(String javaSource) {
         CompilationUnit cu = parseOrThrow(javaSource);
-        // The guard arms for both modelled roots: @ExerisDomain entities (0.3.0)
-        // and @CapabilityModule caps (0.4.0 Slice 3).
+        // The guard arms for both modelled roots: @ExerisDomain entities and
+        // @CapabilityModule caps.
         Optional<ClassOrInterfaceDeclaration> root = cu.findFirst(ClassOrInterfaceDeclaration.class,
                 type -> type.isAnnotationPresent("ExerisDomain")
                         || type.isAnnotationPresent("CapabilityModule"));
@@ -550,7 +549,7 @@ public final class SourceModelReader {
                     .filter(s -> !s.isBlank())
                     .ifPresent(builder::description);
             stringAttr(action.get(), "httpMethod").ifPresent(builder::httpMethod);
-            // Per-action streaming driver (ADR-043, tooling Slice 2 parity).
+            // Per-action streaming driver (ADR-043).
             // The reader mirrors the processor, which extracts the streaming
             // flag and the stream event type but deliberately skips
             // realTimeUpdates until that attribute has a generator consumer.
@@ -1215,8 +1214,7 @@ public final class SourceModelReader {
      * counterpart. Notably {@code @Field.defaultValue} is <b>not</b> read: although
      * {@code FieldMetadata.defaultValue} exists, {@code extractFieldMetadata} never
      * populates it, so reading it here would be a divergence, not a fix.
-     * {@code @Field.dataType} <b>is</b> read (since the coordinated cross-repo
-     * wiring of Wave 1A): the processor's {@code extractFieldMetadata} now
+     * {@code @Field.dataType} <b>is</b> read: the processor's {@code extractFieldMetadata}
      * populates {@link FieldMetadata#dataType()} and this reader mirrors it, so the
      * two stay in lock-step on the codegen baseline (ADR-042). (The remaining unread
      * {@code @Field} attributes —
@@ -1270,9 +1268,8 @@ public final class SourceModelReader {
         // five into FieldMetadata, guarded on explicit presence in source, so an
         // absent attribute never floods in the annotation default and stays null on
         // FieldMetadata here too. Note: min == 0 is not wire-safe under
-        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that boxed-zero
-        // fix is handled separately — the documented Field/Validation overlap
-        // follow-up, not introduced here.
+        // @JsonInclude(NON_DEFAULT) (Jackson 3 drops boxed Long(0)); that belongs
+        // to the documented Field/Validation overlap, not to this reader.
         longAttr(validation, "min").ifPresent(builder::min);
         longAttr(validation, "max").ifPresent(builder::max);
         intAttr(validation, "minLength").ifPresent(builder::minLength);

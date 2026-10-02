@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * independently of this code (shell {@code printf … | sha256sum} over the canonical form), so a
  * drift in {@link CompositionBinding} — sort order, separators, the {@code "  provides "} prefix,
  * the trailing newline, or the unversioned-provide normalization — fails here rather than silently
- * false-failing a deploy. The versioned vector is the same value the tooling emitter and the
- * (now-superseded) platform port both produced.
+ * false-failing a deploy. The versioned vector is the same value the tooling emitter produces.
  */
 class CompositionBindingTest {
 
@@ -88,7 +87,7 @@ class CompositionBindingTest {
 
     @Test
     void unversionedDiffersFromLiteralNullVersion() {
-        // Guards the exact bug the old platform port had: "service@" must NOT equal "service@null".
+        // An unversioned module renders as "service@", never "service@null"; the two must not collide.
         String unversioned = CompositionBinding.compute(List.of(
                 new CapManifest.Module("com.app.Solo", new CapManifest.ModuleBody(
                         Collections.singletonList(new CapManifest.Provided("com.api.Thing", null)), null))));

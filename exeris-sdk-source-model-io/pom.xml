@@ -40,7 +40,7 @@
 
         <!-- Jackson 3 databind: the conflict detector deserializes the baseline
              exeris-metadata/<entity>.json (DomainMetadata + the BaselineTrust
-             sibling fields) for the slice-3 trust gate. source-model stays
+             sibling fields) for the baseline-trust gate (ADR-042 slice 3). source-model stays
              databind-free (annotations only); this consumer module reads JSON. -->
         <dependency>
             <groupId>tools.jackson.core</groupId>

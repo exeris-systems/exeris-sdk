@@ -115,13 +115,13 @@ class AstSchemaContractTest {
 
         // Non-blank is not enough for this one. An *absent* primitive property binds the
         // type's own default and raises nothing, and only an *explicit* null throws. The
-        // schema must state the explicit-null hazard, not a superseded interpretation.
+        // schema must state the explicit-null hazard, not that an absent property throws.
         // exeris-sdk-tck's AbstractMapperPostureTck is the executable statement of this
         // contract.
         String why = requirement(requirements, "FAIL_ON_NULL_FOR_PRIMITIVES").get("why").asString();
         assertThat(why)
-                .as("the entry must name the explicit-null hazard, and must not restate the "
-                        + "superseded claim that an absent property reaches the constructor as null")
+                .as("the entry must name the explicit-null hazard, and must not claim that an "
+                        + "absent property reaches the constructor as null")
                 .containsIgnoringCase("explicit")
                 .doesNotContainIgnoringCase("reaches the constructor as null");
     }

@@ -135,9 +135,9 @@ cases:
 
   # ── the two cases that test the reviewer rather than the rules ─────────────────────────────
   # A defect that violates no written clause. The verdict schema's `findings[].why` takes a
-  # `<file>#<rule>` coordinate, so before `sdk-pr-review.md` grew its Correctness step this could
-  # only be reported as a suggestion — and suggestions do not block. This case fails if that
-  # regression ever comes back.
+  # `<file>#<rule>` coordinate, so without `sdk-pr-review.md`'s Correctness step such a defect
+  # could only be reported as a suggestion — and suggestions do not block. This case fails if the
+  # reviewer stops blocking on it.
   - id: correctness-plain-bug-still-blocks
     agent: exeris-sdk-architect
     fixture: plain-defect-no-clause.java

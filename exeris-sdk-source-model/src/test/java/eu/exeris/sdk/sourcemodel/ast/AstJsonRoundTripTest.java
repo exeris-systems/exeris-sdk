@@ -911,7 +911,7 @@ class AstJsonRoundTripTest {
         // unversioned: version is null and dropped by NON_NULL, read back as null
         assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry"), ProvidesMetadata.class);
         // NON_NULL does not drop blank strings — the AST preserves what it is given
-        // (the caller maps blank -> null before constructing; see Slice 3 reader)
+        // (the caller maps blank -> null before constructing; see SourceModelReader)
         assertRoundTrip(ProvidesMetadata.of("com.acme.gw.RouteRegistry", "  "), ProvidesMetadata.class);
     }
 

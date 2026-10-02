@@ -36,9 +36,9 @@ import java.util.Optional;
  * wants — is a {@link MutationResult.Success}, not a conflict. Sibling paths
  * never conflict.
  *
- * <h2>Scope of this slice</h2>
+ * <h2>Scope</h2>
  * <p>Drift is detected at <strong>member granularity</strong> — the field /
- * relationship / action paths the slice-1 ops target (the path grammar in
+ * relationship / action paths the mutation ops target (the path grammar in
  * {@link MutationPath}). Conflict is decided at the op's target path: this is
  * the member-only reduction of the ADR ancestor-or-descendant rule, and it is
  * correct here because no other addressable path overlaps a member path. An op

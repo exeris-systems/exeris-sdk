@@ -11,14 +11,13 @@ import java.lang.annotation.Target;
  *
  * <p>This is the Entity-First expression of the kernel's route-authorization seam
  * (kernel ADR-061, {@code eu.exeris.kernel.spi.http.HttpRoutePolicy} /
- * {@code RouteRequirement}). Before it, the SDK could not say that a route is
- * public <em>at all</em>: {@link ExerisDomain#roles()} /
- * {@link ExerisDomain#permissions()} and {@link Action#roles()} /
- * {@link Action#permissions()} were the only security-shaped attributes, and an
- * empty value on any of them already means "nothing declared" — {@code @Action.roles}
- * has documented empty as "accessible to all authenticated users" since 0.1.0. So
- * the empty case could not be overloaded to mean "public" without colliding with a
- * meaning the surface already published.
+ * {@code RouteRequirement}). It is a separate annotation because the other
+ * security-shaped attributes cannot say that a route is public:
+ * {@link ExerisDomain#roles()} / {@link ExerisDomain#permissions()} and
+ * {@link Action#roles()} / {@link Action#permissions()} read an empty value as
+ * "nothing declared", and {@code @Action.roles} documents empty as "accessible to
+ * all authenticated users". The empty case cannot also mean "public" without
+ * colliding with that published meaning.
  *
  * <h2>Basic usage</h2>
  * {@snippet lang="java" :
@@ -99,7 +98,7 @@ public @interface RouteAccess {
      * What the annotated route demands of its caller.
      *
      * <p>Mandatory: the annotation exists to make a statement, and a default would
-     * reintroduce the silent case it was added to remove.
+     * make a route nobody declared indistinguishable from one declared on purpose.
      *
      * @return the declared access level
      */

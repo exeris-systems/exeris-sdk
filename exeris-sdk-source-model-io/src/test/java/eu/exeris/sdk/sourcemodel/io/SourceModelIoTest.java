@@ -1037,7 +1037,7 @@ class SourceModelIoTest {
 
         @Test
         void fullyAnnotatedEntityHasNoDivergences() {
-            // every processor facet is now read (Slices A-D): the guard is empty even
+            // every processor facet is read: the guard is empty even
             // for an entity touching all of them. @Projection/@NavMenu/@PrimaryKey are
             // processor-gaps (never divergences); @Validation is read into FieldMetadata.
             String src = """
@@ -1071,7 +1071,7 @@ class SourceModelIoTest {
 
         @Test
         void modeledDomainAttributesAreNotFlagged() {
-            // tenantScoped/softDelete are read (Slice A) -> guard stays empty
+            // tenantScoped/softDelete are read -> guard stays empty
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -1801,7 +1801,7 @@ class SourceModelIoTest {
 
         @Test
         void readsFieldDataTypeAndStaysOnTheCodegenBaseline() {
-            // ADR-042 lock-step (Wave 1A): the reader now mirrors the processor's
+            // ADR-042 lock-step: the reader mirrors the processor's
             // @Field.dataType extraction. The value reaches FieldMetadata.dataType and
             // a @Field(dataType=...) source produces no unmodeled facet (the read is
             // attribute-complete against the codegen baseline, so reattach/conflict

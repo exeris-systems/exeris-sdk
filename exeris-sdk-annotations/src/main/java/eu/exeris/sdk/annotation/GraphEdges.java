@@ -10,16 +10,13 @@ import java.lang.annotation.Target;
  * Container for repeated {@link GraphEdge} annotations. Normally synthesized by
  * the compiler when {@code @GraphEdge} is repeated on a field.
  *
- * <p>Public since 0.10.0: the container was previously package-private (a
- * top-level type declared inside {@code GraphEdge.java}), which made repeating
- * {@code @GraphEdge} a compile error from any other package — the compiler
- * requires the container to be at least as accessible as the repeatable
- * annotation at every use site. This is the same defect fixed for
- * {@link SagaSteps} in 0.9.0; these two top-level containers were the whole
- * class of it, and {@code AnnotationContractTest} now holds every
- * {@code @Repeatable} container to the rule.
+ * <p>Public, in its own file: the compiler requires a container to be at least
+ * as accessible as its repeatable annotation at every use site, so a
+ * package-private container makes repeating {@code @GraphEdge} a compile error
+ * from any other package. {@code AnnotationContractTest} holds every
+ * {@code @Repeatable} container in this module to the rule.
  *
- * <p><strong>What this fix does and does not buy.</strong> It makes repeating
+ * <p><strong>What public access does and does not buy.</strong> It makes repeating
  * {@code @GraphEdge} <em>compile</em> outside this package. It does not make a
  * repetition <em>readable</em>: the processor unwraps this container, and then
  * refuses two edges on one field at the declaration, because

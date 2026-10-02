@@ -27,8 +27,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * @param sharedScopeField the name of the shared-scope key field — the column a
  *        {@code DataScope.UNIVERSE} entity's generated policy compares against the kernel's
  *        shared-scope session variable, widening reads while {@code tenantIdField} keeps
- *        writes pinned. Added in 0.12.0; {@code null} on every entity that declares no
- *        shared tier
+ *        writes pinned; {@code null} on every entity that declares no shared tier
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

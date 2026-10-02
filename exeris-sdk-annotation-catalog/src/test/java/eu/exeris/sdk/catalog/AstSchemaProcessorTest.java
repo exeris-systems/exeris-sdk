@@ -79,10 +79,10 @@ class AstSchemaProcessorTest {
         JsonNode probe = def(compileAndRead(classes), "ProbeMetadata");
 
         assertThat(probe.get("x-exeris-json-include").asString()).isEqualTo("NON_DEFAULT");
-        // The regression this guards is silent and was real: Jackson's @JsonInclude targets
-        // do not include RECORD_COMPONENT, so the annotation never stays on the component
-        // element. Reading it from there alone returned null for every bound in the real AST,
-        // and the schema described the boxed-zero hazard as unmitigated.
+        // Jackson's @JsonInclude targets do not include RECORD_COMPONENT, so the annotation
+        // never stays on the component element. Read from there alone it is null for every
+        // bound in the real AST, and the schema would describe the boxed-zero hazard as
+        // unmitigated — a silent failure, which is why it is asserted.
         JsonNode boundInclude = probe.get("properties").get("bound").get("x-exeris-json-include");
         assertThat(boundInclude)
                 .as("the component's own @JsonInclude must reach the schema; a null here is the "
