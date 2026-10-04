@@ -25,6 +25,17 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Breaking
+
+- **`@exeris/ui-kit` 0.3.0: 25 component classes move to `@exeris/ui-kit/preview`.** No generator
+  emits them; `exeris-tooling` 0.9.0 uses the 22 that stay in `@exeris/ui-kit/styles`, which are the
+  classes the package freezes at its 1.0. The moved classes keep their names and declarations, sit
+  outside the freeze, and return to `styles` additively when a generator uses them. A consumer
+  using one adds `@import "@exeris/ui-kit/preview";` after the styles import. The public-surface
+  snapshot drops the 25; `tests/preview-entry.test.js` holds the split. Accepted in
+  `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094 Amendment 2. See
+  [`MIGRATION.md` §`@exeris/ui-kit` 0.2.x → 0.3.0](MIGRATION.md).
+
 ### Changed
 
 - **`@exeris/ui-kit` is staged on npm and goes live on a maintainer's 2FA approval.**

@@ -1,53 +1,30 @@
 # The names @exeris/ui-kit promises. Generated once, edited by hand thereafter.
 # Adding a line is additive. Removing or renaming one is a breaking change for this
 # package's own semver — see tests/public-surface.test.js and MIGRATION-0.x-to-1.0.md.
+# The classes in src/styles/preview.css (@exeris/ui-kit/preview) are not listed: they are outside
+# the freeze until a generator uses them — see tests/preview-entry.test.js.
 class:exeris-alert
 class:exeris-alert-danger
-class:exeris-alert-info
-class:exeris-alert-success
 class:exeris-alert-warning
 class:exeris-badge
-class:exeris-badge-danger
-class:exeris-badge-gray
-class:exeris-badge-primary
 class:exeris-badge-success
-class:exeris-badge-warning
 class:exeris-btn
 class:exeris-btn-danger
 class:exeris-btn-ghost
-class:exeris-btn-lg
 class:exeris-btn-primary
 class:exeris-btn-secondary
 class:exeris-btn-sm
 class:exeris-card
 class:exeris-card-body
-class:exeris-card-footer
 class:exeris-card-header
 class:exeris-checkbox
-class:exeris-chip
-class:exeris-chips
-class:exeris-color
-class:exeris-editor
 class:exeris-error-text
-class:exeris-file
-class:exeris-focus-visible
 class:exeris-help-text
 class:exeris-input
 class:exeris-input-error
 class:exeris-label
-class:exeris-radio
-class:exeris-radio-group
-class:exeris-range
-class:exeris-rating
-class:exeris-scroll-smooth
-class:exeris-scrollbar-hide
 class:exeris-select
-class:exeris-spinner
 class:exeris-table
-class:exeris-textarea
-class:exeris-toggle
-class:exeris-truncate-2
-class:exeris-truncate-3
 theme-var:--animate-exeris-fade-in
 theme-var:--animate-exeris-pulse
 theme-var:--animate-exeris-slide-up

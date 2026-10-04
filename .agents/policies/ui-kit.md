@@ -18,7 +18,11 @@
    The UI kit versions independently from the Java modules (e.g. `0.2.x` while Java is at `0.12.x`).
 5. **Public surface snapshot:**
    `tests/public-surface.txt` snapshot-gates exported CSS class names and token names. At 1.0:
-   - Token names (`--exeris-primary`) and component class vocabulary (`.exeris-input`) are **frozen**.
+   - Token names (`--exeris-primary`) and the component classes in `src/styles/index.css`
+     (`@exeris/ui-kit/styles`, e.g. `.exeris-input`) are **frozen**.
+   - The classes in `src/styles/preview.css` (`@exeris/ui-kit/preview`) are **not**: no generator
+     emits them, they are absent from the snapshot, and one moves into `index.css` — additively —
+     when a generator uses it (ADR-094 Amendment 2, `tests/preview-entry.test.js`).
    - Theme values (colors, radii, shadows) remain **free** to support CMS and consumer customization.
 6. **TSDoc + API golden on the TypeScript surface:**
    ADR-085 §F.21a–c names this package one of three gated TypeScript surfaces in the ecosystem; the

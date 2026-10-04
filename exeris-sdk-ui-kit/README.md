@@ -30,15 +30,29 @@ The theme generates utilities such as `bg-exeris-primary`, `text-exeris-danger`,
 
 ## Component classes
 
+`@exeris/ui-kit/styles` — the classes generated applications use, frozen at the package's 1.0:
+
 | Group | Classes |
 |:--|:--|
-| Buttons | `exeris-btn` with `-primary`, `-secondary`, `-danger`, `-ghost`, `-sm`, `-lg` |
-| Forms | `exeris-input`, `exeris-input-error`, `exeris-select`, `exeris-textarea`, `exeris-checkbox`, `exeris-radio`, `exeris-radio-group`, `exeris-toggle`, `exeris-range`, `exeris-color`, `exeris-file`, `exeris-rating`, `exeris-chips`, `exeris-chip`, `exeris-editor`, `exeris-label`, `exeris-help-text`, `exeris-error-text` |
-| Cards | `exeris-card`, `exeris-card-header`, `exeris-card-body`, `exeris-card-footer` |
-| Alerts | `exeris-alert` with `-info`, `-success`, `-warning`, `-danger` |
-| Badges | `exeris-badge` with `-primary`, `-success`, `-warning`, `-danger`, `-gray` |
-| Loading | `exeris-spinner` |
+| Buttons | `exeris-btn` with `-primary`, `-secondary`, `-danger`, `-ghost`, `-sm` |
+| Forms | `exeris-input`, `exeris-input-error`, `exeris-select`, `exeris-checkbox`, `exeris-label`, `exeris-help-text`, `exeris-error-text` |
+| Cards | `exeris-card`, `exeris-card-header`, `exeris-card-body` |
+| Alerts | `exeris-alert` with `-warning`, `-danger` |
+| Badges | `exeris-badge` with `-success` |
 | Data | `exeris-table` |
+
+`@exeris/ui-kit/preview` — classes no generator emits yet. They may change in a minor and move to
+`styles` when a generator uses them. Add `@import "@exeris/ui-kit/preview";` after the styles
+import to use them:
+
+| Group | Classes |
+|:--|:--|
+| Buttons | `exeris-btn-lg` |
+| Forms | `exeris-textarea`, `exeris-radio`, `exeris-radio-group`, `exeris-toggle`, `exeris-range`, `exeris-color`, `exeris-file`, `exeris-rating`, `exeris-chips`, `exeris-chip`, `exeris-editor` |
+| Cards | `exeris-card-footer` |
+| Alerts | `exeris-alert-info`, `exeris-alert-success` |
+| Badges | `exeris-badge-primary`, `exeris-badge-warning`, `exeris-badge-danger`, `exeris-badge-gray` |
+| Loading | `exeris-spinner` |
 | Utilities | `exeris-truncate-2`, `exeris-truncate-3`, `exeris-focus-visible`, `exeris-scrollbar-hide`, `exeris-scroll-smooth` |
 
 ```html
@@ -83,8 +97,9 @@ after the imports:
 ## Versioning
 
 This package versions independently of the Exeris SDK's Java artifacts. Its 1.0 freezes names, not
-values: renaming or removing an `--exeris-*` property, an `.exeris-*` class or an `exeris-*` utility
-is a breaking change, while colours, spacing, radii and shadows may change in a minor. Upgrade
+values: renaming or removing an `--exeris-*` property, a class in `@exeris/ui-kit/styles` or an
+`exeris-*` utility is a breaking change, while colours, spacing, radii and shadows may change in a
+minor. The `@exeris/ui-kit/preview` classes are outside that freeze. Upgrade
 steps are in [MIGRATION.md](https://github.com/exeris-systems/exeris-sdk/blob/main/MIGRATION.md).
 
 ## Links
