@@ -77,6 +77,29 @@
     --exeris-border: 75 85 99;          /* gray-600 */
     --exeris-border-focus: 129 140 248; /* indigo-400 */
   }
+
+  /* The same dark values under the `dark` variant, on :root. `.dark` above is the kit's default
+     signal and works on any element; this block follows whatever `dark` is declared as, so a
+     consumer who re-points the variant at the operating system or an attribute moves the tokens,
+     and every class that reads them, with it. tests/theme.test.js holds the two blocks equal. */
+  :root {
+    @variant dark {
+      --exeris-primary: 99 102 241;       /* indigo-500 */
+      --exeris-primary-hover: 129 140 248; /* indigo-400 */
+      --exeris-secondary: 148 163 184;    /* slate-400 */
+
+      --exeris-bg-primary: 17 24 39;      /* gray-900 */
+      --exeris-bg-secondary: 31 41 55;    /* gray-800 */
+      --exeris-bg-tertiary: 55 65 81;     /* gray-700 */
+
+      --exeris-text-primary: 249 250 251; /* gray-50 */
+      --exeris-text-secondary: 156 163 175; /* gray-400 */
+      --exeris-text-muted: 107 114 128;   /* gray-500 */
+
+      --exeris-border: 75 85 99;          /* gray-600 */
+      --exeris-border-focus: 129 140 248; /* indigo-400 */
+    }
+  }
 }
 
 /* ============================================================================

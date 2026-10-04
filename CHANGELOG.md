@@ -44,7 +44,12 @@ for per-version upgrade steps.
   `cursor: pointer`, which v4's preflight no longer does. Brand, surface, text, border and focus
   colours read the `--exeris-*` properties instead of fixed palette shades, so `.dark` and an
   override re-theme the classes; the tinted pairs (alerts, badges, chips, the file button) and the
-  danger red (the danger button, error text) keep the palette. Class names are unchanged.
+  danger red (the danger button, error text) keep the palette. The dark token values also sit on
+  `:root` under `@variant dark`, so a consumer who re-points `dark` at the operating system (the
+  override `theme.css` documents) still gets dark component classes. Visible differences: field
+  and card borders take `--exeris-border` (gray-200 in light mode, where fields used gray-300), and
+  button focus rings show on keyboard focus (`focus-visible`) rather than on every click. Class
+  names are unchanged.
 
 ## [0.12.0] — 2026-10-02
 

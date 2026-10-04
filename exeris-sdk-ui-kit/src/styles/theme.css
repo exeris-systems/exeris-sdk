@@ -60,7 +60,9 @@
  * It lives in this entry because every consumer imports it; a build importing
  * `…/styles` without `…/theme` keeps the media signal for the component classes,
  * which is why the README states both entries are required. A consumer who wants
- * the OS signal declares their own `@custom-variant dark` after this import.
+ * the OS signal declares their own `@custom-variant dark` after this import; the
+ * `:root` block under `@variant dark` below carries the dark token values to that
+ * signal too, so the tokens and every class that reads them follow it.
  */
 
 /* Dark mode is driven by the `.dark` class. */
@@ -141,6 +143,34 @@
   --color-exeris-primary: rgb(var(--exeris-primary));
   --color-exeris-primary-hover: rgb(var(--exeris-primary-hover));
   --color-exeris-secondary: rgb(var(--exeris-secondary));
+}
+
+/* The same dark values under the `dark` variant, on :root (mirrors index.css). `.dark` above is
+   the default signal; this block follows whatever `dark` is declared as, so a consumer who
+   re-points the variant after this import moves the tokens and the `@theme` colours with it. */
+:root {
+  @variant dark {
+    --exeris-primary: 99 102 241;       /* indigo-500 */
+    --exeris-primary-hover: 129 140 248; /* indigo-400 */
+    --exeris-secondary: 148 163 184;    /* slate-400 */
+
+    --exeris-bg-primary: 17 24 39;      /* gray-900 */
+    --exeris-bg-secondary: 31 41 55;    /* gray-800 */
+    --exeris-bg-tertiary: 55 65 81;     /* gray-700 */
+
+    --exeris-text-primary: 249 250 251; /* gray-50 */
+    --exeris-text-secondary: 156 163 175; /* gray-400 */
+    --exeris-text-muted: 107 114 128;   /* gray-500 */
+
+    --exeris-border: 75 85 99;          /* gray-600 */
+    --exeris-border-focus: 129 140 248; /* indigo-400 */
+
+    /* The three `@theme` colours whose channels changed above, recomputed on this
+       element so `bg-exeris-primary` &c. follow at any nesting depth. */
+    --color-exeris-primary: rgb(var(--exeris-primary));
+    --color-exeris-primary-hover: rgb(var(--exeris-primary-hover));
+    --color-exeris-secondary: rgb(var(--exeris-secondary));
+  }
 }
 
 /* Tailwind v4 token namespace. Every entry except `--font-exeris` and the

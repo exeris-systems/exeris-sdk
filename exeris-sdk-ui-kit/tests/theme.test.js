@@ -61,6 +61,25 @@ describe('Tailwind v4 @theme entry', () => {
  * This duplication is only safe while the two remain identical, so this guard
  * ensures they stay in sync.
  */
+/**
+ * Each stylesheet writes its dark values twice: on `.dark`, the default signal that works on any
+ * element, and on `:root` under `@variant dark`, which follows a consumer who re-points the
+ * variant. The second copy is only safe while it equals the first.
+ */
+describe('the @variant dark block repeats the .dark block', () => {
+  for (const [file, css] of [['index.css', indexCss], ['theme.css', themeCss]]) {
+    it(`${file} declares the same dark values in both`, () => {
+      const onClass = declarations(block(css, '.dark'));
+      const onVariant = declarations(block(css, '@variant dark'));
+      expect([...onVariant.keys()].sort(), `${file}: the @variant dark block drifted from .dark`)
+        .toEqual([...onClass.keys()].sort());
+      for (const [name, value] of onClass) {
+        expect(onVariant.get(name), `${file}: ${name} differs between .dark and @variant dark`).toBe(value);
+      }
+    });
+  }
+});
+
 describe('theme.css token blocks mirror index.css', () => {
   for (const selector of [':root', '.dark']) {
     it(`${selector} declares the same tokens with the same values`, () => {

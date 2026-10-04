@@ -203,3 +203,17 @@ describe('component classes follow the --exeris-* properties', () => {
     ).toEqual([]);
   });
 });
+
+describe('the error state wins over the field base', () => {
+  it('declares .exeris-input-error after the shared field rule, with its own border colour', () => {
+    // Both rules carry one class, so the later one wins on an element that has both. Moving the
+    // error rule above the field base would leave an erroring field with the normal border.
+    const ruleStart = (selectorStart) => v4.css.indexOf(selectorStart);
+    const base = ruleStart('.exeris-input, .exeris-select, .exeris-textarea {');
+    const error = ruleStart('.exeris-input-error {');
+    expect(base, 'the shared field rule is missing from the compiled output').toBeGreaterThanOrEqual(0);
+    expect(error, '.exeris-input-error comes before the field base it has to override').toBeGreaterThan(base);
+    expect(unconditionalDeclarations(v4.rules, 'exeris-input-error')
+      .some((d) => d.prop === 'border-color' && d.value.includes('--color-red-500'))).toBe(true);
+  });
+});

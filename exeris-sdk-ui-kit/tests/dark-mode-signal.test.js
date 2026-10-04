@@ -112,6 +112,22 @@ describe('a consumer can override the signal', () => {
     expect(css).toContain('prefers-color-scheme');
   });
 
+  it('the tokens follow a re-pointed variant, so the token-backed classes do too', async () => {
+    // The component classes that read --exeris-* have no dark: variant of their own; they turn
+    // dark only if the tokens do. Under an OS-signal variant, the dark token values must sit in
+    // a prefers-color-scheme query on :root.
+    const { css } = await compileWithV4(V4_SHEETS, CANDIDATES,
+      '@custom-variant dark (@media (prefers-color-scheme: dark));');
+    const darkRoots = [];
+    postcss.parse(css).walkAtRules('media', (media) => {
+      if (!media.params.includes('prefers-color-scheme: dark')) return;
+      media.walkDecls('--exeris-bg-primary', (decl) => {
+        if (decl.parent.selector?.includes(':root')) darkRoots.push(decl.value);
+      });
+    });
+    expect(darkRoots, 'no dark --exeris-bg-primary on :root under the OS signal').toContain('17 24 39');
+  });
+
   it('a custom selector variant wins too', async () => {
     const { css } = await compileWithV4(V4_SHEETS, CANDIDATES,
       '@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));');
