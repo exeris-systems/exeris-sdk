@@ -8,9 +8,11 @@ import { PACKAGE_ROOT, compileWithV4 } from './support/tailwind.js';
  * Dark mode responds to a `.dark` class, not the system preference.
  *
  * This package has two dark surfaces, both responding to the same signal:
- * the `--exeris-*` design tokens take their dark values from a `.dark` *class*,
- * and the `.exeris-*` component classes do the same through the
- * `@custom-variant dark` that `theme.css` declares.
+ * the `--exeris-*` design tokens take their dark values from a `.dark` *class*
+ * (and every component class that reads a token follows them), and the
+ * component classes that keep Tailwind's palette — the status pairs — use
+ * `dark:` variants, routed through the `@custom-variant dark` that `theme.css`
+ * declares.
  *
  * This guard compiles the documented setup with Tailwind v4 and verifies two
  * invariants: the absence of `prefers-color-scheme` media queries (the failure
@@ -21,11 +23,11 @@ import { PACKAGE_ROOT, compileWithV4 } from './support/tailwind.js';
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
 
 /**
- * A component class whose dark styling is unambiguous, plus a utility a
- * consumer would write in their own markup. Both must follow the same signal:
- * the first covers what this package ships, the second what it lets you build.
+ * A component class styled through a `dark:` variant, plus a utility a consumer
+ * would write in their own markup. Both must follow the same signal: the first
+ * covers what this package ships, the second what it lets you build.
  */
-const COMPONENT = 'exeris-input';
+const COMPONENT = 'exeris-error-text';
 const CONSUMER_UTILITY = 'dark:bg-exeris-primary';
 const CANDIDATES = [COMPONENT, CONSUMER_UTILITY, 'dark'];
 

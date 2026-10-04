@@ -84,6 +84,17 @@
    ============================================================================ */
 
 @layer components {
+  /* Colours come from the --exeris-* properties wherever the kit has a token for them — brand,
+     surfaces, text, borders, focus — read as rgb(var(--exeris-*)) at the point of use. So a
+     .dark scope, or an override of an --exeris-* property on any element, re-themes a class with
+     no dark: variant and no second declaration. The status pairs (alerts, badges, chips, the
+     danger button, error text) keep Tailwind's palette: each is a tint and a text shade chosen
+     together for contrast, and the kit has one channel per status, not a pair.
+
+     Form fields carry their own border width, padding and focus ring. Tailwind v4's preflight
+     sets `border: 0 solid` and removes field padding, and v4 has no forms plugin to restore them,
+     so a field that names only a border colour renders with no border. */
+
   /* Buttons
      The base is a selector list rather than `@apply exeris-btn` inside each
      variant: Tailwind v4 rejects `@apply` of a custom class ("Cannot apply
@@ -95,32 +106,31 @@
   .exeris-btn-secondary,
   .exeris-btn-danger,
   .exeris-btn-ghost {
-    @apply inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm
+    @apply inline-flex cursor-pointer items-center justify-center font-medium rounded-md px-4 py-2 text-sm
            transition-colors duration-[var(--exeris-transition-fast)]
-           focus:outline-none focus:ring-2 focus:ring-offset-2
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2
+           focus-visible:ring-offset-[rgb(var(--exeris-bg-primary))]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .exeris-btn-primary {
-    @apply bg-indigo-600 text-white
-           hover:bg-indigo-700 focus:ring-indigo-500;
+    @apply bg-[rgb(var(--exeris-primary))] text-white
+           hover:bg-[rgb(var(--exeris-primary-hover))] focus-visible:ring-[rgb(var(--exeris-border-focus))];
   }
 
   .exeris-btn-secondary {
-    @apply bg-white text-gray-700 border border-gray-300
-           hover:bg-gray-50 focus:ring-indigo-500
-           dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+    @apply bg-[rgb(var(--exeris-bg-primary))] text-[rgb(var(--exeris-text-primary))] border border-[rgb(var(--exeris-border))]
+           hover:bg-[rgb(var(--exeris-bg-secondary))] focus-visible:ring-[rgb(var(--exeris-border-focus))];
   }
 
   .exeris-btn-danger {
     @apply bg-red-600 text-white
-           hover:bg-red-700 focus:ring-red-500;
+           hover:bg-red-700 focus-visible:ring-red-500;
   }
 
   .exeris-btn-ghost {
-    @apply bg-transparent text-gray-600
-           hover:bg-gray-100 focus:ring-gray-500
-           dark:text-gray-400 dark:hover:bg-gray-800;
+    @apply bg-transparent text-[rgb(var(--exeris-text-secondary))]
+           hover:bg-[rgb(var(--exeris-bg-tertiary))] focus-visible:ring-[rgb(var(--exeris-border-focus))];
   }
 
   .exeris-btn-sm {
@@ -131,12 +141,15 @@
     @apply px-6 py-3 text-base;
   }
 
-  /* Form Inputs */
-  .exeris-input {
-    @apply block w-full rounded-md border-gray-300 shadow-sm
-           focus:border-indigo-500 focus:ring-indigo-500
+  /* Form Inputs
+     .exeris-input, .exeris-select and .exeris-textarea share one field base. */
+  .exeris-input,
+  .exeris-select,
+  .exeris-textarea {
+    @apply block w-full rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] px-3 py-2 text-[rgb(var(--exeris-text-primary))]
+           shadow-[var(--exeris-shadow-sm)] placeholder:text-[rgb(var(--exeris-text-muted))]
+           focus:border-[rgb(var(--exeris-border-focus))] focus:outline-hidden focus:ring-1 focus:ring-[rgb(var(--exeris-border-focus))]
            disabled:opacity-50 disabled:cursor-not-allowed
-           dark:bg-gray-800 dark:border-gray-600 dark:text-white
            sm:text-sm;
   }
 
@@ -145,7 +158,7 @@
   }
 
   .exeris-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+    @apply block text-sm font-medium text-[rgb(var(--exeris-text-primary))];
   }
 
   .exeris-error-text {
@@ -153,46 +166,28 @@
   }
 
   .exeris-help-text {
-    @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+    @apply mt-1 text-sm text-[rgb(var(--exeris-text-secondary))];
   }
 
   /* Form Controls — one styled class per ComponentType beyond the text inputs
      .exeris-input already covers (TEXT_INPUT / NUMBER_INPUT / DATE_PICKER /
      DATETIME_PICKER / TIME_PICKER / PASSWORD / EMAIL / PHONE / URL / CURRENCY /
-     AUTOCOMPLETE). AUTO is resolved by codegen; HIDDEN renders nothing. */
+     AUTOCOMPLETE). AUTO is resolved by codegen; HIDDEN renders nothing.
+     SELECT, MULTI_SELECT (add the `multiple` attribute) use .exeris-select and
+     TEXT_AREA uses .exeris-textarea, both on the field base above. */
 
-  /* SELECT, MULTI_SELECT (add the `multiple` attribute) */
-  .exeris-select {
-    @apply block w-full rounded-md border-gray-300 shadow-sm
-           focus:border-indigo-500 focus:ring-indigo-500
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:bg-gray-800 dark:border-gray-600 dark:text-white
-           sm:text-sm;
-  }
-
-  /* TEXT_AREA */
-  .exeris-textarea {
-    @apply block w-full rounded-md border-gray-300 shadow-sm
-           focus:border-indigo-500 focus:ring-indigo-500
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:bg-gray-800 dark:border-gray-600 dark:text-white
-           sm:text-sm;
-  }
-
-  /* CHECKBOX */
+  /* CHECKBOX — the native control, tinted through accent-color */
   .exeris-checkbox {
-    @apply h-4 w-4 rounded border-gray-300 accent-indigo-600 cursor-pointer
-           focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:border-gray-600 dark:bg-gray-800;
+    @apply h-4 w-4 accent-[rgb(var(--exeris-primary))] cursor-pointer
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* RADIO_GROUP (per-option control; wrap options in .exeris-radio-group) */
   .exeris-radio {
-    @apply h-4 w-4 border-gray-300 accent-indigo-600 cursor-pointer
-           focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:border-gray-600 dark:bg-gray-800;
+    @apply h-4 w-4 accent-[rgb(var(--exeris-primary))] cursor-pointer
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .exeris-radio-group {
@@ -201,11 +196,10 @@
 
   /* TOGGLE — a switch rendered from <input type="checkbox" class="exeris-toggle"> */
   .exeris-toggle {
-    @apply relative h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200
-           transition-colors checked:bg-indigo-600
-           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:bg-gray-700 dark:checked:bg-indigo-500;
+    @apply relative h-6 w-11 cursor-pointer appearance-none rounded-full bg-[rgb(var(--exeris-bg-tertiary))]
+           transition-colors checked:bg-[rgb(var(--exeris-primary))]
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .exeris-toggle::before {
@@ -229,14 +223,14 @@
 
   /* SLIDER */
   .exeris-range {
-    @apply w-full cursor-pointer accent-indigo-600
-           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+    @apply w-full cursor-pointer accent-[rgb(var(--exeris-primary))]
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* FILE_UPLOAD, IMAGE_UPLOAD */
   .exeris-file {
-    @apply block w-full text-sm text-gray-700 dark:text-gray-300
+    @apply block w-full text-sm text-[rgb(var(--exeris-text-primary))]
            file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2
            file:text-sm file:font-medium file:text-indigo-700
            hover:file:bg-indigo-100 file:cursor-pointer
@@ -246,17 +240,15 @@
 
   /* COLOR_PICKER */
   .exeris-color {
-    @apply h-9 w-14 cursor-pointer rounded-md border border-gray-300 bg-white p-0.5
-           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed
-           dark:border-gray-600 dark:bg-gray-800;
+    @apply h-9 w-14 cursor-pointer rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-0.5
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* RICH_TEXT_EDITOR, CODE_EDITOR — bordered editor surface (host mounts the editor inside) */
   .exeris-editor {
-    @apply block w-full min-h-[8rem] rounded-md border border-gray-300 bg-white p-3 text-sm
-           focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500
-           dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+    @apply block w-full min-h-[8rem] rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-3 text-sm text-[rgb(var(--exeris-text-primary))]
+           focus-within:border-[rgb(var(--exeris-border-focus))] focus-within:ring-1 focus-within:ring-[rgb(var(--exeris-border-focus))];
   }
 
   /* RATING — star/score row */
@@ -266,9 +258,8 @@
 
   /* CHIPS — tag input container + individual chip */
   .exeris-chips {
-    @apply flex flex-wrap items-center gap-1.5 rounded-md border border-gray-300 p-1.5
-           focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500
-           dark:border-gray-600 dark:bg-gray-800;
+    @apply flex flex-wrap items-center gap-1.5 rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-1.5
+           focus-within:border-[rgb(var(--exeris-border-focus))] focus-within:ring-1 focus-within:ring-[rgb(var(--exeris-border-focus))];
   }
 
   .exeris-chip {
@@ -278,11 +269,11 @@
 
   /* Cards */
   .exeris-card {
-    @apply bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800;
+    @apply bg-[rgb(var(--exeris-bg-primary))] rounded-lg shadow-[var(--exeris-shadow-sm)] border border-[rgb(var(--exeris-border))];
   }
 
   .exeris-card-header {
-    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-800;
+    @apply px-6 py-4 border-b border-[rgb(var(--exeris-border))];
   }
 
   .exeris-card-body {
@@ -290,32 +281,32 @@
   }
 
   .exeris-card-footer {
-    @apply px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50;
+    @apply px-6 py-4 border-t border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-secondary))];
   }
 
   /* Tables */
   .exeris-table {
-    @apply min-w-full divide-y divide-gray-200 dark:divide-gray-700;
+    @apply min-w-full divide-y divide-[rgb(var(--exeris-border))];
   }
 
   .exeris-table thead {
-    @apply bg-gray-50 dark:bg-gray-800;
+    @apply bg-[rgb(var(--exeris-bg-secondary))];
   }
 
   .exeris-table th {
-    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+    @apply px-6 py-3 text-left text-xs font-medium text-[rgb(var(--exeris-text-secondary))] uppercase tracking-wider;
   }
 
   .exeris-table tbody {
-    @apply bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800;
+    @apply bg-[rgb(var(--exeris-bg-primary))] divide-y divide-[rgb(var(--exeris-border))];
   }
 
   .exeris-table td {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100;
+    @apply px-6 py-4 whitespace-nowrap text-sm text-[rgb(var(--exeris-text-primary))];
   }
 
   .exeris-table tr:hover {
-    @apply bg-gray-50 dark:bg-gray-800;
+    @apply bg-[rgb(var(--exeris-bg-secondary))];
   }
 
   /* Badges */
@@ -366,7 +357,7 @@
 
   /* Loading Spinner */
   .exeris-spinner {
-    @apply animate-spin h-5 w-5 text-indigo-600;
+    @apply animate-spin h-5 w-5 text-[rgb(var(--exeris-primary))];
   }
 }
 
@@ -397,7 +388,7 @@
   }
 
   .exeris-focus-visible:focus-visible {
-    @apply outline-none ring-2 ring-indigo-500 ring-offset-2;
+    @apply outline-hidden ring-2 ring-[rgb(var(--exeris-border-focus))] ring-offset-2;
   }
 
   /* Smooth scroll */
