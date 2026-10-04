@@ -51,6 +51,12 @@ for per-version upgrade steps.
   button focus rings show on keyboard focus (`focus-visible`) rather than on every click. Class
   names are unchanged.
 
+- **`@exeris/ui-kit`: the README is the npm page.** It covers installation, the two imports,
+  the component classes (all of them, by group), theming, dark mode and versioning, and links the
+  rest. The contributor checks move to `exeris-sdk-ui-kit/CONTRIBUTING.md`, which the tarball does
+  not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
+  `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking
