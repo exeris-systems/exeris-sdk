@@ -87,9 +87,10 @@
   /* Colours come from the --exeris-* properties wherever the kit has a token for them — brand,
      surfaces, text, borders, focus — read as rgb(var(--exeris-*)) at the point of use. So a
      .dark scope, or an override of an --exeris-* property on any element, re-themes a class with
-     no dark: variant and no second declaration. The status pairs (alerts, badges, chips, the
-     danger button, error text) keep Tailwind's palette: each is a tint and a text shade chosen
-     together for contrast, and the kit has one channel per status, not a pair.
+     no dark: variant and no second declaration. The tinted pairs (alerts, badges, chips, the file
+     button) and the danger red (the danger button, error text) keep Tailwind's palette: each is a
+     tint and a text shade chosen together for contrast in both themes, and the kit has one
+     channel per colour, not a pair.
 
      Form fields carry their own border width, padding and focus ring. Tailwind v4's preflight
      sets `border: 0 solid` and removes field padding, and v4 has no forms plugin to restore them,

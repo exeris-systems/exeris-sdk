@@ -43,8 +43,8 @@ for per-version upgrade steps.
   is `outline-hidden`, which keeps an outline in forced-colours mode, and the buttons set
   `cursor: pointer`, which v4's preflight no longer does. Brand, surface, text, border and focus
   colours read the `--exeris-*` properties instead of fixed palette shades, so `.dark` and an
-  override re-theme the classes; the status pairs (alerts, badges, chips, the danger button, error
-  text) keep the palette. Class names are unchanged.
+  override re-theme the classes; the tinted pairs (alerts, badges, chips, the file button) and the
+  danger red (the danger button, error text) keep the palette. Class names are unchanged.
 
 ## [0.12.0] — 2026-10-02
 

@@ -132,8 +132,9 @@ function allDeclarations(rules, className) {
 const FIELDS = ['exeris-input', 'exeris-select', 'exeris-textarea'];
 
 /**
- * The classes that take every colour from an `--exeris-*` property. The status pairs (alerts,
- * badges, chips, the danger button, error text) keep Tailwind's palette and are not listed.
+ * The classes that take every colour from an `--exeris-*` property. The tinted pairs (alerts,
+ * badges, chips, the file button) and the danger red (the danger button, error text) keep
+ * Tailwind's palette and are not listed.
  */
 const TOKEN_CLASSES = [
   'exeris-btn-primary', 'exeris-btn-secondary', 'exeris-btn-ghost',
