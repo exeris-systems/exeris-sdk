@@ -6,15 +6,21 @@ name: publish-ui-kit
 # the dependency — installs it with no `.npmrc` entry and no token. It versions independently of
 # the Java modules (MIGRATION-0.x-to-1.0.md §2b), so it has its own tag.
 #
-# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.2.0) publishes. A manual dispatch is a dry
-# run unless `dry-run` is unchecked: it installs, gates and runs `npm publish --dry-run`, which
-# prints the tarball and touches nothing remote. Bump exeris-sdk-ui-kit/package.json `version`
-# before tagging — npm refuses to publish over an existing version.
+# Trigger: a `ui-kit-v<version>` tag (e.g. ui-kit-v0.2.0) stages a publish. A manual dispatch is
+# a dry run unless `dry-run` is unchecked: it installs, gates and runs `npm stage publish
+# --dry-run`, which prints the tarball and touches nothing remote. Bump
+# exeris-sdk-ui-kit/package.json `version` before tagging — npm refuses to stage over an
+# existing version.
 #
-# Auth: the `NPM_TOKEN` repository secret, an npm granular access token with publish rights on
-# the @exeris scope. `publishConfig.provenance` signs a provenance statement through this
-# workflow's OIDC token (`id-token: write`), so the registry shows which commit and workflow
-# built the tarball.
+# Staged, not published. `npm stage publish` submits the version for review; it goes live only
+# when a maintainer approves it with 2FA (`npm stage approve <stage-id>`, or Approve under the
+# package's Staged Packages tab on npmjs.com). CI therefore holds no credential that can put a
+# version on the registry by itself, and no token needs to bypass 2FA.
+#
+# Auth: the `NPM_TOKEN` repository secret, an npm granular access token with "Read and write
+# (stage only)" on the @exeris scope. `publishConfig.provenance` signs a provenance statement
+# through this workflow's OIDC token (`id-token: write`), so the registry shows which commit and
+# workflow built the tarball. Staging needs npm 11.15.0 or later, which the workflow installs.
 
 on:
   push:
@@ -23,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: 'Dry run: gate and `npm publish --dry-run`, publish nothing. Uncheck only to publish without a tag.'
+        description: 'Dry run: gate and `npm stage publish --dry-run`, stage nothing. Uncheck only to stage without a tag.'
         type: boolean
         default: true
       dist-tag:
@@ -63,6 +69,9 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
+      - name: Install npm with `npm stage`
+        run: npm install -g npm@^11.15.0
+
       # The same gates the PR build runs on this package: per-file coverage, the API golden and
       # the typedoc check. `prepublishOnly` builds dist/ right before `npm publish`, and `prepack`
       # copies the repository LICENSE into the tarball.
@@ -75,7 +84,7 @@ jobs:
           npm run api:check
           npm run docs:check
 
-      - name: Publish to npm
+      - name: Stage the publish on npm
         working-directory: exeris-sdk-ui-kit
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -83,11 +92,12 @@ jobs:
           DIST_TAG: ${{ inputs.dist-tag || 'latest' }}
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            npm publish --dry-run --tag "$DIST_TAG"
+            npm stage publish --dry-run --tag "$DIST_TAG"
             exit 0
           fi
           if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::NPM_TOKEN is not set. Add an npm granular access token with publish rights on @exeris as the NPM_TOKEN repository secret. Nothing was published." >&2
+            echo "::error::NPM_TOKEN is not set. Add an npm granular access token with stage rights on @exeris as the NPM_TOKEN repository secret. Nothing was staged." >&2
             exit 1
           fi
-          npm publish --tag "$DIST_TAG"
+          npm stage publish --tag "$DIST_TAG"
+          echo "::notice::@exeris/ui-kit is staged, not live. Approve it with 2FA: npm stage approve <stage-id>, or the Staged Packages tab on npmjs.com."

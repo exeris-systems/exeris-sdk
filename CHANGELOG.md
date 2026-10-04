@@ -23,6 +23,18 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [Unreleased]
+
+### Changed
+
+- **`@exeris/ui-kit` is staged on npm and goes live on a maintainer's 2FA approval.**
+  `publish-ui-kit.yml` runs `npm stage publish` (npm 11.15.0 or later, installed by the workflow)
+  instead of `npm publish`, with a stage-only `NPM_TOKEN`. A version appears on registry.npmjs.org
+  once it is approved with `npm stage approve <stage-id>` or under the package's Staged Packages tab.
+  npm removes direct publishing for tokens that bypass 2FA in January 2027; a stage-only token
+  needs no bypass. The dry-run dispatch runs `npm stage publish --dry-run`. ADR-094 carries the
+  amendment.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking

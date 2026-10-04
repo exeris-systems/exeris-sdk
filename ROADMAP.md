@@ -612,8 +612,9 @@ The UI kit versions independently of the Java modules (`MIGRATION-0.x-to-1.0.md`
 utility, as pinned by `tests/public-surface.txt`. The items below decide what those names are.
 Each one is cheap before 1.0 and a major after it.
 
-- [~] **Public npm publication** — renamed `@exeris/ui-kit` for 0.12.0, published from a
-  `ui-kit-v*` tag with provenance. Open until the first publish (see the GA item).
+- [~] **Public npm publication** — renamed `@exeris/ui-kit` for 0.12.0, staged from a
+  `ui-kit-v*` tag with provenance and approved with 2FA (ADR-094). Open until the first version
+  is live (see the GA item).
 - [ ] **The component classes have a consumer, or leave the contract.** The `.exeris-*`
   component classes in `src/styles/index.css` (46 selectors, covering the 27 renderable
   `ComponentType` kinds) are gated by
