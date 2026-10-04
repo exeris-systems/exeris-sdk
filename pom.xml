@@ -5,7 +5,7 @@
 
     <groupId>eu.exeris</groupId>
     <artifactId>exeris-sdk-root</artifactId>
-    <version>0.12.0</version>
+    <version>0.13.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Exeris SDK :: Root</name>
@@ -45,7 +45,7 @@
         <connection>scm:git:git://github.com/exeris-systems/exeris-sdk.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/exeris-systems/exeris-sdk.git</developerConnection>
         <url>https://github.com/exeris-systems/exeris-sdk</url>
-        <tag>v0.12.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
@@ -128,22 +128,19 @@
              freeze would be written against whatever the code already did.
 
              Opt-in rather than bound to every build: the gate compares each module with the last
-             released version, and that version has to be resolvable. The baseline named below,
-             0.11.0, is not on Maven Central, so a gate bound to `verify` would fail a fresh-clone
-             `mvn install` on artifact resolution. The default build runs the baseline-free guards
-             instead (AnnotationSurfaceContractTest, RecordComponentOrderTest,
+             released version, and that version has to be resolvable. The baseline named below is
+             the last release. The default build does not resolve it; it runs the baseline-free
+             guards instead (AnnotationSurfaceContractTest, RecordComponentOrderTest,
              RecordConstructorLedgerTest), and a maintainer runs `-Psemver` before a release.
 
              Inside the profile an absent baseline fails the build, loudly
              (ignoreMissingOldVersion=false): whoever turns the gate on has asked for a
              comparison, and "no baseline found" must not read as "no breaks found".
 
-             It becomes binding in CI once the baseline is a version Central serves: move
-             japicmp.baseline.version to it and add -Psemver to build.yml and release.yml. That
-             one edit is what starts 1.x binary enforcement; the ROADMAP's 1.0.0 GA semver item
-             names the release. -->
+             CI runs it: build.yml and release.yml pass -Psemver, against a baseline Maven Central
+             serves. -->
         <japicmp.version>0.23.1</japicmp.version>
-        <japicmp.baseline.version>0.11.0</japicmp.baseline.version>
+        <japicmp.baseline.version>0.12.0</japicmp.baseline.version>
         <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the
              gate reactor-wide, and a module outside it sets this to true in its own pom
              (exeris-sdk-annotations, which is @Retention(SOURCE) and gated by
