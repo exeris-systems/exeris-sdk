@@ -48,11 +48,11 @@ The theme generates utilities such as `bg-exeris-primary`, `text-exeris-danger`,
 
 ## Theming
 
-Every `exeris-*` utility reads an `--exeris-*` custom property: colours (`primary`, `secondary`,
-`success`, `warning`, `danger`, `info`, and the `bg-*`, `text-*` and `border*` surfaces),
-`spacing-*`, `radius-*`, `shadow-*` and `transition-*`. Colours are space-separated RGB channels.
-The component classes use Tailwind's default palette and do not follow these properties. Override
-them on `:root`:
+The `exeris-*` utilities and the component classes read `--exeris-*` custom properties: colours
+(`primary`, `secondary`, `success`, `warning`, `danger`, `info`, and the `bg-*`, `text-*` and
+`border*` surfaces), `spacing-*`, `radius-*`, `shadow-*` and `transition-*`. Colours are
+space-separated RGB channels. The status colours of alerts, badges, chips, the danger button and
+error text use Tailwind's palette. Override the properties on `:root`:
 
 ```css
 :root {
