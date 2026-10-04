@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-02
+last-verified: 2026-10-04
 ---
 
 # Changelog
@@ -34,6 +34,22 @@ for per-version upgrade steps.
   npm removes direct publishing for tokens that bypass 2FA in January 2027; a stage-only token
   needs no bypass. The dry-run dispatch runs `npm stage publish --dry-run`. ADR-094 carries the
   amendment.
+
+- **`@exeris/ui-kit`: the component classes render correctly on Tailwind v4 and follow the tokens.**
+  `.exeris-input`, `.exeris-select` and `.exeris-textarea` named a border colour with no width and
+  no padding, and their focus ring had a colour but no width. Tailwind v3's forms plugin supplied
+  those; v4's preflight sets `border: 0 solid`, so on v4 the fields had no border and no visible
+  focus. They now carry a 1px border, padding and a 1px focus ring. Every `focus:outline-none`
+  is `outline-hidden`, which keeps an outline in forced-colours mode, and the buttons set
+  `cursor: pointer`, which v4's preflight no longer does. Brand, surface, text, border and focus
+  colours read the `--exeris-*` properties instead of fixed palette shades, so `.dark` and an
+  override re-theme the classes; the tinted pairs (alerts, badges, chips, the file button) and the
+  danger red (the danger button, error text) keep the palette. The dark token values also sit on
+  `:root` under `@variant dark`, so a consumer who re-points `dark` at the operating system (the
+  override `theme.css` documents) still gets dark component classes. Visible differences: field
+  and card borders take `--exeris-border` (gray-200 in light mode, where fields used gray-300), and
+  button focus rings show on keyboard focus (`focus-visible`) rather than on every click. Class
+  names are unchanged.
 
 ## [0.12.0] — 2026-10-02
 
