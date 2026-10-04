@@ -1,14 +1,19 @@
 # Contributing to @exeris/ui-kit
 
-Three checks guard this package's published surface, and CI runs all three
-(`tsdoc-gate` in `.github/workflows/guardrails.yml`):
+This page is for changing the package in this repository. To use the package, read the
+[README](README.md). Running the lint locally needs a clone of the organisation's guardrails
+repository, described below.
+
+These commands guard the package's published surface. CI runs all of them: the lint, typedoc and
+api-extractor checks as `tsdoc-gate` in `.github/workflows/guardrails.yml`, after the build they
+read, and the tests with the coverage gate in `.github/workflows/build.yml`:
 
 ```bash
 npm run lint         # TSDoc rules — the shared exeris-systems/.github fragment
 npm run build        # tsc, which the next two read
 npm run docs:check   # typedoc: every export and every token documented
 npm run api:check    # api-extractor: api/ui-kit.api.md matches the built .d.ts
-npm test             # the name-snapshot and drift suites
+npm test             # the name-snapshot, drift and Tailwind v4 compile suites
 ```
 
 `npm run lint` loads its rules from [`exeris-systems/.github`](https://github.com/exeris-systems/.github),
