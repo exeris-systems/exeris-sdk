@@ -90,7 +90,7 @@ steps are in [MIGRATION.md](https://github.com/exeris-systems/exeris-sdk/blob/ma
 ## Links
 
 - [Source](https://github.com/exeris-systems/exeris-sdk/tree/main/exeris-sdk-ui-kit)
-- [Contributing](https://github.com/exeris-systems/exeris-sdk/blob/main/exeris-sdk-ui-kit/CONTRIBUTING.md)
+- [Contributing](CONTRIBUTING.md)
 - [Issues](https://github.com/exeris-systems/exeris-sdk/issues)
 
 ## License
