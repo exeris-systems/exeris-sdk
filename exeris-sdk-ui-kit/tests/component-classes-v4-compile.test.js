@@ -118,3 +118,102 @@ describe('button variants keep the base declarations', () => {
     expect(own.length, `.${variant} has no colour of its own, so every variant renders alike`).toBeGreaterThan(0);
   });
 });
+
+/** Every declaration in the rules that name `className`, nested state rules included. */
+function allDeclarations(rules, className) {
+  const found = [];
+  for (const rule of rulesFor(rules, className)) {
+    rule.walkDecls((decl) => found.push({ prop: decl.prop, value: decl.value, selector: decl.parent.selector ?? `@${decl.parent.name}` }));
+  }
+  return found;
+}
+
+/** The text fields: they carry their own border, padding and focus ring under v4's preflight. */
+const FIELDS = ['exeris-input', 'exeris-select', 'exeris-textarea'];
+
+/**
+ * The classes that take every colour from an `--exeris-*` property. The tinted pairs (alerts,
+ * badges, chips, the file button) and the danger red (the danger button, error text) keep
+ * Tailwind's palette and are not listed.
+ */
+const TOKEN_CLASSES = [
+  'exeris-btn-primary', 'exeris-btn-secondary', 'exeris-btn-ghost',
+  'exeris-input', 'exeris-select', 'exeris-textarea', 'exeris-label', 'exeris-help-text',
+  'exeris-checkbox', 'exeris-radio', 'exeris-toggle', 'exeris-range', 'exeris-color',
+  'exeris-editor', 'exeris-chips', 'exeris-card', 'exeris-card-header', 'exeris-card-footer',
+  'exeris-table', 'exeris-spinner',
+];
+
+/** A Tailwind palette shade as v4 compiles it: `var(--color-indigo-600)`. */
+const PALETTE_SHADE = /var\(--color-[a-z]+-\d+\)/;
+
+describe('form fields render as fields under v4', () => {
+  const compiled = () => v4;
+
+  it.each(FIELDS)('gives %s a border width, not only a border colour', (field) => {
+    const decls = unconditionalDeclarations(compiled().rules, field);
+    expect(
+      decls.some((d) => d.prop === 'border-width' && d.value === '1px'),
+      `.${field} names a border colour with no width, and v4's preflight leaves it borderless`,
+    ).toBe(true);
+  });
+
+  it.each(FIELDS)('gives %s its own padding', (field) => {
+    const decls = unconditionalDeclarations(compiled().rules, field);
+    expect(decls.some((d) => d.prop === 'padding-inline'), `.${field} has no padding under v4`).toBe(true);
+  });
+
+  it.each(FIELDS)('gives %s a focus ring with a width', (field) => {
+    const ring = allDeclarations(compiled().rules, field)
+      .filter((d) => d.selector.includes(':focus') && d.prop === '--tw-ring-shadow');
+    expect(ring.length, `.${field} sets a ring colour on focus but no ring, so focus is invisible`)
+      .toBeGreaterThan(0);
+  });
+});
+
+describe('focus and pointer behaviour', () => {
+  it('uses outline-hidden, not outline-none', () => {
+    // v4's outline-none sets `outline-style: none`, which also removes the outline in forced-colours
+    // mode; outline-hidden keeps a transparent outline there.
+    expect(indexCss).not.toMatch(/\boutline-none\b/);
+  });
+
+  it('gives the buttons a pointer cursor', () => {
+    // v4's preflight no longer sets `cursor: pointer` on buttons.
+    expect(unconditionalDeclarations(v4.rules, BUTTON_BASE)
+      .some((d) => d.prop === 'cursor' && d.value === 'pointer')).toBe(true);
+  });
+});
+
+describe('component classes follow the --exeris-* properties', () => {
+  const compiled = () => v4;
+
+  it.each(TOKEN_CLASSES)('reads an --exeris-* property in %s', (className) => {
+    expect(
+      allDeclarations(compiled().rules, className).some((d) => d.value.includes('var(--exeris-')),
+      `.${className} reads no --exeris-* property, so theming it does nothing`,
+    ).toBe(true);
+  });
+
+  it.each(TOKEN_CLASSES)('uses no Tailwind palette shade in %s', (className) => {
+    const shades = allDeclarations(compiled().rules, className).filter((d) => PALETTE_SHADE.test(d.value));
+    expect(
+      shades.map((d) => `${d.selector} { ${d.prop}: ${d.value} }`),
+      `.${className} hard-codes a palette colour that neither .dark nor an override reaches`,
+    ).toEqual([]);
+  });
+});
+
+describe('the error state wins over the field base', () => {
+  it('declares .exeris-input-error after the shared field rule, with its own border colour', () => {
+    // Both rules carry one class, so the later one wins on an element that has both. Moving the
+    // error rule above the field base would leave an erroring field with the normal border.
+    const ruleStart = (selectorStart) => v4.css.indexOf(selectorStart);
+    const base = ruleStart('.exeris-input, .exeris-select, .exeris-textarea {');
+    const error = ruleStart('.exeris-input-error {');
+    expect(base, 'the shared field rule is missing from the compiled output').toBeGreaterThanOrEqual(0);
+    expect(error, '.exeris-input-error comes before the field base it has to override').toBeGreaterThan(base);
+    expect(unconditionalDeclarations(v4.rules, 'exeris-input-error')
+      .some((d) => d.prop === 'border-color' && d.value.includes('--color-red-500'))).toBe(true);
+  });
+});

@@ -1,7 +1,7 @@
 {
   "name": "@exeris/ui-kit",
-  "version": "0.2.0",
-  "description": "Exeris UI Kit - Base styles and assets for generated components",
+  "version": "0.2.1",
+  "description": "Design tokens, a Tailwind CSS v4 theme and component classes for Exeris-generated applications",
   "type": "module",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

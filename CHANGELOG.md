@@ -40,6 +40,28 @@ for per-version upgrade steps.
   needs no bypass. The dry-run dispatch runs `npm stage publish --dry-run`. ADR-094 carries the
   amendment.
 
+- **`@exeris/ui-kit`: the component classes render correctly on Tailwind v4 and follow the tokens.**
+  `.exeris-input`, `.exeris-select` and `.exeris-textarea` named a border colour with no width and
+  no padding, and their focus ring had a colour but no width. Tailwind v3's forms plugin supplied
+  those; v4's preflight sets `border: 0 solid`, so on v4 the fields had no border and no visible
+  focus. They now carry a 1px border, padding and a 1px focus ring. Every `focus:outline-none`
+  is `outline-hidden`, which keeps an outline in forced-colours mode, and the buttons set
+  `cursor: pointer`, which v4's preflight no longer does. Brand, surface, text, border and focus
+  colours read the `--exeris-*` properties instead of fixed palette shades, so `.dark` and an
+  override re-theme the classes; the tinted pairs (alerts, badges, chips, the file button) and the
+  danger red (the danger button, error text) keep the palette. The dark token values also sit on
+  `:root` under `@variant dark`, so a consumer who re-points `dark` at the operating system (the
+  override `theme.css` documents) still gets dark component classes. Visible differences: field
+  and card borders take `--exeris-border` (gray-200 in light mode, where fields used gray-300), and
+  button focus rings show on keyboard focus (`focus-visible`) rather than on every click. Class
+  names are unchanged.
+
+- **`@exeris/ui-kit`: the README is the npm page.** It covers installation, the two imports,
+  the component classes (all of them, by group), theming, dark mode and versioning, and links the
+  rest. The contributor checks move to `exeris-sdk-ui-kit/CONTRIBUTING.md`, which the tarball does
+  not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
+  `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking

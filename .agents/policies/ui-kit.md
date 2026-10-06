@@ -34,4 +34,4 @@
      `npm run docs:check` (typedoc) and `npm run api:check` (api-extractor), wired in CI as the
      `tsdoc` job of `.github/workflows/guardrails.yml`.
    - The lint needs the bundle as a **real directory** at `exeris-sdk-ui-kit/.guardrails` — a symlink
-     defeats Node's plugin resolution. See the package README's Contributing section.
+     defeats Node's plugin resolution. See the package's `CONTRIBUTING.md`.
