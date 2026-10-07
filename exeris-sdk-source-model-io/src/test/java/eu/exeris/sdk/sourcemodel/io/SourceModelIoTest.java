@@ -1584,6 +1584,166 @@ class SourceModelIoTest {
             assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 1 + 2)").version()).isEqualTo(1);
         }
 
+        @Test
+        void sagaCompensationSectionIsReadAsDeclared() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationTimeout = "PT2M",
+                            compensationMaxRetries = 7, compensationRetryDelay = "PT30S",
+                            continueCompensationOnFailure = true, compensationDlq = "orders.dlq",
+                            compensationFailureHandler = com.acme.Escalation.class,
+                            manualInterventionOnCompensationFailure = true)""");
+            assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
+            assertThat(saga.compensationMaxRetries()).isEqualTo(7);
+            assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
+            assertThat(saga.continueCompensationOnFailure()).isTrue();
+            assertThat(saga.compensationDlq()).isEqualTo("orders.dlq");
+            assertThat(saga.compensationFailureHandler()).isEqualTo("com.acme.Escalation");
+            assertThat(saga.manualInterventionOnCompensationFailure()).isTrue();
+        }
+
+        @Test
+        void sagaCompensationLeftUndeclaredIsAbsentNotDefaulted() {
+            // null means "not declared, the annotation default applies": writing the default
+            // here would put keys on every saga that the processor, which does not extract the
+            // section, leaves off.
+            SagaMetadata saga = sagaOf("@Saga(name = \"Fulfilment\")");
+            assertThat(saga.compensationTimeout()).isEqualTo("PT10M"); // builder default
+            assertThat(saga.compensationMaxRetries()).isNull();
+            assertThat(saga.compensationRetryDelay()).isNull();
+            assertThat(saga.continueCompensationOnFailure()).isNull();
+            assertThat(saga.compensationDlq()).isNull();
+            assertThat(saga.compensationFailureHandler()).isNull();
+            assertThat(saga.manualInterventionOnCompensationFailure()).isNull();
+        }
+
+        @Test
+        void sagaCompensationZeroAndFalseAreCarriedNotDropped() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationMaxRetries = 0,
+                            continueCompensationOnFailure = false,
+                            manualInterventionOnCompensationFailure = false)""");
+            assertThat(saga.compensationMaxRetries()).isZero();
+            assertThat(saga.continueCompensationOnFailure()).isFalse();
+            assertThat(saga.manualInterventionOnCompensationFailure()).isFalse();
+            // Signed, as javac folds it: carried, not repaired.
+            assertThat(sagaOf("@Saga(compensationMaxRetries = -1)").compensationMaxRetries()).isEqualTo(-1);
+        }
+
+        @Test
+        void sagaCompensationNoneValuesReadAsNull() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationDlq = "  ",
+                            compensationFailureHandler = void.class)""");
+            assertThat(saga.compensationDlq()).isNull();
+            assertThat(saga.compensationFailureHandler()).isNull();
+        }
+
+        @Test
+        void sagaCompensationStrategyAndOrderAreNotRead() {
+            // The annotation enums declare constants the AST enums lack (STOP_ON_FAILURE,
+            // MANUAL, CUSTOM order), so a read by name would carry a wrong value. Pinned so that
+            // reading them is a deliberate change made with the enum reconciliation.
+            SagaMetadata saga = sagaOf("""
+                    @Saga(compensationStrategy = Saga.CompensationStrategy.BEST_EFFORT,
+                            compensationOrder = Saga.CompensationOrder.FORWARD)""");
+            assertThat(saga.compensationStrategy()).isEqualTo(SagaMetadata.CompensationStrategy.ALL_OR_NOTHING);
+            assertThat(saga.compensationOrder()).isEqualTo(SagaMetadata.CompensationOrder.REVERSE);
+        }
+
+        @Test
+        void sagaFailureHandlerResolvesTheWayJavacScopesIt() {
+            // The declaring class itself, and a member reached through it.
+            assertThat(handlerOf("", "Fulfilment.class", "")).isEqualTo("x.Fulfilment");
+            assertThat(handlerOf("", "Fulfilment.Escalation.class", "public static class Escalation {}"))
+                    .isEqualTo("x.Fulfilment.Escalation");
+            // A single-type import, and a member of an imported type.
+            assertThat(handlerOf("import com.acme.Escalation;", "Escalation.class", ""))
+                    .isEqualTo("com.acme.Escalation");
+            assertThat(handlerOf("import com.acme.Handlers;", "Handlers.Escalation.class", ""))
+                    .isEqualTo("com.acme.Handlers.Escalation");
+            // Already qualified: its first segment is a package, so it is kept.
+            assertThat(handlerOf("", "com.acme.Escalation.class", "")).isEqualTo("com.acme.Escalation");
+            // Neither declared nor imported, and no on-demand import: the unit's package.
+            assertThat(handlerOf("", "Escalation.class", "")).isEqualTo("x.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerUnderAnOnDemandImportIsKeptAsWritten() {
+            // Same package or com.acme.*: javac knows, a syntactic reader does not, so it keeps
+            // what the source says instead of guessing.
+            assertThat(handlerOf("import com.acme.*;", "Escalation.class", "")).isEqualTo("Escalation");
+            // A static on-demand import cannot bring in a top-level type, so it does not block.
+            assertThat(handlerOf("import static com.acme.Util.*;", "Escalation.class", ""))
+                    .isEqualTo("x.Escalation");
+            // A name qualified through the declaring class still resolves under one.
+            assertThat(handlerOf("import com.acme.*;", "Fulfilment.Escalation.class",
+                    "public static class Escalation {}"))
+                    .isEqualTo("x.Fulfilment.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerResolvesThroughTheEnclosingType() {
+            // An entity nested in a holder sees the holder's member types by simple name, and
+            // they shadow an on-demand import. Its own member types are not in scope for an
+            // annotation on it: javac rejects Escalation.class there.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import com.acme.*;
+                    public class Holder {
+                        public static class Escalation {}
+                        @ExerisDomain
+                        @Saga(compensationFailureHandler = Escalation.class)
+                        public static class Fulfilment {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("x.Holder.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerInAnotherTopLevelTypeOfTheUnitResolves() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import com.acme.*;
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = Escalation.class)
+                    public class Fulfilment {}
+                    class Escalation {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("x.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerInTheDefaultPackageIsTheSimpleName() {
+            String src = """
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = Escalation.class)
+                    public class Fulfilment {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("Escalation");
+        }
+
+        private String handlerOf(String imports, String classLiteral, String body) {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    %s
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = %s)
+                    public class Fulfilment { %s }
+                    """.formatted(imports, classLiteral, body);
+            return reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler();
+        }
+
         private SagaMetadata sagaOf(String sagaAnnotation) {
             String src = """
                     package x;

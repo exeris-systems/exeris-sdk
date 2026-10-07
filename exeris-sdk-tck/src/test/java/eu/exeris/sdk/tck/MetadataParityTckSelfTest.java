@@ -37,6 +37,7 @@ class MetadataParityTckSelfTest {
             parity.relationshipsAgree();
             parity.actionsAgree();
             parity.sagaIdentityAgrees();
+            parity.sagaCompensationAgrees();
         }).doesNotThrowAnyException();
     }
 
@@ -139,6 +140,33 @@ class MetadataParityTckSelfTest {
         assertThatThrownBy(producerBlind::sagaIdentityAgrees)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("reader emitted one, producer did not");
+    }
+
+    @Test
+    @DisplayName("a declared false one side drops is caught")
+    void sagaCompensationFalseDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, ReferenceBinding.orderSaga().continueCompensationOnFailure(null).build()));
+        assertThatThrownBy(parity::sagaCompensationAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/continueCompensationOnFailure — producer: 'false', reader: <absent>");
+    }
+
+    @Test
+    @DisplayName("a failure handler one side carries as written is caught")
+    void sagaCompensationHandlerDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, ReferenceBinding.orderSaga()
+                                .compensationFailureHandler("Order.CompensationEscalation").build()));
+        assertThatThrownBy(parity::sagaCompensationAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/compensationFailureHandler");
     }
 
     @Test

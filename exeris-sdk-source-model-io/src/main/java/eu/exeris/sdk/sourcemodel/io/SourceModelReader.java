@@ -4,6 +4,8 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -12,6 +14,7 @@ import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
@@ -821,6 +824,99 @@ public final class SourceModelReader {
     }
 
     /**
+     * A {@code Class<?>} attribute as the fully-qualified name javac reports for it, or empty
+     * when absent, not a class literal, or {@code void.class}.
+     *
+     * <p>Resolution is syntactic, in the order javac's scoping gives an annotation on
+     * {@code declaring}: {@code declaring} itself, then a type enclosing it or a member type of
+     * one, innermost first, then a top-level type of the compilation unit, then a single-type
+     * import. {@code declaring}'s own member types are not in scope there, since the
+     * annotation is outside its body. A simple name none of
+     * those match is taken to be in the unit's package, unless the unit has an on-demand
+     * import, in which case the type could come from either and the name is kept as written.
+     * A qualified name is resolved through its first segment the same way, and kept as written
+     * when that segment matches nothing, since it is then a package. A nested type's name uses
+     * {@code .} throughout, as {@code TypeMirror.toString()} does.
+     *
+     * @param annotation the annotation carrying the attribute
+     * @param attribute the attribute's name
+     * @param declaring the type the annotation is declared on
+     * @return the resolved name, or the written one when it cannot be resolved without
+     *         symbol solving
+     */
+    private Optional<String> qualifiedClassAttr(AnnotationExpr annotation, String attribute,
+                                                ClassOrInterfaceDeclaration declaring) {
+        return classAttr(annotation, attribute)
+                .filter(written -> !"void".equals(written))
+                .map(written -> qualify(written, declaring));
+    }
+
+    /** {@code written} resolved per {@link #qualifiedClassAttr}, or itself when unresolvable. */
+    private String qualify(String written, ClassOrInterfaceDeclaration declaring) {
+        int dot = written.indexOf('.');
+        String head = dot < 0 ? written : written.substring(0, dot);
+        String tail = dot < 0 ? "" : written.substring(dot);
+        Optional<CompilationUnit> unit = declaring.findCompilationUnit();
+        Optional<String> resolved = typeInScope(head, declaring)
+                .or(() -> unit.flatMap(cu -> topLevelType(head, cu)))
+                .or(() -> unit.flatMap(cu -> singleTypeImport(head, cu)));
+        if (resolved.isPresent()) {
+            return resolved.get() + tail;
+        }
+        if (dot >= 0 || unit.isEmpty() || hasOnDemandImport(unit.get())) {
+            return written;
+        }
+        String pkg = unit.get().getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
+        return pkg.isEmpty() ? written : pkg + "." + written;
+    }
+
+    /** {@code name} as {@code from}, a type enclosing it, or a member type of an enclosing one. */
+    private Optional<String> typeInScope(String name, TypeDeclaration<?> from) {
+        if (from.getNameAsString().equals(name)) {
+            return from.getFullyQualifiedName();
+        }
+        Node node = from.getParentNode().orElse(null);
+        while (node instanceof TypeDeclaration<?> type) {
+            if (type.getNameAsString().equals(name)) {
+                return type.getFullyQualifiedName();
+            }
+            Optional<String> member = type.getMembers().stream()
+                    .filter(BodyDeclaration::isTypeDeclaration)
+                    .map(BodyDeclaration::asTypeDeclaration)
+                    .filter(nested -> nested.getNameAsString().equals(name))
+                    .findFirst()
+                    .flatMap(TypeDeclaration::getFullyQualifiedName);
+            if (member.isPresent()) {
+                return member;
+            }
+            node = type.getParentNode().orElse(null);
+        }
+        return Optional.empty();
+    }
+
+    /** A top-level type of {@code cu} named {@code name}, fully qualified. */
+    private Optional<String> topLevelType(String name, CompilationUnit cu) {
+        return cu.getTypes().stream()
+                .filter(type -> type.getNameAsString().equals(name))
+                .findFirst()
+                .flatMap(TypeDeclaration::getFullyQualifiedName);
+    }
+
+    /** The single-type import of {@code cu} whose simple name is {@code name}. */
+    private Optional<String> singleTypeImport(String name, CompilationUnit cu) {
+        return cu.getImports().stream()
+                .filter(imp -> !imp.isStatic() && !imp.isAsterisk())
+                .filter(imp -> imp.getName().getIdentifier().equals(name))
+                .map(ImportDeclaration::getNameAsString)
+                .findFirst();
+    }
+
+    /** Whether {@code cu} has a non-static on-demand ({@code .*}) import. */
+    private boolean hasOnDemandImport(CompilationUnit cu) {
+        return cu.getImports().stream().anyMatch(imp -> !imp.isStatic() && imp.isAsterisk());
+    }
+
+    /**
      * The fully-qualified name of the {@code @CapabilityLifecycle}-annotated class
      * in this compilation unit, or {@code null} when none — the same-unit
      * limitation documented on {@link #readCapabilityModule}. The declaring class
@@ -948,6 +1044,18 @@ public final class SourceModelReader {
      * structural: a constant reference or expression ({@code version = Versions.CURRENT})
      * is resolved by javac on the processor path and is not a literal to this reader, so it
      * reads as absent (see the class-level limitations).
+     *
+     * <p>The compensation section is read here ahead of the processor, which does not
+     * extract it yet: {@code compensationTimeout} and the six boxed components are
+     * present-only, so an absent attribute leaves {@code compensationTimeout} at its builder
+     * default and the six at {@code null}, and a declared {@code 0} or {@code false} is
+     * carried. {@code compensationMaxRetries} is read signed, as javac would fold it, so a
+     * declared value is carried rather than repaired. A blank {@code compensationDlq} and
+     * {@code void.class} mean "none" and read as {@code null}. The handler is carried as the
+     * fully-qualified name javac would report, resolved syntactically — see
+     * {@link #qualifiedClassAttr}. {@code compensationStrategy} and {@code compensationOrder}
+     * are not read: their annotation enums declare constants the AST enums do not, so a
+     * read by name would turn an uncarriable constant into the builder default.
      */
     private SagaMetadata sagaMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> saga = type.getAnnotationByName("Saga");
@@ -960,6 +1068,15 @@ public final class SourceModelReader {
         stringAttr(saga.get(), "timeout").ifPresent(builder::timeout);
         intAttr(saga.get(), "maxRetries").ifPresent(builder::maxRetries);
         signedIntAttr(saga.get(), "version").ifPresent(builder::version);
+        stringAttr(saga.get(), "compensationTimeout").ifPresent(builder::compensationTimeout);
+        signedIntAttr(saga.get(), "compensationMaxRetries").ifPresent(builder::compensationMaxRetries);
+        stringAttr(saga.get(), "compensationRetryDelay").ifPresent(builder::compensationRetryDelay);
+        boolAttr(saga.get(), "continueCompensationOnFailure").ifPresent(builder::continueCompensationOnFailure);
+        nonBlankStringAttr(saga.get(), "compensationDlq").ifPresent(builder::compensationDlq);
+        qualifiedClassAttr(saga.get(), "compensationFailureHandler", type)
+                .ifPresent(builder::compensationFailureHandler);
+        boolAttr(saga.get(), "manualInterventionOnCompensationFailure")
+                .ifPresent(builder::manualInterventionOnCompensationFailure);
         builder.steps(sagaSteps(type));
         return builder.build();
     }
