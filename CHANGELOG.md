@@ -96,6 +96,16 @@ for per-version upgrade steps.
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
+### Security
+
+- **`brace-expansion` and `source-map-js` in `exeris-sdk-ui-kit`'s lockfile.** `brace-expansion`
+  1.1.18 → 1.1.21 and 5.0.9 → 5.0.12 clear GHSA-q2hr-2g5m-vwhr, CPU exhaustion through quadratic
+  expansion (Dependabot #28, #29, medium). `source-map-js` 1.2.1 → 1.2.2 clears
+  GHSA-68fv-2mgg-jv7q, event-loop denial of service through indexed source-map section offsets
+  (Dependabot #31, high). All three are development-only and transitive, reached through ESLint,
+  `minimatch` and PostCSS within their existing ranges, so the lockfile moves and `package.json`
+  does not. Nothing in the published tarball depends on them.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking
