@@ -20,6 +20,7 @@ class:exeris-card-header
 class:exeris-checkbox
 class:exeris-error-text
 class:exeris-help-text
+class:exeris-hero
 class:exeris-input
 class:exeris-input-error
 class:exeris-label

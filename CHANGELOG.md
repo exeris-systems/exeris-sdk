@@ -55,6 +55,18 @@ for per-version upgrade steps.
   seven compensation attributes without an extractor, `compensationTimeout` included, say so in
   their status notes (RESERVED, carried but not extracted).
 
+- **`@exeris/ui-kit` 0.5.0: `.exeris-hero` in `@exeris/ui-kit/styles`.** The view generator renders
+  a `HERO` block as `<section class="exeris-hero">`, and the kit now declares the class: an
+  `--exeris-primary` fill, white text, an `--exeris-radius-md` radius and `--exeris-spacing-xl`
+  padding, all read from tokens, so a theme that re-points them re-styles the hero. Under
+  `data-theme="exeris"` it is solid Flow Blue with square corners and the brand foreground for
+  text. The name enters `tests/public-surface.txt`, frozen at 1.0. Additive. The generator still
+  writes the same look as utilities beside the class, which outrank the component layer; once it
+  emits `exeris-hero` alone, the class carries the hero's whole look. The view generator's other
+  block markers (`exeris-grid`, `exeris-list`, `exeris-nav`, `exeris-image`, `exeris-rich-text`,
+  `exeris-container`, `exeris-form-placeholder`) stay undeclared: they mark elements styled by
+  utilities and are not kit classes.
+
 - **`@exeris/ui-kit` 0.3.0: an opt-in Exeris brand theme, `@exeris/ui-kit/theme-exeris`.** Imported
   after the other entries, it applies under `data-theme="exeris"` and nowhere else. The default
   theme compiles identically with it present. Inside the scope it re-points the `--exeris-*`

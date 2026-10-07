@@ -145,7 +145,7 @@ const TOKEN_CLASSES = [
   'exeris-input', 'exeris-select', 'exeris-textarea', 'exeris-label', 'exeris-help-text',
   'exeris-checkbox', 'exeris-radio', 'exeris-toggle', 'exeris-range', 'exeris-color',
   'exeris-editor', 'exeris-chips', 'exeris-card', 'exeris-card-header', 'exeris-card-footer',
-  'exeris-table', 'exeris-spinner',
+  'exeris-table', 'exeris-spinner', 'exeris-hero',
 ];
 
 /** A Tailwind palette shade as v4 compiles it: `var(--color-indigo-600)`. */
@@ -220,5 +220,14 @@ describe('the error state wins over the field base', () => {
     expect(error, '.exeris-input-error comes before the field base it has to override').toBeGreaterThan(base);
     expect(unconditionalDeclarations(v4.rules, 'exeris-input-error')
       .some((d) => d.prop === 'border-color' && d.value.includes('--color-red-500'))).toBe(true);
+  });
+});
+
+describe('the hero block follows the theme', () => {
+  it('takes its fill from --exeris-primary and its corners from an --exeris-radius-* property', () => {
+    // A hero with a literal radius stays rounded under a theme that squares the radius tokens.
+    const decls = unconditionalDeclarations(v4.rules, 'exeris-hero');
+    expect(decls.some((d) => d.prop === 'background-color' && d.value.includes('var(--exeris-primary)'))).toBe(true);
+    expect(decls.some((d) => d.prop === 'border-radius' && /var\(--exeris-radius-[a-z]+\)/.test(d.value))).toBe(true);
   });
 });
