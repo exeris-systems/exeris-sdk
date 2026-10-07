@@ -284,13 +284,13 @@ freeze or is explicitly re-dispositioned here.
     runs only the baseline-free guards (`AnnotationSurfaceContractTest`,
     `RecordComponentOrderTest`, `RecordConstructorLedgerTest`). Until then it
     was bound to `verify`, so every workflow and every fresh clone had to pass
-    `-Djapicmp.skip=true`: the baseline is the last released jar, `0.11.0`,
-    and no release at or below it was ever published to Central. Inside the
-    profile an absent baseline still fails the build rather than passing
-    quietly. `build.yml` and `release.yml` pass `-Psemver` from the 0.13.0
-    line on, against the `0.12.0` baseline — the first version Central serves
-    — and that edit started 1.x binary enforcement. Turning Central on and giving the gate something to resolve
-    were two changes, not one (corrected 2026-09-03).
+    `-Djapicmp.skip=true`: the baseline was then `0.11.0`, and no release at
+    or below it was ever published to Central. Inside the profile an absent
+    baseline still fails the build rather than passing quietly. The baseline
+    is now `0.12.0`, the first version Central serves, and `build.yml` and
+    `release.yml` pass `-Psemver` from the 0.13.0 line on; that edit started
+    1.x binary enforcement. Turning Central on and giving the gate something
+    to resolve were two changes, not one.
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it
