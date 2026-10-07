@@ -65,7 +65,7 @@ Tailwind major does it support?
    by its own semver: a removal from the exported surface is a minor while the package is `0.x`
    and a major after its 1.0. The SDK's 1.0.0 freeze does not cover it.
 3. **Names freeze at its 1.0, values do not.** `tests/public-surface.txt` pins every `--exeris-*`
-   custom property, every ~~`.exeris-*` class~~ class in `@exeris/ui-kit/styles` *(amended
+   custom property, every ~~`.exeris-*` class~~ `@exeris/ui-kit/styles` class *(amended
    2026-10-04: the classes no generator emits are in `@exeris/ui-kit/preview`, outside the freeze
    — see `## Amendments`)*, every `@theme` variable (`theme-var:`) and every `defaultTheme` path;
    removing or renaming one is a breaking change for the package. Colour,
