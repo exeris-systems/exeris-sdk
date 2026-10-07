@@ -13,7 +13,7 @@ Every consumer must agree on one canonical definition of domain metadata. Adding
 3. **Handle boxed numeric zero with `@JsonInclude(NON_NULL)`.**
    Under class-level `@JsonInclude(NON_DEFAULT)`, Jackson 3 treats boxed numbers equal to `0` (e.g. `Long(0)`) as default/empty and omits them. For numeric bounds (such as `min`, `max`, `minLength`, `maxLength` in `FieldMetadata`), use per-component `@JsonInclude(NON_NULL)` so that zero values survive serialization (ADR-054).
 4. **`jackson-annotations` remains on the 2.x line (2.22).**
-   Jackson 3.x intentionally keeps annotations on the 2.x track (`3.0-rc*` was abandoned). The BOM pairs `jackson.version` (databind 3.2.2) with `jackson.annotations.version` (2.22), as dictated by `jackson-bom 3.2.2`. Never unify these two properties to a single version number.
+   Jackson 3.x intentionally keeps annotations on the 2.x track (`3.0-rc*` was abandoned). The BOM pairs `jackson.version` (databind 3.2.3) with `jackson.annotations.version` (2.22), as dictated by `jackson-bom 3.2.3`. Never unify these two properties to a single version number.
 5. **Round-trip test coverage is mandatory for every AST record.**
    Any new or modified AST record must be covered by `AstJsonRoundTripTest` (serialize → deserialize → deep equality assertion).
 6. **Mutation surface polymorphic handling.**
