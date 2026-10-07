@@ -89,3 +89,29 @@ This mirrors the layering the repo already proves: pure data in `-source-model`,
 - `schemaVersion` source — raw `exeris-sdk-source-model` artifact version vs. a dedicated `SchemaVersion` constant in `source-model` (obligation 5); a slice-1 call once codegen and the reader bind to it.
 - `VALIDATION_ERROR` trigger set — the exact list of structural rejections (path syntax, duplicate names, payload-grammar violations) is fixed in the application slice (slice 4).
 - Whether the capability mutation root (`/capabilities/…`) lands in 0.5.0 or waits for a real cap consumer.
+
+## A Live-Source Caller's Baseline Is the Source Its Token Names (2026-10-07 amendment)
+
+Obligation 5 names the last-codegen `exeris-metadata/<entity>.json` as the baseline. That fits a caller that computes ops from codegen output. Studio, the first interactive caller, does not: it computes each op from the domain it read over `exeris/domainDescribe` a moment earlier, together with that source's `SourceDigest`. For that caller the codegen JSON is the wrong baseline. It may belong to another domain of the same simple name, and it predates every write the caller itself made, so the inverse of the caller's own write reads as user drift and returns `CONFLICT`.
+
+### The Decision
+
+1. **A second trusted baseline: the source the concurrency token names.** When a request carries no baseline JSON and its `concurrencyToken` equals `SourceDigest.of` the live source, the baseline is that live source, read with `SourceModelReader` and stamped with `BaselineTrust.current`. The token proves the source has not moved since the op was computed, so this baseline is exact, not guessed.
+2. **Where the token does not match, nothing is derived.** The applier's own token check returns `NO_BASELINE` / `STALE_DIGEST`. A request with neither baseline JSON nor token stays `NO_BASELINE` / `MISSING_BASELINE`, as before.
+3. **Build output is never searched for a baseline.** A host passes baseline JSON explicitly, or relies on point 1; it does not look for a file by entity name.
+4. **The derivation runs on the bytes the applier receives**, inside the host's per-file serialisation, so the baseline and the current source are one snapshot.
+
+### Consequences
+
+- For a token-only caller, baseline equals current, so three-way detection finds no drift: `CONFLICT` cannot occur, and any edit made outside the caller — convergent or not — is reported as `STALE_DIGEST`. That is stricter than obligation 4's convergent-edit merge, and deliberately so: such a caller re-reads and re-applies instead of merging.
+- The `SCHEMA_VERSION_SKEW` gate does not apply to a derived baseline, which is read by the current reader from the live source.
+- Idempotency is unchanged: the same op re-sent with the digest its first application produced is a convergent no-op, and the same op re-sent with the old token is `STALE_DIGEST` and writes nothing.
+
+### Realisation
+
+`exeris-platform-lsp` realises points 1–4 in `MutationApplyService` for `exeris/applyMutation`; `ApplyMutationTest` pins the derived-baseline apply, the convergent re-apply, the inverse after a write, the stale token, and that build output is not read. Moving the derivation into `SourceModelMutationApplier`, so every host behaves the same, is the follow-up this amendment anticipates.
+
+### What this amendment does NOT change
+
+- Obligation 5 for a caller that passes codegen baseline JSON: trust gating, `sourceDigest` and `schemaVersion` stand as written.
+- The `MutationOp` / `MutationResult` vocabulary and wire shape.
