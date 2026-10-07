@@ -5,7 +5,7 @@ This page is for changing the package in this repository. To use the package, re
 repository, described below.
 
 These commands guard the package's published surface. CI runs all of them: the lint, typedoc and
-api-extractor checks as `tsdoc-gate` in `.github/workflows/guardrails.yml`, after the build they
+api-extractor checks as `tsdoc-gate` in `.github/workflows/tsdoc.yml`, after the build they
 read, and the tests with the coverage gate in `.github/workflows/build.yml`:
 
 ```bash

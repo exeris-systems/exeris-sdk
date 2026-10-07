@@ -1,9 +1,15 @@
 # The per-repo footprint of ADR-085 §C.11. Every check it runs is defined in
 # exeris-systems/.github; this file only says which gates apply here and how strictly.
 #
-# It runs the organisation's documentation, record and code-documentation gates on every pull
-# request. The Javadoc gate has two halves: maven-javadoc with failOnWarnings on the publishable
-# modules, and Checkstyle over their doc comments.
+# It runs the organisation's documentation, commit and pull-request gates on every pull request,
+# and the review that composes them into one verdict.
+#
+# THIS FILE CARRIES `claude-code-action`, which refuses to start when the workflow it runs under
+# differs in any byte from the copy on the default branch, and reports that refusal as a successful
+# skip. A pull request that edits this file therefore gets no review. So configuration that moves
+# with the tree lives in workflow files of its own: the Javadoc gate in `javadoc.yml`, the TSDoc
+# gate in `tsdoc.yml`. What stays here is the part that changes when the organisation's routine
+# does, not when a module is added.
 name: guardrails
 on:
   pull_request:
@@ -28,15 +34,14 @@ permissions:
   issues: read
   id-token: write
 
-# Referenced by branch, not by commit SHA, and that is a choice rather than an oversight.
-# exeris-kernel pins these by SHA because SonarCloud is a required check there and enforces it,
-# and because its Dependabot configuration is what keeps the pins current. This repository has
-# neither: every `uses:` here is tag-referenced (`actions/checkout@v4`) and there is no
-# dependabot.yml. A SHA pinned by hand in a repository with nothing to advance it does not buy
-# immutability, it buys a gate frozen at whatever the bundle looked like on the day someone typed
-# it — silently, since a SHA tells a reader nothing. `@main` is the form the bundle's own install
-# instructions give, and it is honest about what this repository actually tracks. Revisit together
-# with adopting Dependabot, not before.
+# Referenced by branch, not by commit SHA, and that is a choice rather than an oversight. Every
+# third-party and GitHub-owned action in this repository is SHA-pinned, because `dependabot.yml`
+# advances those pins to each new release tag. It cannot advance these: exeris-systems/.github
+# publishes no tags, so a SHA here would only ever move by hand. A pin nothing advances does not
+# buy immutability, it buys a gate frozen at whatever the bundle looked like on the day someone
+# typed it — silently, since a SHA tells a reader nothing. `@main` is the form the bundle's own
+# install instructions give, and it is honest about what this repository actually tracks: a merge
+# to that repository's `main` is a deployment to every caller.
 
 jobs:
   docs:
@@ -124,68 +129,3 @@ jobs:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       exeris_bot_app_id: ${{ secrets.EXERIS_BOT_APP_ID }}
       exeris_bot_private_key: ${{ secrets.EXERIS_BOT_PRIVATE_KEY }}
-  # ADR-085 §F.21. Two halves, and both have to be green before any release, because a Javadoc
-  # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
-  #
-  # `modules` is every jar this reactor publishes. `exeris-sdk-bom` and `exeris-sdk-parent` are
-  # pom-packaged and have nothing to document.
-  #
-  # `build-modules` carries `exeris-sdk-annotation-catalog`, which the gate has to BUILD and has no
-  # reason to CHECK. The module holds itself back from deploy (maven.deploy.skip in its own pom),
-  # so "every module published to Maven Central" does not reach it; `exeris-sdk-annotations`
-  # consumes it as an annotation processor through <annotationProcessorPaths>, which Maven does not
-  # treat as a reactor dependency edge — the root pom's <modules> comment says so and orders the
-  # declaration to compensate, which only helps a full reactor build. `-pl <modules> -am` neither
-  # selects nor reaches it, so without it the install step fails with "Could not find artifact
-  # eu.exeris:exeris-sdk-annotation-catalog" before reaching a doc comment. Naming it in `modules`
-  # would build it and also grade a build-time module the standard does not ask about;
-  # `build-modules` builds it without grading it.
-  #
-  # `trivial-accessors: exempt` opts out of the Checkstyle half of rule 1 for single-line bodies,
-  # and the opt-out is narrow and covered rather than convenient. Under the pinned 13.8.0, every
-  # error `documented` (the default) reports on this reactor is a fluent builder setter of the
-  # shape `public Builder x(T v) { this.x = v; return this; }`, and `exempt` reports none. Two
-  # things already cover them, and both are stricter than what is being dropped —
-  # `maven-javadoc-plugin` runs doclint with failOnWarnings, and `JavadocCompletenessTest` requires
-  # a doc comment on every public member of `source-model` EXCEPT a setter whose body is exactly
-  # that assignment, with the assigned field back-referenced to the method name. Checkstyle cannot
-  # express a body shape; the test can, and does. Documenting them instead would put one comment
-  # per setter restating `this.x = v` into a -javadoc.jar on Central, permanently.
-  #
-  # No `extra-maven-args`: the semver gate is an opt-in `semver` profile in the root pom, so the
-  # plain `install` this job runs never reaches japicmp or its unpublished baseline.
-  #
-  # No dedicated profile: the strict Javadoc settings here live unconditionally in each module's
-  # own pom and the `release` profile deliberately does not relax them, so the gate runs exactly
-  # the configuration a release runs. The gate requires the jacoco.skip line in the root pom — see
-  # its comment there.
-  javadoc:
-    uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
-    with:
-      modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
-      build-modules: exeris-sdk-annotation-catalog
-      trivial-accessors: exempt
-  # ADR-085 §F.21a–c. The TypeScript half of the same rule, and this repository owns one of the
-  # three surfaces the ADR names by hand: `@exeris/ui-kit`.
-  #
-  # `lint-scope: package`, not `diff`. The bundle offers `diff` for Angular applications and
-  # internal tooling — rule 11 — where a backlog nobody in the current pull request created would
-  # otherwise block it. That is not the situation here: the package's whole TypeScript surface is
-  # one file, and it is held at zero findings. There is no backlog for `diff` to
-  # shield, so scoping the lint to changed files would only mean a later change elsewhere in the
-  # file goes unchecked.
-  #
-  # All three checks are on because all three are what §F.21c asks of a published library:
-  # typedoc's `notDocumented` over the entry point (rule 1), and api-extractor's report against the
-  # committed `api/ui-kit.api.md` (rules 7–8), which is this package's japicmp. It matters more here
-  # than the name suggests — ui-kit versions independently of the Java artifacts and its 1.0 freezes
-  # names rather than values, so the golden is the only thing that can tell a rename from an
-  # addition. `build-command` is left at its default `npm run build`, which is `tsc`; the .d.ts it
-  # emits is what api-extractor reads.
-  tsdoc:
-    uses: exeris-systems/.github/.github/workflows/tsdoc-gate.yml@main
-    with:
-      package-dir: exeris-sdk-ui-kit
-      lint-scope: package
-      typedoc: true
-      api-report: api-extractor
