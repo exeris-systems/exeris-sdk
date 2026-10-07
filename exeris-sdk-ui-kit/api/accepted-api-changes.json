@@ -10,5 +10,11 @@
     "since": "0.2",
     "adr": "ADR-094",
     "justification": "The peer range narrows to Tailwind v4, the only major the package compiles against after the preset's removal; theme.css and index.css use v4 constructs (@theme, @custom-variant). A host on Tailwind v3 stays on @exeris-systems/ui-kit 0.1.0 or moves to v4."
+  },
+  {
+    "signature": "@exeris/ui-kit/styles: 25 component classes move to @exeris/ui-kit/preview (exeris-textarea, exeris-radio, exeris-radio-group, exeris-toggle, exeris-range, exeris-file, exeris-color, exeris-editor, exeris-rating, exeris-chips, exeris-chip, exeris-card-footer, exeris-btn-lg, exeris-badge-primary, exeris-badge-warning, exeris-badge-danger, exeris-badge-gray, exeris-alert-info, exeris-alert-success, exeris-spinner, exeris-truncate-2, exeris-truncate-3, exeris-focus-visible, exeris-scroll-smooth, exeris-scrollbar-hide)",
+    "since": "0.3",
+    "adr": "ADR-094",
+    "justification": "No generator emits these classes; exeris-tooling 0.9.0 uses the 22 that stay in @exeris/ui-kit/styles. Freezing names nothing exercised would fix them untested, so they move to the new @exeris/ui-kit/preview entry, outside the 1.0 freeze, with names and declarations unchanged (ADR-094 Amendment 2). A consumer using one adds @import \"@exeris/ui-kit/preview\"; MIGRATION.md §@exeris/ui-kit 0.2.x → 0.3.0 carries the step. A 0.x minor under the package's own version line."
   }
 ]

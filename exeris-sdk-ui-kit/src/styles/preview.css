@@ -1,0 +1,191 @@
+/**
+ * Exeris UI Kit — preview classes
+ *
+ * Component classes no generator emits yet. They are outside the names @exeris/ui-kit freezes at
+ * its 1.0: a class here may change or go in a minor, and moves into @exeris/ui-kit/styles,
+ * additively, once a generator uses it. Import it after the two stable entries:
+ *
+ *   @import "tailwindcss";
+ *   @import "@exeris/ui-kit/theme";
+ *   @import "@exeris/ui-kit/styles";
+ *   @import "@exeris/ui-kit/preview";
+ *
+ * The rules follow the same conventions as index.css: colours read the --exeris-* properties
+ * where the kit has a token, and the tinted pairs keep Tailwind's palette.
+ */
+
+@layer components {
+  /* TEXT_AREA — the field base of .exeris-input in @exeris/ui-kit/styles, declared again here
+     because Tailwind v4 cannot @apply a custom class. tests/preview-entry.test.js holds the two
+     equal. */
+  .exeris-textarea {
+    @apply block w-full rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] px-3 py-2 text-[rgb(var(--exeris-text-primary))]
+           shadow-[var(--exeris-shadow-sm)] placeholder:text-[rgb(var(--exeris-text-muted))]
+           focus:border-[rgb(var(--exeris-border-focus))] focus:outline-hidden focus:ring-1 focus:ring-[rgb(var(--exeris-border-focus))]
+           disabled:opacity-50 disabled:cursor-not-allowed
+           sm:text-sm;
+  }
+
+  .exeris-btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* RADIO_GROUP (per-option control; wrap options in .exeris-radio-group) */
+  .exeris-radio {
+    @apply h-4 w-4 accent-[rgb(var(--exeris-primary))] cursor-pointer
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .exeris-radio-group {
+    @apply flex flex-col gap-2;
+  }
+
+  /* TOGGLE — a switch rendered from <input type="checkbox" class="exeris-toggle"> */
+  .exeris-toggle {
+    @apply relative h-6 w-11 cursor-pointer appearance-none rounded-full bg-[rgb(var(--exeris-bg-tertiary))]
+           transition-colors checked:bg-[rgb(var(--exeris-primary))]
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .exeris-toggle::before {
+    content: '';
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    height: 1.25rem;
+    width: 1.25rem;
+    border-radius: 9999px;
+    /* White thumb intentionally fixed (not a --exeris-* token): it must read on
+       both the gray unchecked track and the indigo checked track in light AND
+       dark mode — a theme-tracking thumb would go dark-on-dark when unchecked. */
+    background-color: #fff;
+    transition: transform 150ms ease;
+  }
+
+  .exeris-toggle:checked::before {
+    transform: translateX(1.25rem);
+  }
+
+  /* SLIDER */
+  .exeris-range {
+    @apply w-full cursor-pointer accent-[rgb(var(--exeris-primary))]
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* FILE_UPLOAD, IMAGE_UPLOAD */
+  .exeris-file {
+    @apply block w-full text-sm text-[rgb(var(--exeris-text-primary))]
+           file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2
+           file:text-sm file:font-medium file:text-indigo-700
+           hover:file:bg-indigo-100 file:cursor-pointer
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:file:bg-indigo-900/30 dark:file:text-indigo-300;
+  }
+
+  /* COLOR_PICKER */
+  .exeris-color {
+    @apply h-9 w-14 cursor-pointer rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-0.5
+           focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--exeris-border-focus))] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* RICH_TEXT_EDITOR, CODE_EDITOR — bordered editor surface (host mounts the editor inside) */
+  .exeris-editor {
+    @apply block w-full min-h-[8rem] rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-3 text-sm text-[rgb(var(--exeris-text-primary))]
+           focus-within:border-[rgb(var(--exeris-border-focus))] focus-within:ring-1 focus-within:ring-[rgb(var(--exeris-border-focus))];
+  }
+
+  /* RATING — star/score row */
+  .exeris-rating {
+    @apply inline-flex items-center gap-1 text-amber-400;
+  }
+
+  /* CHIPS — tag input container + individual chip */
+  .exeris-chips {
+    @apply flex flex-wrap items-center gap-1.5 rounded-md border border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-primary))] p-1.5
+           focus-within:border-[rgb(var(--exeris-border-focus))] focus-within:ring-1 focus-within:ring-[rgb(var(--exeris-border-focus))];
+  }
+
+  .exeris-chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium
+           text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300;
+  }
+
+  .exeris-card-footer {
+    @apply px-6 py-4 border-t border-[rgb(var(--exeris-border))] bg-[rgb(var(--exeris-bg-secondary))];
+  }
+
+  .exeris-badge-primary {
+    @apply bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300;
+  }
+
+  .exeris-badge-warning {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
+  }
+
+  .exeris-badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300;
+  }
+
+  .exeris-badge-gray {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300;
+  }
+
+  .exeris-alert-info {
+    @apply bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300;
+  }
+
+  .exeris-alert-success {
+    @apply bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  /* Loading Spinner */
+  .exeris-spinner {
+    @apply animate-spin h-5 w-5 text-[rgb(var(--exeris-primary))];
+  }
+}
+
+@layer utilities {
+  /* Text truncation */
+  .exeris-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .exeris-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Focus visible only (keyboard navigation) */
+  .exeris-focus-visible:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .exeris-focus-visible:focus-visible {
+    @apply outline-hidden ring-2 ring-[rgb(var(--exeris-border-focus))] ring-offset-2;
+  }
+
+  /* Smooth scroll */
+  .exeris-scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbar but allow scroll */
+  .exeris-scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .exeris-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

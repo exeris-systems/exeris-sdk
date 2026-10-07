@@ -5,7 +5,7 @@ This page is for changing the package in this repository. To use the package, re
 repository, described below.
 
 These commands guard the package's published surface. CI runs all of them: the lint, typedoc and
-api-extractor checks as `tsdoc-gate` in `.github/workflows/guardrails.yml`, after the build they
+api-extractor checks as `tsdoc-gate` in `.github/workflows/tsdoc.yml`, after the build they
 read, and the tests with the coverage gate in `.github/workflows/build.yml`:
 
 ```bash
@@ -15,6 +15,10 @@ npm run docs:check   # typedoc: every export and every token documented
 npm run api:check    # api-extractor: api/ui-kit.api.md matches the built .d.ts
 npm test             # the name-snapshot, drift and Tailwind v4 compile suites
 ```
+
+`npm run demo` compiles the four CSS entries with Tailwind v4 and writes `build/demo/index.html`, a
+static page showing every component class under the default light, default dark and Exeris brand
+themes, plus the brand primitives. Open it in a browser after a change to any stylesheet.
 
 `npm run lint` loads its rules from [`exeris-systems/.github`](https://github.com/exeris-systems/.github),
 which has to sit at `./.guardrails` — the path the gate checks it out to. Once, from this

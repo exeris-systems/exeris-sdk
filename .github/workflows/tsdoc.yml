@@ -1,0 +1,42 @@
+# The TSDoc gate of ADR-085 §F.21a–c, run by exeris-systems/.github.
+#
+# A file of its own rather than a job in `guardrails.yml`, because that file carries
+# `claude-code-action`, which refuses to start when the workflow it runs under differs in any byte
+# from the copy on the default branch — and reports the refusal as a successful skip. The package
+# and the checks it is held to below are configuration of the tree; kept in `guardrails.yml`,
+# every change to them would be a pull request whose review silently did not run.
+name: tsdoc
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+concurrency:
+  group: tsdoc-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+
+jobs:
+  # ADR-085 §F.21a–c. The TypeScript half of the rule `javadoc.yml` gates for Java, and this
+  # repository owns one of the three surfaces the ADR names by hand: `@exeris/ui-kit`.
+  #
+  # `lint-scope: package`, not `diff`. The bundle offers `diff` for Angular applications and
+  # internal tooling — rule 11 — where a backlog nobody in the current pull request created would
+  # otherwise block it. That is not the situation here: the package's whole TypeScript surface is
+  # one file, and it is held at zero findings. There is no backlog for `diff` to
+  # shield, so scoping the lint to changed files would only mean a later change elsewhere in the
+  # file goes unchecked.
+  #
+  # All three checks are on because all three are what §F.21c asks of a published library:
+  # typedoc's `notDocumented` over the entry point (rule 1), and api-extractor's report against the
+  # committed `api/ui-kit.api.md` (rules 7–8), which is this package's japicmp. It matters more here
+  # than the name suggests — ui-kit versions independently of the Java artifacts and its 1.0 freezes
+  # names rather than values, so the golden is the only thing that can tell a rename from an
+  # addition. `build-command` is left at its default `npm run build`, which is `tsc`; the .d.ts it
+  # emits is what api-extractor reads.
+  tsdoc:
+    uses: exeris-systems/.github/.github/workflows/tsdoc-gate.yml@main
+    with:
+      package-dir: exeris-sdk-ui-kit
+      lint-scope: package
+      typedoc: true
+      api-report: api-extractor

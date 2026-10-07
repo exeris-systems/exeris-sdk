@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-10-02
+last-verified: 2026-10-04
 slug: adr/ADR-094
 ---
 
@@ -65,8 +65,10 @@ Tailwind major does it support?
    by its own semver: a removal from the exported surface is a minor while the package is `0.x`
    and a major after its 1.0. The SDK's 1.0.0 freeze does not cover it.
 3. **Names freeze at its 1.0, values do not.** `tests/public-surface.txt` pins every `--exeris-*`
-   custom property, every `.exeris-*` class, every `@theme` variable (`theme-var:`) and every
-   `defaultTheme` path; removing or renaming one is a breaking change for the package. Colour,
+   custom property, every ~~`.exeris-*` class~~ `@exeris/ui-kit/styles` class *(amended
+   2026-10-04: the classes no generator emits are in `@exeris/ui-kit/preview`, outside the freeze
+   — see `## Amendments`)*, every `@theme` variable (`theme-var:`) and every `defaultTheme` path;
+   removing or renaming one is a breaking change for the package. Colour,
    spacing, radius and shadow values stay free.
 4. **Tailwind v4 only.** The package ships no Tailwind v3 preset. Its peer dependency is
    `tailwindcss >= 4`. The `@theme` block of `src/styles/theme.css` is the single source of truth
@@ -140,6 +142,18 @@ Tailwind major does it support?
    refuses to ~~publish~~ stage without `NPM_TOKEN` *(amended 2026-10-02 — see `## Amendments`)*.
 
 ## Amendments
+
+- **2026-10-04 — the freeze covers the classes a generator uses; the rest are preview.**
+  Obligation 3 pinned every `.exeris-*` class, but a generated application used none of them, so
+  1.0 would have frozen 47 names that nothing had exercised. `exeris-tooling` 0.9.0 (its P20) emits
+  22 of them. Those stay in `@exeris/ui-kit/styles` and in `tests/public-surface.txt`. The other 25
+  move to a new `@exeris/ui-kit/preview` entry, `src/styles/preview.css`, absent from the snapshot:
+  a preview class may change or go in a minor, and moves into `styles` additively when a generator
+  uses it. `tests/preview-entry.test.js` holds the split: no class in both entries, no preview class
+  in the snapshot, and the textarea's repeated field base equal to the input's. Shipped in 0.3.0,
+  with `exeris-sdk-ui-kit/api/accepted-api-changes.json` recording the move. Rejected: freezing all
+  47 at 1.0 (names nobody used), and deleting the 25 (the controls exist in `ComponentType` and
+  will be emitted by 1.x field widgets).
 
 - **2026-10-02 — publication is staged and approved with 2FA.** Obligation 1, the credential
   trade-off and protocol step 4 named a direct `npm publish` with a token. npm restricts granular
