@@ -1,0 +1,697 @@
+/**
+ * Exeris UI Kit — the Exeris brand theme (`@exeris/ui-kit/theme-exeris`).
+ *
+ * Opt-in. Nothing here applies until an element carries `data-theme="exeris"`; on
+ * `<html>` it brands the page, on a container it brands that subtree. Outside such a
+ * scope this file changes nothing, so the default theme — indigo, Inter, rounded,
+ * light with `.dark` — stays exactly what `theme.css` and `index.css` declare.
+ *
+ * Usage, after the entries it re-themes:
+ *   @import "tailwindcss";
+ *   @import "@exeris/ui-kit/theme";
+ *   @import "@exeris/ui-kit/styles";
+ *   @import "@exeris/ui-kit/preview";        (optional)
+ *   @import "@exeris/ui-kit/theme-exeris";
+ *
+ *   <html data-theme="exeris">
+ *
+ * ## Dark-only
+ *
+ * The brand has one colour scheme. Inside the scope `.dark` changes nothing: the token
+ * block below also matches `[data-theme="exeris"] .dark`, which outranks `.dark`, and on
+ * the scope element itself it wins by coming later. Adding `class="dark"` next to
+ * `data-theme="exeris"` is still useful — it turns on a consumer's own `dark:` utilities.
+ *
+ * ## How the existing components follow
+ *
+ * Every `.exeris-*` class reads the `--exeris-*` properties, so this theme re-points them
+ * rather than restyling the classes: colours, radii (all 0 — square corners), shadows
+ * (none) and the focus colour. The `@theme` mappings that read those properties are
+ * re-declared in the scope too, because a custom property's `var()` resolves where the
+ * property is declared (see "Why `.dark` repeats the `@theme` colours" in `theme.css`);
+ * without the repeat `bg-exeris-primary` inside a nested scope would keep the default.
+ *
+ * Tailwind's own radius scale (`--radius-sm` … `--radius-4xl`) is set to 0 in the scope
+ * as well: the component layer uses `rounded-md` and friends, and so does consumer
+ * markup, and the brand is square everywhere. `rounded-full` compiles to a literal, so
+ * the few classes that use it (toggle, badge, chip) are squared explicitly below.
+ *
+ * What a token cannot carry — the tinted status pairs and the danger red the component
+ * layer takes from Tailwind's palette, the white text and thumb, and the brand's mono
+ * uppercase buttons and labels — is overridden per class in `@layer components`. Those
+ * overrides add no markup and no class: the elements a generator emits render in the
+ * brand as they are.
+ *
+ * ## Colour format
+ *
+ * The brand is specified in oklch, and its values are declared verbatim as `--ex-*`
+ * below. The kit's `--exeris-*` colours are space-separated sRGB channels, read as
+ * `rgb(var(--exeris-…))` by the component layer and the `@theme` mappings — a format that
+ * cannot hold oklch. So each `--exeris-*` colour is the sRGB conversion of the `--ex-*`
+ * token named in its comment, gamut-mapped by the CSS Color 4 algorithm (chroma reduced
+ * at constant lightness and hue) where the oklch value lies outside sRGB.
+ * `tests/theme-exeris.test.js` recomputes every conversion from the `--ex-*` value, so the
+ * two cannot drift. The overrides and the brand primitives read the `--ex-*` tokens
+ * directly and keep the full oklch value.
+ *
+ * ## Fonts
+ *
+ * IBM Plex Sans and IBM Plex Mono are named, never fetched: this file loads no font. The
+ * consumer self-hosts them or links them. Without them the stacks fall back to the system
+ * sans-serif and monospace faces.
+ *
+ * ## Freeze status
+ *
+ * This entry is preview tier (ADR-094 Amendment 2): no generator emits its classes, so
+ * the entry path, the `data-theme="exeris"` activator, the `--ex-*` names and the brand
+ * primitives (`.exeris-eyebrow`, `.exeris-tag*`, `.exeris-led*`, `.exeris-kpi*`,
+ * `.exeris-code*`, `.exeris-def`, `.exeris-section-head`, `.exeris-link`) are outside
+ * the names the package freezes at its 1.0 and may change in a minor. The frozen names
+ * it touches are existing `--exeris-*` properties and `.exeris-*` classes, and only their
+ * values, which stay free.
+ *
+ * Plain CSS — no `@apply`, no `@theme` — so it compiles the same whether or not Tailwind
+ * processes it.
+ */
+
+/* ============================================================================
+   Tokens — unlayered, like the `:root` / `.dark` blocks of `theme.css` they override
+   ============================================================================ */
+
+[data-theme="exeris"],
+[data-theme="exeris"] .dark {
+  color-scheme: dark;
+
+  /* Brand tokens, verbatim. Surfaces — deep cool blue-black */
+  --ex-bg:        oklch(0.08 0.01 240);
+  --ex-bg-1:      oklch(0.095 0.01 240);
+  --ex-surface:   oklch(0.11 0.01 240);
+  --ex-surface-2: oklch(0.13 0.01 240);
+  --ex-surface-3: oklch(0.18 0.01 240);
+  --ex-surface-4: oklch(0.25 0.02 240);
+
+  /* Text */
+  --ex-fg:    oklch(0.92 0.02 240);
+  --ex-fg-2:  oklch(0.7  0.02 240);
+  --ex-fg-3:  oklch(0.52 0.02 240);
+  --ex-fg-4:  oklch(0.4  0.02 240);
+  --ex-fg-5:  oklch(0.3  0.02 240);
+
+  /* Lines */
+  --ex-line:        oklch(0.22 0.02 240);
+  --ex-line-2:      oklch(0.28 0.02 240);
+  --ex-line-strong: oklch(0.38 0.03 240);
+
+  /* Accents */
+  --ex-accent:        oklch(0.78 0.16 250);     /* cyan-violet */
+  --ex-accent-dim:    oklch(0.55 0.18 250);
+  --ex-kernel:        oklch(0.92 0.18 120);     /* electric lime — kernel-direct */
+  --ex-kernel-dim:    oklch(0.65 0.14 120);
+  --ex-react:         oklch(0.74 0.16 295);     /* violet — community/react */
+  --ex-amber:         oklch(0.78 0.15 75);      /* enterprise */
+  --ex-cyan:          oklch(0.78 0.13 200);     /* L2 transport */
+  --ex-rose:          oklch(0.7  0.18 25);
+  --ex-ok:            oklch(0.78 0.18 145);
+  --ex-warn:          oklch(0.78 0.16 75);
+  --ex-err:           oklch(0.68 0.2 25);
+
+  /* Type */
+  --ex-font:  'IBM Plex Sans', system-ui, sans-serif;
+  --ex-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* The kit's tokens, re-pointed at the brand. Channels are the sRGB conversion of the
+     named --ex-* token; "gamut-mapped" marks a value outside sRGB. */
+  --exeris-primary: 109 189 255;       /* --ex-accent, gamut-mapped */
+  --exeris-primary-hover: 0 114 213;   /* --ex-accent-dim, gamut-mapped */
+  --exeris-secondary: 95 107 116;      /* --ex-fg-3 */
+  --exeris-success: 97 212 106;        /* --ex-ok */
+  --exeris-warning: 242 166 24;        /* --ex-warn */
+  --exeris-danger: 252 88 85;          /* --ex-err */
+  --exeris-info: 23 208 216;           /* --ex-cyan */
+
+  --exeris-bg-primary: 2 5 7;          /* --ex-surface */
+  --exeris-bg-secondary: 5 8 11;       /* --ex-surface-2 */
+  --exeris-bg-tertiary: 14 18 22;      /* --ex-surface-3 */
+
+  --exeris-text-primary: 217 231 241;  /* --ex-fg */
+  --exeris-text-secondary: 148 160 170; /* --ex-fg-2 */
+  --exeris-text-muted: 95 107 116;     /* --ex-fg-3 */
+
+  --exeris-border: 32 42 50;           /* --ex-line-2 */
+  --exeris-border-focus: 109 189 255;  /* --ex-accent, gamut-mapped */
+
+  /* Flat surfaces. A transparent shadow rather than `none`: the component layer composes
+     these into Tailwind's comma-separated box-shadow list, where `none` is invalid. */
+  --exeris-shadow-sm: 0 0 #0000;
+  --exeris-shadow: 0 0 #0000;
+  --exeris-shadow-md: 0 0 #0000;
+  --exeris-shadow-lg: 0 0 #0000;
+
+  /* Square corners everywhere. */
+  --exeris-radius-sm: 0;
+  --exeris-radius-md: 0;
+  --exeris-radius-lg: 0;
+  --exeris-radius-xl: 0;
+  --exeris-radius-full: 0;
+
+  /* Tailwind's radius scale, which the component layer's `rounded-*` reads. */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+
+  /* Type: the `font-exeris` utility, Tailwind's sans/mono and preflight's defaults. */
+  --font-exeris: var(--ex-font);
+  --font-sans: var(--ex-font);
+  --font-mono: var(--ex-mono);
+  --default-font-family: var(--ex-font);
+  --default-mono-font-family: var(--ex-mono);
+
+  /* The `@theme` mappings that read the tokens above, recomputed on this element so the
+     exeris-* utilities follow at any nesting depth. */
+  --color-exeris-primary: rgb(var(--exeris-primary));
+  --color-exeris-primary-hover: rgb(var(--exeris-primary-hover));
+  --color-exeris-secondary: rgb(var(--exeris-secondary));
+  --color-exeris-success: rgb(var(--exeris-success));
+  --color-exeris-warning: rgb(var(--exeris-warning));
+  --color-exeris-danger: rgb(var(--exeris-danger));
+  --color-exeris-info: rgb(var(--exeris-info));
+
+  --radius-exeris-sm: var(--exeris-radius-sm);
+  --radius-exeris-md: var(--exeris-radius-md);
+  --radius-exeris-lg: var(--exeris-radius-lg);
+  --radius-exeris-xl: var(--exeris-radius-xl);
+
+  --shadow-exeris-sm: var(--exeris-shadow-sm);
+  --shadow-exeris: var(--exeris-shadow);
+  --shadow-exeris-md: var(--exeris-shadow-md);
+  --shadow-exeris-lg: var(--exeris-shadow-lg);
+}
+
+/* The scope's own surface and type. */
+[data-theme="exeris"] {
+  background-color: var(--ex-bg);
+  color: var(--ex-fg);
+  font-family: var(--ex-font);
+  line-height: 1.5;
+  letter-spacing: -0.003em;
+  font-feature-settings: 'tnum', 'cv01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scrollbar-color: var(--ex-surface-3) transparent;
+}
+
+[data-theme="exeris"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="exeris"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="exeris"] ::-webkit-scrollbar-thumb {
+  background: var(--ex-surface-3);
+}
+
+[data-theme="exeris"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--ex-surface-4);
+}
+
+/* ============================================================================
+   Component overrides — what a token cannot carry
+   ============================================================================ */
+
+@layer components {
+  /* Buttons: mono, uppercase, letter-spaced outlines. Each rule is one attribute and at
+     least one class, so it outranks the single-class rule it overrides in index.css and
+     preview.css; the hover rules restate their state because the base rule here outranks
+     index.css's own `:hover`. */
+  [data-theme="exeris"] :is(.exeris-btn, .exeris-btn-primary, .exeris-btn-secondary,
+                            .exeris-btn-danger, .exeris-btn-ghost) {
+    border: 1px solid var(--ex-line-2);
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--ex-fg-2);
+    font-family: var(--ex-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+  }
+
+  [data-theme="exeris"] :is(.exeris-btn, .exeris-btn-secondary):hover:not(:disabled) {
+    border-color: var(--ex-accent);
+    color: var(--ex-accent);
+    background-color: transparent;
+  }
+
+  [data-theme="exeris"] .exeris-btn-primary {
+    border-color: var(--ex-accent);
+    color: var(--ex-accent);
+  }
+
+  [data-theme="exeris"] .exeris-btn-primary:hover:not(:disabled) {
+    border-color: var(--ex-accent);
+    background-color: var(--ex-accent);
+    color: var(--ex-bg);
+  }
+
+  [data-theme="exeris"] .exeris-btn-danger {
+    border-color: color-mix(in oklch, var(--ex-err) 50%, transparent);
+    color: var(--ex-err);
+  }
+
+  [data-theme="exeris"] .exeris-btn-danger:hover:not(:disabled) {
+    border-color: var(--ex-err);
+    background-color: var(--ex-err);
+    color: var(--ex-bg);
+  }
+
+  [data-theme="exeris"] .exeris-btn-danger:focus-visible {
+    --tw-ring-color: var(--ex-err);
+  }
+
+  [data-theme="exeris"] .exeris-btn-ghost {
+    border-color: transparent;
+  }
+
+  [data-theme="exeris"] .exeris-btn-ghost:hover:not(:disabled) {
+    border-color: transparent;
+    background-color: var(--ex-surface-3);
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-btn-sm {
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+  }
+
+  [data-theme="exeris"] .exeris-btn-lg {
+    padding: 14px 22px;
+    font-size: 12px;
+  }
+
+  /* Fields: colours, focus and radius come from the tokens; the error state and the
+     labels do not. */
+  [data-theme="exeris"] .exeris-input-error {
+    border-color: var(--ex-err);
+    --tw-ring-color: var(--ex-err);
+  }
+
+  [data-theme="exeris"] .exeris-label {
+    font-family: var(--ex-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ex-fg-2);
+  }
+
+  [data-theme="exeris"] .exeris-error-text {
+    color: var(--ex-err);
+  }
+
+  [data-theme="exeris"] .exeris-toggle,
+  [data-theme="exeris"] .exeris-toggle::before {
+    border-radius: 0;
+  }
+
+  /* The thumb reads on the dark track unchecked and on the light accent track checked. */
+  [data-theme="exeris"] .exeris-toggle::before {
+    background-color: var(--ex-fg-2);
+  }
+
+  [data-theme="exeris"] .exeris-toggle:checked::before {
+    background-color: var(--ex-bg);
+  }
+
+  [data-theme="exeris"] .exeris-file::file-selector-button {
+    border-radius: 0;
+    background-color: var(--ex-surface-3);
+    color: var(--ex-fg);
+    font-family: var(--ex-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  [data-theme="exeris"] .exeris-file:hover::file-selector-button {
+    background-color: var(--ex-surface-4);
+  }
+
+  [data-theme="exeris"] .exeris-rating {
+    color: var(--ex-amber);
+  }
+
+  [data-theme="exeris"] .exeris-chip {
+    border: 1px solid var(--ex-line);
+    border-radius: 0;
+    background-color: var(--ex-surface-2);
+    color: var(--ex-fg-2);
+    font-family: var(--ex-mono);
+    font-size: 10px;
+  }
+
+  /* Cards and tables: the brand line, mono column heads, tabular figures. */
+  [data-theme="exeris"] :is(.exeris-card, .exeris-card-header, .exeris-card-footer) {
+    border-color: var(--ex-line);
+  }
+
+  [data-theme="exeris"] .exeris-table th {
+    font-family: var(--ex-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--ex-fg-3);
+  }
+
+  [data-theme="exeris"] .exeris-table td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Badges and tags share one shape: square, mono, a tone at full strength for the text,
+     ~30% for the border and ~6% for the fill. */
+  [data-theme="exeris"] :is(.exeris-badge, .exeris-tag) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 18px;
+    padding: 1px 7px;
+    border: 1px solid var(--ex-line);
+    border-radius: 0;
+    background-color: var(--ex-surface-2);
+    color: var(--ex-fg-3);
+    font-family: var(--ex-mono);
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  [data-theme="exeris"] .exeris-badge-primary {
+    color: var(--ex-accent);
+    border-color: color-mix(in oklch, var(--ex-accent) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-accent) 6%, transparent);
+  }
+
+  [data-theme="exeris"] .exeris-tag-kernel {
+    color: var(--ex-kernel);
+    border-color: color-mix(in oklch, var(--ex-kernel) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-kernel) 6%, transparent);
+  }
+
+  [data-theme="exeris"] .exeris-tag-react {
+    color: var(--ex-react);
+    border-color: color-mix(in oklch, var(--ex-react) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-react) 6%, transparent);
+  }
+
+  [data-theme="exeris"] .exeris-tag-amber {
+    color: var(--ex-amber);
+    border-color: color-mix(in oklch, var(--ex-amber) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-amber) 6%, transparent);
+  }
+
+  [data-theme="exeris"] .exeris-tag-cyan {
+    color: var(--ex-cyan);
+    border-color: color-mix(in oklch, var(--ex-cyan) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-cyan) 6%, transparent);
+  }
+
+  [data-theme="exeris"] :is(.exeris-badge-success, .exeris-tag-ok) {
+    color: var(--ex-ok);
+    border-color: color-mix(in oklch, var(--ex-ok) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-ok) 6%, transparent);
+  }
+
+  [data-theme="exeris"] :is(.exeris-badge-warning, .exeris-tag-warn) {
+    color: var(--ex-warn);
+    border-color: color-mix(in oklch, var(--ex-warn) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-warn) 6%, transparent);
+  }
+
+  [data-theme="exeris"] :is(.exeris-badge-danger, .exeris-tag-err) {
+    color: var(--ex-err);
+    border-color: color-mix(in oklch, var(--ex-err) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-err) 6%, transparent);
+  }
+
+  [data-theme="exeris"] :is(.exeris-badge-gray, .exeris-tag-muted) {
+    color: var(--ex-fg-4);
+  }
+
+  /* Alerts: the surface, a tinted line and a full-strength edge in the tone. */
+  [data-theme="exeris"] .exeris-alert {
+    border: 1px solid var(--ex-line);
+    border-left-width: 2px;
+    border-radius: 0;
+    background-color: var(--ex-surface);
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-alert-info {
+    border-color: color-mix(in oklch, var(--ex-accent) 32%, transparent);
+    border-left-color: var(--ex-accent);
+    background-color: color-mix(in oklch, var(--ex-accent) 6%, var(--ex-surface));
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-alert-success {
+    border-color: color-mix(in oklch, var(--ex-ok) 32%, transparent);
+    border-left-color: var(--ex-ok);
+    background-color: color-mix(in oklch, var(--ex-ok) 6%, var(--ex-surface));
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-alert-warning {
+    border-color: color-mix(in oklch, var(--ex-warn) 32%, transparent);
+    border-left-color: var(--ex-warn);
+    background-color: color-mix(in oklch, var(--ex-warn) 6%, var(--ex-surface));
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-alert-danger {
+    border-color: color-mix(in oklch, var(--ex-err) 32%, transparent);
+    border-left-color: var(--ex-err);
+    background-color: color-mix(in oklch, var(--ex-err) 6%, var(--ex-surface));
+    color: var(--ex-fg);
+  }
+
+  /* ==========================================================================
+     Brand primitives — preview tier, defined only inside the scope
+     ========================================================================== */
+
+  /* Eyebrow: the mono kicker above a heading. */
+  [data-theme="exeris"] .exeris-eyebrow {
+    font-family: var(--ex-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ex-accent);
+  }
+
+  /* LED: a 7px status dot; the toned variants glow, kernel and live pulse. */
+  [data-theme="exeris"] .exeris-led {
+    display: inline-block;
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--ex-fg-4);
+    vertical-align: middle;
+  }
+
+  [data-theme="exeris"] .exeris-led-ok {
+    background-color: var(--ex-ok);
+    box-shadow: 0 0 8px var(--ex-ok);
+  }
+
+  [data-theme="exeris"] .exeris-led-kernel {
+    background-color: var(--ex-kernel);
+    box-shadow: 0 0 8px var(--ex-kernel);
+    animation: exeris-led-pulse 2.4s ease-in-out infinite;
+  }
+
+  [data-theme="exeris"] .exeris-led-warn {
+    background-color: var(--ex-warn);
+    box-shadow: 0 0 8px var(--ex-warn);
+  }
+
+  [data-theme="exeris"] .exeris-led-err {
+    background-color: var(--ex-err);
+    box-shadow: 0 0 8px var(--ex-err);
+  }
+
+  [data-theme="exeris"] .exeris-led-live {
+    background-color: var(--ex-ok);
+    box-shadow: 0 0 8px var(--ex-ok);
+    animation: exeris-led-pulse 1.6s ease-in-out infinite;
+  }
+
+  /* A pulse is decoration; a user who asked for less motion gets a steady light. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-theme="exeris"] :is(.exeris-led-kernel, .exeris-led-live) {
+      animation: none;
+    }
+  }
+
+  /* KPI: a label, a tabular figure, an optional sub-line. */
+  [data-theme="exeris"] .exeris-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 22px;
+    border: 1px solid var(--ex-line);
+    background-color: var(--ex-surface);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-label {
+    font-family: var(--ex-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ex-fg-4);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-value {
+    font-family: var(--ex-mono);
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-value-kernel {
+    color: var(--ex-kernel);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-value-amber {
+    color: var(--ex-amber);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-value-react {
+    color: var(--ex-react);
+  }
+
+  [data-theme="exeris"] .exeris-kpi-sub {
+    font-size: 11px;
+    color: var(--ex-fg-3);
+  }
+
+  /* Code block, and the token spans a highlighter or a hand-written sample puts in it. */
+  [data-theme="exeris"] .exeris-code {
+    display: block;
+    margin: 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    border: 1px solid var(--ex-line);
+    background-color: var(--ex-bg-1);
+    color: var(--ex-fg-2);
+    font-family: var(--ex-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  [data-theme="exeris"] .exeris-code-kw { color: oklch(0.78 0.16 340); }
+  [data-theme="exeris"] .exeris-code-an { color: var(--ex-kernel); font-weight: 500; }
+  [data-theme="exeris"] .exeris-code-ty { color: oklch(0.8 0.13 220); }
+  [data-theme="exeris"] .exeris-code-str { color: oklch(0.85 0.12 80); }
+  [data-theme="exeris"] .exeris-code-num { color: var(--ex-react); }
+  [data-theme="exeris"] .exeris-code-cm { color: var(--ex-fg-4); font-style: italic; }
+  [data-theme="exeris"] .exeris-code-fn { color: oklch(0.88 0.14 95); }
+  [data-theme="exeris"] .exeris-code-pn { color: var(--ex-fg-3); }
+
+  [data-theme="exeris"] .exeris-code-ln {
+    display: inline-block;
+    min-width: 2.5ch;
+    margin-right: 16px;
+    color: var(--ex-fg-5);
+    text-align: right;
+    user-select: none;
+  }
+
+  /* Definition row: one <dt>/<dd> pair, a <div> inside a <dl>. */
+  [data-theme="exeris"] .exeris-def {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--ex-line);
+  }
+
+  [data-theme="exeris"] .exeris-def > dt {
+    font-family: var(--ex-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ex-fg-4);
+  }
+
+  [data-theme="exeris"] .exeris-def > dd {
+    margin: 0;
+    font-family: var(--ex-mono);
+    font-size: 12px;
+    color: var(--ex-fg);
+  }
+
+  /* Section head: a heading and its lede, with the eyebrow above when there is one. */
+  [data-theme="exeris"] .exeris-section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 760px;
+    margin-bottom: 48px;
+  }
+
+  [data-theme="exeris"] .exeris-section-head > h2 {
+    margin: 0;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-section-head > p {
+    margin: 0;
+    max-width: 64ch;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ex-fg-2);
+  }
+
+  /* Link: accent text over a dashed rule, both turning to the foreground on hover. */
+  [data-theme="exeris"] .exeris-link {
+    color: var(--ex-accent);
+    text-decoration: none;
+    border-bottom: 1px dashed color-mix(in oklch, var(--ex-accent) 50%, transparent);
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+
+  [data-theme="exeris"] .exeris-link:hover {
+    color: var(--ex-fg);
+    border-bottom-color: var(--ex-fg);
+  }
+
+  [data-theme="exeris"] .exeris-link:focus-visible {
+    outline: 1px solid var(--ex-accent);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes exeris-led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

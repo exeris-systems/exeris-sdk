@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@exeris/ui-kit — component demo</title>
+  <!-- The kit names IBM Plex and never loads it; a consumer does, as this page does. Offline,
+       the brand panel falls back to the system sans-serif and monospace faces. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    body { margin: 0; }
+    .demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+    .demo-panel { padding: 24px; min-width: 0; }
+    .demo-panel > h1 { margin: 0 0 20px; font-size: 18px; }
+    .demo-panel > section { margin-bottom: 28px; }
+    .demo-panel > section > h2 { margin: 0 0 10px; font-size: 13px; opacity: 0.7; }
+    .demo-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .demo-stack { display: grid; gap: 12px; }
+    .demo-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .demo-default { background: rgb(var(--exeris-bg-secondary)); color: rgb(var(--exeris-text-primary)); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <main class="demo-grid">
+    <div class="demo-panel demo-default" data-demo="Default theme · light"></div>
+    <div class="demo-panel demo-default dark" data-demo="Default theme · .dark"></div>
+    <div class="demo-panel" data-theme="exeris" data-demo="Exeris theme · data-theme=&quot;exeris&quot;" data-primitives></div>
+  </main>
+
+  <!-- Every component class, rendered once per panel. -->
+  <template id="components">
+    <section>
+      <h2>Buttons</h2>
+      <div class="demo-row">
+        <button class="exeris-btn exeris-btn-primary">Primary</button>
+        <button class="exeris-btn exeris-btn-secondary">Secondary</button>
+        <button class="exeris-btn exeris-btn-danger">Danger</button>
+        <button class="exeris-btn exeris-btn-ghost">Ghost</button>
+        <button class="exeris-btn exeris-btn-primary exeris-btn-sm">Small</button>
+        <button class="exeris-btn exeris-btn-secondary exeris-btn-lg">Large</button>
+        <button class="exeris-btn exeris-btn-primary" disabled>Disabled</button>
+      </div>
+    </section>
+    <section class="demo-stack">
+      <h2>Fields</h2>
+      <div>
+        <label class="exeris-label">Name</label>
+        <input class="exeris-input" placeholder="Ada Lovelace">
+        <p class="exeris-help-text">As it appears on the invoice.</p>
+      </div>
+      <div>
+        <label class="exeris-label">Email</label>
+        <input class="exeris-input exeris-input-error" value="ada@">
+        <p class="exeris-error-text">Enter a complete address.</p>
+      </div>
+      <div>
+        <label class="exeris-label">Region</label>
+        <select class="exeris-select"><option>eu-central</option><option>us-east</option></select>
+      </div>
+      <div>
+        <label class="exeris-label">Notes</label>
+        <textarea class="exeris-textarea" rows="2" placeholder="Optional"></textarea>
+      </div>
+      <div class="demo-row">
+        <label class="demo-row"><input type="checkbox" class="exeris-checkbox" checked> Checkbox</label>
+        <div class="exeris-radio-group">
+          <label class="demo-row"><input type="radio" name="r" class="exeris-radio" checked> Radio A</label>
+          <label class="demo-row"><input type="radio" name="r" class="exeris-radio"> Radio B</label>
+        </div>
+        <input type="checkbox" class="exeris-toggle" aria-label="Toggle off">
+        <input type="checkbox" class="exeris-toggle" checked aria-label="Toggle on">
+      </div>
+      <input type="range" class="exeris-range" aria-label="Range">
+      <div class="demo-row">
+        <input type="color" class="exeris-color" value="#6dbdff" aria-label="Colour">
+        <input type="file" class="exeris-file" aria-label="File">
+      </div>
+      <div class="exeris-rating" aria-label="Rating">★★★★☆</div>
+      <div class="exeris-chips">
+        <span class="exeris-chip">kernel</span><span class="exeris-chip">spring</span>
+        <input style="flex:1;border:0;background:transparent;outline:none;color:inherit" placeholder="Add…">
+      </div>
+      <div class="exeris-editor">Editor surface</div>
+    </section>
+    <section>
+      <h2>Badges</h2>
+      <div class="demo-row">
+        <span class="exeris-badge exeris-badge-primary">primary</span>
+        <span class="exeris-badge exeris-badge-success">success</span>
+        <span class="exeris-badge exeris-badge-warning">warning</span>
+        <span class="exeris-badge exeris-badge-danger">danger</span>
+        <span class="exeris-badge exeris-badge-gray">gray</span>
+      </div>
+    </section>
+    <section class="demo-stack">
+      <h2>Alerts</h2>
+      <div class="exeris-alert exeris-alert-info">A new version is available.</div>
+      <div class="exeris-alert exeris-alert-success">Deployment finished.</div>
+      <div class="exeris-alert exeris-alert-warning">Unsaved changes.</div>
+      <div class="exeris-alert exeris-alert-danger">The build failed.</div>
+    </section>
+    <section>
+      <h2>Card and table</h2>
+      <div class="exeris-card">
+        <div class="exeris-card-header">Nodes</div>
+        <div class="exeris-card-body" style="padding:0">
+          <table class="exeris-table" style="width:100%">
+            <thead><tr><th>Node</th><th>Region</th><th>p99</th></tr></thead>
+            <tbody>
+              <tr><td>edge-01</td><td>eu-central</td><td>1.42 ms</td></tr>
+              <tr><td>edge-02</td><td>us-east</td><td>2.07 ms</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="exeris-card-footer demo-row"><svg class="exeris-spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity=".25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4"/></svg> Refreshing</div>
+      </div>
+    </section>
+    <section>
+      <h2>Utilities</h2>
+      <p class="exeris-truncate-2" style="max-width:280px">exeris-truncate-2 clamps this paragraph to two lines, however long the text that it holds becomes when a translation runs longer than the original.</p>
+      <button class="exeris-btn exeris-btn-secondary exeris-focus-visible">exeris-focus-visible</button>
+    </section>
+  </template>
+
+  <!-- The brand primitives exist only inside data-theme="exeris". -->
+  <template id="primitives">
+    <section>
+      <h2>Brand primitives</h2>
+      <div class="exeris-section-head">
+        <span class="exeris-eyebrow">Runtime · 01</span>
+        <h2>One kernel, three tiers</h2>
+        <p>The section head pairs a heading with its lede; the eyebrow above it is the mono kicker.</p>
+      </div>
+    </section>
+    <section>
+      <h2>Tags and LEDs</h2>
+      <div class="demo-row">
+        <span class="exeris-tag">default</span>
+        <span class="exeris-tag exeris-tag-kernel"><span class="exeris-led exeris-led-kernel"></span>kernel</span>
+        <span class="exeris-tag exeris-tag-react">react</span>
+        <span class="exeris-tag exeris-tag-amber">enterprise</span>
+        <span class="exeris-tag exeris-tag-cyan">L2</span>
+        <span class="exeris-tag exeris-tag-ok"><span class="exeris-led exeris-led-live"></span>live</span>
+        <span class="exeris-tag exeris-tag-warn">warn</span>
+        <span class="exeris-tag exeris-tag-err">err</span>
+        <span class="exeris-tag exeris-tag-muted">muted</span>
+      </div>
+      <div class="demo-row" style="margin-top:12px">
+        <span class="exeris-led"></span><span class="exeris-led exeris-led-ok"></span><span class="exeris-led exeris-led-kernel"></span>
+        <span class="exeris-led exeris-led-warn"></span><span class="exeris-led exeris-led-err"></span><span class="exeris-led exeris-led-live"></span>
+      </div>
+    </section>
+    <section>
+      <h2>KPI</h2>
+      <div class="demo-kpis">
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Requests / s</span><span class="exeris-kpi-value exeris-kpi-value-kernel">182,400</span><span class="exeris-kpi-sub">kernel-direct</span></div>
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Tenants</span><span class="exeris-kpi-value exeris-kpi-value-amber">36</span><span class="exeris-kpi-sub">enterprise</span></div>
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Views</span><span class="exeris-kpi-value exeris-kpi-value-react">1,204</span><span class="exeris-kpi-sub">community</span></div>
+      </div>
+    </section>
+    <section>
+      <h2>Code</h2>
+<pre class="exeris-code"><span class="exeris-code-ln">1</span><span class="exeris-code-an">@ExerisDomain</span>
+<span class="exeris-code-ln">2</span><span class="exeris-code-kw">public record</span> <span class="exeris-code-ty">Order</span><span class="exeris-code-pn">(</span><span class="exeris-code-ty">String</span> id<span class="exeris-code-pn">,</span> <span class="exeris-code-ty">int</span> qty<span class="exeris-code-pn">)</span> <span class="exeris-code-pn">{}</span>
+<span class="exeris-code-ln">3</span><span class="exeris-code-cm">// generated: SQL, endpoints, views</span>
+<span class="exeris-code-ln">4</span><span class="exeris-code-fn">route</span><span class="exeris-code-pn">(</span><span class="exeris-code-str">"/orders"</span><span class="exeris-code-pn">,</span> <span class="exeris-code-num">200</span><span class="exeris-code-pn">);</span></pre>
+    </section>
+    <section>
+      <h2>Definitions and link</h2>
+      <dl style="margin:0">
+        <div class="exeris-def"><dt>Version</dt><dd>0.3.0</dd></div>
+        <div class="exeris-def"><dt>Tier</dt><dd>Community</dd></div>
+      </dl>
+      <p style="margin-top:14px"><a class="exeris-link" href="#">Read the ADR</a></p>
+    </section>
+  </template>
+
+  <script>
+    const components = document.getElementById('components');
+    const primitives = document.getElementById('primitives');
+    for (const panel of document.querySelectorAll('[data-demo]')) {
+      const title = document.createElement('h1');
+      title.textContent = panel.dataset.demo;
+      panel.append(title);
+      if (panel.hasAttribute('data-primitives')) panel.append(primitives.content.cloneNode(true));
+      panel.append(components.content.cloneNode(true));
+    }
+  </script>
+</body>
+</html>

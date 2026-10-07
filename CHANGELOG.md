@@ -25,6 +25,35 @@ for per-version upgrade steps.
 
 ## [Unreleased]
 
+### Breaking
+
+- **`@exeris/ui-kit` 0.3.0: 25 component classes move to `@exeris/ui-kit/preview`.** No generator
+  emits them; `exeris-tooling` 0.9.0 uses the 22 that stay in `@exeris/ui-kit/styles`, which are the
+  classes the package freezes at its 1.0. The moved classes keep their names and declarations, sit
+  outside the freeze, and return to `styles` additively when a generator uses them. A consumer
+  using one adds `@import "@exeris/ui-kit/preview";` after the styles import. The public-surface
+  snapshot drops the 25; `tests/preview-entry.test.js` holds the split. Accepted in
+  `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094 Amendment 2. See
+  [`MIGRATION.md` §`@exeris/ui-kit` 0.2.x → 0.3.0](MIGRATION.md).
+
+### Added
+
+- **`@exeris/ui-kit` 0.3.0: an opt-in Exeris brand theme, `@exeris/ui-kit/theme-exeris`.** Imported
+  after the other entries, it applies under `data-theme="exeris"` and nowhere else. The default
+  theme compiles identically with it present. Inside the scope it re-points the `--exeris-*`
+  colours, radii (0), shadows (none), focus colour and font stack, and the `@theme` mappings that
+  read them. It squares Tailwind's `rounded-*` scale and overrides the classes whose palette tints
+  or white text no token carries. Every existing component class renders in the brand with
+  unchanged markup. It is dark-only and loads no font: IBM Plex is named and falls back to the
+  system faces. It declares the brand palette as `--ex-*` oklch properties, and the `--exeris-*`
+  channels are their sRGB conversions, gamut-mapped by the CSS Color 4 algorithm where needed. It
+  adds brand primitives: `exeris-eyebrow`, `exeris-tag` with eight tones, `exeris-led` with five
+  states (the pulse stops under `prefers-reduced-motion`), `exeris-kpi`, `exeris-code` with token
+  spans, `exeris-def`, `exeris-section-head` and `exeris-link`. Additive and outside the 1.0
+  freeze, like `@exeris/ui-kit/preview`. `tests/theme-exeris.test.js` holds the scoping, the
+  conversions and the freeze status. `npm run demo` builds a static page rendering every class
+  under the default light, default dark and brand themes.
+
 ### Changed
 
 - **CI: actions are pinned by commit SHA, and pull requests get a dependency review.** Every
@@ -86,6 +115,14 @@ for per-version upgrade steps.
   `exeris-kernel-bom` is already on 3.2.3. `jackson.annotations.version` stays at `2.22`, checked
   against `jackson-bom` 3.2.3. **Downstream:** a consumer importing `exeris-sdk-bom` gets 3.2.3 on
   its next SDK version; one that pins `jackson-databind` itself should move to 3.2.3 now.
+
+- **`brace-expansion` and `source-map-js` in `exeris-sdk-ui-kit`'s lockfile.** `brace-expansion`
+  1.1.18 → 1.1.21 and 5.0.9 → 5.0.12 clear GHSA-q2hr-2g5m-vwhr, CPU exhaustion through quadratic
+  expansion (Dependabot #28, #29, medium). `source-map-js` 1.2.1 → 1.2.2 clears
+  GHSA-68fv-2mgg-jv7q, event-loop denial of service through indexed source-map section offsets
+  (Dependabot #31, high). All three are development-only and transitive, reached through ESLint,
+  `minimatch` and PostCSS within their existing ranges, so the lockfile moves and `package.json`
+  does not. Nothing in the published tarball depends on them.
 
 ## [0.12.0] — 2026-10-02
 

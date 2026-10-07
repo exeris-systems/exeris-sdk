@@ -13,9 +13,13 @@ import { PACKAGE_ROOT, compileWithV4, rulesFor, selectorsFor } from './support/t
  * base is asserted below.
  */
 const indexCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/index.css'), 'utf8');
+const previewCss = readFileSync(join(PACKAGE_ROOT, 'src/styles/preview.css'), 'utf8');
 
-/** Every `.exeris-*` class this stylesheet declares, read off the source. */
-const DECLARED = [...new Set([...indexCss.matchAll(/\.(exeris-[a-z0-9-]+)/g)].map(([, name]) => name))];
+/** The two component entries, compiled together: `…/styles` and `…/preview`. */
+const SHEETS = ['src/styles/index.css', 'src/styles/preview.css'];
+
+/** Every `.exeris-*` class the two stylesheets declare, read off the source. */
+const DECLARED = [...new Set([...`${indexCss}\n${previewCss}`.matchAll(/\.(exeris-[a-z0-9-]+)/g)].map(([, name]) => name))];
 
 /** The button family: the classes whose shared base is a selector list. */
 const BUTTON_BASE = 'exeris-btn';
@@ -58,7 +62,7 @@ let v4;
 
 beforeAll(async () => {
   const candidates = [...DECLARED, NONEXISTENT];
-  v4 = await compileWithV4('src/styles/index.css', candidates);
+  v4 = await compileWithV4(SHEETS, candidates);
 }, 60_000);
 
 describe('index.css compiles on Tailwind v4', () => {
@@ -176,6 +180,7 @@ describe('focus and pointer behaviour', () => {
     // v4's outline-none sets `outline-style: none`, which also removes the outline in forced-colours
     // mode; outline-hidden keeps a transparent outline there.
     expect(indexCss).not.toMatch(/\boutline-none\b/);
+    expect(previewCss).not.toMatch(/\boutline-none\b/);
   });
 
   it('gives the buttons a pointer cursor', () => {
@@ -209,7 +214,7 @@ describe('the error state wins over the field base', () => {
     // Both rules carry one class, so the later one wins on an element that has both. Moving the
     // error rule above the field base would leave an erroring field with the normal border.
     const ruleStart = (selectorStart) => v4.css.indexOf(selectorStart);
-    const base = ruleStart('.exeris-input, .exeris-select, .exeris-textarea {');
+    const base = ruleStart('.exeris-input, .exeris-select {');
     const error = ruleStart('.exeris-input-error {');
     expect(base, 'the shared field rule is missing from the compiled output').toBeGreaterThanOrEqual(0);
     expect(error, '.exeris-input-error comes before the field base it has to override').toBeGreaterThan(base);
