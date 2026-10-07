@@ -42,17 +42,32 @@
  * overrides add no markup and no class: the elements a generator emits render in the
  * brand as they are.
  *
- * ## Colour format
+ * ## Colour
  *
- * The brand is specified in oklch, and its values are declared verbatim as `--ex-*`
- * below. The kit's `--exeris-*` colours are space-separated sRGB channels, read as
+ * The palette is the brand kit's (v6): Background #0A0F1A, Surface #F8FAFC (text on
+ * dark), Flow Blue #2563EB, Flow Cyan #06B6D4 and Evidence Orange #F59E0B, declared
+ * verbatim as `--ex-*` hex values. The steps between them — surfaces, text, lines, the
+ * Flow Blue hover and text tones — and the functional status colours are derived in
+ * oklch at the brand colours' hues. Three rules follow the kit:
+ *
+ *   - Flow Blue and Flow Cyan are the accent, always solid: Flow Blue fills the primary
+ *     action, Flow Cyan carries links, focus, info and the eyebrow. The Flow Blue → Flow
+ *     Cyan gradient, `--ex-flow`, is for the flow element alone — one hero or mark
+ *     element per view — and no class here paints it.
+ *   - Evidence Orange marks a verified result (a measured figure, a verdict) and is never
+ *     a UI accent. It is reachable only through `.exeris-tag-evidence` and
+ *     `.exeris-kpi-value-evidence`; no `--exeris-*` token carries it, and the warning
+ *     colour is a distinct yellow.
+ *   - Dark only, square corners.
+ *
+ * The kit's `--exeris-*` colours are space-separated sRGB channels, read as
  * `rgb(var(--exeris-…))` by the component layer and the `@theme` mappings — a format that
- * cannot hold oklch. So each `--exeris-*` colour is the sRGB conversion of the `--ex-*`
- * token named in its comment, gamut-mapped by the CSS Color 4 algorithm (chroma reduced
- * at constant lightness and hue) where the oklch value lies outside sRGB.
- * `tests/theme-exeris.test.js` recomputes every conversion from the `--ex-*` value, so the
- * two cannot drift. The overrides and the brand primitives read the `--ex-*` tokens
- * directly and keep the full oklch value.
+ * cannot hold oklch. So each `--exeris-*` colour is the sRGB value of the `--ex-*` token
+ * named in its comment: the hex value itself, or the oklch value converted and, where it
+ * lies outside sRGB, gamut-mapped by the CSS Color 4 algorithm (chroma reduced at
+ * constant lightness and hue). `tests/theme-exeris.test.js` recomputes every channel from
+ * the `--ex-*` value, so the two cannot drift. The overrides and the brand primitives read
+ * the `--ex-*` tokens directly.
  *
  * ## Fonts
  *
@@ -82,63 +97,77 @@
 [data-theme="exeris"] .dark {
   color-scheme: dark;
 
-  /* Brand tokens, verbatim. Surfaces — deep cool blue-black */
-  --ex-bg:        oklch(0.08 0.01 240);
-  --ex-bg-1:      oklch(0.095 0.01 240);
-  --ex-surface:   oklch(0.11 0.01 240);
-  --ex-surface-2: oklch(0.13 0.01 240);
-  --ex-surface-3: oklch(0.18 0.01 240);
-  --ex-surface-4: oklch(0.25 0.02 240);
+  /* Brand colours, verbatim from the brand kit (v6). */
+  --ex-bg:          #0A0F1A;   /* Background */
+  --ex-fg:          #F8FAFC;   /* Surface: text and chevrons on dark */
+  --ex-flow-blue:   #2563EB;   /* Flow Blue */
+  --ex-flow-cyan:   #06B6D4;   /* Flow Cyan */
+  --ex-evidence:    #F59E0B;   /* Evidence Orange: verified results only */
 
-  /* Text */
-  --ex-fg:    oklch(0.92 0.02 240);
-  --ex-fg-2:  oklch(0.7  0.02 240);
-  --ex-fg-3:  oklch(0.52 0.02 240);
-  --ex-fg-4:  oklch(0.4  0.02 240);
-  --ex-fg-5:  oklch(0.3  0.02 240);
+  /* The flow gradient. The brand allows it on the flow element alone, so it is one hero or
+     mark element per view; buttons, links and focus use the solid colours. */
+  --ex-flow: linear-gradient(90deg, var(--ex-flow-blue), var(--ex-flow-cyan));
+
+  /* Surface steps above the background, at its hue (265) and chroma. */
+  --ex-bg-1:      oklch(0.185 0.025 265);
+  --ex-surface:   oklch(0.2 0.025 265);
+  --ex-surface-2: oklch(0.22 0.025 265);
+  --ex-surface-3: oklch(0.27 0.025 265);
+  --ex-surface-4: oklch(0.34 0.03 265);
+
+  /* Text steps below the foreground, tinted toward the background hue. On --ex-bg: fg-2
+     10.3:1, fg-3 6.1:1 (body text), fg-4 3.8:1 (labels and comments), fg-5 2.3:1 (line
+     numbers and other text a reader skips). */
+  --ex-fg-2:  oklch(0.8 0.02 265);
+  --ex-fg-3:  oklch(0.66 0.025 265);
+  --ex-fg-4:  oklch(0.54 0.025 265);
+  --ex-fg-5:  oklch(0.42 0.025 265);
 
   /* Lines */
-  --ex-line:        oklch(0.22 0.02 240);
-  --ex-line-2:      oklch(0.28 0.02 240);
-  --ex-line-strong: oklch(0.38 0.03 240);
+  --ex-line:        oklch(0.29 0.03 265);
+  --ex-line-2:      oklch(0.35 0.03 265);
+  --ex-line-strong: oklch(0.45 0.035 265);
 
-  /* Accents */
-  --ex-accent:        oklch(0.78 0.16 250);     /* cyan-violet */
-  --ex-accent-dim:    oklch(0.55 0.18 250);
-  --ex-kernel:        oklch(0.92 0.18 120);     /* electric lime — kernel-direct */
-  --ex-kernel-dim:    oklch(0.65 0.14 120);
-  --ex-react:         oklch(0.74 0.16 295);     /* violet — community/react */
-  --ex-amber:         oklch(0.78 0.15 75);      /* enterprise */
-  --ex-cyan:          oklch(0.78 0.13 200);     /* L2 transport */
-  --ex-rose:          oklch(0.7  0.18 25);
-  --ex-ok:            oklch(0.78 0.18 145);
-  --ex-warn:          oklch(0.78 0.16 75);
-  --ex-err:           oklch(0.68 0.2 25);
+  /* Flow Blue at the hue of #2563EB. Its hover fill is darker, so the --ex-fg label on it
+     keeps 6.3:1 against the base's 4.9:1. Flow Blue as text on --ex-bg is 3.7:1, below the
+     4.5:1 small text needs, so text in the blue tone uses the lifted --ex-flow-blue-text
+     (6.5:1). */
+  --ex-flow-blue-hover: oklch(0.49 0.2 263);
+  --ex-flow-blue-text:  oklch(0.68 0.16 263);
+
+  /* Functional status. Warning is a yellow at hue 100, not an amber: Evidence Orange sits
+     at hue 70, and a warning that looked like a verified result would say the opposite of
+     what it means. Its distance from Evidence Orange (deltaEOK 0.14) is that of the error
+     red (0.17); the test holds it. */
+  --ex-ok:    oklch(0.78 0.18 145);
+  --ex-warn:  oklch(0.88 0.17 100);
+  --ex-err:   oklch(0.68 0.2 25);
 
   /* Type */
   --ex-font:  'IBM Plex Sans', system-ui, sans-serif;
   --ex-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
-  /* The kit's tokens, re-pointed at the brand. Channels are the sRGB conversion of the
-     named --ex-* token; "gamut-mapped" marks a value outside sRGB. */
-  --exeris-primary: 109 189 255;       /* --ex-accent, gamut-mapped */
-  --exeris-primary-hover: 0 114 213;   /* --ex-accent-dim, gamut-mapped */
-  --exeris-secondary: 95 107 116;      /* --ex-fg-3 */
+  /* The kit's tokens, re-pointed at the brand. Channels are the sRGB value of the named
+     --ex-* token; "gamut-mapped" marks an oklch value outside sRGB. Evidence Orange has no
+     channel here: no kit token means "verified result". */
+  --exeris-primary: 37 99 235;         /* --ex-flow-blue */
+  --exeris-primary-hover: 28 83 207;   /* --ex-flow-blue-hover */
+  --exeris-secondary: 139 146 162;     /* --ex-fg-3 */
   --exeris-success: 97 212 106;        /* --ex-ok */
-  --exeris-warning: 242 166 24;        /* --ex-warn */
+  --exeris-warning: 242 217 53;        /* --ex-warn */
   --exeris-danger: 252 88 85;          /* --ex-err */
-  --exeris-info: 23 208 216;           /* --ex-cyan */
+  --exeris-info: 6 182 212;            /* --ex-flow-cyan */
 
-  --exeris-bg-primary: 2 5 7;          /* --ex-surface */
-  --exeris-bg-secondary: 5 8 11;       /* --ex-surface-2 */
-  --exeris-bg-tertiary: 14 18 22;      /* --ex-surface-3 */
+  --exeris-bg-primary: 16 22 34;       /* --ex-surface */
+  --exeris-bg-secondary: 21 26 38;     /* --ex-surface-2 */
+  --exeris-bg-tertiary: 32 38 51;      /* --ex-surface-3 */
 
-  --exeris-text-primary: 217 231 241;  /* --ex-fg */
-  --exeris-text-secondary: 148 160 170; /* --ex-fg-2 */
-  --exeris-text-muted: 95 107 116;     /* --ex-fg-3 */
+  --exeris-text-primary: 248 250 252;  /* --ex-fg */
+  --exeris-text-secondary: 183 190 203; /* --ex-fg-2 */
+  --exeris-text-muted: 139 146 162;    /* --ex-fg-3 */
 
-  --exeris-border: 32 42 50;           /* --ex-line-2 */
-  --exeris-border-focus: 109 189 255;  /* --ex-accent, gamut-mapped */
+  --exeris-border: 51 58 75;           /* --ex-line-2 */
+  --exeris-border-focus: 6 182 212;    /* --ex-flow-cyan */
 
   /* Flat surfaces. A transparent shadow rather than `none`: the component layer composes
      these into Tailwind's comma-separated box-shadow list, where `none` is invalid. */
@@ -227,7 +256,8 @@
    ============================================================================ */
 
 @layer components {
-  /* Buttons: mono, uppercase, letter-spaced outlines. Each rule is one attribute and at
+  /* Buttons: mono, uppercase, letter-spaced outlines, the primary one a solid Flow Blue
+     fill. Each rule is one attribute and at
      least one class, so it outranks the single-class rule it overrides in index.css and
      preview.css; the hover rules restate their state because the base rule here outranks
      index.css's own `:hover`. */
@@ -247,20 +277,21 @@
   }
 
   [data-theme="exeris"] :is(.exeris-btn, .exeris-btn-secondary):hover:not(:disabled) {
-    border-color: var(--ex-accent);
-    color: var(--ex-accent);
+    border-color: var(--ex-flow-cyan);
+    color: var(--ex-flow-cyan);
     background-color: transparent;
   }
 
   [data-theme="exeris"] .exeris-btn-primary {
-    border-color: var(--ex-accent);
-    color: var(--ex-accent);
+    border-color: var(--ex-flow-blue);
+    background-color: var(--ex-flow-blue);
+    color: var(--ex-fg);
   }
 
   [data-theme="exeris"] .exeris-btn-primary:hover:not(:disabled) {
-    border-color: var(--ex-accent);
-    background-color: var(--ex-accent);
-    color: var(--ex-bg);
+    border-color: var(--ex-flow-blue-hover);
+    background-color: var(--ex-flow-blue-hover);
+    color: var(--ex-fg);
   }
 
   [data-theme="exeris"] .exeris-btn-danger {
@@ -324,13 +355,13 @@
     border-radius: 0;
   }
 
-  /* The thumb reads on the dark track unchecked and on the light accent track checked. */
+  /* The thumb reads on the dark track unchecked and on the Flow Blue track checked. */
   [data-theme="exeris"] .exeris-toggle::before {
     background-color: var(--ex-fg-2);
   }
 
   [data-theme="exeris"] .exeris-toggle:checked::before {
-    background-color: var(--ex-bg);
+    background-color: var(--ex-fg);
   }
 
   [data-theme="exeris"] .exeris-file::file-selector-button {
@@ -347,8 +378,9 @@
     background-color: var(--ex-surface-4);
   }
 
+  /* A rating is input, not a verified result, so it takes Flow Cyan, not Evidence Orange. */
   [data-theme="exeris"] .exeris-rating {
-    color: var(--ex-amber);
+    color: var(--ex-flow-cyan);
   }
 
   [data-theme="exeris"] .exeris-chip {
@@ -377,7 +409,9 @@
   }
 
   /* Badges and tags share one shape: square, mono, a tone at full strength for the text,
-     ~30% for the border and ~6% for the fill. */
+     ~30% for the border and ~6% for the fill. Flow Blue is the exception: it is too dark
+     for small text on the background, so its text is --ex-flow-blue-text and its border
+     and fill are stronger. */
   [data-theme="exeris"] :is(.exeris-badge, .exeris-tag) {
     display: inline-flex;
     align-items: center;
@@ -395,34 +429,24 @@
     white-space: nowrap;
   }
 
-  [data-theme="exeris"] .exeris-badge-primary {
-    color: var(--ex-accent);
-    border-color: color-mix(in oklch, var(--ex-accent) 30%, transparent);
-    background-color: color-mix(in oklch, var(--ex-accent) 6%, transparent);
-  }
-
-  [data-theme="exeris"] .exeris-tag-kernel {
-    color: var(--ex-kernel);
-    border-color: color-mix(in oklch, var(--ex-kernel) 30%, transparent);
-    background-color: color-mix(in oklch, var(--ex-kernel) 6%, transparent);
-  }
-
-  [data-theme="exeris"] .exeris-tag-react {
-    color: var(--ex-react);
-    border-color: color-mix(in oklch, var(--ex-react) 30%, transparent);
-    background-color: color-mix(in oklch, var(--ex-react) 6%, transparent);
-  }
-
-  [data-theme="exeris"] .exeris-tag-amber {
-    color: var(--ex-amber);
-    border-color: color-mix(in oklch, var(--ex-amber) 30%, transparent);
-    background-color: color-mix(in oklch, var(--ex-amber) 6%, transparent);
+  [data-theme="exeris"] :is(.exeris-badge-primary, .exeris-tag-flow) {
+    color: var(--ex-flow-blue-text);
+    border-color: color-mix(in oklch, var(--ex-flow-blue) 45%, transparent);
+    background-color: color-mix(in oklch, var(--ex-flow-blue) 10%, transparent);
   }
 
   [data-theme="exeris"] .exeris-tag-cyan {
-    color: var(--ex-cyan);
-    border-color: color-mix(in oklch, var(--ex-cyan) 30%, transparent);
-    background-color: color-mix(in oklch, var(--ex-cyan) 6%, transparent);
+    color: var(--ex-flow-cyan);
+    border-color: color-mix(in oklch, var(--ex-flow-cyan) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-flow-cyan) 6%, transparent);
+  }
+
+  /* Evidence Orange marks a verified result — a measured figure, a verdict — and nothing
+     else, so it is reachable only through the -evidence modifiers. */
+  [data-theme="exeris"] .exeris-tag-evidence {
+    color: var(--ex-evidence);
+    border-color: color-mix(in oklch, var(--ex-evidence) 30%, transparent);
+    background-color: color-mix(in oklch, var(--ex-evidence) 6%, transparent);
   }
 
   [data-theme="exeris"] :is(.exeris-badge-success, .exeris-tag-ok) {
@@ -457,9 +481,9 @@
   }
 
   [data-theme="exeris"] .exeris-alert-info {
-    border-color: color-mix(in oklch, var(--ex-accent) 32%, transparent);
-    border-left-color: var(--ex-accent);
-    background-color: color-mix(in oklch, var(--ex-accent) 6%, var(--ex-surface));
+    border-color: color-mix(in oklch, var(--ex-flow-cyan) 32%, transparent);
+    border-left-color: var(--ex-flow-cyan);
+    background-color: color-mix(in oklch, var(--ex-flow-cyan) 6%, var(--ex-surface));
     color: var(--ex-fg);
   }
 
@@ -495,10 +519,10 @@
     font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--ex-accent);
+    color: var(--ex-flow-cyan);
   }
 
-  /* LED: a 7px status dot; the toned variants glow, kernel and live pulse. */
+  /* LED: a 7px status dot; the toned variants glow, flow and live pulse. */
   [data-theme="exeris"] .exeris-led {
     display: inline-block;
     flex: none;
@@ -514,9 +538,9 @@
     box-shadow: 0 0 8px var(--ex-ok);
   }
 
-  [data-theme="exeris"] .exeris-led-kernel {
-    background-color: var(--ex-kernel);
-    box-shadow: 0 0 8px var(--ex-kernel);
+  [data-theme="exeris"] .exeris-led-flow {
+    background-color: var(--ex-flow-blue);
+    box-shadow: 0 0 8px var(--ex-flow-blue);
     animation: exeris-led-pulse 2.4s ease-in-out infinite;
   }
 
@@ -538,7 +562,7 @@
 
   /* A pulse is decoration; a user who asked for less motion gets a steady light. */
   @media (prefers-reduced-motion: reduce) {
-    [data-theme="exeris"] :is(.exeris-led-kernel, .exeris-led-live) {
+    [data-theme="exeris"] :is(.exeris-led-flow, .exeris-led-live) {
       animation: none;
     }
   }
@@ -571,16 +595,17 @@
     color: var(--ex-fg);
   }
 
-  [data-theme="exeris"] .exeris-kpi-value-kernel {
-    color: var(--ex-kernel);
+  [data-theme="exeris"] .exeris-kpi-value-flow {
+    color: var(--ex-flow-blue-text);
   }
 
-  [data-theme="exeris"] .exeris-kpi-value-amber {
-    color: var(--ex-amber);
+  [data-theme="exeris"] .exeris-kpi-value-cyan {
+    color: var(--ex-flow-cyan);
   }
 
-  [data-theme="exeris"] .exeris-kpi-value-react {
-    color: var(--ex-react);
+  /* A figure in Evidence Orange claims to be measured and verified; use it for nothing else. */
+  [data-theme="exeris"] .exeris-kpi-value-evidence {
+    color: var(--ex-evidence);
   }
 
   [data-theme="exeris"] .exeris-kpi-sub {
@@ -588,7 +613,9 @@
     color: var(--ex-fg-3);
   }
 
-  /* Code block, and the token spans a highlighter or a hand-written sample puts in it. */
+  /* Code block, and the token spans a highlighter or a hand-written sample puts in it. The
+     palette stays on the brand's blue-to-cyan axis plus the text steps, so no token reads
+     as Evidence Orange or as a status colour. */
   [data-theme="exeris"] .exeris-code {
     display: block;
     margin: 0;
@@ -604,13 +631,13 @@
     tab-size: 2;
   }
 
-  [data-theme="exeris"] .exeris-code-kw { color: oklch(0.78 0.16 340); }
-  [data-theme="exeris"] .exeris-code-an { color: var(--ex-kernel); font-weight: 500; }
-  [data-theme="exeris"] .exeris-code-ty { color: oklch(0.8 0.13 220); }
-  [data-theme="exeris"] .exeris-code-str { color: oklch(0.85 0.12 80); }
-  [data-theme="exeris"] .exeris-code-num { color: var(--ex-react); }
+  [data-theme="exeris"] .exeris-code-kw { color: var(--ex-flow-blue-text); }
+  [data-theme="exeris"] .exeris-code-an { color: var(--ex-flow-cyan); font-weight: 500; }
+  [data-theme="exeris"] .exeris-code-ty { color: oklch(0.84 0.08 230); }
+  [data-theme="exeris"] .exeris-code-str { color: oklch(0.8 0.1 190); }
+  [data-theme="exeris"] .exeris-code-num { color: oklch(0.9 0.05 263); }
   [data-theme="exeris"] .exeris-code-cm { color: var(--ex-fg-4); font-style: italic; }
-  [data-theme="exeris"] .exeris-code-fn { color: oklch(0.88 0.14 95); }
+  [data-theme="exeris"] .exeris-code-fn { color: var(--ex-fg); }
   [data-theme="exeris"] .exeris-code-pn { color: var(--ex-fg-3); }
 
   [data-theme="exeris"] .exeris-code-ln {
@@ -672,11 +699,11 @@
     color: var(--ex-fg-2);
   }
 
-  /* Link: accent text over a dashed rule, both turning to the foreground on hover. */
+  /* Link: Flow Cyan text over a dashed rule, both turning to the foreground on hover. */
   [data-theme="exeris"] .exeris-link {
-    color: var(--ex-accent);
+    color: var(--ex-flow-cyan);
     text-decoration: none;
-    border-bottom: 1px dashed color-mix(in oklch, var(--ex-accent) 50%, transparent);
+    border-bottom: 1px dashed color-mix(in oklch, var(--ex-flow-cyan) 50%, transparent);
     transition: color 150ms ease, border-color 150ms ease;
   }
 
@@ -686,7 +713,7 @@
   }
 
   [data-theme="exeris"] .exeris-link:focus-visible {
-    outline: 1px solid var(--ex-accent);
+    outline: 1px solid var(--ex-flow-cyan);
     outline-offset: 2px;
   }
 }
