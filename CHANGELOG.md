@@ -67,6 +67,17 @@ for per-version upgrade steps.
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
+### Removed
+
+- **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**
+  The entry named `${jackson.version}`, a version of that artifact Maven Central does not have:
+  only `3.0.0-rc1` and `3.0.0-rc2` were published, and from Jackson 3.0 `java.time` support is
+  part of `jackson-databind` (`tools.jackson.databind.ext.javatime`). No module in this reactor
+  declares it, so no build changes. **Downstream:** a consumer that declared it through the BOM
+  could not resolve it; drop the dependency, `jackson-databind` already carries the support. The
+  2.x artifact `com.fasterxml.jackson.datatype:jackson-datatype-jsr310`, which `exeris-tooling`
+  uses, was never managed here and is unaffected.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking
