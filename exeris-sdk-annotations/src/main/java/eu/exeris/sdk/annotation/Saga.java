@@ -335,6 +335,12 @@ public @interface Saga {
     /**
      * Timeout for entire compensation phase (ISO-8601 duration).
      *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.compensationTimeout()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact. The component
+     * holds its builder default, {@code "PT10M"}, on every build path.
+     *
      * @return compensation timeout
      */
     String compensationTimeout() default "PT10M";
@@ -342,12 +348,22 @@ public @interface Saga {
     /**
      * Max retries for individual compensation steps.
      *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.compensationMaxRetries()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact.
+     *
      * @return compensation max retries
      */
     int compensationMaxRetries() default 5;
 
     /**
      * Delay between compensation retries.
+     *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.compensationRetryDelay()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact.
      *
      * @return compensation retry delay
      */
@@ -357,6 +373,11 @@ public @interface Saga {
      * Continue compensation on individual step failure.
      * <p>When true, continues to next compensation even if one fails.
      *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.continueCompensationOnFailure()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact.
+     *
      * @return continue on failure
      */
     boolean continueCompensationOnFailure() default true;
@@ -364,6 +385,11 @@ public @interface Saga {
     /**
      * Dead letter queue for failed compensations.
      * <p>Unrecoverable compensation failures are sent here.
+     *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.compensationDlq()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact.
      *
      * @return DLQ topic name
      */
@@ -373,12 +399,23 @@ public @interface Saga {
      * Custom compensation handler class.
      * <p>Called when automatic compensation fails.
      *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.compensationFailureHandler()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact. The component
+     * carries the class's fully-qualified name.
+     *
      * @return handler class
      */
     Class<?> compensationFailureHandler() default void.class;
 
     /**
      * Trigger manual intervention on compensation failure.
+     *
+     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
+     * {@code SagaMetadata.manualInterventionOnCompensationFailure()} carries it, but no {@code exeris-tooling} processor
+     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
+     * read it either, so setting it here changes no generated artifact.
      *
      * @return true to trigger intervention
      */

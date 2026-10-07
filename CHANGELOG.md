@@ -36,7 +36,24 @@ for per-version upgrade steps.
   `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094 Amendment 2. See
   [`MIGRATION.md` §`@exeris/ui-kit` 0.2.x → 0.3.0](MIGRATION.md).
 
+- **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.12.0"` → `"0.13.0"`** — a baseline
+  stamped `"0.12.0"` now reads as schema skew, and ADR-042 conflict detection refuses it. Regenerate
+  baselines against 0.13.0. The growth behind the bump is additive: `SagaMetadata`'s six new
+  components are by-name and nullable, and the record keeps its 16-component constructor. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Added
+
+- **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
+  named after their attributes: `compensationMaxRetries`, `compensationRetryDelay`,
+  `continueCompensationOnFailure`, `compensationDlq`, `compensationFailureHandler` (a fully-qualified
+  name) and `manualInterventionOnCompensationFailure`. Each is boxed and `null` when the author
+  declared nothing, so the annotation default applies and a producer that does not extract them
+  writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
+  pinned by `AstJsonRoundTripTest`. Builder setters for all six. No producer populates them yet:
+  the `exeris-tooling` processor and the `-io` reader extract them together (ADR-042). `@Saga`'s
+  seven compensation attributes without an extractor, `compensationTimeout` included, say so in
+  their status notes (RESERVED, carried but not extracted).
 
 - **`@exeris/ui-kit` 0.3.0: an opt-in Exeris brand theme, `@exeris/ui-kit/theme-exeris`.** Imported
   after the other entries, it applies under `data-theme="exeris"` and nowhere else. The default
