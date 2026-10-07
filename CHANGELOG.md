@@ -27,6 +27,16 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **CI: actions are pinned by commit SHA, and pull requests get a dependency review.** Every
+  third-party and GitHub-owned action is referenced by the commit its release tag names, with the
+  tag as a trailing comment; `.github/dependabot.yml` advances the pins weekly. The organisation's
+  reusable workflows stay on `exeris-systems/.github@main`, which publishes no tags for Dependabot
+  to follow. `dependency-review.yml` fails a pull request that adds a dependency with a moderate or
+  worse advisory, or under a GPL, LGPL, AGPL, SSPL, EPL or MPL licence, with an allow list for the
+  build and test tooling that nothing published redistributes. The Javadoc and TSDoc gates move out
+  of `guardrails.yml` into `javadoc.yml` and `tsdoc.yml`, so a change to their module lists no
+  longer edits the file whose edits switch the review off.
+
 - **`@exeris/ui-kit` is staged on npm and goes live on a maintainer's 2FA approval.**
   `publish-ui-kit.yml` runs `npm stage publish` (npm 11.15.0 or later, installed by the workflow)
   instead of `npm publish`, with a stage-only `NPM_TOKEN`. A version appears on registry.npmjs.org
@@ -56,6 +66,26 @@ for per-version upgrade steps.
   rest. The contributor checks move to `exeris-sdk-ui-kit/CONTRIBUTING.md`, which the tarball does
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
+
+### Removed
+
+- **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**
+  The entry named `${jackson.version}`, a version of that artifact Maven Central does not have:
+  only `3.0.0-rc1` and `3.0.0-rc2` were published, and from Jackson 3.0 `java.time` support is
+  part of `jackson-databind` (`tools.jackson.databind.ext.javatime`). No module in this reactor
+  declares it, so no build changes. **Downstream:** a consumer that declared it through the BOM
+  could not resolve it; drop the dependency, `jackson-databind` already carries the support. The
+  2.x artifact `com.fasterxml.jackson.datatype:jackson-datatype-jsr310`, which `exeris-tooling`
+  uses, was never managed here and is unaffected.
+
+### Security
+
+- **`jackson-databind` 3.2.2 → 3.2.3.** 3.2.0 through 3.2.2 carry two high-severity advisories:
+  unbounded retention of unknown raw type ids (GHSA-wv8q-qhhj-9h54, Dependabot #22) and quadratic
+  forward-reference completion (GHSA-cxp5-3px4-pw24, Dependabot #23), both fixed in 3.2.3.
+  `exeris-kernel-bom` is already on 3.2.3. `jackson.annotations.version` stays at `2.22`, checked
+  against `jackson-bom` 3.2.3. **Downstream:** a consumer importing `exeris-sdk-bom` gets 3.2.3 on
+  its next SDK version; one that pins `jackson-databind` itself should move to 3.2.3 now.
 
 ## [0.12.0] — 2026-10-02
 

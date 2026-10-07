@@ -1,0 +1,59 @@
+# The Javadoc gate of ADR-085 §F.21, run by exeris-systems/.github.
+#
+# A file of its own rather than a job in `guardrails.yml`, because that file carries
+# `claude-code-action`, which refuses to start when the workflow it runs under differs in any byte
+# from the copy on the default branch — and reports the refusal as a successful skip. The module
+# lists below change whenever the reactor does; kept in `guardrails.yml`, every such change would
+# be a pull request whose review silently did not run.
+name: javadoc
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+concurrency:
+  group: javadoc-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+
+jobs:
+  # ADR-085 §F.21. Two halves, and both have to be green before any release, because a Javadoc
+  # defect ships INSIDE the -javadoc.jar and a version on Central is permanent.
+  #
+  # `modules` is every jar this reactor publishes. `exeris-sdk-bom` and `exeris-sdk-parent` are
+  # pom-packaged and have nothing to document.
+  #
+  # `build-modules` carries `exeris-sdk-annotation-catalog`, which the gate has to BUILD and has no
+  # reason to CHECK. The module holds itself back from deploy (maven.deploy.skip in its own pom),
+  # so "every module published to Maven Central" does not reach it; `exeris-sdk-annotations`
+  # consumes it as an annotation processor through <annotationProcessorPaths>, which Maven does not
+  # treat as a reactor dependency edge — the root pom's <modules> comment says so and orders the
+  # declaration to compensate, which only helps a full reactor build. `-pl <modules> -am` neither
+  # selects nor reaches it, so without it the install step fails with "Could not find artifact
+  # eu.exeris:exeris-sdk-annotation-catalog" before reaching a doc comment. Naming it in `modules`
+  # would build it and also grade a build-time module the standard does not ask about;
+  # `build-modules` builds it without grading it.
+  #
+  # `trivial-accessors: exempt` opts out of the Checkstyle half of rule 1 for single-line bodies,
+  # and the opt-out is narrow and covered rather than convenient. Under the pinned 13.8.0, every
+  # error `documented` (the default) reports on this reactor is a fluent builder setter of the
+  # shape `public Builder x(T v) { this.x = v; return this; }`, and `exempt` reports none. Two
+  # things already cover them, and both are stricter than what is being dropped —
+  # `maven-javadoc-plugin` runs doclint with failOnWarnings, and `JavadocCompletenessTest` requires
+  # a doc comment on every public member of `source-model` EXCEPT a setter whose body is exactly
+  # that assignment, with the assigned field back-referenced to the method name. Checkstyle cannot
+  # express a body shape; the test can, and does. Documenting them instead would put one comment
+  # per setter restating `this.x = v` into a -javadoc.jar on Central, permanently.
+  #
+  # No `extra-maven-args`: the semver gate is an opt-in `semver` profile in the root pom, so the
+  # plain `install` this job runs never reaches japicmp or its unpublished baseline.
+  #
+  # No dedicated profile: the strict Javadoc settings here live unconditionally in each module's
+  # own pom and the `release` profile deliberately does not relax them, so the gate runs exactly
+  # the configuration a release runs. The gate requires the jacoco.skip line in the root pom — see
+  # its comment there.
+  javadoc:
+    uses: exeris-systems/.github/.github/workflows/javadoc-gate.yml@main
+    with:
+      modules: exeris-sdk-annotations,exeris-sdk-source-model,exeris-sdk-source-model-io,exeris-sdk-composition-spec,exeris-sdk-composition-lifecycle,exeris-sdk-composition-runtime,exeris-sdk-tck
+      build-modules: exeris-sdk-annotation-catalog
+      trivial-accessors: exempt

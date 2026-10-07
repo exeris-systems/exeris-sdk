@@ -17,8 +17,8 @@ permissions:
   issues: write
 
 # Referenced by branch rather than by commit SHA, for the reason set out at length in
-# guardrails.yml: this repository tag-references its actions and runs no Dependabot, so a
-# hand-typed SHA would freeze the gate rather than pin it.
+# guardrails.yml: exeris-systems/.github publishes no tags, so Dependabot has nothing to advance a
+# SHA to, and a hand-typed one would freeze the gate rather than pin it.
 
 jobs:
   labels:
