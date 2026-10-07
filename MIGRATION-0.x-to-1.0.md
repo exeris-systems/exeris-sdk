@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-10-02
+last-verified: 2026-10-04
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -251,9 +251,10 @@ freeze or is explicitly re-dispositioned here.
   Those keep their assertions but lose the discriminator, because after this
   change there is no second candidate to distinguish from — their comments say
   so rather than claiming a distinction that no longer exists.
-- [~] **japicmp/revapi semver gate** — **configured (0.10.0)**, covering all
+- [x] **japicmp/revapi semver gate** — **configured (0.10.0)**, covering all
   six non-annotation publishable modules (opt-in through `-Psemver` since
-  0.12.0, see below) and **strict by default**. As configured in 0.10.0 it encoded the record-growth stance of the
+  0.12.0, see below), **strict by default**, and **run by CI since the 0.13.0
+  line opened** against the `0.12.0` baseline on Maven Central. As configured in 0.10.0 it encoded the record-growth stance of the
   time by downgrading `CONSTRUCTOR_REMOVED` to a MINOR-level compatible change
   where records live, since that is the signal a trailing component produced.
   **Amended 2026-09-26 (Stellar finding S6):** the stance changed (§3), and with
@@ -283,14 +284,13 @@ freeze or is explicitly re-dispositioned here.
     runs only the baseline-free guards (`AnnotationSurfaceContractTest`,
     `RecordComponentOrderTest`, `RecordConstructorLedgerTest`). Until then it
     was bound to `verify`, so every workflow and every fresh clone had to pass
-    `-Djapicmp.skip=true`: the baseline is the last released jar, `0.11.0`,
-    and no release at or below it was ever published to Central. Inside the
-    profile an absent baseline still fails the build rather than passing
-    quietly. CI adds `-Psemver` to `build.yml` and `release.yml` when the
-    0.13.0 line opens against a Central-resolvable `0.12.0` baseline — the
-    first version that can be one — and that edit is what starts 1.x binary
-    enforcement. Turning Central on and giving the gate something to resolve
-    were two changes, not one (corrected 2026-09-03).
+    `-Djapicmp.skip=true`: the baseline was then `0.11.0`, and no release at
+    or below it was ever published to Central. Inside the profile an absent
+    baseline still fails the build rather than passing quietly. The baseline
+    is now `0.12.0`, the first version Central serves, and `build.yml` and
+    `release.yml` pass `-Psemver` from the 0.13.0 line on; that edit started
+    1.x binary enforcement. Turning Central on and giving the gate something
+    to resolve were two changes, not one.
   - **The annotations module runs no japicmp at all.** `@Retention(SOURCE)`
     means no runtime presence in a consumer image, and japicmp reports a new
     annotation element as `METHOD_ABSTRACT_ADDED_TO_CLASS` whether or not it

@@ -40,17 +40,13 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
-      # No semver gate here, and no flag needed to leave it out: japicmp runs only under the
-      # root pom's opt-in `semver` profile, and its configured baseline is not one Maven Central
-      # serves, so a runner could not resolve it. Once the baseline is on Central, adding
-      # -Psemver to this step and to release.yml is the single edit that starts 1.x binary
-      # enforcement; the root pom's japicmp comment and the ROADMAP say when.
-      #
-      # The half of the record-growth stance that needs no baseline —
+      # -Psemver runs japicmp against the last release, `japicmp.baseline.version` in the root
+      # pom, which Maven Central serves; a binary-incompatible change outside the record-growth
+      # stance fails the build. The half of the stance that needs no baseline —
       # RecordComponentOrderTest, RecordConstructorLedgerTest and
-      # AnnotationSurfaceContractTest — runs here unconditionally as ordinary tests.
-      - name: mvn -B verify (runs Java tests + JaCoCo 85% gate)
-        run: mvn -B -ntp verify
+      # AnnotationSurfaceContractTest — runs as ordinary tests.
+      - name: mvn -B verify (Java tests, JaCoCo 85% gate, semver gate)
+        run: mvn -B -ntp -Psemver verify
 
       - name: ui-kit npm test (Vitest + 85% coverage gate)
         working-directory: exeris-sdk-ui-kit

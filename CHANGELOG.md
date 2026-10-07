@@ -20,7 +20,7 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.11.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
 ## [Unreleased]
@@ -55,6 +55,11 @@ for per-version upgrade steps.
   under the default light, default dark and brand themes.
 
 ### Changed
+
+- **CI runs the semver gate.** `build.yml` and `release.yml` pass `-Psemver`, so japicmp compares
+  every build with `0.12.0`, the last release, which Maven Central serves. A binary-incompatible
+  change outside the record-growth stance fails CI. `japicmp.baseline.version` moves `0.11.0` →
+  `0.12.0`; a local `mvn verify` still does not resolve the baseline.
 
 - **CI: actions are pinned by commit SHA, and pull requests get a dependency review.** Every
   third-party and GitHub-owned action is referenced by the commit its release tag names, with the
@@ -1788,6 +1793,7 @@ None — the first milestone.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.12.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.12.0
 [0.11.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.11.0
 [0.10.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.10.0
 [0.9.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.9.0

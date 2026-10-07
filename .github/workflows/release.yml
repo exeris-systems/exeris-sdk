@@ -189,11 +189,8 @@ jobs:
         # changes every published jar's bytes, so it belongs to a change of its own with its own
         # reproducibility check.)
         #
-        # No -Psemver: the semver gate is an opt-in profile in the root pom, and its configured
-        # baseline is not one Central serves. A maintainer runs `mvn -Psemver verify` before
-        # tagging, against whatever baseline their machine can resolve. Once the baseline is on
-        # Central, adding -Psemver to both commands below and to build.yml is the edit that starts
-        # 1.x binary enforcement; the root pom's japicmp comment and the ROADMAP say when.
+        # -Psemver: the release is compared with the last release, `japicmp.baseline.version` in
+        # the root pom, as every build.yml run is.
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
@@ -207,9 +204,9 @@ jobs:
             # signature fails HERE rather than silently sitting in the portal. Review the results
             # and press Publish there. Until you do it can be Dropped; after you do, nothing about
             # it can ever be changed.
-            mvn -B -ntp -P release clean deploy --settings .github/maven-settings.xml
+            mvn -B -ntp -P release,semver clean deploy --settings .github/maven-settings.xml
           else
-            mvn -B -ntp -P release clean verify
+            mvn -B -ntp -P release,semver clean verify
           fi
 
       - name: Release-readiness check
