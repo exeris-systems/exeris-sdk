@@ -67,6 +67,15 @@ for per-version upgrade steps.
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
+### Security
+
+- **`jackson-databind` 3.2.2 → 3.2.3.** 3.2.0 through 3.2.2 carry two high-severity advisories:
+  unbounded retention of unknown raw type ids (GHSA-wv8q-qhhj-9h54, Dependabot #22) and quadratic
+  forward-reference completion (GHSA-cxp5-3px4-pw24, Dependabot #23), both fixed in 3.2.3.
+  `exeris-kernel-bom` is already on 3.2.3. `jackson.annotations.version` stays at `2.22`, checked
+  against `jackson-bom` 3.2.3. **Downstream:** a consumer importing `exeris-sdk-bom` gets 3.2.3 on
+  its next SDK version; one that pins `jackson-databind` itself should move to 3.2.3 now.
+
 ## [0.12.0] — 2026-10-02
 
 ### Breaking
