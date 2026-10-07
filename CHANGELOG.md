@@ -61,6 +61,25 @@ for per-version upgrade steps.
   change outside the record-growth stance fails CI. `japicmp.baseline.version` moves `0.11.0` →
   `0.12.0`; a local `mvn verify` still does not resolve the baseline.
 
+- **`@exeris/ui-kit` 0.4.0: the brand theme follows brand kit v6.** `@exeris/ui-kit/theme-exeris`
+  takes the kit's five colours verbatim — Background `#0A0F1A`, Surface `#F8FAFC`, Flow Blue
+  `#2563EB`, Flow Cyan `#06B6D4`, Evidence Orange `#F59E0B` — and derives its surface, text, line
+  and hover steps from them in oklch. Flow Blue fills the primary action and is `--exeris-primary`;
+  Flow Cyan carries links, focus, info and the eyebrow. The Flow Blue → Flow Cyan gradient is the
+  `--ex-flow` token, which no class paints. Evidence Orange is painted only by the new
+  `exeris-tag-evidence` and `exeris-kpi-value-evidence`. No `--exeris-*` token carries it, and the
+  warning colour moves from amber to a yellow at hue 100, deltaEOK 0.14 from it. The prototype
+  names, preview tier, are removed: `--ex-accent`, `--ex-accent-dim`, `--ex-kernel`,
+  `--ex-kernel-dim`, `--ex-react`, `--ex-amber`, `--ex-cyan`, `--ex-rose`, and the primitives
+  `exeris-tag-kernel`, `-react`, `-amber`, `exeris-led-kernel`, `exeris-kpi-value-kernel`, `-amber`,
+  `-react`. New: `--ex-flow-blue`, `--ex-flow-cyan`, `--ex-flow`, `--ex-flow-blue-hover`,
+  `--ex-flow-blue-text`, `--ex-evidence`, `exeris-tag-flow`, `exeris-tag-evidence`,
+  `exeris-led-flow`, `exeris-kpi-value-flow`, `-cyan`, `-evidence`. The code-token colours stay on
+  the blue-to-cyan axis. `tests/theme-exeris.test.js` checks the kit values verbatim, recomputes
+  each channel from its hex or oklch source, and holds Evidence Orange to the two evidence
+  modifiers. The default theme and the frozen surface do not change. See
+  [`MIGRATION.md` §`@exeris/ui-kit` 0.3.x → 0.4.0](MIGRATION.md).
+
 - **CI: actions are pinned by commit SHA, and pull requests get a dependency review.** Every
   third-party and GitHub-owned action is referenced by the commit its release tag names, with the
   tag as a trailing comment; `.github/dependabot.yml` advances the pins weekly. The organisation's

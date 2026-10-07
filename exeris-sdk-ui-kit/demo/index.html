@@ -128,6 +128,8 @@
   <template id="primitives">
     <section>
       <h2>Brand primitives</h2>
+      <!-- The flow gradient belongs to one flow element per view; here it is the hero rule. -->
+      <div style="height:2px;margin-bottom:20px;background:var(--ex-flow)"></div>
       <div class="exeris-section-head">
         <span class="exeris-eyebrow">Runtime · 01</span>
         <h2>One kernel, three tiers</h2>
@@ -138,26 +140,25 @@
       <h2>Tags and LEDs</h2>
       <div class="demo-row">
         <span class="exeris-tag">default</span>
-        <span class="exeris-tag exeris-tag-kernel"><span class="exeris-led exeris-led-kernel"></span>kernel</span>
-        <span class="exeris-tag exeris-tag-react">react</span>
-        <span class="exeris-tag exeris-tag-amber">enterprise</span>
-        <span class="exeris-tag exeris-tag-cyan">L2</span>
+        <span class="exeris-tag exeris-tag-flow"><span class="exeris-led exeris-led-flow"></span>flow</span>
+        <span class="exeris-tag exeris-tag-cyan">cyan</span>
+        <span class="exeris-tag exeris-tag-evidence">verified</span>
         <span class="exeris-tag exeris-tag-ok"><span class="exeris-led exeris-led-live"></span>live</span>
         <span class="exeris-tag exeris-tag-warn">warn</span>
         <span class="exeris-tag exeris-tag-err">err</span>
         <span class="exeris-tag exeris-tag-muted">muted</span>
       </div>
       <div class="demo-row" style="margin-top:12px">
-        <span class="exeris-led"></span><span class="exeris-led exeris-led-ok"></span><span class="exeris-led exeris-led-kernel"></span>
+        <span class="exeris-led"></span><span class="exeris-led exeris-led-ok"></span><span class="exeris-led exeris-led-flow"></span>
         <span class="exeris-led exeris-led-warn"></span><span class="exeris-led exeris-led-err"></span><span class="exeris-led exeris-led-live"></span>
       </div>
     </section>
     <section>
       <h2>KPI</h2>
       <div class="demo-kpis">
-        <div class="exeris-kpi"><span class="exeris-kpi-label">Requests / s</span><span class="exeris-kpi-value exeris-kpi-value-kernel">182,400</span><span class="exeris-kpi-sub">kernel-direct</span></div>
-        <div class="exeris-kpi"><span class="exeris-kpi-label">Tenants</span><span class="exeris-kpi-value exeris-kpi-value-amber">36</span><span class="exeris-kpi-sub">enterprise</span></div>
-        <div class="exeris-kpi"><span class="exeris-kpi-label">Views</span><span class="exeris-kpi-value exeris-kpi-value-react">1,204</span><span class="exeris-kpi-sub">community</span></div>
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Domains</span><span class="exeris-kpi-value exeris-kpi-value-flow">36</span><span class="exeris-kpi-sub">exeris-kpi-value-flow</span></div>
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Views</span><span class="exeris-kpi-value exeris-kpi-value-cyan">1,204</span><span class="exeris-kpi-sub">exeris-kpi-value-cyan</span></div>
+        <div class="exeris-kpi"><span class="exeris-kpi-label">Sample figure</span><span class="exeris-kpi-value exeris-kpi-value-evidence">0.00</span><span class="exeris-kpi-sub">exeris-kpi-value-evidence: verified results only</span></div>
       </div>
     </section>
     <section>
@@ -170,7 +171,7 @@
     <section>
       <h2>Definitions and link</h2>
       <dl style="margin:0">
-        <div class="exeris-def"><dt>Version</dt><dd>0.3.0</dd></div>
+        <div class="exeris-def"><dt>Version</dt><dd>0.4.0</dd></div>
         <div class="exeris-def"><dt>Tier</dt><dd>Community</dd></div>
       </dl>
       <p style="margin-top:14px"><a class="exeris-link" href="#">Read the ADR</a></p>

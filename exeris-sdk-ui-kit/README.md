@@ -96,8 +96,9 @@ after the imports:
 
 ## Exeris brand theme
 
-`@exeris/ui-kit/theme-exeris` is an opt-in brand theme: IBM Plex Sans and Mono, square corners, flat
-blue-black surfaces, mono uppercase buttons and labels. Import it last, then put
+`@exeris/ui-kit/theme-exeris` is an opt-in brand theme following the Exeris brand kit (v6): IBM Plex
+Sans and Mono, square corners, flat blue-black surfaces, a Flow Blue and Flow Cyan accent, mono
+uppercase buttons and labels. Import it last, then put
 `data-theme="exeris"` on `<html>` or on any container:
 
 ```css
@@ -122,28 +123,48 @@ re-points the `--exeris-*` properties and squares Tailwind's `rounded-*` scale w
   it from your page. Without it the text falls back to the system sans-serif and monospace faces.
   The base text size is left alone. The brand sets body copy at 13px; set that on your own
   root if you want it.
-- **Brand tokens.** The scope declares the brand palette as `--ex-*` properties in oklch:
-  `--ex-bg`, `--ex-bg-1`, `--ex-surface` … `--ex-surface-4`, `--ex-fg` … `--ex-fg-5`, `--ex-line`,
-  `--ex-line-2`, `--ex-line-strong`, `--ex-accent`, `--ex-accent-dim`, `--ex-kernel`,
-  `--ex-kernel-dim`, `--ex-react`, `--ex-amber`, `--ex-cyan`, `--ex-rose`, `--ex-ok`, `--ex-warn`,
-  `--ex-err`, `--ex-font` and `--ex-mono`. The `--exeris-*` colours it sets are the sRGB conversions
-  of these, because the kit's colours are RGB channels.
+- **Brand tokens.** The scope declares the palette as `--ex-*` properties. The brand kit's five
+  colours are declared verbatim; every other step is derived from them in oklch. The `--exeris-*`
+  colours the theme sets are the sRGB values of these, because the kit's colours are RGB channels.
+
+| Token | Value | Role |
+|:--|:--|:--|
+| `--ex-bg` | `#0A0F1A` | Background |
+| `--ex-fg` | `#F8FAFC` | Surface: text on dark (`--exeris-text-primary`) |
+| `--ex-flow-blue` | `#2563EB` | Flow Blue: the primary action, solid (`--exeris-primary`) |
+| `--ex-flow-cyan` | `#06B6D4` | Flow Cyan: links, focus, info, eyebrow (`--exeris-border-focus`, `--exeris-info`) |
+| `--ex-flow` | `#2563EB` → `#06B6D4` | The flow gradient, for the flow element only |
+| `--ex-evidence` | `#F59E0B` | Evidence Orange: verified results only |
+| `--ex-bg-1`, `--ex-surface` … `--ex-surface-4` | oklch, hue 265 | Surface steps above the background |
+| `--ex-fg-2` … `--ex-fg-5` | oklch, hue 265 | Text steps, from secondary text to line numbers |
+| `--ex-line`, `--ex-line-2`, `--ex-line-strong` | oklch, hue 265 | Rules and borders |
+| `--ex-flow-blue-hover`, `--ex-flow-blue-text` | oklch, hue 263 | The primary hover fill, and Flow Blue lifted for small text |
+| `--ex-ok`, `--ex-warn`, `--ex-err` | oklch | Functional status (`--exeris-success`, `-warning`, `-danger`) |
+| `--ex-font`, `--ex-mono` | IBM Plex Sans, IBM Plex Mono | Type |
+
+- **The accent is solid.** Buttons, links and focus use Flow Blue or Flow Cyan as flat colours. The
+  `--ex-flow` gradient is for the flow element alone, one hero or mark element per view, and no class
+  in the theme paints it: put it on that element yourself (`background: var(--ex-flow)`).
+- **Evidence Orange is for verified results.** It marks a measured figure or a verdict and is never a
+  UI accent: only `exeris-tag-evidence` and `exeris-kpi-value-evidence` paint it, no `--exeris-*`
+  token carries it, and the warning colour is a yellow at a distinct hue. Use the evidence modifiers
+  only on a value that has been measured and checked.
 
 The scope also provides brand primitives the component layer lacks:
 
 | Primitive | Classes |
 |:--|:--|
 | Eyebrow | `exeris-eyebrow` |
-| Tag | `exeris-tag` with `-kernel`, `-react`, `-amber`, `-cyan`, `-ok`, `-warn`, `-err`, `-muted` |
-| LED status dot | `exeris-led` with `-ok`, `-kernel`, `-warn`, `-err`, `-live`. `-kernel` and `-live` pulse, and stay steady under `prefers-reduced-motion` |
-| KPI | `exeris-kpi`, `exeris-kpi-label`, `exeris-kpi-value` with `-kernel`, `-amber`, `-react`, `exeris-kpi-sub` |
+| Tag | `exeris-tag` with `-flow`, `-cyan`, `-evidence`, `-ok`, `-warn`, `-err`, `-muted` |
+| LED status dot | `exeris-led` with `-ok`, `-flow`, `-warn`, `-err`, `-live`. `-flow` and `-live` pulse, and stay steady under `prefers-reduced-motion` |
+| KPI | `exeris-kpi`, `exeris-kpi-label`, `exeris-kpi-value` with `-flow`, `-cyan`, `-evidence`, `exeris-kpi-sub` |
 | Code block | `exeris-code`, token spans `exeris-code-kw`, `-an`, `-ty`, `-str`, `-num`, `-cm`, `-fn`, `-pn`, line numbers `exeris-code-ln` |
 | Definition row | `exeris-def` (a `<div>` holding one `<dt>` and `<dd>`, inside a `<dl>`) |
 | Section head | `exeris-section-head` (an `<h2>` and a `<p>`, optionally an eyebrow) |
 | Dashed link | `exeris-link` |
 
 ```html
-<span class="exeris-tag exeris-tag-kernel"><span class="exeris-led exeris-led-kernel"></span>kernel</span>
+<span class="exeris-tag exeris-tag-flow"><span class="exeris-led exeris-led-flow"></span>flow</span>
 ```
 
 Like `@exeris/ui-kit/preview`, this entry sits outside the 1.0 freeze. Its path, the attribute, the

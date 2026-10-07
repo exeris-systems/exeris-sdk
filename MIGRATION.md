@@ -18,6 +18,31 @@ the upgrade steps required.
 
 ---
 
+## `@exeris/ui-kit` 0.3.x → 0.4.0
+
+The opt-in brand theme, `@exeris/ui-kit/theme-exeris`, follows brand kit v6. Its `--ex-*` tokens and
+brand primitives are preview tier (ADR-094 Amendment 2), and the prototype palette's names are
+removed. Nothing outside `data-theme="exeris"` changes, and no `--exeris-*` name or class in
+`@exeris/ui-kit/styles` moves. If your markup or stylesheet uses a removed name, rename it:
+
+| 0.3.x | 0.4.0 |
+|:--|:--|
+| `exeris-tag-kernel` | `exeris-tag-flow` |
+| `exeris-tag-cyan` | `exeris-tag-cyan` (now Flow Cyan) |
+| `exeris-tag-react`, `exeris-tag-amber` | no direct successor: a tone for a tier is gone; use `exeris-tag-flow`, `-cyan` or `-muted` |
+| `exeris-led-kernel` | `exeris-led-flow` |
+| `exeris-kpi-value-kernel` | `exeris-kpi-value-flow` |
+| `exeris-kpi-value-react` | `exeris-kpi-value-cyan` |
+| `exeris-kpi-value-amber` | `exeris-kpi-value-evidence`, only for a measured, verified figure; otherwise no modifier |
+| `--ex-accent` | `--ex-flow-cyan` for text and focus, `--ex-flow-blue` for fills |
+| `--ex-accent-dim` | `--ex-flow-blue-hover` |
+| `--ex-kernel`, `--ex-kernel-dim`, `--ex-react`, `--ex-rose` | none; use the Flow tokens or the status tokens |
+| `--ex-amber` | `--ex-evidence` for verified results only; `--ex-warn` for a warning |
+| `--ex-cyan` | `--ex-flow-cyan` |
+
+Evidence Orange (`--ex-evidence`) is reserved for verified results: a benchmark figure, a verdict.
+Do not use it as an accent or a warning.
+
 ## `@exeris/ui-kit` 0.2.x → 0.3.0
 
 The UI kit versions on its own line (ADR-094). 0.3.0 splits the component classes into two entries.
