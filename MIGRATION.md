@@ -21,7 +21,7 @@ the upgrade steps required.
 ## `@exeris/ui-kit` 0.3.x → 0.4.0
 
 The opt-in brand theme, `@exeris/ui-kit/theme-exeris`, follows brand kit v6. Its `--ex-*` tokens and
-brand primitives are preview tier (ADR-094 Amendment 2), and the prototype palette's names are
+brand primitives are preview tier (`.agents/policies/ui-kit.md` rule 5), and the prototype palette's names are
 removed. Nothing outside `data-theme="exeris"` changes, and no `--exeris-*` name or class in
 `@exeris/ui-kit/styles` moves. If your markup or stylesheet uses a removed name, rename it:
 
