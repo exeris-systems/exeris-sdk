@@ -27,6 +27,16 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **CI: actions are pinned by commit SHA, and pull requests get a dependency review.** Every
+  third-party and GitHub-owned action is referenced by the commit its release tag names, with the
+  tag as a trailing comment; `.github/dependabot.yml` advances the pins weekly. The organisation's
+  reusable workflows stay on `exeris-systems/.github@main`, which publishes no tags for Dependabot
+  to follow. `dependency-review.yml` fails a pull request that adds a dependency with a moderate or
+  worse advisory, or under a GPL, LGPL, AGPL, SSPL, EPL or MPL licence, with an allow list for the
+  build and test tooling that nothing published redistributes. The Javadoc and TSDoc gates move out
+  of `guardrails.yml` into `javadoc.yml` and `tsdoc.yml`, so a change to their module lists no
+  longer edits the file whose edits switch the review off.
+
 - **`@exeris/ui-kit` is staged on npm and goes live on a maintainer's 2FA approval.**
   `publish-ui-kit.yml` runs `npm stage publish` (npm 11.15.0 or later, installed by the workflow)
   instead of `npm publish`, with a stage-only `NPM_TOKEN`. A version appears on registry.npmjs.org

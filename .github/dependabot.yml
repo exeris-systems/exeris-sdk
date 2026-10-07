@@ -1,0 +1,36 @@
+version: 2
+
+# Actions are pinned by commit SHA, which makes them immune to a moved tag but also invisible to a
+# human reading the file — nothing about `@11d5960a…` says it is a major behind. Dependabot is what
+# closes that: it rewrites the SHA and the trailing `# vX.Y.Z` comment together, so the pin stays
+# current without anyone auditing the refs by hand. Without it, SHA-pinning trades a supply-chain
+# risk for a staleness one.
+#
+# The organisation's own reusable workflows (`exeris-systems/.github/...@main`) are not pinned and
+# this file does not move them: that repository publishes no tags, so there is no version for
+# Dependabot to advance a SHA to. `guardrails.yml` says why they stay on `@main`.
+#
+# Only the actions ecosystem is enabled. Maven and npm dependency bumps land in pull requests that
+# run the full reactor, the coverage gates and japicmp / api-extractor; opening them as automated
+# pull requests one artifact at a time would put version changes on a path that reviews nothing
+# about what the bump does to the published surface.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(actions)"
+    # The organisation taxonomy's label (labels.yml), not Dependabot's default `dependencies`,
+    # which the taxonomy does not define.
+    labels:
+      - "type: dependency"
+    groups:
+      # One pull request for the routine GitHub-owned bumps rather than five. claude-code-action
+      # stays ungrouped: it is the one worth reading a changelog for before merging.
+      github-owned:
+        patterns:
+          - "actions/*"
+          - "github/*"
