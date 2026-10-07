@@ -40,7 +40,16 @@ public enum Facet {
      *
      * @since 0.12
      */
-    SAGA;
+    SAGA,
+
+    /**
+     * The compensation section of {@code @Saga} — {@code compensationTimeout} and the six
+     * components that are {@code null} when undeclared — including a declared {@code 0} and
+     * {@code false}, and the failure handler as a fully-qualified name.
+     *
+     * @since 0.13
+     */
+    SAGA_COMPENSATION;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);

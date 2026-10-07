@@ -32,6 +32,9 @@ final class ReferenceBinding {
     /** The version {@code Order}'s {@code @Saga} declares — deliberately not the default {@code 1}. */
     static final int ORDER_SAGA_VERSION = 3;
 
+    /** The handler {@code Order}'s {@code @Saga} names, fully qualified as javac reports it. */
+    static final String ORDER_SAGA_FAILURE_HANDLER = TckCorpus.packageName() + ".Order.CompensationEscalation";
+
     private ReferenceBinding() {
     }
 
@@ -101,14 +104,30 @@ final class ReferenceBinding {
                                 .displayName("Note")
                                 .build()))
                 .actions(List.of(ActionMetadata.simple("submit")))
-                .sagaMetadata(SagaMetadata.builder(ORDER_SAGA)
-                        .version(ORDER_SAGA_VERSION)
-                        .steps(List.of(SagaStepMetadata.builder("charge", 1)
-                                .service("payments")
-                                .command("charge")
-                                .build()))
-                        .build())
+                .sagaMetadata(orderSaga().build())
                 .build();
+    }
+
+    /**
+     * The saga {@code Order} declares, as a builder, so a self-test can change exactly one
+     * component and leave the rest conforming.
+     *
+     * @return a builder holding the reference saga
+     */
+    static SagaMetadata.Builder orderSaga() {
+        return SagaMetadata.builder(ORDER_SAGA)
+                .version(ORDER_SAGA_VERSION)
+                .compensationTimeout("PT2M")
+                .compensationMaxRetries(0)
+                .compensationRetryDelay("PT30S")
+                .continueCompensationOnFailure(false)
+                .compensationDlq("sales.order-compensation.dlq")
+                .compensationFailureHandler(ORDER_SAGA_FAILURE_HANDLER)
+                .manualInterventionOnCompensationFailure(false)
+                .steps(List.of(SagaStepMetadata.builder("charge", 1)
+                        .service("payments")
+                        .command("charge")
+                        .build()));
     }
 
     private static DomainMetadata customer() {

@@ -22,12 +22,16 @@ import java.util.Objects;
  * @param compensationStrategy how compensation is driven when a step fails. <strong>Declared but
  *        not populated:</strong> {@code @Saga.compensationStrategy} exists and an author can set
  *        it, but neither the processor nor the {@code -io} reader extracts it, so on every build
- *        path this holds the builder default
+ *        path this holds the builder default. This enum and the annotation's do not correspond:
+ *        {@code STOP_ON_FAILURE} and {@code MANUAL} have no constant here, and {@code CUSTOM} none
+ *        there, so a read by constant name would carry a wrong value
  * @param compensationOrder the order compensations run in. Declared but not populated, on the
- *        same terms as {@link #compensationStrategy()}
+ *        same terms as {@link #compensationStrategy()}: the annotation's {@code CUSTOM} has no
+ *        constant here
  * @param timeout how long the whole saga may run, as an ISO-8601 duration
- * @param compensationTimeout the same bound for the compensation phase. Declared but not
- *        populated, on the same terms as {@link #compensationStrategy()}
+ * @param compensationTimeout the same bound for the compensation phase. Populated from
+ *        {@code @Saga.compensationTimeout} by the {@code -io} reader; the processor does not
+ *        extract it, so a build-time baseline holds the builder default, {@code "PT10M"}
  * @param maxRetries how many times a failed step is retried before compensating
  * @param retryBackoff the backoff strategy between retries
  * @param trigger what starts the saga
@@ -38,23 +42,29 @@ import java.util.Objects;
  * @param transitions the state-machine edges between steps
  * @param compensationMaxRetries how many times a failed compensation step is retried, from
  *        {@code @Saga.compensationMaxRetries}; {@code null} when the author did not declare it,
- *        and the annotation default ({@code 5}) is then the value. No producer populates it yet
+ *        and the annotation default ({@code 5}) is then the value. Populated by the {@code -io} reader;
+ *        the processor does not extract it yet
  * @param compensationRetryDelay the delay between compensation retries, as an ISO-8601 duration,
  *        from {@code @Saga.compensationRetryDelay}; {@code null} when not declared (annotation
- *        default {@code "PT5S"}). No producer populates it yet
+ *        default {@code "PT5S"}). Populated by the {@code -io} reader;
+ *        the processor does not extract it yet
  * @param continueCompensationOnFailure whether compensation continues past a compensation step
  *        that fails, from {@code @Saga.continueCompensationOnFailure}; {@code null} when not
- *        declared (annotation default {@code true}). No producer populates it yet
+ *        declared (annotation default {@code true}). Populated by the {@code -io} reader;
+ *        the processor does not extract it yet
  * @param compensationDlq the dead-letter topic unrecoverable compensation failures go to, from
  *        {@code @Saga.compensationDlq}; {@code null} when not declared or blank, which means no
- *        dead-letter topic. No producer populates it yet
+ *        dead-letter topic. Populated by the {@code -io} reader;
+ *        the processor does not extract it yet
  * @param compensationFailureHandler the fully-qualified name of the handler called when
  *        automatic compensation fails, from {@code @Saga.compensationFailureHandler};
- *        {@code null} when not declared or {@code void.class}, which means no handler. No producer
- *        populates it yet
+ *        {@code null} when not declared or {@code void.class}, which means no handler. Populated
+ *        by the {@code -io} reader, which resolves the name syntactically; the processor does
+ *        not extract it yet
  * @param manualInterventionOnCompensationFailure whether a compensation failure raises a manual
  *        intervention, from {@code @Saga.manualInterventionOnCompensationFailure}; {@code null}
- *        when not declared (annotation default {@code true}). No producer populates it yet
+ *        when not declared (annotation default {@code true}). Populated by the {@code -io} reader;
+ *        the processor does not extract it yet
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

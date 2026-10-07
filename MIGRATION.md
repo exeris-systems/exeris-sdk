@@ -77,9 +77,17 @@ Each component is named after its `@Saga` attribute. They are boxed (`Integer`,
 `Boolean`, `String`) and `null` when the author declared nothing, in which case the
 annotation default is the value. A declared `0` or `false` is written, because the
 record is `NON_NULL`. `compensationFailureHandler` holds a fully-qualified class
-name, with `void.class` read as `null`. No producer populates them yet. The
-`exeris-tooling` processor and the `-io` reader extract them together, as ADR-042
-requires, and until then a producer's JSON is the same as it was on 0.12.0.
+name, with `void.class` read as `null`. The `-io` reader populates them and
+`compensationTimeout`; the `exeris-tooling` processor does not extract them yet, and
+until it does a processor's JSON is the same as it was on 0.12.0.
+`SourceModelConflictDetector` compares no saga component, so the difference raises no
+conflict on reattach.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.SAGA_COMPENSATION`, and the corpus `Order`
+declares the compensation section. A producer or parity binding whose producer does not
+extract it fails the new cases until it adds `Facet.SAGA_COMPENSATION` to
+`unsupportedFacets()`. A reader binding that reads `@Saga` without the section does the
+same.
 
 **Baselines.** `SchemaVersion.CURRENT` moves `"0.12.0"` → `"0.13.0"`, so a
 baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen
