@@ -23,6 +23,12 @@
    - The classes in `src/styles/preview.css` (`@exeris/ui-kit/preview`) are **not**: no generator
      emits them, they are absent from the snapshot, and one moves into `index.css` — additively —
      when a generator uses it (ADR-094 Amendment 2, `tests/preview-entry.test.js`).
+   - `src/styles/theme-exeris.css` (`@exeris/ui-kit/theme-exeris`, the opt-in brand theme) is
+     preview tier on the same rule. Its entry path, the `data-theme="exeris"` activator, its `--ex-*`
+     tokens and its brand primitive classes are outside the freeze. It may re-point frozen
+     `--exeris-*` properties and restyle frozen classes, because their values are free, but it adds
+     no `--exeris-*` name. Every rule it declares is scoped to `[data-theme="exeris"]`
+     (`tests/theme-exeris.test.js`).
    - Theme values (colors, radii, shadows) remain **free** to support CMS and consumer customization.
 6. **TSDoc + API golden on the TypeScript surface:**
    ADR-085 §F.21a–c names this package one of three gated TypeScript surfaces in the ecosystem; the

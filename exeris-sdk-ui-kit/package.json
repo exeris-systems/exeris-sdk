@@ -30,6 +30,7 @@
     "./styles/*": "./src/styles/*",
     "./theme": "./src/styles/theme.css",
     "./preview": "./src/styles/preview.css",
+    "./theme-exeris": "./src/styles/theme-exeris.css",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -41,6 +42,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "demo": "node demo/build.mjs",
     "prepublishOnly": "npm run build",
     "prepack": "node -e \"require('node:fs').copyFileSync('../LICENSE', 'LICENSE')\""
   },

@@ -94,6 +94,61 @@ after the imports:
 @custom-variant dark (@media (prefers-color-scheme: dark));
 ```
 
+## Exeris brand theme
+
+`@exeris/ui-kit/theme-exeris` is an opt-in brand theme: IBM Plex Sans and Mono, square corners, flat
+blue-black surfaces, mono uppercase buttons and labels. Import it last, then put
+`data-theme="exeris"` on `<html>` or on any container:
+
+```css
+@import "tailwindcss";
+@import "@exeris/ui-kit/theme";
+@import "@exeris/ui-kit/styles";
+@import "@exeris/ui-kit/preview";       /* optional */
+@import "@exeris/ui-kit/theme-exeris";
+```
+
+```html
+<html data-theme="exeris">
+```
+
+Without the attribute nothing changes: the default theme stays as described above. Inside it, every
+component class and `exeris-*` utility renders in the brand with no change to the markup. The theme
+re-points the `--exeris-*` properties and squares Tailwind's `rounded-*` scale within the scope.
+
+- **Dark only.** The brand has one colour scheme, and `.dark` inside the scope changes nothing. Add
+  `class="dark"` next to the attribute if your own `dark:` utilities should apply.
+- **Fonts are yours to load.** The theme names IBM Plex and never fetches it. Self-host it, or link
+  it from your page. Without it the text falls back to the system sans-serif and monospace faces.
+  The base text size is left alone. The brand sets body copy at 13px; set that on your own
+  root if you want it.
+- **Brand tokens.** The scope declares the brand palette as `--ex-*` properties in oklch:
+  `--ex-bg`, `--ex-bg-1`, `--ex-surface` … `--ex-surface-4`, `--ex-fg` … `--ex-fg-5`, `--ex-line`,
+  `--ex-line-2`, `--ex-line-strong`, `--ex-accent`, `--ex-accent-dim`, `--ex-kernel`,
+  `--ex-kernel-dim`, `--ex-react`, `--ex-amber`, `--ex-cyan`, `--ex-rose`, `--ex-ok`, `--ex-warn`,
+  `--ex-err`, `--ex-font` and `--ex-mono`. The `--exeris-*` colours it sets are the sRGB conversions
+  of these, because the kit's colours are RGB channels.
+
+The scope also provides brand primitives the component layer lacks:
+
+| Primitive | Classes |
+|:--|:--|
+| Eyebrow | `exeris-eyebrow` |
+| Tag | `exeris-tag` with `-kernel`, `-react`, `-amber`, `-cyan`, `-ok`, `-warn`, `-err`, `-muted` |
+| LED status dot | `exeris-led` with `-ok`, `-kernel`, `-warn`, `-err`, `-live`. `-kernel` and `-live` pulse, and stay steady under `prefers-reduced-motion` |
+| KPI | `exeris-kpi`, `exeris-kpi-label`, `exeris-kpi-value` with `-kernel`, `-amber`, `-react`, `exeris-kpi-sub` |
+| Code block | `exeris-code`, token spans `exeris-code-kw`, `-an`, `-ty`, `-str`, `-num`, `-cm`, `-fn`, `-pn`, line numbers `exeris-code-ln` |
+| Definition row | `exeris-def` (a `<div>` holding one `<dt>` and `<dd>`, inside a `<dl>`) |
+| Section head | `exeris-section-head` (an `<h2>` and a `<p>`, optionally an eyebrow) |
+| Dashed link | `exeris-link` |
+
+```html
+<span class="exeris-tag exeris-tag-kernel"><span class="exeris-led exeris-led-kernel"></span>kernel</span>
+```
+
+Like `@exeris/ui-kit/preview`, this entry sits outside the 1.0 freeze. Its path, the attribute, the
+`--ex-*` names and the primitives may change in a minor.
+
 ## Versioning
 
 This package versions independently of the Exeris SDK's Java artifacts. Its 1.0 freezes names, not

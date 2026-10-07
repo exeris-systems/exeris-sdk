@@ -16,6 +16,10 @@ npm run api:check    # api-extractor: api/ui-kit.api.md matches the built .d.ts
 npm test             # the name-snapshot, drift and Tailwind v4 compile suites
 ```
 
+`npm run demo` compiles the four CSS entries with Tailwind v4 and writes `build/demo/index.html`, a
+static page showing every component class under the default light, default dark and Exeris brand
+themes, plus the brand primitives. Open it in a browser after a change to any stylesheet.
+
 `npm run lint` loads its rules from [`exeris-systems/.github`](https://github.com/exeris-systems/.github),
 which has to sit at `./.guardrails` — the path the gate checks it out to. Once, from this
 directory:

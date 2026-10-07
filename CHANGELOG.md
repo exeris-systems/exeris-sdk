@@ -36,6 +36,24 @@ for per-version upgrade steps.
   `exeris-sdk-ui-kit/api/accepted-api-changes.json` under ADR-094 Amendment 2. See
   [`MIGRATION.md` §`@exeris/ui-kit` 0.2.x → 0.3.0](MIGRATION.md).
 
+### Added
+
+- **`@exeris/ui-kit` 0.3.0: an opt-in Exeris brand theme, `@exeris/ui-kit/theme-exeris`.** Imported
+  after the other entries, it applies under `data-theme="exeris"` and nowhere else. The default
+  theme compiles identically with it present. Inside the scope it re-points the `--exeris-*`
+  colours, radii (0), shadows (none), focus colour and font stack, and the `@theme` mappings that
+  read them. It squares Tailwind's `rounded-*` scale and overrides the classes whose palette tints
+  or white text no token carries. Every existing component class renders in the brand with
+  unchanged markup. It is dark-only and loads no font: IBM Plex is named and falls back to the
+  system faces. It declares the brand palette as `--ex-*` oklch properties, and the `--exeris-*`
+  channels are their sRGB conversions, gamut-mapped by the CSS Color 4 algorithm where needed. It
+  adds brand primitives: `exeris-eyebrow`, `exeris-tag` with eight tones, `exeris-led` with five
+  states (the pulse stops under `prefers-reduced-motion`), `exeris-kpi`, `exeris-code` with token
+  spans, `exeris-def`, `exeris-section-head` and `exeris-link`. Additive and outside the 1.0
+  freeze, like `@exeris/ui-kit/preview`. `tests/theme-exeris.test.js` holds the scoping, the
+  conversions and the freeze status. `npm run demo` builds a static page rendering every class
+  under the default light, default dark and brand themes.
+
 ### Changed
 
 - **`@exeris/ui-kit` is staged on npm and goes live on a maintainer's 2FA approval.**
