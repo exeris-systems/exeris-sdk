@@ -622,6 +622,13 @@ Each one is cheap before 1.0 and a major after it.
   stay in `@exeris/ui-kit/styles`, frozen at 1.0. The other 25, for which no generator has an
   element, move to `@exeris/ui-kit/preview`, outside the freeze (ADR-094 Amendment 2). Each
   returns to `styles` additively when a generator uses it.
+- [x] **The view generator's block classes.** Decided for 0.5.0: `exeris-hero`, which the
+  generator writes on the `HERO` block, is declared in `@exeris/ui-kit/styles` and frozen at 1.0,
+  built on `--exeris-primary` and the radius and spacing tokens. The other block markers it writes
+  — `exeris-grid`, `exeris-list`, `exeris-nav`, `exeris-image`, `exeris-rich-text`,
+  `exeris-container`, `exeris-form-placeholder` — stay markers, styled by the utilities beside
+  them. Declaring one later is additive; freezing a class with no declaration would pin a name
+  with nothing behind it.
 - [x] **One Tailwind major: v4.** Decided for 0.2.0: the v3 JS preset is removed, and the `@theme`
   entry in `theme.css` is the single source of truth for the utility namespace. Generated
   applications are on v4, where the preset was inert.

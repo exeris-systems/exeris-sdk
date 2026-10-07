@@ -40,6 +40,7 @@ The theme generates utilities such as `bg-exeris-primary`, `text-exeris-danger`,
 | Alerts | `exeris-alert` with `-warning`, `-danger` |
 | Badges | `exeris-badge` with `-success` |
 | Data | `exeris-table` |
+| Page blocks | `exeris-hero` |
 
 `@exeris/ui-kit/preview` — classes no generator emits yet. They may change in a minor and move to
 `styles` when a generator uses them. Add `@import "@exeris/ui-kit/preview";` after the styles

@@ -408,6 +408,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Hero: the solid Flow Blue fill of --exeris-primary and square corners come from the tokens;
+     the text takes the brand foreground instead of white. */
+  [data-theme="exeris"] .exeris-hero {
+    color: var(--ex-fg);
+  }
+
   /* Badges and tags share one shape: square, mono, a tone at full strength for the text,
      ~30% for the border and ~6% for the fill. Flow Blue is the exception: it is too dark
      for small text on the background, so its text is --ex-flow-blue-text and its border

@@ -216,6 +216,14 @@
     @apply px-6 py-4;
   }
 
+  /* Page blocks
+     The view generator renders a HERO block as a <section class="exeris-hero">. Fill, radius and
+     padding are tokens, so a theme that re-points --exeris-primary or the radii re-styles it. */
+  .exeris-hero {
+    @apply bg-[rgb(var(--exeris-primary))] text-white
+           rounded-[var(--exeris-radius-md)] p-[var(--exeris-spacing-xl)];
+  }
+
   /* Tables */
   .exeris-table {
     @apply min-w-full divide-y divide-[rgb(var(--exeris-border))];
