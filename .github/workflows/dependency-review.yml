@@ -1,0 +1,81 @@
+name: 'Dependency Review (Supply Chain)'
+
+# Every dependency, action and npm package a pull request adds or bumps, checked against the
+# advisory database and a licence deny list before it reaches `main`. This repository publishes to
+# Maven Central and npm, where a version is permanent: a dependency the scan would have refused is
+# cheaper to refuse here than to carry in a released artifact.
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pull-requests: write   # the summary comment `comment-summary-in-pr` posts
+
+jobs:
+  dependency-review:
+    name: Scan PR Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          comment-summary-in-pr: always
+          fail-on-severity: moderate
+          # The deny list keeps copyleft out of what this repository DISTRIBUTES: the Apache-2.0
+          # jars on Central and `@exeris/ui-kit` on npm. `deny-licenses` is deprecated upstream
+          # (actions/dependency-review-action#997) in favour of an allow list, but v5.0.0 still
+          # declares the input. Moving to `allow-licenses` means enumerating every licence in the
+          # transitive Maven and npm graphs first, which is its own change.
+          deny-licenses: >
+            GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later,
+            LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later,
+            AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later,
+            SSPL-1.0,
+            EPL-1.0, EPL-2.0,
+            MPL-2.0
+          # Build and test infrastructure the deny list matches and that nothing published links
+          # against or redistributes. Each entry is a licence the dependency graph reports for it
+          # today:
+          #
+          #   checkstyle           EPL-2.0 AND LGPL-2.1 — the Javadoc gate's engine, a plugin dependency
+          #   jacoco-maven-plugin  EPL-2.0              — the coverage gate
+          #   junit-jupiter        EPL-2.0              — test scope only
+          #   lightningcss*        MPL-2.0              — reached through `tailwindcss`, which ui-kit
+          #                                               declares as a devDependency to build and test
+          #                                               against and as a peerDependency the consumer
+          #                                               installs; ui-kit's tarball ships its own CSS
+          #                                               and TypeScript and none of this. The platform
+          #                                               packages are the optional native binaries one
+          #                                               of which npm installs per machine.
+          #
+          # The `eu.exeris/*` entries are this reactor's own modules, which report an unknown licence
+          # because the dependency graph reads each module POM alone and does not resolve the parent
+          # that declares Apache-2.0.
+          allow-dependencies-licenses: >
+            pkg:maven/com.puppycrawl.tools/checkstyle,
+            pkg:maven/org.jacoco/jacoco-maven-plugin,
+            pkg:maven/org.junit.jupiter/junit-jupiter,
+            pkg:npm/lightningcss,
+            pkg:npm/lightningcss-android-arm64,
+            pkg:npm/lightningcss-darwin-arm64,
+            pkg:npm/lightningcss-darwin-x64,
+            pkg:npm/lightningcss-freebsd-x64,
+            pkg:npm/lightningcss-linux-arm-gnueabihf,
+            pkg:npm/lightningcss-linux-arm64-gnu,
+            pkg:npm/lightningcss-linux-arm64-musl,
+            pkg:npm/lightningcss-linux-x64-gnu,
+            pkg:npm/lightningcss-linux-x64-musl,
+            pkg:npm/lightningcss-win32-arm64-msvc,
+            pkg:npm/lightningcss-win32-x64-msvc,
+            pkg:maven/eu.exeris/exeris-sdk-bom,
+            pkg:maven/eu.exeris/exeris-sdk-annotations,
+            pkg:maven/eu.exeris/exeris-sdk-source-model,
+            pkg:maven/eu.exeris/exeris-sdk-source-model-io,
+            pkg:maven/eu.exeris/exeris-sdk-composition-spec,
+            pkg:maven/eu.exeris/exeris-sdk-composition-lifecycle,
+            pkg:maven/eu.exeris/exeris-sdk-composition-runtime,
+            pkg:maven/eu.exeris/exeris-sdk-tck

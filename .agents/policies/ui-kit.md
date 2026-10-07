@@ -42,6 +42,6 @@
      removes a name, which is a **major** for this package (rule 4, rule 5).
    - The three checks are `npm run lint` (shared ESLint fragment from `exeris-systems/.github`),
      `npm run docs:check` (typedoc) and `npm run api:check` (api-extractor), wired in CI as the
-     `tsdoc` job of `.github/workflows/guardrails.yml`.
+     `tsdoc` job of `.github/workflows/tsdoc.yml`.
    - The lint needs the bundle as a **real directory** at `exeris-sdk-ui-kit/.guardrails` — a symlink
      defeats Node's plugin resolution. See the package's `CONTRIBUTING.md`.
