@@ -42,6 +42,14 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Fixed
+
+- **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
+  class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
+  reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
+  `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
+  file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
+
 ### Added
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,

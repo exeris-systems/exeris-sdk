@@ -107,7 +107,11 @@ public record FieldMetadata(
         String enumType,
         boolean computed,
         List<String> computedFrom,
+        // Both default to true, so a wire form that dropped a false would read back as true:
+        // the two keys are always written.
+        @JsonInclude(JsonInclude.Include.ALWAYS)
         boolean inCreate,
+        @JsonInclude(JsonInclude.Include.ALWAYS)
         boolean inUpdate,
         // i18n message keys (optional). Pair with displayName / description:
         // when present, the key resolves against the app message bundle and the
