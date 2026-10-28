@@ -149,6 +149,22 @@ for per-version upgrade steps.
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
+- **`@SagaStep.compensation` names the step's compensation method.** The Javadoc said it was a
+  command name, and the class example wrote `compensation = "ReleaseInventoryCommand"`; it is the
+  name of a method of the `@Saga` host type that undoes the step, and the example now names
+  `releaseInventory` and declares it. `SagaStepMetadata.compensation` says the same. The status
+  note records that the Java kernel generator still registers a generated `compensate<StepName>`
+  stub rather than the named method. Metadata is unchanged: the value was always carried as written.
+  See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+### Deprecated
+
+- **`@SagaStep.compensationBuilder`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal
+  at 1.0.0. Replacement: `@SagaStep.compensation`, whose compensation method builds the command
+  itself. No producer read the attribute and no AST component carries it, so nothing a build emits
+  changes; a source that sets it compiles with a `[removal]` warning. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Removed
 
 - **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**

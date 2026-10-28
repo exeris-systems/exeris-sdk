@@ -86,6 +86,54 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `@SagaStep.compensation` names a method; `@SagaStep.compensationBuilder` is deprecated — removal in 1.0.0
+
+**What the value names.** `@SagaStep.compensation` is the name of the step's compensation
+method: a method of the type carrying `@Saga` that undoes the step on rollback. It is not a
+command name. The value has always been extracted as a plain string, and no producer or
+generator read it as a command, so nothing changes in the metadata. A source that wrote a
+command name there should write the method's name instead:
+
+```java
+// before — a command name; nothing dispatched it
+@SagaStep(order = 1, name = "reserveInventory", service = "inventory-service",
+          command = "ReserveInventoryCommand", compensation = "ReleaseInventoryCommand")
+public SagaAction reserveInventory() { … }
+
+// after — the compensation method, declared on the same type
+@SagaStep(order = 1, name = "reserveInventory", service = "inventory-service",
+          command = "ReserveInventoryCommand", compensation = "releaseInventory")
+public SagaAction reserveInventory() { … }
+
+public SagaAction releaseInventory() {
+    return new SagaAction.ExecuteCommand(new ReleaseInventoryCommand(…));
+}
+```
+
+The `exeris-tooling` Java kernel generator still registers a generated
+`compensate<StepName>` stub as the compensator and does not call the named method yet.
+Registering the named method, and refusing a name the host type does not declare, are its
+side of this change.
+
+**`compensationBuilder` is deprecated.** It named a method that builds the compensating
+command. With `compensation` naming the compensation method, that method builds the command
+itself, and a second method name has no role left. No producer read the attribute and no AST
+component carries it, so removing it changes no metadata and no generated output. A source
+that sets it compiles with a `[removal]` warning from javac.
+
+```java
+// before
+@SagaStep(…, compensation = "ReleaseInventoryCommand", compensationBuilder = "buildRelease")
+
+// after — the builder's body moves into the compensation method
+@SagaStep(…, compensation = "releaseInventory")
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
+
 ---
 
 ## 0.11.x → 0.12.x

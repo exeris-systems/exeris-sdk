@@ -6,7 +6,7 @@ import java.lang.annotation.*;
  * Defines a step within a saga orchestration.
  *
  * <p>Each step represents an action to be executed as part of the saga,
- * with optional compensation for rollback on failure.
+ * with an optional compensation method that undoes it on rollback.
  *
  * <h2>Basic Usage:</h2>
  * {@snippet lang="java" :
@@ -15,11 +15,18 @@ import java.lang.annotation.*;
  *     name = "reserveInventory",
  *     service = "inventory-service",
  *     command = "ReserveInventoryCommand",
- *     compensation = "ReleaseInventoryCommand"
+ *     compensation = "releaseInventory"
  * )
  * public SagaAction reserveInventory() {
  *     return new SagaAction.ExecuteCommand(
  *         new ReserveInventoryCommand(state.getProductId(), state.getQuantity())
+ *     );
+ * }
+ *
+ * // The compensation method named above, on the same type.
+ * public SagaAction releaseInventory() {
+ *     return new SagaAction.ExecuteCommand(
+ *         new ReleaseInventoryCommand(state.getProductId(), state.getQuantity())
  *     );
  * }
  * }
@@ -291,10 +298,27 @@ public @interface SagaStep {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Compensation command name.
-     * <p>Command to execute on rollback. Empty = no compensation.
+     * The name of this step's compensation method: a method of the saga's host type — the type
+     * carrying {@link Saga}, where this step's method is declared — that undoes the step when the
+     * saga rolls back. The value is a method name ({@code "releaseInventory"}), not a command
+     * name and not a class name. Empty means the step has no compensation.
      *
-     * @return compensation command
+     * <p>The compensation method decides what undoing the step takes: it may dispatch a
+     * compensating command, publish an event, or start another saga. When it runs is decided by
+     * the kernel flow, not by this attribute: a step failure runs the compensations registered
+     * for the steps already completed, and a timeout-driven path is declared with
+     * {@link SagaTransition}.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The value is extracted on both build paths into
+     * {@code SagaStepMetadata.compensation}. The TypeScript saga emitter writes it as the step's
+     * {@code compensatingAction} label. The Java kernel generator reads only whether it is set:
+     * for a step that declares one it emits a stub named {@code compensate<StepName>} and
+     * registers that stub as the step's compensator, so the method named here is not yet called.
+     * Registering the named method and refusing a name the host type does not declare are the
+     * {@code exeris-tooling} half of this contract. Until it lands, write the method under the
+     * name given here and expect the generated stub to be the one registered.
+     *
+     * @return the compensation method's name, or empty for a step with no compensation
      */
     String compensation() default "";
 
@@ -306,10 +330,19 @@ public @interface SagaStep {
     Class<?> compensationClass() default void.class;
 
     /**
-     * Method that builds compensation command.
+     * Method that builds the compensating command.
+     *
+     * <p>Read by neither producer: no processor, reader or AST component carries it, so writing
+     * it has no effect.
      *
      * @return builder method name
+     * @deprecated since 0.13.0, for removal in 1.0.0. {@link #compensation()} names the
+     *         compensation method itself, and that method builds whatever command undoing the
+     *         step needs, so a second method name whose only job is to build that command has
+     *         nothing left to do. Move the builder's body into the compensation method and name
+     *         that method in {@link #compensation()}. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationBuilder() default "";
 
     /**

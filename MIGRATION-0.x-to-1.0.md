@@ -68,6 +68,10 @@ survives into 1.x unchanged.
   No producer reads the attribute in 0.12.x: neither the `-io` reader nor the
   `exeris-tooling` processor. A 0.x baseline that carries `"apiVersion"` still reads, because the records
   ignore unknown properties.
+- **`@SagaStep.compensationBuilder`** — deprecated since 0.13.0 (`forRemoval = true`).
+  Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
+  body moves into that method. No producer reads the attribute and no AST component carries it,
+  so the removal changes no metadata and no generated output.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
