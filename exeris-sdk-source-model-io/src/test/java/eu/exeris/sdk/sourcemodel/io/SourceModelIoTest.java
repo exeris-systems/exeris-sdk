@@ -9,6 +9,7 @@ import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Test suite for {@code exeris-sdk-source-model-io} (ADR-037): the
@@ -1754,6 +1756,165 @@ class SourceModelIoTest {
                     public class Fulfilment {}
                     """.formatted(sagaAnnotation);
             return reader.read(src).orElseThrow().sagaMetadata();
+        }
+
+        /**
+         * The step order decides the saga's sequence, so a constant declared in the same file
+         * is folded here as javac folds it for the processor: in the step's own type, in an
+         * enclosing type, or qualified by a type of the same file.
+         */
+        @Test
+        void sagaStepOrderResolvesConstantsDeclaredInTheSameFile() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    @Saga
+                    public class Fulfilment {
+                        static final int SHIP = 3;
+                        private static final int PAY = (2);
+
+                        @SagaStep(order = SHIP, service = "s", command = "c")
+                        public void ship() {}
+
+                        @SagaStep(order = Steps.RESERVE, service = "s", command = "c")
+                        public void reserve() {}
+
+                        @SagaStep(order = PAY, service = "s", command = "c")
+                        public void pay() {}
+
+                        @SagaStep(order = Steps.Nested.NOTIFY, service = "s", command = "c")
+                        public void notifyCustomer() {}
+
+                        interface Steps {
+                            int RESERVE = Fulfilment.ONE;
+                        }
+                        static final int ONE = 1;
+                    }
+                    """;
+            // Steps.Nested.NOTIFY has a qualifier that is not a simple type name: unresolved,
+            // carried at 1 and reported, which the next test pins on its own.
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name, SagaStepMetadata::order)
+                    .containsExactly(tuple("reserve", 1), tuple("notifyCustomer", 1),
+                            tuple("pay", 2), tuple("ship", 3));
+        }
+
+        @Test
+        void sagaStepOrderThatCannotBeResolvedIsReportedNotTrusted() {
+            String unresolved = sagaWithStepOrders("Orders.RESERVE", "2");
+            assertThat(reader.unmodeledFacets(unresolved)).containsExactly("@SagaStep");
+            // The unresolved step is still read, carried at order 1, beside the resolved one.
+            assertThat(reader.read(unresolved).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1, 2);
+
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("1 + 1", "3"))).containsExactly("@SagaStep");
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("INHERITED", "3"))).containsExactly("@SagaStep");
+            // A non-final field is not a constant to javac either.
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("MUTABLE", "3"))).containsExactly("@SagaStep");
+            // Resolved and absent orders are not reported.
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("FIRST", "2"))).isEmpty();
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("1", "2"))).isEmpty();
+        }
+
+        /**
+         * javac resolves a simple name against a type's inherited members before its enclosing
+         * scope, so an enclosing constant is used only when the step host extends nothing.
+         */
+        @Test
+        void sagaStepOrderFromAnEnclosingTypeIsUnresolvedBehindASupertype() {
+            String behindSupertype = nestedSagaHost("extends Base");
+            assertThat(reader.unmodeledFacets(behindSupertype)).containsExactly("@SagaStep");
+            assertThat(reader.read(behindSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1);
+            assertThat(reader.unmodeledFacets(nestedSagaHost("implements Marker"))).containsExactly("@SagaStep");
+
+            String noSupertype = nestedSagaHost("");
+            assertThat(reader.unmodeledFacets(noSupertype)).isEmpty();
+            assertThat(reader.read(noSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(4);
+        }
+
+        private String nestedSagaHost(String supertypes) {
+            return """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    public class Holder {
+                        static final int STEP = 4;
+                        @ExerisDomain
+                        @Saga
+                        public static class Fulfilment %s {
+                            @SagaStep(order = STEP, service = "s", command = "c")
+                            public void reserve() {}
+                        }
+                    }
+                    """.formatted(supertypes);
+        }
+
+        @Test
+        void sagaStepOrderIsOnlyCheckedOnASagaOfTheDomainType() {
+            // No @Saga: read() reads no steps, so there is nothing to diverge on.
+            String noSaga = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    public class Fulfilment {
+                        @SagaStep(order = Orders.RESERVE, service = "s", command = "c")
+                        public void reserve() {}
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(noSaga)).isEmpty();
+        }
+
+        /**
+         * Duplicates among non-parallel steps, gaps and a sequence not starting at 1 break the
+         * {@code @SagaStep.order} contract, and the processor is where they are diagnosed. The
+         * reader has no diagnostic channel: it carries them as written, stable-sorted, which is
+         * what the processor's own sort produces — so the two agree and the guard stays quiet.
+         */
+        @Test
+        void sagaStepOrderContractBreaksAreCarriedAsWritten() {
+            String duplicate = sagaWithStepOrders("1", "1");
+            assertThat(reader.read(duplicate).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name).containsExactly("first", "second");
+            assertThat(reader.unmodeledFacets(duplicate)).isEmpty();
+
+            String gap = sagaWithStepOrders("1", "3");
+            assertThat(reader.read(gap).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1, 3);
+            assertThat(reader.unmodeledFacets(gap)).isEmpty();
+
+            String notFromOne = sagaWithStepOrders("5", "-1");
+            assertThat(reader.read(notFromOne).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name, SagaStepMetadata::order)
+                    .containsExactly(tuple("second", -1), tuple("first", 5));
+            assertThat(reader.unmodeledFacets(notFromOne)).isEmpty();
+        }
+
+        private String sagaWithStepOrders(String first, String second) {
+            return """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    @Saga
+                    public class Fulfilment extends Base {
+                        static final int FIRST = 1;
+                        static int MUTABLE = 1;
+
+                        @SagaStep(order = %s, service = "s", command = "c")
+                        public void first() {}
+
+                        @SagaStep(order = %s, service = "s", command = "c")
+                        public void second() {}
+                    }
+                    """.formatted(first, second);
         }
 
         @Test

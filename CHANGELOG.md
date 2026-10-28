@@ -125,6 +125,18 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **`@SagaStep.order` states its contract, and the `-io` reader no longer reads an unresolvable
+  order as `1` without saying so.** The Javadoc states that the steps of a saga number `1..N`, that
+  a value is shared only by steps that all declare `parallel = true`, and that the ordering defines
+  the sequence; `@Saga` states that a type hosts one saga. `SourceModelReader` folds a step order
+  given as a `final` field of the same source file (own type, enclosing type, or `Type.NAME` for a
+  type of that file), as javac folds it for the processor, and accepts a negated literal. An
+  enclosing type's field is used only while no type in between extends or implements another,
+  since an inherited field of the same name would take precedence for javac. An order
+  it still cannot resolve is carried as `1` and reported by `unmodeledFacets()` as `@SagaStep`,
+  which a reattach caller treats as unsafe. Duplicates, gaps and a sequence not starting at `1` are
+  carried as written; the diagnostic for them belongs to the `exeris-tooling` processor.
+
 - **CI runs the semver gate.** `build.yml` and `release.yml` pass `-Psemver`, so japicmp compares
   every build with `0.12.0`, the last release, which Maven Central serves. A binary-incompatible
   change outside the record-growth stance fails CI. `japicmp.baseline.version` moves `0.11.0` →
