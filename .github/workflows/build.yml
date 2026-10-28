@@ -99,7 +99,10 @@ jobs:
       - name: ui-kit npm test (Vitest + 85% coverage gate)
         working-directory: exeris-sdk-ui-kit
         run: |
-          npm ci
+          # --ignore-scripts: no dependency's install hook runs on the runner. None is needed:
+          # the native binaries tailwindcss and the test toolchain use arrive as optional
+          # platform packages, and this package's own scripts run as explicit steps.
+          npm ci --ignore-scripts
           npm run test:coverage
 
       - name: Upload JaCoCo report
