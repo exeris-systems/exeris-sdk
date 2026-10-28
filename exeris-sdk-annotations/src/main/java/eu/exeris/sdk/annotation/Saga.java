@@ -51,6 +51,12 @@ import java.lang.annotation.*;
  * public class TransferMoneySaga implements Saga<TransferState> {}
  * }
  *
+ * <h2>One saga per type</h2>
+ * A type hosts at most one saga. This annotation is not {@link Repeatable}, and the metadata
+ * both producers build for a type ({@code DomainMetadata.sagaMetadata}) holds a single saga, so
+ * there is no place for a second one to land. A second flow over the same entity — a renewal
+ * next to a fulfilment, say — is a second type carrying its own {@code @Saga}, with its own
+ * {@link #name()} and its own {@link SagaStep} methods.
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
  * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are

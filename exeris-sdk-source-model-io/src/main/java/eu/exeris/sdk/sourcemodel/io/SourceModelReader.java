@@ -4,6 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -12,9 +13,11 @@ import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -106,16 +109,18 @@ import java.util.TreeSet;
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
  * {@code read()} drops no annotation-level facet the processor emits:
- * {@link #unmodeledFacets} is empty for every source, and the field facet is
- * attribute-complete against {@code extractFieldMetadata}. A round-trip / reattach
- * caller should still consult {@link #unmodeledFacets} and refuse (or warn) when it
- * is non-empty — that is how a <em>future</em> processor facet (e.g. a new
- * annotation) re-arms the guard before the reader catches up. (Facets the processor
+ * {@link #unmodeledFacets} is empty for every source whose saga step orders it can
+ * resolve, and the field facet is attribute-complete against {@code extractFieldMetadata}.
+ * A round-trip / reattach caller should still consult {@link #unmodeledFacets} and
+ * refuse (or warn) when it is non-empty — that is how a <em>future</em> processor facet
+ * (e.g. a new annotation) re-arms the guard before the reader catches up, and how a
+ * {@code @SagaStep.order} the reader cannot resolve is reported. (Facets the processor
  * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
  * {@code @GraphProperty}/{@code @GraphQuery}, {@code @PrimaryKey}, the
  * {@code security} annotations — are not divergences.) The guard is
- * annotation-level: attribute completeness of the <em>other</em> read annotations
- * (e.g. {@code @Relationship}, {@code @Action}) is verified per-slice, not by it.
+ * annotation-level, with that one attribute as the exception: attribute completeness
+ * of the <em>other</em> read annotations (e.g. {@code @Relationship}, {@code @Action})
+ * is verified per-slice, not by it.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -126,7 +131,10 @@ import java.util.TreeSet;
  * processor receives already folded by javac — is not resolved here. For
  * {@code @Saga.version} that means a constant-valued version reads as the default
  * {@code 1}, a different kernel plan identity than the one the processor records, so
- * declare it as a literal. Instances are <b>not thread-safe</b> (they hold a single
+ * declare it as a literal. {@code @SagaStep.order} is the exception: it decides the
+ * saga's sequence, so the reader also folds a {@code final} field declared in the same
+ * source file and initialised with a literal, and reports through
+ * {@link #unmodeledFacets} an order it still cannot resolve. Instances are <b>not thread-safe</b> (they hold a single
  * {@code JavaParser}); use one per call-site or guard externally.
  *
  * @since 0.3
@@ -149,6 +157,12 @@ public final class SourceModelReader {
      * reader catches up. Matched by simple name (no import resolution).
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
+
+    /**
+     * How many constant references and wrappers {@link #intConstant} follows before giving up,
+     * so a cyclic initialiser, which javac rejects, cannot loop the reader.
+     */
+    private static final int MAX_CONSTANT_DEPTH = 16;
 
     private final JavaParser javaParser;
 
@@ -239,16 +253,21 @@ public final class SourceModelReader {
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
      * which is <b>empty</b> — every processor facet is read, the capability surface
-     * included, so this returns an empty set for every
-     * {@code @ExerisDomain} / {@code @CapabilityModule} source today. It re-arms
-     * only when a future processor facet is registered in that set ahead of the
-     * reader. <b>Not</b> flagged: facets neither side reads
+     * included. That part re-arms only when a future processor facet is registered in
+     * that set ahead of the reader. <b>Not</b> flagged: facets neither side reads
      * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
      * {@code @GraphProperty}/{@code @GraphQuery}, {@code @Tab}/{@code @UIGroup},
      * {@code @PrimaryKey}, the {@code security} annotations).
      *
-     * <p>This guard is <em>annotation-level</em>: it does not report attribute-level
-     * loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
+     * <p>Also detected, as {@code @SagaStep}: a saga step on the {@code @ExerisDomain}
+     * type whose {@code order} this reader cannot resolve — a constant from another file,
+     * an inherited or statically imported one, or arithmetic. {@link #read} carries such a
+     * step at order {@code 1}, while the processor receives the folded value, so the step
+     * sequence of the two may differ. An order that is a literal, or a {@code final} field
+     * of the same file initialised with one, is resolved and not reported.
+     *
+     * <p>Apart from that attribute, this guard is <em>annotation-level</em>: it does not
+     * report attribute-level loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
      * attribute-complete; completeness of the other read annotations
      * ({@code @Relationship}, {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is
      * verified by their own tests rather than by this method. Matching is by simple name (no import resolution).
@@ -275,6 +294,12 @@ public final class SourceModelReader {
                 facets.add("@" + simpleName);
             }
         }
+        // Attribute-level, the one exception to the annotation-level rule: a step order read()
+        // cannot resolve is a position the processor may hold differently, and a misplaced
+        // step is a reordered saga. read() reads the first @ExerisDomain type, so this does too.
+        cu.findFirst(ClassOrInterfaceDeclaration.class, type -> type.isAnnotationPresent("ExerisDomain"))
+                .filter(this::stepOrderUnresolved)
+                .ifPresent(type -> facets.add("@SagaStep"));
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
@@ -967,9 +992,17 @@ public final class SourceModelReader {
     /**
      * {@code @SagaStep} methods → {@link SagaStepMetadata}, sorted by {@code order},
      * mirroring {@code extractSagaSteps}: {@code name} falls back to the method
-     * name, {@code order} defaults to 1, and
-     * {@code description}/{@code service}/{@code command}/{@code compensation}/
+     * name, and {@code description}/{@code service}/{@code command}/{@code compensation}/
      * {@code timeout}/{@code parallel} are present-only.
+     *
+     * <p>{@code order} is read through {@link #stepOrder}, which resolves a constant declared
+     * in this source file as well as a literal: the order is the attribute that decides the
+     * sequence, and a value read wrongly here reorders the saga against the processor's
+     * baseline. An order this reader cannot resolve is carried as {@code 1} and reported by
+     * {@link #unmodeledFacets} as {@code @SagaStep}, so a reattach caller refuses the read
+     * rather than trusting the position. A duplicate, a gap or a sequence not starting at
+     * {@code 1} is carried as written, in stable-sort order: that contract is the processor's to
+     * check, and this reader has no diagnostic channel to report it through.
      */
     private List<SagaStepMetadata> sagaSteps(ClassOrInterfaceDeclaration type) {
         List<SagaStepMetadata> steps = new ArrayList<>();
@@ -979,7 +1012,7 @@ public final class SourceModelReader {
                 continue;
             }
             String name = stringAttr(step.get(), "name").orElse(method.getNameAsString());
-            int order = intAttr(step.get(), "order").orElse(1);
+            int order = stepOrder(method, step.get()).orElse(1);
             SagaStepMetadata.Builder builder = SagaStepMetadata.builder(name, order);
             stringAttr(step.get(), "description").ifPresent(builder::description);
             stringAttr(step.get(), "service").ifPresent(builder::service);
@@ -991,6 +1024,119 @@ public final class SourceModelReader {
         }
         steps.sort(Comparator.comparingInt(SagaStepMetadata::order));
         return steps;
+    }
+
+    /**
+     * The {@code @SagaStep.order} of {@code method}, or empty when the attribute is absent or
+     * its value cannot be resolved without a compiler; {@link #stepOrderUnresolved} tells the
+     * two apart.
+     */
+    private Optional<Integer> stepOrder(MethodDeclaration method, AnnotationExpr step) {
+        return value(step, "order").flatMap(expression -> intConstant(expression, method));
+    }
+
+    /**
+     * Whether a {@code @SagaStep} on a method of {@code type} declares an {@code order} this
+     * reader cannot resolve — the case where {@link #sagaSteps} carries a position the
+     * processor, which receives the value folded by javac, may not.
+     */
+    private boolean stepOrderUnresolved(ClassOrInterfaceDeclaration type) {
+        if (type.getAnnotationByName("Saga").isEmpty()) {
+            return false;
+        }
+        for (MethodDeclaration method : type.getMethods()) {
+            Optional<AnnotationExpr> step = method.getAnnotationByName("SagaStep");
+            if (step.isPresent() && value(step.get(), "order").isPresent()
+                    && stepOrder(method, step.get()).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The {@code int} value of a constant expression this reader can fold without symbol
+     * solving: an integer literal, optionally parenthesised or negated, or a reference to a
+     * {@code final} field initialised with one. A simple name ({@code RESERVE}) is looked up in
+     * the type enclosing {@code context} and then its enclosing types, the scopes javac
+     * searches first; a qualified name ({@code Steps.RESERVE}) resolves only when exactly one
+     * type of that simple name is declared in the compilation unit. An inherited, statically
+     * imported or other-file constant, and any arithmetic, is not resolved. Narrowed as javac
+     * narrows a folded {@code int}.
+     */
+    private Optional<Integer> intConstant(Expression expression, Node context) {
+        return longConstant(expression, context, 0).map(Long::intValue);
+    }
+
+    private Optional<Long> longConstant(Expression expression, Node context, int depth) {
+        if (depth > MAX_CONSTANT_DEPTH) {
+            return Optional.empty();
+        }
+        if (expression.isEnclosedExpr()) {
+            return longConstant(expression.asEnclosedExpr().getInner(), context, depth + 1);
+        }
+        if (expression.isUnaryExpr()) {
+            UnaryExpr unary = expression.asUnaryExpr();
+            if (unary.getOperator() == UnaryExpr.Operator.MINUS) {
+                return longConstant(unary.getExpression(), context, depth + 1).map(value -> -value);
+            }
+            return Optional.empty();
+        }
+        if (expression.isIntegerLiteralExpr()) {
+            return Optional.of(expression.asIntegerLiteralExpr().asNumber().longValue());
+        }
+        Optional<VariableDeclarator> constant = Optional.empty();
+        if (expression.isNameExpr()) {
+            constant = lexicalConstant(expression.asNameExpr().getNameAsString(), context);
+        } else if (expression.isFieldAccessExpr() && expression.asFieldAccessExpr().getScope().isNameExpr()) {
+            FieldAccessExpr access = expression.asFieldAccessExpr();
+            constant = qualifiedConstant(access.getScope().asNameExpr().getNameAsString(),
+                    access.getNameAsString(), context);
+        }
+        return constant.flatMap(variable -> variable.getInitializer()
+                .flatMap(initializer -> longConstant(initializer, variable, depth + 1)));
+    }
+
+    private Optional<VariableDeclarator> lexicalConstant(String name, Node context) {
+        Optional<Node> scope = context.getParentNode();
+        while (scope.isPresent()) {
+            if (scope.get() instanceof TypeDeclaration<?> declaring) {
+                Optional<VariableDeclarator> found = constantIn(declaring, name);
+                if (found.isPresent()) {
+                    return found;
+                }
+            }
+            scope = scope.get().getParentNode();
+        }
+        return Optional.empty();
+    }
+
+    private Optional<VariableDeclarator> qualifiedConstant(String typeName, String name, Node context) {
+        Optional<CompilationUnit> unit = context.findCompilationUnit();
+        if (unit.isEmpty()) {
+            return Optional.empty();
+        }
+        List<TypeDeclaration<?>> candidates = new ArrayList<>();
+        for (TypeDeclaration<?> declared : unit.get().findAll(TypeDeclaration.class)) {
+            if (declared.getNameAsString().equals(typeName)) {
+                candidates.add(declared);
+            }
+        }
+        return candidates.size() == 1 ? constantIn(candidates.get(0), name) : Optional.empty();
+    }
+
+    /**
+     * A constant field of {@code type}: {@code final}, or declared in an interface, where every
+     * field is implicitly {@code static final}.
+     */
+    private Optional<VariableDeclarator> constantIn(TypeDeclaration<?> type, String name) {
+        boolean implicitlyFinal = type instanceof ClassOrInterfaceDeclaration declaration
+                && declaration.isInterface();
+        return type.getFieldByName(name)
+                .filter(field -> implicitlyFinal || field.isFinal())
+                .flatMap(field -> field.getVariables().stream()
+                        .filter(variable -> variable.getNameAsString().equals(name))
+                        .findFirst());
     }
 
     /**
@@ -1012,8 +1158,9 @@ public final class SourceModelReader {
      * leaves it to the caller). A negative literal is a {@code UnaryExpr} (not an
      * {@code IntegerLiteralExpr}) and so falls through to the caller default;
      * harmless for the count-style attributes read here ({@code snapshotThreshold},
-     * {@code maxRetries}, {@code order}, {@code minLength}, {@code maxLength}),
-     * where a negative value is meaningless.
+     * {@code maxRetries}, {@code minLength}, {@code maxLength}), where a negative
+     * value is meaningless. {@code @SagaStep.order} is read by {@link #stepOrder}
+     * instead.
      */
     private Optional<Integer> intAttr(AnnotationExpr annotation, String attribute) {
         return value(annotation, attribute)
