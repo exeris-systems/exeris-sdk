@@ -86,6 +86,52 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
+
+**Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto
+`SagaMetadata.TriggerType` by constant name, and the two enums disagreed: the
+annotation declared `COMMAND`, `EVENT`, `SCHEDULE`, `HTTP`, `MANUAL`; the AST
+declares `EVENT`, `SCHEDULED`, `MANUAL`, `API`. The annotation side moves, because
+its constants are source-only while the AST's are JSON values.
+
+| Annotation constant | Status | AST constant |
+|---|---|---|
+| `EVENT` | unchanged | `EVENT` |
+| `MANUAL` | unchanged, now the default | `MANUAL` |
+| `SCHEDULED` | new | `SCHEDULED` |
+| `API` | new | `API` |
+| `SCHEDULE` | deprecated for removal | read as `SCHEDULED` |
+| `HTTP` | deprecated for removal | read as `API` |
+| `COMMAND` | deprecated for removal | read as `MANUAL` |
+
+`COMMAND` goes because the kernel has no command-started flow. A flow is either
+scheduled by application code, which is `MANUAL`, or started from an event by a
+choreography mapper, which is `EVENT`. A command handled in-process is the first;
+a command delivered as a message on the event bus is the second.
+
+```java
+// before
+@Saga(name = "NightlySettlementSaga",
+      trigger = @SagaTrigger(type = TriggerType.SCHEDULE, schedule = "0 0 2 * * *"))
+
+// after
+@Saga(name = "NightlySettlementSaga",
+      trigger = @SagaTrigger(type = TriggerType.SCHEDULED, schedule = "0 0 2 * * *"))
+```
+
+**Impact:** a source using a deprecated constant compiles with a `[removal]`
+warning; replace it as in the table. `@SagaTrigger.type()` now defaults to
+`MANUAL` rather than `COMMAND`. Nothing a build emits changes: neither the `-io`
+reader nor the `exeris-tooling` processor reads `@Saga.trigger` yet, so
+`SagaMetadata.trigger` is `null` on both paths. The AST enum, its JSON values and
+`SchemaVersion` are unchanged, so every existing document reads back as before.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** when `exeris-tooling` starts extracting the trigger, it maps by
+  name and reads the three deprecated constants as their replacements, with a
+  warning, until 1.0.0.
+
 ---
 
 ## 0.11.x → 0.12.x

@@ -807,6 +807,19 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("every SagaMetadata.TriggerType round-trips, written as its constant name")
+    void sagaTriggerTypeRoundTripsAsItsName() {
+        // The constant name is the wire value, and it is also the annotation constant a producer
+        // maps from, so a rename on either side is a wire change.
+        for (SagaMetadata.TriggerType type : SagaMetadata.TriggerType.values()) {
+            SagaMetadata.SagaTrigger trigger =
+                    new SagaMetadata.SagaTrigger(type, "OrderPlaced", "orders.placed", "0 0 * * *", "true");
+            assertRoundTrip(trigger, SagaMetadata.SagaTrigger.class);
+            assertThat(mapper.valueToTree(trigger).get("type").asString()).isEqualTo(type.name());
+        }
+    }
+
+    @Test
     @DisplayName("SagaTransition omits a normalized-away blank target on the wire")
     void sagaTransitionBlankTargetOmittedFromJson() {
         // A blank `to` must normalize to null so the key is
