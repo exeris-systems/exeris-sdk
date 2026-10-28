@@ -22,12 +22,6 @@ jobs:
         # newer JDK, which a single-row matrix would surface only downstream.
         java: ['25', '26']
 
-    env:
-      # Job-level so the guard on the analysis step can read it: `secrets` is not available in a
-      # step-level `if`. Empty on forked and Dependabot pull requests, which is exactly when the
-      # step must skip rather than fail.
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -69,11 +63,22 @@ jobs:
       #
       # continue-on-error: static analysis is not a correctness gate, and a scanner or sonarcloud.io
       # failure must not fail the build gate. The step after this one makes such a failure visible.
+      #
+      # The token is scoped to this step alone. The steps above run the pull request's own build
+      # and test code and npm install scripts, none of which may see a secret. `secrets` is not
+      # readable in a step-level `if`, so the absent-token case (forked and Dependabot pull
+      # requests) is decided inside `run` and skips rather than fails.
       - name: SonarQube Cloud analysis
         id: sonar
-        if: ${{ matrix.java == '25' && env.SONAR_TOKEN != '' }}
+        if: ${{ matrix.java == '25' }}
         continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is not available to this run; analysis skipped."
+            exit 0
+          fi
           mvn -B -ntp -e -DskipTests -Dcheckstyle.skip=true \
             verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
