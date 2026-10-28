@@ -70,7 +70,10 @@ jobs:
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
       - name: Install npm with `npm stage`
-        run: npm install -g npm@^11.15.0
+        # An exact version, not a range: the publish job runs whatever this resolves to with the
+        # npm token in reach, so it is pinned like an action SHA and raised by hand. `npm stage`
+        # needs 11.15.0 or later. --ignore-scripts: npm runs no install hook of its own.
+        run: npm install -g --ignore-scripts npm@11.21.1
 
       # The same gates the PR build runs on this package: per-file coverage, the API golden and
       # the typedoc check. `prepublishOnly` builds dist/ right before `npm publish`, and `prepack`
