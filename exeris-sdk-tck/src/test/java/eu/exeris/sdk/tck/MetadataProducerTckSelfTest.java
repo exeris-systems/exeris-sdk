@@ -30,6 +30,7 @@ class MetadataProducerTckSelfTest {
             producer.validationConstraintsReachTheProducedField();
             producer.aZeroValuedBoundSurvivesSerialization();
             producer.sagaVersionReachesTheProducedMetadata();
+            producer.sagaCompensationReachesTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -113,6 +114,36 @@ class MetadataProducerTckSelfTest {
         assertThatThrownBy(sagaBlind::sagaVersionReachesTheProducedMetadata)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("carries no sagaMetadata");
+    }
+
+    @Test
+    @DisplayName("a declared compensation 0 or false missing from the JSON is caught")
+    void sagaCompensationKeyCasesAreNotVacuous() {
+        Producer zeroBlind = new Producer(json -> withoutSagaKey(json, "compensationMaxRetries"));
+        assertThatThrownBy(zeroBlind::sagaCompensationReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("compensationMaxRetries = 0");
+
+        Producer falseBlind = new Producer(json -> withoutSagaKey(json, "manualInterventionOnCompensationFailure"));
+        assertThatThrownBy(falseBlind::sagaCompensationReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("manualInterventionOnCompensationFailure = false");
+    }
+
+    @Test
+    @DisplayName("a failure handler written as declared instead of fully qualified is caught")
+    void sagaCompensationHandlerCaseIsNotVacuous() {
+        Producer writtenForm = new Producer(json -> json.replace(
+                "\"" + ReferenceBinding.ORDER_SAGA_FAILURE_HANDLER + "\"", "\"Order.CompensationEscalation\""));
+        assertThatThrownBy(writtenForm::sagaCompensationReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("fully-qualified");
+    }
+
+    private static String withoutSagaKey(String json, String key) {
+        ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+        ((ObjectNode) root.get("sagaMetadata")).remove(key);
+        return root.toString();
     }
 
     /** A producer binding whose output is the reference baseline put through one transformation. */
