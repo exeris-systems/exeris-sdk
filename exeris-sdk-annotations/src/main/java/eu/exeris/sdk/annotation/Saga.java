@@ -1059,7 +1059,7 @@ public @interface Saga {
         TriggerType type() default TriggerType.MANUAL;
 
         /**
-         * The command or event type that starts the saga, when it is on the classpath.
+         * The event type that starts the saga, when it is on the classpath.
          *
          * @return the source type, or {@code void.class} when named instead
          */
@@ -1138,7 +1138,7 @@ public @interface Saga {
          * the AST type, which preserves the annotation module's zero-dependency contract. Every
          * constant not deprecated for removal has exactly one AST counterpart of the same name,
          * and every AST constant has one here. A constant deprecated for removal has no AST
-         * counterpart; its {@code @deprecated} note names the constant it is read as.
+         * counterpart; its deprecation note names the constant it is read as.
          */
         enum TriggerType {
             /**
@@ -1163,7 +1163,7 @@ public @interface Saga {
              * Started on a schedule (cron), given by {@link SagaTrigger#schedule()}.
              * Maps onto {@code SagaMetadata.TriggerType.SCHEDULED}.
              *
-             * @since 0.13.0
+             * @since 0.13
              */
             SCHEDULED,
 
@@ -1181,7 +1181,7 @@ public @interface Saga {
              * Started by an API call, bound by {@link SagaTrigger#httpPath()} and
              * {@link SagaTrigger#httpMethod()}. Maps onto {@code SagaMetadata.TriggerType.API}.
              *
-             * @since 0.13.0
+             * @since 0.13
              */
             API,
 
