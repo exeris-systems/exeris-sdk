@@ -42,6 +42,15 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Changed
+
+- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
+  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
+  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
+  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
+  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
+  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+
 ### Fixed
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
@@ -49,6 +58,10 @@ for per-version upgrade steps.
   reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
   `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
   file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
+
+- **`-javadoc.jar` artifacts no longer bundle fonts.** `maven-javadoc-plugin` moves 3.11.2 → 3.12.0,
+  which passes `--no-fonts` to the JDK javadoc tool. Each javadoc jar drops the ~4.1 MB of
+  `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
 
 ### Added
 
@@ -116,6 +129,18 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **`@SagaStep.order` states its contract, and the `-io` reader no longer reads an unresolvable
+  order as `1` without saying so.** The Javadoc states that the steps of a saga number `1..N`, that
+  a value is shared only by steps that all declare `parallel = true`, and that the ordering defines
+  the sequence; `@Saga` states that a type hosts one saga. `SourceModelReader` folds a step order
+  given as a `final` field of the same source file (own type, enclosing type, or `Type.NAME` for a
+  type of that file), as javac folds it for the processor, and accepts a negated literal. An
+  enclosing type's field is used only while no type in between extends or implements another,
+  since an inherited field of the same name would take precedence for javac. An order
+  it still cannot resolve is carried as `1` and reported by `unmodeledFacets()` as `@SagaStep`,
+  which a reattach caller treats as unsafe. Duplicates, gaps and a sequence not starting at `1` are
+  carried as written; the diagnostic for them belongs to the `exeris-tooling` processor.
+
 - **CI runs the semver gate.** `build.yml` and `release.yml` pass `-Psemver`, so japicmp compares
   every build with `0.12.0`, the last release, which Maven Central serves. A binary-incompatible
   change outside the record-growth stance fails CI. `japicmp.baseline.version` moves `0.11.0` →
@@ -181,6 +206,19 @@ for per-version upgrade steps.
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
 ### Deprecated
+
+- **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
+  `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and
+  `SagaMetadata.TriggerType` now correspond one-to-one by name, as `@SagaTransition.on()` does onto
+  `TransitionOutcome`: `EVENT`, `SCHEDULED`, `API` and `MANUAL` on both sides. `SCHEDULED` and
+  `API` are new annotation constants; `SCHEDULE` is read as `SCHEDULED` and `HTTP` as `API`.
+  `COMMAND` has no counterpart because the kernel has no command-started flow: a flow is scheduled
+  by application code (`MANUAL`, which `COMMAND` is read as) or started from an event by a
+  choreography mapper (`EVENT`). `@SagaTrigger.type()` defaults to `MANUAL` instead of `COMMAND`.
+  The AST enum, its JSON values and `SchemaVersion` are unchanged. Neither the `-io` reader nor the
+  `exeris-tooling` processor reads `@Saga.trigger` yet, so no build output changes; a source using a
+  deprecated constant compiles with a `[removal]` warning. `SagaMetadataTest` asserts the mapping
+  is total in both directions. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted`** — `@Deprecated(since = "0.13.0",
   forRemoval = true)`, removal at 1.0.0, together with the nested `RowLevelSecurity.Policy`,

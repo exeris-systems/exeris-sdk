@@ -104,6 +104,15 @@ class DomainMetadataTest {
         }
 
         @Test
+        void uppercaseVowelBeforeYIsStillAVowel() {
+            assertThat(DomainMetadata.builder("Ay", "p").build().pluralName()).isEqualTo("Ays");
+            DomainMetadata compound = DomainMetadata.builder("OrderAy", "p").build();
+            assertThat(compound.pluralName()).isEqualTo("OrderAys");
+            assertThat(compound.effectivePath()).endsWith("order-ays");
+            assertThat(compound.effectiveTableName()).endsWith("order_ays");
+        }
+
+        @Test
         void singleLetterYDoesNotTriggerIesRule() {
             // Branch coverage: length-1 guards the substring math from blowing up.
             assertThat(DomainMetadata.builder("Y", "p").build().pluralName()).isEqualTo("Ys");

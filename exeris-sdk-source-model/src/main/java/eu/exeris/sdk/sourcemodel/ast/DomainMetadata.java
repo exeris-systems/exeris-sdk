@@ -377,8 +377,8 @@ public record DomainMetadata(
      *       {@code Branch} → {@code Branches});</li>
      *   <li>ends in a consonant followed by {@code y} → {@code y} becomes {@code ies}
      *       ({@code Colony} → {@code Colonies}, {@code Technology} →
-     *       {@code Technologies}); a vowel before the {@code y} takes a plain {@code s}
-     *       ({@code Day} → {@code Days});</li>
+     *       {@code Technologies}); a vowel before the {@code y}, in either case, takes a
+     *       plain {@code s} ({@code Day} → {@code Days}, {@code Ay} → {@code Ays});</li>
      *   <li>anything else → {@code +s}.</li>
      * </ul>
      *
@@ -570,7 +570,7 @@ public record DomainMetadata(
             return name + "es";
         }
         if (name.endsWith("y") && name.length() > 1
-                && "aeiou".indexOf(name.charAt(name.length() - 2)) < 0) {
+                && "aeiou".indexOf(Character.toLowerCase(name.charAt(name.length() - 2))) < 0) {
             return name.substring(0, name.length() - 1) + "ies";
         }
         return name + "s";

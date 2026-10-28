@@ -93,6 +93,14 @@ survives into 1.x unchanged.
   ruling. **No replacement.** It is not extracted, so no `FieldMetadata` component goes
   with it.
 
+- **`@SagaTrigger.TriggerType.COMMAND`, `.SCHEDULE` and `.HTTP`** — deprecated
+  since 0.13.0 (`forRemoval = true`). Replacements: `SCHEDULE → SCHEDULED`,
+  `HTTP → API`, `COMMAND → MANUAL` (or `EVENT` for a command delivered on the
+  event bus); the kernel has no command-started flow. After the removal the
+  annotation enum and `SagaMetadata.TriggerType` hold the same four names and map
+  by name. The processor's read-as-replacement fallback ends at 1.0.0. The AST
+  enum loses nothing: it never declared the three.
+
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
 was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
@@ -478,11 +486,11 @@ freeze or is explicitly re-dispositioned here.
 
 ## 5. TBD at the 1.0.0 release PR
 
-- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the four §1
-  removals only — `@Validation.required`, `@Validation.validateOn`,
+- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the §1 removals
+  only — `@Validation.required`, `@Validation.validateOn`,
   `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
   `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
-  go with the last two).
+  go with the last two, and the three `@SagaTrigger.TriggerType` constants).
 - Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`),
   and one dated line for the Stellar Tactics author-side pass, recorded to the
   definition in the status note at the top.

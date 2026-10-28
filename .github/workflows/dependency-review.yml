@@ -44,6 +44,9 @@ jobs:
           #   checkstyle           EPL-2.0 AND LGPL-2.1 — the Javadoc gate's engine, a plugin dependency
           #   jacoco-maven-plugin  EPL-2.0              — the coverage gate
           #   junit-jupiter        EPL-2.0              — test scope only
+          #   sonar-maven-plugin   LGPL-3.0             — the static-analysis scanner build.yml invokes
+          #                                               after `verify`; it links against nothing
+          #                                               published
           #   lightningcss*        MPL-2.0              — reached through `tailwindcss`, which ui-kit
           #                                               declares as a devDependency to build and test
           #                                               against and as a peerDependency the consumer
@@ -59,6 +62,7 @@ jobs:
             pkg:maven/com.puppycrawl.tools/checkstyle,
             pkg:maven/org.jacoco/jacoco-maven-plugin,
             pkg:maven/org.junit.jupiter/junit-jupiter,
+            pkg:maven/org.sonarsource.scanner.maven/sonar-maven-plugin,
             pkg:npm/lightningcss,
             pkg:npm/lightningcss-android-arm64,
             pkg:npm/lightningcss-darwin-arm64,
