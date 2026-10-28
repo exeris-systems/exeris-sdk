@@ -207,6 +207,38 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
         });
     }
 
+    /**
+     * The compensation section, component by component. Two shapes of divergence are what this
+     * exists for, and neither produces malformed output: one side drops a declared {@code 0} or
+     * {@code false}, which then reads as "not declared"; or one side carries the failure handler
+     * as written while the other carries the fully-qualified name.
+     */
+    @Test
+    @DisplayName("producer and reader agree on the saga's compensation section")
+    void sagaCompensationAgrees() {
+        requireSupported(Facet.SAGA_COMPENSATION);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            SagaMetadata p = produced.sagaMetadata();
+            SagaMetadata r = wasRead.sagaMetadata();
+            if (p == null || r == null) {
+                // Presence is the SAGA facet's comparison; here there is nothing to compare.
+                return gaps;
+            }
+            compare(gaps, SAGA + "/compensationTimeout", p.compensationTimeout(), r.compensationTimeout());
+            compare(gaps, SAGA + "/compensationMaxRetries", p.compensationMaxRetries(), r.compensationMaxRetries());
+            compare(gaps, SAGA + "/compensationRetryDelay", p.compensationRetryDelay(), r.compensationRetryDelay());
+            compare(gaps, SAGA + "/continueCompensationOnFailure",
+                    p.continueCompensationOnFailure(), r.continueCompensationOnFailure());
+            compare(gaps, SAGA + "/compensationDlq", p.compensationDlq(), r.compensationDlq());
+            compare(gaps, SAGA + "/compensationFailureHandler",
+                    p.compensationFailureHandler(), r.compensationFailureHandler());
+            compare(gaps, SAGA + "/manualInterventionOnCompensationFailure",
+                    p.manualInterventionOnCompensationFailure(), r.manualInterventionOnCompensationFailure());
+            return gaps;
+        });
+    }
+
     /** A comparison over one entity, returning the paths on which the two sides disagreed. */
     @FunctionalInterface
     private interface EntityComparison {

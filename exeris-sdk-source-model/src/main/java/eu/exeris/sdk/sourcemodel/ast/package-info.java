@@ -328,10 +328,13 @@
  * {@code compensationFailureHandler} (a fully-qualified name) and
  * {@code manualInterventionOnCompensationFailure}. The six are boxed and {@code null} when the
  * author declared nothing, and the annotation default is then the value; a declared {@code 0} or
- * {@code false} is written, because the record is {@code NON_NULL}. No producer populates them
- * yet: the processor and the {@code -io} reader extract them together (ADR-042), and the record
- * keeps its 16-component constructor, which passes {@code null} for all six. They arrived with
- * {@code SchemaVersion} {@code "0.13.0"}.
+ * {@code false} is written, because the record is {@code NON_NULL}. The {@code -io} reader
+ * populates the six and {@code compensationTimeout}, and carries the failure handler as the
+ * fully-qualified name it resolves syntactically; the processor does not extract them yet, and
+ * ADR-042 asks that it read them as the reader does. {@code compensationStrategy} and
+ * {@code compensationOrder} are read by neither, because their enums do not correspond to the
+ * annotation's. The record keeps its 16-component constructor, which passes {@code null} for all
+ * six. They arrived with {@code SchemaVersion} {@code "0.13.0"}.
  *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a

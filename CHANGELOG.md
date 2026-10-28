@@ -42,6 +42,14 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Fixed
+
+- **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
+  class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
+  reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
+  `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
+  file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
+
 ### Added
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
@@ -50,10 +58,33 @@ for per-version upgrade steps.
   name) and `manualInterventionOnCompensationFailure`. Each is boxed and `null` when the author
   declared nothing, so the annotation default applies and a producer that does not extract them
   writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
-  pinned by `AstJsonRoundTripTest`. Builder setters for all six. No producer populates them yet:
-  the `exeris-tooling` processor and the `-io` reader extract them together (ADR-042). `@Saga`'s
-  seven compensation attributes without an extractor, `compensationTimeout` included, say so in
-  their status notes (RESERVED, carried but not extracted).
+  pinned by `AstJsonRoundTripTest`. Builder setters for all six.
+
+- **`exeris-sdk-source-model-io` reads `@Saga`'s compensation section.** `compensationTimeout` and
+  the six components above are read present-only: undeclared leaves `compensationTimeout` at its
+  builder default and the six `null`, and a declared `0` or `false` is carried.
+  `compensationMaxRetries` is read signed, as javac folds it. A blank `compensationDlq` and
+  `void.class` read as `null`. `compensationFailureHandler` is the fully-qualified name javac
+  reports, resolved syntactically: the declaring type and the types enclosing it, then the
+  unit's top-level types, then a single-type import, then the unit's package. Under an on-demand
+  import a simple name the unit does not declare is kept as written, because the reader cannot
+  tell which package it comes from. `compensationStrategy` and `compensationOrder` are not read:
+  `Saga.CompensationStrategy` declares `STOP_ON_FAILURE` and `MANUAL`, `SagaMetadata`'s declares
+  `CUSTOM`, and `Saga.CompensationOrder.CUSTOM` has no AST counterpart, so a read by constant
+  name would carry a wrong value. The seven read attributes are PARTIAL in `@Saga`'s status
+  notes. `SourceModelConflictDetector` compares no saga component, so a baseline from a processor
+  that does not extract the section yet raises no conflict. **Tooling:** the processor reads the
+  same seven the same way (ADR-042).
+
+- **`exeris-sdk-tck`: `Facet.SAGA_COMPENSATION`, with a case in the reader, producer and parity
+  suites.** The corpus `Order`'s `@Saga` declares the section with the values a dropped
+  attribute would contradict: `compensationMaxRetries = 0`, both booleans `false`, and
+  `compensationFailureHandler = Order.CompensationEscalation.class`, a member type whose
+  fully-qualified name differs from the written form. The producer case reads the JSON tree, so a
+  missing key fails it. Each case has self-tests against a conforming binding and a binding
+  broken in that one way. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a
+  producer or parity binding whose processor does not extract the section declares
+  `SAGA_COMPENSATION` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
 - **`@exeris/ui-kit` 0.5.0: `.exeris-hero` in `@exeris/ui-kit/styles`.** The view generator renders
   a `HERO` block as `<section class="exeris-hero">`, and the kit now declares the class: an

@@ -309,7 +309,9 @@ public @interface Saga {
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationOrder()} holds its builder default on every
-     * build path and setting it here changes no generated artifact. The attribute is
+     * build path and setting it here changes no generated artifact. The reader leaves it
+     * unread because {@link CompensationOrder#CUSTOM} has no counterpart in
+     * {@code SagaMetadata.CompensationOrder}, so a read by constant name would carry a wrong value. The attribute is
      * kept rather than removed because the compensation semantics it names are real —
      * what is missing is the extraction and a generator that acts on it.
      *
@@ -324,7 +326,10 @@ public @interface Saga {
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationStrategy()} holds its builder default on every
-     * build path and setting it here changes no generated artifact. The attribute is
+     * build path and setting it here changes no generated artifact. The reader leaves it
+     * unread because {@link CompensationStrategy#STOP_ON_FAILURE} and
+     * {@link CompensationStrategy#MANUAL} have no counterpart in
+     * {@code SagaMetadata.CompensationStrategy}, so a read by constant name would carry a wrong value. The attribute is
      * kept rather than removed because the compensation semantics it names are real —
      * what is missing is the extraction and a generator that acts on it.
      *
@@ -335,11 +340,11 @@ public @interface Saga {
     /**
      * Timeout for entire compensation phase (ISO-8601 duration).
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationTimeout()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact. The component
-     * holds its builder default, {@code "PT10M"}, on every build path.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationTimeout()}; no {@code exeris-tooling} processor extracts it
+     * yet, so a build-time baseline holds the builder default, {@code "PT10M"}, and no generator
+     * reads it, so setting it here changes no generated artifact.
      *
      * @return compensation timeout
      */
@@ -348,10 +353,10 @@ public @interface Saga {
     /**
      * Max retries for individual compensation steps.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationMaxRetries()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationMaxRetries()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return compensation max retries
      */
@@ -360,10 +365,10 @@ public @interface Saga {
     /**
      * Delay between compensation retries.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationRetryDelay()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationRetryDelay()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return compensation retry delay
      */
@@ -373,10 +378,10 @@ public @interface Saga {
      * Continue compensation on individual step failure.
      * <p>When true, continues to next compensation even if one fails.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.continueCompensationOnFailure()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.continueCompensationOnFailure()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return continue on failure
      */
@@ -386,10 +391,10 @@ public @interface Saga {
      * Dead letter queue for failed compensations.
      * <p>Unrecoverable compensation failures are sent here.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationDlq()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationDlq()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return DLQ topic name
      */
@@ -399,10 +404,10 @@ public @interface Saga {
      * Custom compensation handler class.
      * <p>Called when automatic compensation fails.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationFailureHandler()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact. The component
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationFailureHandler()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact. The component
      * carries the class's fully-qualified name.
      *
      * @return handler class
@@ -412,10 +417,10 @@ public @interface Saga {
     /**
      * Trigger manual intervention on compensation failure.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.manualInterventionOnCompensationFailure()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.manualInterventionOnCompensationFailure()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return true to trigger intervention
      */
