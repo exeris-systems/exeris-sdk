@@ -6,6 +6,7 @@ import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.TestAbortedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ class MetadataReaderTckSelfTest {
             reader.relationshipCardinalityIsTheDeclaredOne();
             reader.actionIsReadUnderTheDeclaredName();
             reader.sagaVersionIsTheDeclaredOne();
+            reader.sagaCompensationIsTheDeclaredOne();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -129,6 +131,53 @@ class MetadataReaderTckSelfTest {
         assertThatThrownBy(sagaBlind::sagaVersionIsTheDeclaredOne)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("no saga metadata");
+    }
+
+    @Test
+    @DisplayName("a declared compensation 0 or false dropped as if undeclared is caught")
+    void sagaCompensationZeroAndFalseCasesAreNotVacuous() {
+        Reader zeroBlind = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga()
+                .compensationMaxRetries(null).build()));
+        assertThatThrownBy(zeroBlind::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("compensationMaxRetries = 0");
+
+        Reader falseBlind = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga()
+                .continueCompensationOnFailure(null).build()));
+        assertThatThrownBy(falseBlind::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("continueCompensationOnFailure = false");
+
+        Reader interventionBlind = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga()
+                .manualInterventionOnCompensationFailure(null).build()));
+        assertThatThrownBy(interventionBlind::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("manualInterventionOnCompensationFailure = false");
+    }
+
+    @Test
+    @DisplayName("a failure handler carried as written instead of fully qualified is caught")
+    void sagaCompensationHandlerCaseIsNotVacuous() {
+        Reader writtenForm = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga()
+                .compensationFailureHandler("Order.CompensationEscalation").build()));
+        assertThatThrownBy(writtenForm::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("fully-qualified");
+    }
+
+    @Test
+    @DisplayName("an unbuilt compensation facet skips rather than failing")
+    void anUnbuiltCompensationFacetSkips() {
+        Reader notBuiltYet = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga()
+                .compensationMaxRetries(null).build())) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.SAGA_COMPENSATION);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(TestAbortedException.class);
+        assertThatCode(notBuiltYet::sagaVersionIsTheDeclaredOne).doesNotThrowAnyException();
     }
 
     @Test
