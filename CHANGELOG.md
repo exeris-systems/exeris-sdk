@@ -59,6 +59,10 @@ for per-version upgrade steps.
   `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
   file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
 
+- **`-javadoc.jar` artifacts no longer bundle fonts.** `maven-javadoc-plugin` moves 3.11.2 → 3.12.0,
+  which passes `--no-fonts` to the JDK javadoc tool. Each javadoc jar drops the ~4.1 MB of
+  `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
+
 ### Added
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
