@@ -42,6 +42,15 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Changed
+
+- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
+  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
+  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
+  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
+  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
+  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+
 ### Fixed
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
@@ -115,6 +124,18 @@ for per-version upgrade steps.
   under the default light, default dark and brand themes.
 
 ### Changed
+
+- **`@SagaStep.order` states its contract, and the `-io` reader no longer reads an unresolvable
+  order as `1` without saying so.** The Javadoc states that the steps of a saga number `1..N`, that
+  a value is shared only by steps that all declare `parallel = true`, and that the ordering defines
+  the sequence; `@Saga` states that a type hosts one saga. `SourceModelReader` folds a step order
+  given as a `final` field of the same source file (own type, enclosing type, or `Type.NAME` for a
+  type of that file), as javac folds it for the processor, and accepts a negated literal. An
+  enclosing type's field is used only while no type in between extends or implements another,
+  since an inherited field of the same name would take precedence for javac. An order
+  it still cannot resolve is carried as `1` and reported by `unmodeledFacets()` as `@SagaStep`,
+  which a reattach caller treats as unsafe. Duplicates, gaps and a sequence not starting at `1` are
+  carried as written; the diagnostic for them belongs to the `exeris-tooling` processor.
 
 - **CI runs the semver gate.** `build.yml` and `release.yml` pass `-Psemver`, so japicmp compares
   every build with `0.12.0`, the last release, which Maven Central serves. A binary-incompatible
