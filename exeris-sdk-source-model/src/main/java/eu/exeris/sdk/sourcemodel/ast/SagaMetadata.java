@@ -250,15 +250,25 @@ public record SagaMetadata(
 
     /**
      * What kind of occurrence starts a saga.
+     *
+     * <p>The AST twin of the annotation's {@code @Saga.SagaTrigger.TriggerType}, mapped by
+     * constant name: every constant here has exactly one annotation constant of the same name,
+     * and every annotation constant not deprecated for removal has exactly one here. The
+     * annotation's deprecated spellings are read as their replacements: {@code SCHEDULE} as
+     * {@link #SCHEDULED}, {@code HTTP} as {@link #API}, {@code COMMAND} as {@link #MANUAL}.
+     * The constant names are the JSON values, so they are part of the wire format.
      */
     public enum TriggerType {
-        /** A published event starts the saga. */
+        /** A published event starts the saga. Annotation counterpart: {@code EVENT}. */
         EVENT,
-        /** A schedule starts it. */
+        /** A schedule starts it. Annotation counterpart: {@code SCHEDULED}. */
         SCHEDULED,
-        /** It is started by hand. */
+        /**
+         * Application code starts it, by scheduling the flow. Annotation counterpart:
+         * {@code MANUAL}, the annotation's default.
+         */
         MANUAL,
-        /** An API call starts it. */
+        /** An API call starts it. Annotation counterpart: {@code API}. */
         API
     }
 

@@ -201,6 +201,21 @@ for per-version upgrade steps.
   not ship, and the GitHub Packages migration note to MIGRATION.md, where it already was. The
   `description` matches the README. This entry and the one above ship as `@exeris/ui-kit` 0.2.1.
 
+### Deprecated
+
+- **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
+  `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and
+  `SagaMetadata.TriggerType` now correspond one-to-one by name, as `@SagaTransition.on()` does onto
+  `TransitionOutcome`: `EVENT`, `SCHEDULED`, `API` and `MANUAL` on both sides. `SCHEDULED` and
+  `API` are new annotation constants; `SCHEDULE` is read as `SCHEDULED` and `HTTP` as `API`.
+  `COMMAND` has no counterpart because the kernel has no command-started flow: a flow is scheduled
+  by application code (`MANUAL`, which `COMMAND` is read as) or started from an event by a
+  choreography mapper (`EVENT`). `@SagaTrigger.type()` defaults to `MANUAL` instead of `COMMAND`.
+  The AST enum, its JSON values and `SchemaVersion` are unchanged. Neither the `-io` reader nor the
+  `exeris-tooling` processor reads `@Saga.trigger` yet, so no build output changes; a source using a
+  deprecated constant compiles with a `[removal]` warning. `SagaMetadataTest` asserts the mapping
+  is total in both directions. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Removed
 
 - **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**
