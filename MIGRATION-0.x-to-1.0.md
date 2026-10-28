@@ -68,6 +68,30 @@ survives into 1.x unchanged.
   No producer reads the attribute in 0.12.x: neither the `-io` reader nor the
   `exeris-tooling` processor. A 0.x baseline that carries `"apiVersion"` still reads, because the records
   ignore unknown properties.
+- **`@RowLevelSecurity`** (with its nested `Policy` and `AuditLevel`) — deprecated
+  since 0.13.0 (`forRemoval = true`). Kernel ADR-012 §4c.1 publishes no principal
+  session key at 1.0, so nothing in the annotation compiles against a kernel contract
+  that `dataScope` does not already use. Replacements, per part:
+  - `policy = TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`;
+  - `readRoles` / `writeRoles` / `bypassRoles` → route authorization:
+    `@ExerisDomain.roles` / `permissions`, `@Action.roles` / `permissions`,
+    `@RouteAccess`;
+  - `OWNER`, `TEAM`, `HIERARCHY`, `DEPARTMENT`, `TENANT_AND_OWNER`, a
+    principal-reading `CUSTOM` predicate, and the policy-shape attributes
+    (`policyName`, `restrictive`, `applyOn*`, `auditLevel`) → **no replacement**;
+    a principal-keyed policy is the application's, published through its own
+    `ConnectionInterceptor`.
+  No producer reads it in 0.x and it has no AST carrier, so the removal changes no
+  metadata and no emitted output.
+- **`@Encrypted`** (with its nested `Algorithm`) — deprecated since 0.13.0
+  (`forRemoval = true`). **No replacement:** kernel ADR-012 §4c.1 rules field-level
+  encryption at rest outside kernel scope at 1.0 in every tier, and tooling may not
+  invent a scheme. Encrypt in the application or in the database. The masking and PII
+  flags are declared on `@Field.sensitive` / `@Field.maskPattern`; `viewRoles` is
+  route authorization. No producer reads it and it has no AST carrier.
+- **`@Field.encrypted`** — deprecated since 0.13.0 (`forRemoval = true`), by the same
+  ruling. **No replacement.** It is not extracted, so no `FieldMetadata` component goes
+  with it.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -90,8 +114,9 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   1.x line. That sequencing constraint is why 0.10.0 exists as a milestone.
 - **Reserved surfaces** (`@Derived` / `@Rule` / `@SagaTransition` /
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
-  system/security field markers, `@ExerisDomain.validationMode`) — frozen as
-  declared; extraction/generation lands additively in 1.x.
+  `system` field markers, `@ExerisDomain.validationMode`) — frozen as
+  declared; extraction/generation lands additively in 1.x. The `security`
+  annotations are not among them: they are in §1.
 - **`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and their AST carriers are
   the one exception: NOT frozen**
   ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md), as

@@ -604,8 +604,19 @@ public @interface Field {
      *
      * <p>Requires entity-level {@code @ExerisDomain(sensitive=true)}.
      *
+     * <p><strong>DEPRECATED</strong> — not extracted, and no generator will ever honour it at
+     * 1.0: kernel ADR-012 §4c.1 rules field-level encryption at rest outside kernel scope at
+     * 1.0, in every tier, and rules that tooling must not invent a scheme. Setting it stores the
+     * field as plaintext, exactly as if it were absent.
+     *
      * @return true if field should be encrypted
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel tier and no
+     *         generator defines encryption at rest at 1.0 (kernel ADR-012 §4c.1); encrypt in the
+     *         application or in the database. The same ruling deprecates
+     *         {@link eu.exeris.sdk.annotation.security.Encrypted @Encrypted}. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encrypted() default false;
 
     /**
