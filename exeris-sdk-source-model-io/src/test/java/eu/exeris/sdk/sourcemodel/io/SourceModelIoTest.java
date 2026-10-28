@@ -1806,8 +1806,7 @@ class SourceModelIoTest {
         void sagaStepOrderThatCannotBeResolvedIsReportedNotTrusted() {
             String unresolved = sagaWithStepOrders("Orders.RESERVE", "2");
             assertThat(reader.unmodeledFacets(unresolved)).containsExactly("@SagaStep");
-            // The step is still read, at order 1, so a caller that does
-            // not consult the guard gets the same shape it got before.
+            // The unresolved step is still read, carried at order 1, beside the resolved one.
             assertThat(reader.read(unresolved).orElseThrow().sagaMetadata().steps())
                     .extracting(SagaStepMetadata::order).containsExactly(1, 2);
 
@@ -1818,6 +1817,42 @@ class SourceModelIoTest {
             // Resolved and absent orders are not reported.
             assertThat(reader.unmodeledFacets(sagaWithStepOrders("FIRST", "2"))).isEmpty();
             assertThat(reader.unmodeledFacets(sagaWithStepOrders("1", "2"))).isEmpty();
+        }
+
+        /**
+         * javac resolves a simple name against a type's inherited members before its enclosing
+         * scope, so an enclosing constant is used only when the step host extends nothing.
+         */
+        @Test
+        void sagaStepOrderFromAnEnclosingTypeIsUnresolvedBehindASupertype() {
+            String behindSupertype = nestedSagaHost("extends Base");
+            assertThat(reader.unmodeledFacets(behindSupertype)).containsExactly("@SagaStep");
+            assertThat(reader.read(behindSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1);
+            assertThat(reader.unmodeledFacets(nestedSagaHost("implements Marker"))).containsExactly("@SagaStep");
+
+            String noSupertype = nestedSagaHost("");
+            assertThat(reader.unmodeledFacets(noSupertype)).isEmpty();
+            assertThat(reader.read(noSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(4);
+        }
+
+        private String nestedSagaHost(String supertypes) {
+            return """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    public class Holder {
+                        static final int STEP = 4;
+                        @ExerisDomain
+                        @Saga
+                        public static class Fulfilment %s {
+                            @SagaStep(order = STEP, service = "s", command = "c")
+                            public void reserve() {}
+                        }
+                    }
+                    """.formatted(supertypes);
         }
 
         @Test

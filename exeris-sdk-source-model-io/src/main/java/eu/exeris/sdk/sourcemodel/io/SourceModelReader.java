@@ -21,6 +21,8 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.UnaryExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithExtends;
+import com.github.javaparser.ast.nodeTypes.NodeWithImplements;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
@@ -1173,11 +1175,14 @@ public final class SourceModelReader {
      * The {@code int} value of a constant expression this reader can fold without symbol
      * solving: an integer literal, optionally parenthesised or negated, or a reference to a
      * {@code final} field initialised with one. A simple name ({@code RESERVE}) is looked up in
-     * the type enclosing {@code context} and then its enclosing types, the scopes javac
-     * searches first; a qualified name ({@code Steps.RESERVE}) resolves only when exactly one
-     * type of that simple name is declared in the compilation unit. An inherited, statically
-     * imported or other-file constant, and any arithmetic, is not resolved. Narrowed as javac
-     * narrows a folded {@code int}.
+     * the type enclosing {@code context} and then its enclosing types. javac searches a type's
+     * inherited members before its enclosing scope, so the lookup stops, unresolved, at the first
+     * type that does not declare the name but extends or implements another type: the name may
+     * be inherited, and a same-named field of an enclosing type would then be a different
+     * constant. A qualified name ({@code Steps.RESERVE}) resolves only when exactly one type of
+     * that simple name is declared in the compilation unit and declares the field itself. An
+     * inherited, statically imported or other-file constant, and any arithmetic, is not
+     * resolved. Narrowed as javac narrows a folded {@code int}.
      */
     private Optional<Integer> intConstant(Expression expression, Node context) {
         return longConstant(expression, context, 0).map(Long::intValue);
@@ -1217,13 +1222,25 @@ public final class SourceModelReader {
         while (scope.isPresent()) {
             if (scope.get() instanceof TypeDeclaration<?> declaring) {
                 Optional<VariableDeclarator> found = constantIn(declaring, name);
-                if (found.isPresent()) {
+                if (found.isPresent() || hasSupertypes(declaring)) {
                     return found;
                 }
             }
             scope = scope.get().getParentNode();
         }
         return Optional.empty();
+    }
+
+    /**
+     * Whether {@code type} names a supertype in an {@code extends} or {@code implements} clause,
+     * so its members may include an inherited field this reader cannot see.
+     */
+    private static boolean hasSupertypes(TypeDeclaration<?> type) {
+        boolean extendsAny = type instanceof NodeWithExtends<?> extending
+                && !extending.getExtendedTypes().isEmpty();
+        boolean implementsAny = type instanceof NodeWithImplements<?> implementing
+                && !implementing.getImplementedTypes().isEmpty();
+        return extendsAny || implementsAny;
     }
 
     private Optional<VariableDeclarator> qualifiedConstant(String typeName, String name, Node context) {

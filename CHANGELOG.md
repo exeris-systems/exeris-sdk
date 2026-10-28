@@ -121,7 +121,9 @@ for per-version upgrade steps.
   a value is shared only by steps that all declare `parallel = true`, and that the ordering defines
   the sequence; `@Saga` states that a type hosts one saga. `SourceModelReader` folds a step order
   given as a `final` field of the same source file (own type, enclosing type, or `Type.NAME` for a
-  type of that file), as javac folds it for the processor, and accepts a negated literal. An order
+  type of that file), as javac folds it for the processor, and accepts a negated literal. An
+  enclosing type's field is used only while no type in between extends or implements another,
+  since an inherited field of the same name would take precedence for javac. An order
   it still cannot resolve is carried as `1` and reported by `unmodeledFacets()` as `@SagaStep`,
   which a reattach caller treats as unsafe. Duplicates, gaps and a sequence not starting at `1` are
   carried as written; the diagnostic for them belongs to the `exeris-tooling` processor.

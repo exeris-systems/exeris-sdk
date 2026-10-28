@@ -110,11 +110,13 @@ public @interface SagaStep {
      * <p>Declare the value as an {@code int} literal or as a constant declared in the same
      * source file. javac folds any constant expression for the processor, but the
      * {@code exeris-sdk-source-model-io} reader reads source syntactically: it resolves a
-     * literal, a negated literal, and a {@code static final} field initialised with one and
-     * declared in the step's own type, an enclosing type, or a type of the same file named by
-     * its simple name ({@code Steps.RESERVE}). Anything else it cannot read, and it reports the
-     * step's annotation from {@code SourceModelReader.unmodeledFacets} rather than inventing a
-     * position for it.
+     * literal, a negated literal, and a {@code final} field (or an interface field, implicitly
+     * {@code final}) initialised with one and declared in the step's own type, an enclosing
+     * type, or a type of the same file named by its simple name ({@code Steps.RESERVE}). A field
+     * of an enclosing type is used only while no type in between extends or implements another,
+     * because an inherited field of the same name would take precedence for javac. Anything else
+     * it cannot read, and it reports the step's annotation from
+     * {@code SourceModelReader.unmodeledFacets} rather than inventing a position for it.
      *
      * <p><strong>No default, deliberately.</strong> Giving one would let every step share it, and
      * a stable sort would then quietly hand the sequence to declaration position — turning an
