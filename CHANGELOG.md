@@ -42,6 +42,15 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Changed
+
+- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
+  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
+  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
+  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
+  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
+  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+
 ### Added
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
