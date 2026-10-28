@@ -206,7 +206,10 @@ jobs:
             # it can ever be changed.
             mvn -B -ntp -P release,semver clean deploy --settings .github/maven-settings.xml
           else
-            mvn -B -ntp -P release,semver clean verify
+            # skipUpload: the same staging and bundle as the upload above, written to
+            # target/central-publishing/ and never sent, so the readiness check below checks the
+            # bundle a release would upload.
+            mvn -B -ntp -P release,semver clean deploy -DskipUpload=true
           fi
 
       - name: Release-readiness check
@@ -282,6 +285,35 @@ jobs:
               echo "::error::$f.asc is not a good signature" >&2; fail=1
             fi
           done
+
+          # Central validates the bundle as a whole and refuses it when any directory in it lacks a
+          # pom, so one stray file fails every coordinate. Staging installs into a local repository
+          # whose bookkeeping (maven-metadata-*.xml, _remote.repositories, .locks) the plugin
+          # removes only under the names it knows; a name it does not know reaches the bundle.
+          # Every file must sit in a <group>/<artifact>/<version>/ directory that holds
+          # <artifact>-<version>.pom, and be named <artifact>-<version>.* or -*.
+          bundle=target/central-publishing/central-bundle.zip
+          if [ -f "$bundle" ]; then
+            python3 - "$bundle" <<'PY' || fail=1
+          import sys, zipfile
+          entries = [n for n in zipfile.ZipFile(sys.argv[1]).namelist() if not n.endswith('/')]
+          stray = []
+          for name in entries:
+              directory, _, filename = name.rpartition('/')
+              parts = directory.split('/')
+              stem = f'{parts[-2]}-{parts[-1]}' if len(parts) >= 3 else None
+              if (stem is None or f'{directory}/{stem}.pom' not in entries
+                      or not filename.startswith((stem + '.', stem + '-'))):
+                  stray.append(name)
+          for name in sorted(stray):
+              print(f'::error::central bundle: {name} is not a file of a published coordinate', file=sys.stderr)
+          print(f'central bundle: {len(entries)} file(s), {len(stray)} outside a coordinate')
+          sys.exit(1 if stray else 0)
+          PY
+          else
+            echo "::error::$bundle is missing; the release profile builds it at deploy (the dry run sets -DskipUpload=true)" >&2
+            fail=1
+          fi
 
           # `|| true` on every count, and it is not defensive noise. Under `set -euo pipefail` a
           # bare `ls` of a directory that does not exist fails the pipeline, fails the assignment,
