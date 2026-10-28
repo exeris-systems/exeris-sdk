@@ -181,6 +181,49 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Read from the tree rather than through the record, because what is asserted is the key: a
+     * declared {@code 0} or {@code false} must be written, and a component that is {@code null}
+     * when undeclared reads back the same whether the producer dropped the value or never had it.
+     */
+    @Test
+    @DisplayName("the saga's compensation section reaches the produced JSON, zero and false included")
+    void sagaCompensationReachesTheProducedJson() {
+        requireSupported(Facet.SAGA_COMPENSATION);
+        JsonNode saga = tree(TckCorpus.ORDER).path("sagaMetadata");
+        assertThat(saga.isObject())
+                .withFailMessage("Order declares @Saga; the produced JSON carries no sagaMetadata.")
+                .isTrue();
+        assertThat(saga.path("compensationMaxRetries").isNumber() && saga.path("compensationMaxRetries").asInt() == 0)
+                .withFailMessage(
+                        "Order declares @Saga(compensationMaxRetries = 0) and the produced "
+                                + "sagaMetadata has compensationMaxRetries = %s. A missing key means "
+                                + "'not declared' to every reader, and the annotation default, 5, "
+                                + "then applies.",
+                        saga.path("compensationMaxRetries"))
+                .isTrue();
+        for (String key : List.of("continueCompensationOnFailure", "manualInterventionOnCompensationFailure")) {
+            assertThat(saga.path(key).isBoolean() && !saga.path(key).asBoolean())
+                    .withFailMessage(
+                            "Order declares @Saga(%s = false) and the produced sagaMetadata has "
+                                    + "%s = %s. A missing key means 'not declared' to every "
+                                    + "reader, and the annotation default, true, is the opposite.",
+                            key, key, saga.path(key))
+                    .isTrue();
+        }
+        String handler = TckCorpus.packageName() + ".Order.CompensationEscalation";
+        assertThat(saga.path("compensationFailureHandler").asString(""))
+                .withFailMessage(
+                        "Order declares compensationFailureHandler = Order.CompensationEscalation.class "
+                                + "and the produced sagaMetadata names '%s'. The component carries "
+                                + "the fully-qualified name, %s.",
+                        saga.path("compensationFailureHandler"), handler)
+                .isEqualTo(handler);
+        assertThat(saga.path("compensationTimeout").asString("")).isEqualTo("PT2M");
+        assertThat(saga.path("compensationRetryDelay").asString("")).isEqualTo("PT30S");
+        assertThat(saga.path("compensationDlq").asString("")).isEqualTo("sales.order-compensation.dlq");
+    }
+
+    /**
      * Produces the entity's metadata JSON and parses it as a tree.
      *
      * @param entityName one of {@link TckCorpus#entityNames()}
