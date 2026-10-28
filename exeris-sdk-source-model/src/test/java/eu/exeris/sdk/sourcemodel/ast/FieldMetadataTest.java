@@ -2,6 +2,8 @@ package eu.exeris.sdk.sourcemodel.ast;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +36,24 @@ class FieldMetadataTest {
                 false, false, false, false, false, false, false, false, false, null,
                 null, null, null, null, null, null, null, null, false, null, true, true, null, null, null, null);
         assertThat(f.computedFrom()).isNotNull().isEmpty();
+    }
+
+    @Test
+    @DisplayName("the wire form writes inCreate and inUpdate whether they are true or false")
+    void lifecycleFlagsAreAlwaysOnTheWire() {
+        JsonMapper mapper = JsonMapper.builder().build();
+
+        JsonNode both = mapper.valueToTree(FieldMetadata.builder("a", "String").build());
+        JsonNode neither = mapper.valueToTree(
+                FieldMetadata.builder("a", "String").inCreate(false).inUpdate(false).build());
+
+        assertThat(both.path("inCreate").isBoolean()).isTrue();
+        assertThat(both.path("inCreate").asBoolean()).isTrue();
+        assertThat(both.path("inUpdate").asBoolean()).isTrue();
+        assertThat(neither.path("inCreate").isBoolean()).isTrue();
+        assertThat(neither.path("inCreate").asBoolean()).isFalse();
+        assertThat(neither.path("inUpdate").isBoolean()).isTrue();
+        assertThat(neither.path("inUpdate").asBoolean()).isFalse();
     }
 
     @Test

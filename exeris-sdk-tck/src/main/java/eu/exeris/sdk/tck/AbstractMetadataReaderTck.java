@@ -192,6 +192,48 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                 .isEqualTo(3);
     }
 
+    @Test
+    @DisplayName("the saga carries the compensation section the source declares")
+    void sagaCompensationIsTheDeclaredOne() {
+        requireSupported(Facet.SAGA_COMPENSATION);
+        SagaMetadata saga = read(TckCorpus.sourceOf(TckCorpus.ORDER)).sagaMetadata();
+        assertThat(saga)
+                .withFailMessage("Order declares @Saga; the reader returned no saga metadata.")
+                .isNotNull();
+        assertThat(saga.compensationMaxRetries())
+                .withFailMessage(
+                        "Order declares @Saga(compensationMaxRetries = 0) and it was read as %s. The "
+                                + "component is boxed so that a declared 0 survives: null means "
+                                + "'not declared', and the annotation default, 5, then applies.",
+                        saga.compensationMaxRetries())
+                .isEqualTo(0);
+        assertThat(saga.continueCompensationOnFailure())
+                .withFailMessage(
+                        "Order declares @Saga(continueCompensationOnFailure = false) and it was read "
+                                + "as %s. A dropped false reads as 'not declared', and the annotation "
+                                + "default, true, is the opposite of what the source says.",
+                        saga.continueCompensationOnFailure())
+                .isFalse();
+        assertThat(saga.manualInterventionOnCompensationFailure())
+                .withFailMessage(
+                        "Order declares @Saga(manualInterventionOnCompensationFailure = false) and it "
+                                + "was read as %s. A dropped false reads as 'not declared', and the "
+                                + "annotation default, true, is the opposite of what the source says.",
+                        saga.manualInterventionOnCompensationFailure())
+                .isFalse();
+        assertThat(saga.compensationFailureHandler())
+                .withFailMessage(
+                        "Order declares compensationFailureHandler = Order.CompensationEscalation.class "
+                                + "and it was read as '%s'. The component carries the fully-qualified "
+                                + "name javac reports, %s.Order.CompensationEscalation; the written "
+                                + "form names a different type to every consumer outside this file.",
+                        saga.compensationFailureHandler(), TckCorpus.packageName())
+                .isEqualTo(TckCorpus.packageName() + ".Order.CompensationEscalation");
+        assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
+        assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
+        assertThat(saga.compensationDlq()).isEqualTo("sales.order-compensation.dlq");
+    }
+
     /**
      * Returns the named field, failing the test when it was not read.
      *
