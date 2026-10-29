@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Annotations
 
-**Module:** `eu.exeris:exeris-sdk-annotations` (0.13.0)
+**Module:** `eu.exeris:exeris-sdk-annotations` (1.0.0-SNAPSHOT)
 
 `exeris-sdk-annotations` owns the annotation vocabulary an application author writes on a domain class: `@ExerisDomain`, `@Field`, `@Action`, `@Relationship`, `@Saga`, `@UI` and their relatives. The annotations describe shape and intent. They carry no behavior.
 

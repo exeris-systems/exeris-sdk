@@ -371,7 +371,8 @@ freeze or is explicitly re-dispositioned here.
 - [x] **japicmp/revapi semver gate** — **configured (0.10.0)**, covering all
   six non-annotation publishable modules (opt-in through `-Psemver` since
   0.12.0, see below), **strict by default**, and **run by CI since the 0.13.0
-  line opened** against the `0.12.0` baseline on Maven Central. As configured in 0.10.0 it encoded the record-growth stance of the
+  line opened** against the last release on Maven Central (`japicmp.baseline.version`, `0.13.0`
+  on the 1.0.0 line). As configured in 0.10.0 it encoded the record-growth stance of the
   time by downgrading `CONSTRUCTOR_REMOVED` to a MINOR-level compatible change
   where records live, since that is the signal a trailing component produced.
   **Amended 2026-09-26 (Stellar finding S6):** the stance changed (§3), and with

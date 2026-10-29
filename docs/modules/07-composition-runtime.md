@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Composition runtime
 
-**Module:** `eu.exeris:exeris-sdk-composition-runtime` (0.13.0)
+**Module:** `eu.exeris:exeris-sdk-composition-runtime` (1.0.0-SNAPSHOT)
 **Dependencies:** [`exeris-sdk-composition-spec`](05-composition-spec.md), [`exeris-sdk-composition-lifecycle`](06-composition-lifecycle.md) and `tools.jackson.core:jackson-databind`. No kernel, tooling or JavaParser dependency.
 
 `exeris-sdk-composition-runtime` is the one SDK module that runs inside a deployed SKU. It asserts the validation stamp in `cap-manifest.json`, discovers each capability's lifecycle hooks, and drives them through `initialize`, `ready`, `drain` and `terminate`. It does not re-resolve the `@Requires` to `@Provides` graph, and it is not a security or licensing gate: it catches honest configuration drift early.
