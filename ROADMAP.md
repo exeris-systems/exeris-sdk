@@ -633,6 +633,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
 
+The per-surface lookup of what this freeze covers is [`docs/stability-matrix.md`](docs/stability-matrix.md).
+
 - [x] **Public API surface review — done; 103 public top-level types across the six publishable modules, all of them contract.** The criterion as written ("everything not in `internal/` is contract") describes a partition that does not exist: **there is no `internal/` package anywhere in the repo**, and on inspection there should not be — every module here is a deliberate API surface (annotations, AST records, a parser/writer, a manifest schema, a lifecycle interface, a boot conductor), so there is no implementation detail to hide behind one. Recorded as an answer rather than left implied, and restated for consumers in `MIGRATION-0.x-to-1.0.md` §3.
 
   **What was checked, and came back clean** — each verified against the sources, not assumed: no third-party type appears in any public signature (JavaParser stays inside `-io` bodies; no `tools.jackson` databind type escapes `source-model` or `composition-runtime`), so a 1.0 consumer inherits no transitive compile dependency; every public class is `final`, so nothing is subclassable and no protected surface exists; no public non-final instance field anywhere; the static-only holders (`SchemaVersion`, `SourceDigest`, `CompositionBinding`, `CompositionStampAssertion`) all have private constructors; and the §1 removal list matches the code exactly — three `@Deprecated(forRemoval = true)` members in main sources, three entries.
