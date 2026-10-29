@@ -50,7 +50,8 @@ for per-version upgrade steps.
   one field, and not contradicting a non-blank `@ExerisDomain(primaryKeyField)`, it names the key;
   otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
   `NONE`, which ADR-104 refuses, is not read. `generated`, `sequenceName` and `allowClientId` are
-  not carried. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
+  not carried. `@PrimaryKey` is labelled PARTIAL in its javadoc, the `system` package javadoc and
+  the root `package-info` index. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
   (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
   than a 0.10.x processor baseline holds.
 
@@ -73,11 +74,11 @@ for per-version upgrade steps.
 
 ### Fixed
 
-- **`@ExerisDomain.primaryKeyField` is labelled LIVE; `@PrimaryKey` stays RESERVED.** `exeris-tooling`
+- **`@ExerisDomain.primaryKeyField` is labelled LIVE.** `exeris-tooling`
   0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
   foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
   by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
-  that, and say the marker is read by neither reader.
+  that.
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
   class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
