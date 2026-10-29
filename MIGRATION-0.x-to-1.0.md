@@ -100,6 +100,10 @@ survives into 1.x unchanged.
   annotation enum and `SagaMetadata.TriggerType` hold the same four names and map
   by name. The processor's read-as-replacement fallback ends at 1.0.0. The AST
   enum loses nothing: it never declared the three.
+- **`@SagaStep.compensationBuilder`** — deprecated since 0.13.0 (`forRemoval = true`).
+  Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
+  body moves into that method. No producer reads the attribute and no AST component carries it,
+  so the removal changes no metadata and no generated output.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`

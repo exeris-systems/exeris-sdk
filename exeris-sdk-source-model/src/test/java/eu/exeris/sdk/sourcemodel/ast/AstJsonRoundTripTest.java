@@ -757,11 +757,11 @@ class AstJsonRoundTripTest {
                 .steps(List.of(
                         SagaStepMetadata.builder("reserve", 0)
                                 .command("ReserveInventory")
-                                .compensation("ReleaseInventory")
+                                .compensation("releaseInventory")
                                 .build(),
                         SagaStepMetadata.builder("charge", 1)
                                 .command("ChargeCard")
-                                .compensation("RefundCard")
+                                .compensation("refundCard")
                                 .dependsOn(List.of("reserve"))
                                 .build()))
                 .trigger(SagaMetadata.SagaTrigger.onEvent("OrderPlaced", "orders.placed"))
@@ -840,7 +840,7 @@ class AstJsonRoundTripTest {
     void sagaStepMetadataRoundTrips() {
         SagaStepMetadata original = SagaStepMetadata.builder("ship", 2)
                 .command("ShipOrder")
-                .compensation("CancelShipment")
+                .compensation("cancelShipment")
                 .producesEvents(List.of("OrderShipped"))
                 .inputMapping(SagaStepMetadata.InputMapping.fields(List.of(
                         SagaStepMetadata.FieldMapping.direct("state.address", "command.address"))))

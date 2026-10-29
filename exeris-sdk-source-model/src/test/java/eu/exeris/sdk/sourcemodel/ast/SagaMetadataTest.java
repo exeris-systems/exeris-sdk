@@ -327,11 +327,11 @@ class SagaMetadataTest {
         assertThat(SagaStepMetadata.builder("call", 0).service("payments").build().effectiveKind())
                 .isEqualTo(SagaStepMetadata.StepKind.INVOKE);
         // compensation only → COMPENSATE
-        assertThat(SagaStepMetadata.builder("undo", 0).compensation("RefundCard").build().effectiveKind())
+        assertThat(SagaStepMetadata.builder("undo", 0).compensation("refundCard").build().effectiveKind())
                 .isEqualTo(SagaStepMetadata.StepKind.COMPENSATE);
         // forward command AND compensation (the common saga shape) → INVOKE (forward wins)
         assertThat(SagaStepMetadata.builder("reserve", 0)
-                .command("ReserveInventory").compensation("ReleaseInventory").build().effectiveKind())
+                .command("ReserveInventory").compensation("releaseInventory").build().effectiveKind())
                 .isEqualTo(SagaStepMetadata.StepKind.INVOKE);
         // a bare step (no command/service/compensation) cannot be inferred → null
         assertThat(SagaStepMetadata.builder("bare", 0).build().effectiveKind()).isNull();
