@@ -358,11 +358,23 @@ public @interface DomainEvent {
     String[] sensitiveFields() default {};
 
     /**
-     * Fields to encrypt in the payload.
-     * <p>Values are encrypted using configured encryption key.
+     * Deprecated, no effect: no payload field is encrypted.
+     * <p>The listed fields are published and stored as written. It is not carried by
+     * {@code DomainEventMetadata}, and no generator reads it. The kernel's event payload
+     * contracts are the outbox ({@code EventStore.OutboxEvent} in
+     * {@code eu.exeris.kernel.spi.persistence}), which stores the serialised payload bytes it is
+     * given, and the {@code EventPayloadCodec} seam ({@code eu.exeris.kernel.spi.events.codec}),
+     * which produces those bytes; neither names an encryption scheme. Kernel ADR-012 §4c.1 rules
+     * field-level encryption at rest outside kernel scope at 1.0, in every tier, and rules that
+     * tooling must not invent a scheme, so no generator will honour it.
      *
      * @return array of field names to encrypt
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Encrypt the values in
+     *         the application before they enter the event, or register an
+     *         {@code EventPayloadCodec} that encrypts the payload it encodes. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] encryptFields() default {};
 
     /**

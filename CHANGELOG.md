@@ -432,6 +432,15 @@ for per-version upgrade steps.
   changes; a source that sets it compiles with a `[removal]` warning. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService`** —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. Replacement:
+  `@SagaStep.compensation`. Each describes a compensating command (its class, its payload as an
+  expression, its target service), and the compensation method named by `compensation` decides
+  all three in Java. The kernel registers a compensation as one action over the flow context, with
+  no command type, payload or target of its own, so no generator has anything to honour them with.
+  No producer reads them and no AST component carries them, so nothing a build emits changes. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`@QueryParam.transform`, `validation`, `validationMessage`, `type`, `elementType` and
   `sanitize`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. `type` and
   `elementType` restate the declared parameter type, which `ActionParamMetadata.type` carries. The
@@ -440,6 +449,19 @@ for per-version upgrade steps.
   the value is bound as a typed parameter. No producer reads any of them and no AST component
   carries them. `@QueryParam` itself moves from RESERVED to PARTIAL: `value`, `required`,
   `description` and `defaultValue` are carried. `@NavMenu` and `@Tab` move to PARTIAL too. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **`@Saga.encryptState`, `@EventSourced.encryptSnapshots`, `@DomainEvent.encryptFields`,
+  `@GraphProperty.encrypted` and `@ActionParam.encrypted`**, with the key aliases
+  `@Saga.stateEncryptionKeyAlias` and `@EventSourced.snapshotEncryptionKeyAlias` —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0, no replacement. Kernel
+  ADR-012 §4c.1, which deprecates `@Encrypted` and `@Field.encrypted`, covers them too: encryption
+  at rest is outside kernel scope at 1.0 in every tier, and tooling may not invent a scheme. The
+  kernel contract for each store exists and names no scheme: `FlowSnapshotStore` for saga state,
+  the event log (no aggregate snapshot store at all) for event sourcing, the outbox and
+  `EventPayloadCodec` for event payloads, the preview `spi.graph` for graph properties. An action
+  parameter travels over the transport's TLS, which covers the whole connection. No producer reads
+  any of the seven and no AST component carries them, so nothing a build emits changes. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 ### Removed

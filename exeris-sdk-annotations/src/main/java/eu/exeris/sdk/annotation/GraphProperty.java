@@ -263,10 +263,20 @@ public @interface GraphProperty {
     Class<?> transformer() default void.class;
 
     /**
-     * Encrypt value in graph.
+     * Deprecated, no effect: the property value is not encrypted in the graph store.
+     * <p>Setting it to {@code true} changes nothing; this annotation is not extracted, and no
+     * graph-sync writer reads it. The kernel's graph contract ({@code eu.exeris.kernel.spi.graph},
+     * a preview SPI at 1.0) writes the property values it is given and names no encryption
+     * scheme. Kernel ADR-012 §4c.1 rules field-level encryption at rest outside kernel scope at
+     * 1.0, in every tier, and rules that tooling must not invent a scheme, so no generator will
+     * honour it.
      *
      * @return true to encrypt
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Keep the value out of
+     *         the graph projection, encrypt it in the application before it is projected, or let
+     *         the graph database encrypt its storage. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encrypted() default false;
 
     /**

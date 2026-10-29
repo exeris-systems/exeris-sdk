@@ -179,18 +179,32 @@ public @interface EventSourced {
     Compression snapshotCompression() default Compression.NONE;
 
     /**
-     * Encrypt snapshots for sensitive data.
-     * <p>Uses configured encryption key.
+     * Deprecated, no effect: aggregate snapshots are not encrypted at rest.
+     * <p>Setting it to {@code true} changes nothing. It is not carried by
+     * {@code EventSourcedMetadata}, and no generator reads it. The kernel's event-sourcing
+     * contract is the event log ({@code EventStreamAppender} and {@code EventStreamReader} in
+     * {@code eu.exeris.kernel.spi.events}); it defines no aggregate snapshot store, and no
+     * encryption scheme for the log. Kernel ADR-012 §4c.1 rules encryption at rest outside
+     * kernel scope at 1.0, in every tier, and rules that tooling must not invent a scheme, so no
+     * generator will honour it.
      *
      * @return true to encrypt snapshots
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Encrypt snapshots in
+     *         the application that writes them, or let the database encrypt its storage. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encryptSnapshots() default false;
 
     /**
-     * Encryption key alias (from key management).
+     * Deprecated, no effect: the key alias for {@link #encryptSnapshots()}, which encrypts
+     * nothing.
      *
      * @return key alias
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link #encryptSnapshots()} and with
+     *         no replacement. No kernel tier defines a key registry at 1.0 (kernel ADR-012 §4c.1).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String snapshotEncryptionKeyAlias() default "";
 
     /**
