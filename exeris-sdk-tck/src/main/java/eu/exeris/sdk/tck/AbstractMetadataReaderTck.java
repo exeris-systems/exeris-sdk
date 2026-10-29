@@ -167,6 +167,31 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("the relationship carries the display field the source declares")
+    void relationshipDisplayFieldIsTheDeclaredOne() {
+        requireSupported(Facet.RELATIONSHIPS);
+        RelationshipMetadata orders = relationship(TckCorpus.CUSTOMER, "orders");
+        assertThat(orders.displayField())
+                .withFailMessage(
+                        "Customer.orders declares displayField = \"reference\" and was read as '%s'. "
+                                + "An unread displayField does not fail: the record reports 'name', "
+                                + "and every picker and label for the association shows a field "
+                                + "the target may not have.",
+                        orders.displayField())
+                .isEqualTo("reference");
+    }
+
+    private RelationshipMetadata relationship(String entity, String field) {
+        DomainMetadata domain = read(TckCorpus.sourceOf(entity));
+        // fieldName() falls back to name(), so one comparison covers both ways of naming the edge.
+        return domain.relationships().stream()
+                .filter(r -> field.equals(r.fieldName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "No relationship read for " + entity + "." + field + "; got " + domain.relationships()));
+    }
+
+    @Test
     @DisplayName("@Action is read under the name the annotation declares")
     void actionIsReadUnderTheDeclaredName() {
         requireSupported(Facet.ACTIONS);

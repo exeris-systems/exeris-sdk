@@ -72,6 +72,20 @@ class MetadataParityTckSelfTest {
     }
 
     @Test
+    @DisplayName("a display field one side leaves at the record default is caught")
+    void displayFieldDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.relationships() == null || m.relationships().isEmpty()
+                        ? m
+                        : rebuild(m, List.of(
+                                RelationshipMetadata.oneToMany("orders", TckCorpus.ORDER, "customer"))));
+        assertThatThrownBy(parity::relationshipsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("relationships/orders/displayField");
+    }
+
+    @Test
     @DisplayName("a field one side extracts and the other does not is caught")
     void missingFieldIsCaught() {
         Parity parity = new Parity(

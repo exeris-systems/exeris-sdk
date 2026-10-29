@@ -122,11 +122,13 @@ class InvoicingExampleTest {
         RelationshipMetadata customer = invoice.relationships().getFirst();
         assertThat(customer.targetEntity()).isEqualTo("Customer");
         assertThat(customer.type()).isEqualTo(RelationshipMetadata.RelationType.MANY_TO_ONE);
+        assertThat(customer.displayField()).isEqualTo("name");
 
         RelationshipMetadata lines = invoice.relationships().get(1);
         assertThat(lines.targetEntity()).isEqualTo("InvoiceLine");
         assertThat(lines.type()).isEqualTo(RelationshipMetadata.RelationType.ONE_TO_MANY);
         assertThat(lines.mappedBy()).isEqualTo("invoice");
+        assertThat(lines.displayField()).isEqualTo("description");
 
         assertThat(read("InvoiceLine").relationships()).singleElement()
                 .satisfies(r -> assertThat(r.targetEntity()).isEqualTo("Invoice"));

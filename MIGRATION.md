@@ -801,6 +801,18 @@ TCK binders: `Facet.GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS` are new, and the 
 and `Customer` declare the annotations. A binding whose side does not extract one declares it in
 `unsupportedFacets()`; a binding that switches exhaustively over `Facet` needs three new arms.
 
+### `SourceModelReader` reads `@Relationship.displayField`
+
+**Impact on code: none; the reader's output changes.** No signature changes. `read()` now sets `RelationshipMetadata.displayField` to the
+value `@Relationship(displayField)` declares; it reported `name`, the record default, for every
+relationship. The exeris-tooling processor reads the attribute the same way, so a baseline it wrote
+already carries the declared value. A consumer that compared a reader result to a baseline holding
+`name` for a relationship that declares another field sees the declared field now.
+
+TCK binders: `AbstractMetadataReaderTck` asserts the declared `displayField` on the corpus
+`Customer.orders` (`"reference"`), and `AbstractMetadataParityTck.relationshipsAgree` compares it.
+A side that does not read the attribute fails both.
+
 ---
 
 ## 0.11.x → 0.12.x

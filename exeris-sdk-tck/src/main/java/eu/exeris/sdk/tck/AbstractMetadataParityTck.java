@@ -156,6 +156,7 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
                 compare(gaps, path + "/type", p.type(), r.type());
                 compare(gaps, path + "/targetEntity", p.targetEntity(), r.targetEntity());
                 compare(gaps, path + "/mappedBy", p.mappedBy(), r.mappedBy());
+                compare(gaps, path + "/displayField", p.displayField(), r.displayField());
             }
             return gaps;
         });

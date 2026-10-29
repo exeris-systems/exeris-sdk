@@ -287,7 +287,12 @@ final class ReferenceBinding {
                                 .blob(new BlobMetadata("contracts", List.of()))
                                 .build()))
                 .relationships(List.of(
-                        RelationshipMetadata.oneToMany("orders", TckCorpus.ORDER, "customer")))
+                        RelationshipMetadata.builder("orders", TckCorpus.ORDER)
+                                .type(RelationshipMetadata.RelationType.ONE_TO_MANY)
+                                .mappedBy("customer")
+                                .cascade(RelationshipMetadata.CascadeType.ALL)
+                                .displayField("reference")
+                                .build()))
                 .uiMetadata(UIMetadata.builder().groups(customerGroups()).build())
                 .build();
     }
