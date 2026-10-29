@@ -145,7 +145,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 35. **No schema change.** No component is added or removed, so `SchemaVersion.CURRENT` and the record arities stay. The reservation count is now two surfaces, `@Schedule` and `@Channel`, besides the graph edge's kernel-model attributes, which rest on the same rule against `…spi.graph`.
 
-## Amendment — 2026-10-29 (0.13.0): `roles` is deprecated for removal, and the premise quoted in obligation 31 does not hold
+## Amendment — 2026-10-29 (0.13.0): `roles` is deprecated for removal; the premise quoted in obligation 31 does not hold
 
 36. **`@ExerisDomain.roles` and `@Action.roles` are deprecated for removal in 1.0.0, and obligation 31's quoted premise is not a property of the SDK.** Obligation 31 quotes kernel ADR-057 A1: "Every SDK `@Action` either names roles or, with an empty role set, requires an authenticated caller". That sentence describes the `@Action.roles` javadoc, not its behaviour. Neither `roles` attribute is extracted by the `exeris-tooling` processor or the `-io` reader, and neither has a destination: the kernel's `RouteRequirement` decides on scopes and declares no role kind, and the kernel enforces a role only through its own `@RequiresRole` against a build-time method id no SDK declaration generates. So an `@Action` neither requires the roles it names nor, with none named, an authenticated caller. Route authorization is `permissions` plus `@RouteAccess`; role-based access has no SDK declaration at 1.0. A1's conclusion, that every declared job is refused at build time, does not depend on the premise, because A1 refuses a declaration whatever its action requires. Obligation 31's decision for `@Schedule` stands unchanged.
 
