@@ -6,6 +6,13 @@ This repository contains the **developer-facing API surface** of Exeris. It has 
 coupling to the Exeris kernel — annotations are descriptive metadata consumed at build time
 by the tooling (`exeris-tooling`) and the platform (`exeris-platform`).
 
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Architecture](docs/architecture.md)
+- [Glossary](docs/glossary.md)
+- [Stability matrix](docs/stability-matrix.md)
+
 ## Modules
 
 | Module | Purpose |

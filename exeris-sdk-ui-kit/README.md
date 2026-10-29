@@ -1,5 +1,7 @@
 # @exeris/ui-kit
 
+> Contract, hot path, failure modes and owning ADRs for this package are owned by [`docs/modules/09-ui-kit.md`](../docs/modules/09-ui-kit.md). This README carries usage.
+
 Design tokens, a Tailwind CSS v4 theme and component classes for Exeris-generated applications.
 Pure CSS, plus a typed `defaultTheme` constant; no JavaScript runtime.
 
