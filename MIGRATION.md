@@ -137,7 +137,9 @@ parity binding whose producer does not extract route access adds `Facet.ROUTE_AC
 
 ### `@RouteAccess` and `@Blob` enter the 1.0.0 freeze; `@Schedule` and `@Channel` stay outside it
 
-**Impact on code: none required.** No signature, component or wire key changes. What
+**Impact on code: a caller that refuses a source on a non-empty
+`SourceModelReader.unmodeledFacets()` now refuses one that uses `@Schedule`** (see the end of
+this entry). No signature, component or wire key changes. What also
 changes is the stability promise ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
 amended 2026-10-29), decided on the kernel tier at kernel v0.13.0 (kernel ADR-100):
 
@@ -154,8 +156,8 @@ amended 2026-10-29), decided on the kernel tier at kernel v0.13.0 (kernel ADR-10
 - **Still outside the freeze, and refused at build time:** `@Schedule`, `ScheduleMetadata` and
   `ActionMetadata.schedule`. `…spi.scheduling` is `stable`, but the kernel issues no service
   principal at 1.0, so a declared job would run with no identity bound; kernel ADR-057
-  Amendment A1 refuses every declaration at build time, and every declaration on a `TENANT` or
-  `UNIVERSE` entity. Do not write `@Schedule` on 1.0. Promoted when the kernel issues a
+  Amendment A1 refuses every declaration at build time, and every declaration on a
+  tenant-partitioned (`TENANT` or `UNIVERSE`) entity. Do not write `@Schedule` on 1.0. Promoted when the kernel issues a
   service principal.
 
 `SourceModelReader.unmodeledFacets()` now returns `@Schedule` when the source uses it. It
