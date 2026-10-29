@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Technology Compatibility Kit
 
-**Module:** `eu.exeris:exeris-sdk-tck` (0.13.0-SNAPSHOT), depended on with `<scope>test</scope>`
+**Module:** `eu.exeris:exeris-sdk-tck` (0.13.0), depended on with `<scope>test</scope>`
 **Dependencies:** `exeris-sdk-source-model`, `junit-jupiter` and `assertj-core` (both at compile scope on purpose), and `jackson-databind`. No JavaParser and no `exeris-sdk-source-model-io`.
 
 `exeris-sdk-tck` ships abstract JUnit 5 test classes that a producer of `exeris-metadata/<entity>.json`, a reader of `@ExerisDomain` source, or a consumer of the AST wire format extends to prove it meets the contract the SDK publishes. It turns the ADR-042 rule "the reader reads what the processor writes" into an executable gate. It never supplies an implementation of its own.

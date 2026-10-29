@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Annotation catalog
 
-**Module:** `eu.exeris:exeris-sdk-annotation-catalog` (0.13.0-SNAPSHOT)
+**Module:** `eu.exeris:exeris-sdk-annotation-catalog` (0.13.0)
 
 `exeris-sdk-annotation-catalog` owns three javac annotation processors that the SDK build runs on its own sources. They emit machine-readable descriptions of the SDK: the annotation catalog, the AST JSON Schema and the brief JSON Schema. Each lands inside the jar of the module it processes.
 

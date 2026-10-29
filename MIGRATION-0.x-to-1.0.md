@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -65,7 +65,7 @@ survives into 1.x unchanged.
   - the AST component `DomainMetadata.apiVersion`, with its accessor and its
     builder setter `DomainMetadata.Builder.apiVersion(String)` — which changes
     every `DomainMetadata` constructor, as the `tenantScoped` removal does.
-  No producer reads the attribute in 0.12.x: neither the `-io` reader nor the
+  No producer reads the attribute in 0.x: neither the `-io` reader nor the
   `exeris-tooling` processor. A 0.x baseline that carries `"apiVersion"` still reads, because the records
   ignore unknown properties.
 - **`@RowLevelSecurity`** (with its nested `Policy` and `AuditLevel`) — deprecated
@@ -98,7 +98,8 @@ survives into 1.x unchanged.
   `HTTP → API`, `COMMAND → MANUAL` (or `EVENT` for a command delivered on the
   event bus); the kernel has no command-started flow. After the removal the
   annotation enum and `SagaMetadata.TriggerType` hold the same four names and map
-  by name. The processor's read-as-replacement fallback ends at 1.0.0. The AST
+  by name. The `-io` reader's read-as-replacement fallback ends at 1.0.0, as does
+  the processor's once it reads `@Saga.trigger` (exeris-tooling#432). The AST
   enum loses nothing: it never declared the three.
 - **`@SagaStep.compensationBuilder`** — deprecated since 0.13.0 (`forRemoval = true`).
   Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
@@ -256,14 +257,16 @@ there from 0.12.0 on, at its own `0.2.0`.
 **Its own 1.0, when it comes, freezes names and not values:**
 
 - **Frozen:** every `--exeris-*` custom property, every `.exeris-*` class in the
-  `ComponentType` map, and every Tailwind key that produces a utility. These appear in generated
+  `ComponentType` map that `@exeris/ui-kit/styles` declares, and every Tailwind key that produces
+  a utility. The classes in `@exeris/ui-kit/preview` and the opt-in brand theme
+  `@exeris/ui-kit/theme-exeris` are outside it (ADR-094 Amendment 2). These appear in generated
   components and in hand-written application markup; renaming one is a break for both.
 - **Free:** the values behind those names. Colours, spacing, radii and shadows are the theming
   surface a CMS is meant to override — freezing them would freeze the wrong thing, and the drift
   tests already hold them *consistent* across the package's three artifacts without holding them
   *constant*.
 
-Enforced by `tests/public-surface.txt`, a recorded list of the 126 names, gated the way
+Enforced by `tests/public-surface.txt`, the recorded list of those names, gated the way
 `annotation-surface.txt` gates the Java surface: additions are reported so they get recorded,
 removals and renames fail.
 
@@ -289,9 +292,9 @@ removals and renames fail.
   for readability rather than survival: they name what a positional call leaves
   to argument order. That matters most on a record with a run of same-typed
   components, which is why `SystemFieldsMetadata`, eleven `String`s, gained a
-  builder in 0.12.0. Not every record has one — 26 `ast` records have no builder
-  or factory that reaches every component — and under this rule none needs one
-  to be safe.
+  builder in 0.12.0. Not every record has one — at 0.12.0, 26 `ast` records had no
+  builder or factory that reaches every component — and under this rule none needs
+  one to be safe.
 
   **Why this has to be policy and not a footnote:** every surface the SDK
   expects to grow after 1.0 — the blob and job facets kernel 0.11 opened, flow
@@ -465,15 +468,17 @@ freeze or is explicitly re-dispositioned here.
     `DomainMetadata.channel`); since the 2026-10-29 amendment two of them
     (`ActionMetadata.schedule`, `DomainMetadata.channel`) remain excluded under
     §2, and the other 24 are frozen as declared under §3's rule that everything
-    public is contract. The `-io` reader has filled both `routeAccess` components
-    since 0.13.0. Whole records no producer
+    public is contract. Since 0.13.0 the `-io` reader fills `permissions` and
+    `routeAccess` on `DomainMetadata` and `ActionMetadata`, `FieldMetadata.blob`,
+    `GraphMetadata.properties` and `UIMetadata.groups`, so those move to the
+    one-producer case below until the processor extracts them
+    (exeris-tooling#439, #444). Whole records no producer
     populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
-    `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
-    `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
-    — are counted as records rather than components and follow the same two
+    `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphQueryMetadata`,
+    `ScheduleMetadata`, `ChannelMetadata` — are counted as records rather than components and follow the same two
     rules. Not counted: components one producer sets and the other does not
-    (`ActionMetadata.displayName`, `ActionMetadata.resultType`). That is an ADR-042 parity question, not a
-    population one.
+    (`ActionMetadata.displayName`, `ActionMetadata.resultType`, and the 0.13.0
+    reads above). That is an ADR-042 parity question, not a population one.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*
     (`consumers`, `rateLimit`, `requireMtls`, `timeout`, `documented`);
@@ -502,8 +507,8 @@ freeze or is explicitly re-dispositioned here.
     carried by `GraphMetadata`). Both the processor and the `-io` reader read
     `@GraphEdge` into `edges`; neither reads `@GraphQuery`. The `-io` reader
     reads `@GraphProperty` into `properties` in the shape ADR-042's reader-shape
-    amendment fixes, and the processor extracts it the same way from the
-    release that pins SDK 0.13. `@QueryParam` binds an `@Action` parameter from the query
+    amendment fixes; the processor does not extract it yet, and
+    exeris-tooling#444 has it extract it the same way. `@QueryParam` binds an `@Action` parameter from the query
     string and is carried on `ActionParamMetadata` (`bindingSource`, `queryKey`);
     on a `@GraphQuery` method it is read by nobody, and a twin there belongs to the
     change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same
@@ -567,16 +572,17 @@ freeze or is explicitly re-dispositioned here.
 
   For consumers the module is additive and optional: test scope, nothing on a
   runtime classpath, and the surface it publishes freezes at 1.0.0 like any
-  other publishable module. The semver gate covers it from 0.12.0, against the
-  0.11.0 release it first shipped in.
+  other publishable module. The semver gate covers it in CI from the 0.13.0
+  line on, against the 0.12.0 release on Maven Central.
 
 ## 5. TBD at the 1.0.0 release PR
 
 - Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the §1 removals
-  only — `@Validation.required`, `@Validation.validateOn`,
-  `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
-  `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
-  go with the last two, and the three `@SagaTrigger.TriggerType` constants).
+  only, every one of them — the `@Validation`, `@ExerisDomain` and `@Action`
+  attributes, the `security` annotations, the encryption attributes, the
+  `@Saga` / `@SagaStep` / `@SagaTrigger` elements, the `@GraphEdge` and
+  `@QueryParam` attributes — with the `DomainMetadata.tenantScoped` and
+  `DomainMetadata.apiVersion` components; no other surface).
 - Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`),
   and one dated line for the Stellar Tactics author-side pass, recorded to the
   definition in the status note at the top.

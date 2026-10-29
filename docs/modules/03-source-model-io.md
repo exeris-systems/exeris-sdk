@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Source model IO
 
-**Module:** `eu.exeris:exeris-sdk-source-model-io` (0.13.0-SNAPSHOT)
+**Module:** `eu.exeris:exeris-sdk-source-model-io` (0.13.0)
 
 `exeris-sdk-source-model-io` owns the bridge between Java source text and the canonical model: a JavaParser-based reader, a lexical-preserving writer, a three-way conflict detector and a conflict-aware mutation applier. It exists as its own module so JavaParser stays off the dependency tree of every consumer that only needs the AST records (ADR-037).
 

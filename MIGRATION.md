@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Migration guide
@@ -140,11 +140,17 @@ reads `@Saga` without the trigger does the same.
 Both `permissions` attributes are any-of: a caller holding one listed permission is
 admitted.
 
-**Reattach.** The `exeris-tooling` processor writes these components in the release that
-pins this reader. A baseline from a processor that does not, compared with a reader view
+**Reattach.** The `exeris-tooling` processor does not write these components yet;
+exeris-tooling#439 has it write them. A baseline from a processor that does not, compared with a reader view
 of a source declaring them, differs on any action that declares `permissions` or
 `@RouteAccess`, so `SourceModelConflictDetector` returns `Conflict` for an `AddAction` or
 `RemoveAction` on that action. Field and relationship ops are unaffected.
+
+**An unresolved level is reported.** A `@RouteAccess` on the entity or on an `@Action` whose
+value is not a bare or qualified `Level` constant is not read, and `unmodeledFacets()` returns
+`@RouteAccess` for the source, so a round-trip, reattach or conflict-detection caller that refuses
+on a non-empty result refuses it. A constant in parentheses is folded, as javac folds it. Write
+the level as a `Level` constant.
 
 **TCK binders.** The 0.13.0 kit adds `Facet.ROUTE_ACCESS` and a third corpus entity,
 `Product`. A binding that compiles the corpus presents all three sources. A producer or
@@ -163,9 +169,8 @@ amended 2026-10-29), decided on the kernel tier at kernel v0.13.0 (kernel ADR-10
   `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
   `FieldMetadata.blob` and `BlobMetadata`. Route authorization and `…spi.storage.blob` are
   `stable` at the kernel's 1.0. A 1.x minor may add to them; it may not change or drop them.
-  Neither has a generated effect yet: `exeris-tooling` compiles `@RouteAccess` into a route
-  policy in the release that pins this SDK's reader (tooling ADR-105), and no generator reads
-  `@Blob`.
+  Neither has a generated effect yet: compiling `@RouteAccess` into the generated route policy
+  is exeris-tooling#439 (tooling ADR-105), and no generator reads `@Blob`.
 - **Still outside the freeze:** `@Channel`, `ChannelMetadata` and `DomainMetadata.channel`,
   because the kernel keeps `…spi.websocket` at `preview` at 1.0. Promoted when it moves to
   `stable`.
@@ -197,8 +202,8 @@ import (`import java.util.*;`) a simple name the file does not declare is kept a
 written. A member type inherited from a supertype, and a same-package type named like a
 `java.lang` type, resolve differently than javac resolves them.
 
-The `exeris-tooling` processor does not extract the component yet, so its JSON is the
-same as on 0.12.0. `SourceModelConflictDetector` compares an action as a whole, so
+The `exeris-tooling` processor does not extract the component yet (exeris-tooling#436), so its
+JSON is the same as on 0.12.0. `SourceModelConflictDetector` compares an action as a whole, so
 against a processor baseline every action read from source differs in `resultType`, as
 it already differs in `displayName`, which the reader fills from `@Action.label` and the
 processor does not.
@@ -216,6 +221,22 @@ empty list. The processor already wrote `null` for it: neither side extracts `@G
 `null` is the form that reads as "not carried" and stays off the wire. A caller of the reader's
 output that dereferenced `queries()` without a null check adds one; `properties()` has always
 needed it. The `@Graph` case in `processor-parity/` no longer carries a `queries` key.
+
+### `pluralName()` treats an uppercase vowel before `y` as a vowel
+
+**Impact: an entity whose name ends in an uppercase vowel followed by `y` derives a different
+route and table.** `DomainMetadata.pluralName()` now pluralises such a name with `s`, as it does a
+lowercase vowel before `y`: `OrderAy` becomes `OrderAys`, where it was `OrderAies`.
+`effectivePath()` and `effectiveTableName()` follow, so the derived route moves from
+`/order-aies` to `/order-ays` and the derived table from `order_aies` to `order_ays`. No other
+name changes. To keep the old values, declare them:
+
+```java
+@ExerisDomain(module = "sales", path = "/order-aies", tableName = "order_aies")
+public class OrderAy { }
+```
+
+The TypeScript copy of the rule in `exeris-codegen-ts` follows in exeris-tooling#431.
 
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
@@ -252,9 +273,9 @@ a command delivered as a message on the event bus is the second.
 
 **Impact:** a source using a deprecated constant compiles with a `[removal]`
 warning; replace it as in the table. `@SagaTrigger.type()` now defaults to
-`MANUAL` rather than `COMMAND`. Nothing a build emits changes: neither the `-io`
-reader nor the `exeris-tooling` processor reads `@Saga.trigger` yet, so
-`SagaMetadata.trigger` is `null` on both paths. The AST enum, its JSON values and
+`MANUAL` rather than `COMMAND`. No generated output changes: the `-io` reader reads a
+deprecated constant as its replacement, and the `exeris-tooling` processor does not read
+`@Saga.trigger` yet (exeris-tooling#432). The AST enum, its JSON values and
 `SchemaVersion` are unchanged, so every existing document reads back as before.
 
 - **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
@@ -448,7 +469,8 @@ public SagaAction releaseInventory() {
 ```
 
 The `exeris-tooling` Java kernel generator still registers a generated
-`compensate<StepName>` stub as the compensator and does not call the named method yet.
+`compensate<StepName>` stub as the compensator and does not call the named method yet
+(exeris-tooling#434).
 Registering the named method, and refusing a name the host type does not declare, are its
 side of this change.
 
@@ -609,8 +631,8 @@ the kernel's rule, `bidirectional ? BOTH : direction`, with `OUTGOING` when neit
 **Present-only.** Every new component is `null` when the author declared nothing, so the annotation
 default applies. A declared `false`, `OUTGOING` or `0.0` is written. The `-io` reader populates
 `direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField` and
-`staticWeight`; the `exeris-tooling` processor does not extract them yet, and until it does a
-processor's JSON is the same as it was on 0.12.0. No generator reads them yet.
+`staticWeight`; the `exeris-tooling` processor does not extract them yet (exeris-tooling#437), and
+until it does a processor's JSON is the same as it was on 0.12.0. No generator reads them yet.
 
 **Outside the 1.0.0 freeze.** `direction`, `bidirectional`, `inverseType`, `weighted`,
 `weightField` and `staticWeight`, on the annotation and on the record, encode the kernel graph SPI,
@@ -692,7 +714,7 @@ public void search(@QueryParam("q") String term,
                    @QueryParam(value = "limit", required = false) int limit) { }
 ```
 
-**Processor.** The `exeris-tooling` processor does not extract the three yet, so no generated
+**Processor.** The `exeris-tooling` processor does not extract the three yet (exeris-tooling#440), so no generated
 handler, sidebar or form uses them. `SourceModelConflictDetector` compares whole actions: against
 a processor baseline, an action with a `@QueryParam` parameter reads as changed, and a mutation
 of that action is reported as a conflict rather than applied. It compares no navigation or tab
@@ -729,6 +751,55 @@ kernel tier, which evaluates no SpEL. A source that sets any of the six compiles
 - **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
 - **Processor:** `exeris-tooling` reads none of the six, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
+
+### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports `@Channel`
+
+`read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
+as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
+unless a non-blank `@ExerisDomain(primaryKeyField)` names a different field, which then wins. A
+marker with `strategy = SEQUENCE`, `IDENTITY` or `NONE` is not read (ADR-104 refuses those). An
+entity whose only system-field declaration is the marker now reads with a `systemFields` record
+where it read `null` before. The exeris-tooling processor does not read the marker yet; reading it
+the same way is planned for exeris-tooling 0.11.0 (ADR-104 obligations 11 and 12). A baseline written
+by a processor that does not read it carries `id` for such an entity, so regenerate it once it does.
+
+`unmodeledFacets()` now returns `@Channel` when the source uses it. It returned nothing for it
+before. A round-trip, reattach or conflict-detection caller that refuses on a non-empty result now
+refuses those sources; `read()` itself is unchanged for them and leaves `DomainMetadata.channel`
+`null`. The channel encodes the kernel WebSocket SPI, which stays `preview` at kernel 1.0, so its
+shape is not fixed here.
+
+### `SourceModelReader` reads `@GraphProperty`, `@UIGroup` and `@Blob`; `GraphPropertyMetadata` gains `field`
+
+`read()` now fills three components it left at their defaults, in the shape ADR-042's reader-shape
+amendment fixes. The exeris-tooling processor does not extract them yet; exeris-tooling#444 has it
+extract them the same way. A baseline written by a processor that does not lacks them, so regenerate
+it once the processor extracts them.
+
+- **`GraphMetadata.properties`** — under a type-level `@Graph`, one `GraphPropertyMetadata` per
+  `@GraphProperty` field variable, in declaration order, and an empty list where it was `null`
+  when none is declared. `name` is the declared `name`, else the field's; `field` names the field
+  when the two differ; `type` is the declared `graphType` constant name and absent for `AUTO`, so
+  a consumer types an `AUTO` property from the field's `FieldMetadata.type`. A `@GraphProperty` on
+  a type without `@Graph` is not read.
+- **`UIMetadata.groups`** — one `UIGroupMetadata` per `@UIGroup` name, in the order each name is
+  first declared. Each attribute comes from the first member field that declares it; an undeclared
+  one is the annotation default, written out (`order` `999`, `collapsible` `true`, `collapsed`
+  `false`), and `gridSpan` is `12`. A type with groups and no `@UI` now reads with a `UIMetadata`
+  where it read `null`, its other components at the builder defaults. `@UIGroup.columns`,
+  `cssClass` and `visibleWhen` have no component.
+- **`FieldMetadata.blob`** — on any field carrying `@Blob`, with or without `@Field`, as written:
+  `container` when declared non-blank, `contentTypes` in declaration order. A `GLOBAL`-scoped entity
+  is read the same; exeris-tooling refuses that combination at build time.
+
+`unmodeledFacets()` no longer names the three. A consumer that builds `GraphPropertyMetadata`
+positionally keeps compiling: the 3-component constructor stays. A consumer that compared a
+reader's `GraphMetadata.properties` to `null` to mean "no property declared" reads an empty list
+instead.
+
+TCK binders: `Facet.GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS` are new, and the corpus `Product`
+and `Customer` declare the annotations. A binding whose side does not extract one declares it in
+`unsupportedFacets()`; a binding that switches exhaustively over `Facet` needs three new arms.
 
 ---
 
@@ -1074,53 +1145,6 @@ TCK binders: `Facet.SAGA` is new, and the corpus `Order` now declares `@Saga(ver
 reader, producer and parity suites each gain a case under it. A binding whose side does not extract
 sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
 `Facet` needs a new arm.
-
-### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports `@Channel`
-
-`read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
-as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
-unless a non-blank `@ExerisDomain(primaryKeyField)` names a different field, which then wins. A
-marker with `strategy = SEQUENCE`, `IDENTITY` or `NONE` is not read (ADR-104 refuses those). An
-entity whose only system-field declaration is the marker now reads with a `systemFields` record
-where it read `null` before. exeris-tooling reads the marker the same way from 0.11.0; a baseline
-written by an earlier processor carries `id` for such an entity, so regenerate it.
-
-`unmodeledFacets()` now returns `@Channel` when the source uses it. It returned nothing for it
-before. A round-trip, reattach or conflict-detection caller that refuses on a non-empty result now
-refuses those sources; `read()` itself is unchanged for them and leaves `DomainMetadata.channel`
-`null`. The channel encodes the kernel WebSocket SPI, which stays `preview` at kernel 1.0, so its
-shape is not fixed here.
-
-### `SourceModelReader` reads `@GraphProperty`, `@UIGroup` and `@Blob`; `GraphPropertyMetadata` gains `field`
-
-`read()` now fills three components it left at their defaults, in the shape ADR-042's reader-shape
-amendment fixes. exeris-tooling extracts them the same way in the release that pins SDK 0.13; a
-baseline written by an earlier processor lacks them, so regenerate it.
-
-- **`GraphMetadata.properties`** — under a type-level `@Graph`, one `GraphPropertyMetadata` per
-  `@GraphProperty` field variable, in declaration order, and an empty list where it was `null`
-  when none is declared. `name` is the declared `name`, else the field's; `field` names the field
-  when the two differ; `type` is the declared `graphType` constant name and absent for `AUTO`, so
-  a consumer types an `AUTO` property from the field's `FieldMetadata.type`. A `@GraphProperty` on
-  a type without `@Graph` is not read.
-- **`UIMetadata.groups`** — one `UIGroupMetadata` per `@UIGroup` name, in the order each name is
-  first declared. Each attribute comes from the first member field that declares it; an undeclared
-  one is the annotation default, written out (`order` `999`, `collapsible` `true`, `collapsed`
-  `false`), and `gridSpan` is `12`. A type with groups and no `@UI` now reads with a `UIMetadata`
-  where it read `null`, its other components at the builder defaults. `@UIGroup.columns`,
-  `cssClass` and `visibleWhen` have no component.
-- **`FieldMetadata.blob`** — on any field carrying `@Blob`, with or without `@Field`, as written:
-  `container` when declared non-blank, `contentTypes` in declaration order. A `GLOBAL`-scoped entity
-  is read the same; exeris-tooling refuses that combination at build time.
-
-`unmodeledFacets()` no longer names the three. A consumer that builds `GraphPropertyMetadata`
-positionally keeps compiling: the 3-component constructor stays. A consumer that compared a
-reader's `GraphMetadata.properties` to `null` to mean "no property declared" reads an empty list
-instead.
-
-TCK binders: `Facet.GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS` are new, and the corpus `Product`
-and `Customer` declare the annotations. A binding whose side does not extract one declares it in
-`unsupportedFacets()`; a binding that switches exhaustively over `Facet` needs three new arms.
 
 ---
 

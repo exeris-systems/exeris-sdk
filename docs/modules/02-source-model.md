@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Source model
 
-**Module:** `eu.exeris:exeris-sdk-source-model` (0.13.0-SNAPSHOT)
+**Module:** `eu.exeris:exeris-sdk-source-model` (0.13.0)
 
 `exeris-sdk-source-model` owns the canonical description of a domain as data: the AST records in `eu.exeris.sdk.sourcemodel.ast`, the mutation vocabulary in `eu.exeris.sdk.sourcemodel.mutation`, and the pre-construction brief records in `eu.exeris.sdk.brief`. Every consumer of a domain, from the annotation processor to Studio, agrees on this one shape.
 

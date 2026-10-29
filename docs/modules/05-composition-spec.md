@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Composition spec
 
-**Module:** `eu.exeris:exeris-sdk-composition-spec` (0.13.0-SNAPSHOT)
+**Module:** `eu.exeris:exeris-sdk-composition-spec` (0.13.0)
 **Dependencies:** none at compile or runtime scope. JUnit, AssertJ and Jackson are test scope only.
 
 `exeris-sdk-composition-spec` owns two things: the read schema of `cap-manifest.json` (`CapManifest`) and the one content-binding algorithm (`CompositionBinding`). The build-time tooling that emits the manifest and the SKU-boot runtime that asserts it both depend on this module. It never validates a composition, never resolves the `@Requires` to `@Provides` graph, and never reads or writes JSON itself.

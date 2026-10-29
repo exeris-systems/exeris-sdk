@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA
@@ -526,49 +526,6 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   approved surfaces, and it inverts the dependency direction: a processor cannot be
   written against an annotation that does not exist.
 
-### Kernel 0.13 — the reserved facets settled before the freeze (ADR-072, 2026-10-29)
-
-> Kernel v0.13.0 is tagged, and SDK 0.13.0 is the last SDK release before 1.0.0.
-> exeris-tooling 0.11.0 and 0.12.0 both pin SDK 0.13, so what tooling transcribes, and
-> when, is tooling's schedule against a fixed SDK. The freeze criterion for a reserved
-> facet is therefore the kernel tier alone, read from v0.13.0's
-> `docs/stability-matrix.md` and kernel ADR-100.
-
-- [x] **`@RouteAccess` and `@Blob` enter the 1.0.0 freeze** (ADR-072 obligation 29) —
-  route authorization (`HttpRoutePolicy`, `RouteRequirement`, ADR-077's `Execution`
-  included) and `…spi.storage.blob` are `stable` at the kernel's 1.0. Frozen as
-  declared: both annotations, `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`,
-  the AST `RouteAccess`, `FieldMetadata.blob` and `BlobMetadata`. The `exeris-tooling`
-  transcriptions (route policy: tooling ADR-105 J3-3, in tooling 0.11.0; blob: tooling
-  ROADMAP K6) arrive additively. `@Blob` on a `GLOBAL`-scoped entity stays a build-time
-  rejection for tooling (obligation 30)
-- [x] **`@Schedule` stays reserved, outside the freeze** (obligation 31) —
-  `…spi.scheduling` is `stable`, but kernel ADR-057 Amendment A1 issues no service
-  principal at 1.0 and refuses every declared job at build time, so the annotation has no
-  target. Promoted when the kernel issues a service principal. The javadoc says so and
-  promises no transcription. The `-io` reader now reports `@Schedule` as an unmodeled
-  facet, which obligation 7 promised and the guard did not do (obligation 33)
-- [x] **`@Channel` stays reserved, outside the freeze** (obligation 32) — kernel ADR-100
-  keeps `…spi.websocket` at `preview` at 1.0, gated on ADR-084 §10's benchmark evidence.
-  Promoted when the kernel moves it to `stable`. The javadoc was checked against v0.13.0:
-  the SPI, the codec, the Community binding and the four non-declarations still hold
-- [x] **`@ExerisDomain.roles` and `@Action.roles` are deprecated for removal at 1.0.0** —
-  neither is extracted or enforced, and kernel v0.13.0 gives them no destination:
-  `RouteRequirement` decides on scopes only, and a role is enforced only through the kernel's
-  `@RequiresRole` against a build-time method id no SDK declaration generates. Route
-  authorization is `permissions` plus `@RouteAccess`; role-based access has no SDK declaration
-  at 1.0. `@Action.roles`' javadoc promised enforcement it did not have, which the CHANGELOG
-  records under Security. **Tooling:** the two `-Aexeris.strict` inert-attribute entries go with
-  the SDK 1.0 bump
-- [ ] **ADR-077 `LONG_RUNNING` — deferred, additive in 1.x** (obligation 34). The kernel
-  `Execution` facet is `stable` now, so the stability-ordering reason of the 0.12.0
-  deferral is gone. Two reasons remain. exeris-tooling ADR-105 obligation 18 leaves
-  `.longRunning()` to its J3-2 slice and emits `PROMPT` until then. And kernel ADR-077
-  keeps `PROMPT` as the default and warns that a `LONG_RUNNING` declaration can go stale,
-  so whether the fact is the author's to state is open. **Condition for adding it:**
-  tooling picks the shape. The SDK surface is then an `@Action` attribute carried by a
-  trailing, nullable `ActionMetadata` component, under the record-growth rule
-
 ### Decided before the cut (2026-09-26)
 
 > Three founder decisions taken on the Stellar Tactics dog-food's findings, each landed
@@ -627,8 +584,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   from all four workflows and from the build instructions. The baseline-free guards
   (`AnnotationSurfaceContractTest`, `RecordComponentOrderTest`, `RecordConstructorLedgerTest`)
   stay in the default build, and inside the profile a missing baseline still fails loudly. CI
-  adds `-Psemver` to `build.yml` and `release.yml` when the 0.13.0 line opens against a 0.12.0
-  baseline Central can serve — see the 1.0.0 GA semver item. **Tooling:** its CI can drop
+  added `-Psemver` to `build.yml` and `release.yml` when the 0.13.0 line opened against the 0.12.0
+  baseline Central serves — see the 1.0.0 GA semver item. **Tooling:** its CI can drop
   `-Djapicmp.skip=true` where it builds the SDK from source
 - [ ] **`ApplyResult` and `CapManifest` still carry the old relaxation** — the two named
   records outside `source-model` (`-io`, `composition-spec`) keep `CONSTRUCTOR_REMOVED` as a
@@ -636,6 +593,105 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   rule is a decision for the next change that grows either one, and has to be taken before
   1.0.0 either way, since the gate's configuration freezes with the surface
 
+
+## 0.13.0 — the last SDK before 1.0
+
+> Goal: settle every surface the 1.0.0 freeze would otherwise fix by default. Released
+> alongside kernel v0.13.0; exeris-tooling 0.11.0 and 0.12.0 pin it. Scope by wave, from
+> `git log v0.12.0..v0.13.0` and the milestone's closed issues; the CHANGELOG `[0.13.0]` entry
+> has the detail.
+
+- [x] **W0: the release path** — `central-publishing-maven-plugin` 0.12.0, and `release.yml`
+  checks that every file in the Central bundle belongs to a published coordinate (#195, #203)
+- [x] **W1: annotation contracts that disagreed with the AST or the kernel** —
+  `@Saga.SagaTrigger.TriggerType` maps onto `SagaMetadata.TriggerType` by name, with `COMMAND`,
+  `SCHEDULE` and `HTTP` deprecated (#162); `pluralName()` treats an uppercase vowel before `y` as
+  a vowel (#166); one `@Saga` per type and the `@SagaStep.order` `1..N` contract, with an
+  unresolvable order reported (#197); `@SagaStep.compensation` names the compensation method
+  (#198); `@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted` deprecated for removal per
+  kernel ADR-012 §4c.1 (#165)
+- [x] **W2: the pre-construction brief contract (ADR-106)** — `eu.exeris.sdk.brief`,
+  `BriefReadiness` and `brief-schema.json` in the source-model jar (#213, #218)
+- [x] **W3: reader parity** — the `-io` reader reads `@RouteAccess` and `permissions` (#161),
+  `@QueryParam`, `@NavMenu` and `@Tab` with their new AST carriers (#186), `@PrimaryKey`,
+  `@GraphProperty`, `@UIGroup` and `@Blob`, and reports `@Channel` (#187), fills
+  `ActionMetadata.resultType` (#191) and reads `@Saga.trigger` (#209); `GraphEdgeMetadata`
+  separates the edge from its field and carries direction and weight (#163); `GraphMetadata.queries`
+  is `null` on both sides (#226); the `@PrimaryKey` and `primaryKeyField` status notes follow
+  tooling 0.10.0 (#190). The `exeris-tooling` processor matches the reads
+  in its own releases: exeris-tooling#432, #436, #437, #439, #440, #444
+- [x] **W4: the kernel 0.13 re-check** — javadoc states kernel 0.13 behaviour for row-level
+  security, graph depth and saga retention (#227); `@RouteAccess` and `@Blob` enter the freeze,
+  `@Schedule` and `@Channel` stay reserved, and `unmodeledFacets()` reports `@Schedule` (#228,
+  ADR-072 obligations 29–35). Detail below
+- [x] **Pre-1.0 rulings** — the encryption attributes outside entity columns and the
+  `@SagaStep` compensation-command attributes (#230), `@ExerisDomain.roles` and `@Action.roles`
+  (#235, ADR-072 obligation 36), and the `@Saga` / `@SagaStep` elements with no kernel flow
+  contract (#239) are deprecated for removal at 1.0.0, each listed in
+  `MIGRATION-0.x-to-1.0.md` §1
+- [x] **Review follow-ups** — an unresolved `@RouteAccess` value is reported by
+  `unmodeledFacets()` (#234); the applier's thread safety, the TCK contracts and the ui-kit
+  version are stated in the present (#236)
+
+**Deferred, each with its condition:**
+
+- [ ] **ADR-077 `LONG_RUNNING`** — additive in a 1.x minor once exeris-tooling chooses what the
+  declaration compiles to (ADR-072 obligation 34)
+- [ ] **`@Channel` and `@Schedule` stay reserved, outside the freeze** — `@Channel` is promoted
+  when the kernel moves `…spi.websocket` to `stable`; `@Schedule` when the kernel issues a
+  service principal for declared jobs (obligations 31 and 32)
+- [ ] **`@Projection`** — design-gated, not scheduled: kernel 0.13 carries no declarative read
+  model, and the kernel's 1.0 scope keeps open whether `ProjectionEngine` grows into the worker
+  `@Projection` describes. `exeris-tooling` holds it reserved on the same cross-service topology
+  question. Its operational attributes stay reserved and frozen as declared, and extraction lands
+  additively in 1.x (`MIGRATION-0.x-to-1.0.md` §2). Condition: the topology decision
+- [ ] **Kernel external flow cancel** — the kernel offers no external cancel or abort, so the SDK
+  declares none; `@Saga` documents cooperative interruption instead: the long process parks, an
+  event wakes it through a `FlowChoreographyMapper`, and it fails to compensate (#239). Condition:
+  the kernel adds an external cancel
+
+### W4: Kernel 0.13 — the reserved facets settled before the freeze (ADR-072, 2026-10-29)
+
+> Kernel v0.13.0 is tagged, and SDK 0.13.0 is the last SDK release before 1.0.0.
+> exeris-tooling 0.11.0 and 0.12.0 both pin SDK 0.13, so what tooling transcribes, and
+> when, is tooling's schedule against a fixed SDK. The freeze criterion for a reserved
+> facet is therefore the kernel tier alone, read from v0.13.0's
+> `docs/stability-matrix.md` and kernel ADR-100.
+
+- [x] **`@RouteAccess` and `@Blob` enter the 1.0.0 freeze** (ADR-072 obligation 29) —
+  route authorization (`HttpRoutePolicy`, `RouteRequirement`, ADR-077's `Execution`
+  included) and `…spi.storage.blob` are `stable` at the kernel's 1.0. Frozen as
+  declared: both annotations, `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`,
+  the AST `RouteAccess`, `FieldMetadata.blob` and `BlobMetadata`. The `exeris-tooling`
+  transcriptions (route policy: tooling ADR-105 J3-3, in tooling 0.11.0; blob: tooling
+  ROADMAP K6) arrive additively. `@Blob` on a `GLOBAL`-scoped entity stays a build-time
+  rejection for tooling (obligation 30)
+- [x] **`@Schedule` stays reserved, outside the freeze** (obligation 31) —
+  `…spi.scheduling` is `stable`, but kernel ADR-057 Amendment A1 issues no service
+  principal at 1.0 and refuses every declared job at build time, so the annotation has no
+  target. Promoted when the kernel issues a service principal. The javadoc says so and
+  promises no transcription. The `-io` reader now reports `@Schedule` as an unmodeled
+  facet, which obligation 7 promised and the guard did not do (obligation 33)
+- [x] **`@Channel` stays reserved, outside the freeze** (obligation 32) — kernel ADR-100
+  keeps `…spi.websocket` at `preview` at 1.0, gated on ADR-084 §10's benchmark evidence.
+  Promoted when the kernel moves it to `stable`. The javadoc was checked against v0.13.0:
+  the SPI, the codec, the Community binding and the four non-declarations still hold
+- [x] **`@ExerisDomain.roles` and `@Action.roles` are deprecated for removal at 1.0.0** —
+  neither is extracted or enforced, and kernel v0.13.0 gives them no destination:
+  `RouteRequirement` decides on scopes only, and a role is enforced only through the kernel's
+  `@RequiresRole` against a build-time method id no SDK declaration generates. Route
+  authorization is `permissions` plus `@RouteAccess`; role-based access has no SDK declaration
+  at 1.0. `@Action.roles`' javadoc promised enforcement it did not have, which the CHANGELOG
+  records under Security. **Tooling:** the two `-Aexeris.strict` inert-attribute entries go with
+  the SDK 1.0 bump
+- [ ] **ADR-077 `LONG_RUNNING` — deferred, additive in 1.x** (obligation 34). The kernel
+  `Execution` facet is `stable` now, so the stability-ordering reason of the 0.12.0
+  deferral is gone. Two reasons remain. exeris-tooling ADR-105 obligation 18 leaves
+  `.longRunning()` to its J3-2 slice and emits `PROMPT` until then. And kernel ADR-077
+  keeps `PROMPT` as the default and warns that a `LONG_RUNNING` declaration can go stale,
+  so whether the fact is the author's to state is open. **Condition for adding it:**
+  tooling picks the shape. The SDK surface is then an `@Action` attribute carried by a
+  trailing, nullable `ActionMetadata` component, under the record-growth rule
 
 ## 1.0.0 GA — frozen contract
 
@@ -653,9 +709,9 @@ The per-surface lookup of what this freeze covers is [`docs/stability-matrix.md`
 
   **Two surfaces are deliberately outside the freeze** — `@Schedule` / `@Channel` and their AST carriers (`ActionMetadata.schedule` with `ScheduleMetadata`, `DomainMetadata.channel` with `ChannelMetadata`), per ADR-072 as amended 2026-10-29. `@Channel` encodes `…spi.websocket`, which kernel ADR-100 keeps at `preview` at 1.0, so freezing it would make the SDK's 1.0 promise stronger than the surface it describes. `@Schedule` encodes a `stable` package but has no target at 1.0: the kernel issues no service principal and refuses every declared job at build time (kernel ADR-057 Amendment A1). Both may change or be dropped in a 1.x minor; `@Channel` is promoted when the kernel moves `…spi.websocket` to `stable`, `@Schedule` when the kernel issues a service principal. `@Blob` and `@RouteAccess`, outside the freeze until 0.13.0, are frozen as declared now that their kernel surfaces are `stable`. The graph edge's kernel-model attributes and components are outside the freeze on the same ground as `@Channel` (kernel ADR-100 keeps `…spi.graph` at `preview` at 1.0). Recorded in `MIGRATION-0.x-to-1.0.md` §2 — every *other* reserved surface is frozen as declared, and this exception exists for one specific reason rather than as a general escape hatch
 - [ ] `MIGRATION-0.x-to-1.0.md` written and validated against the consumers that cross the freeze — the `exeris-tooling` processor and codegen, and `exeris-platform-lsp` — **and Stellar Tactics for the author-facing parts** (founder decision, 2026-09-26): 36 `@ExerisDomain` classes across two generated services, and the consumer that found Stellar finding S6. "Validated" there means, on the SDK 1.0.0-RC plus a tooling and a kernel build on that RC: `./build.sh` green with zero platform patches; a hand-written source diff containing only what the guide lists; every generated-tree hunk traced to the guide or to tooling's changelog; `-Aexeris.strict` warning changes explained; and the pass recorded as a dated entry in the Stellar findings log and a line in the guide's §5. **Not budgetHQ:** it consumes the platform through `exeris-spring-runtime` and authors no `@ExerisDomain` sources, so it exercises none of the surface this guide describes. Its role here is the entity corpus of the 0.3.0 round-trip tests — evidence already collected, not a validation pass still owed
-- [ ] Annotations module hits Maven Central (Apache-2.0, no Commons Clause)
-- [ ] AST records module hits Maven Central
-- [~] UI kit npm package hits npm registry under `@exeris/ui-kit` — **publication, not version**: the package versions independently of the SDK and gets its own 1.0, freezing the token/class namespace and not the values (`MIGRATION-0.x-to-1.0.md` §2b). Same shape as `@exeris/codegen-ts` at 0.2.0 against `exeris-tooling` 0.8.0. Enforced by `tests/public-surface.txt`. **Wiring landed for 0.12.0:** the package is renamed `@exeris/ui-kit`, `publish-ui-kit.yml` targets registry.npmjs.org with provenance, and `ui-kit-v0.2.0` is tagged beside `v0.12.0`, because `@exeris/codegen-ts` emits the dependency into generated applications and a public package cannot depend on one that needs a registry token. Open until the first publish: the `@exeris` npm organisation and the `NPM_TOKEN` secret
+- [x] Annotations module hits Maven Central (Apache-2.0, no Commons Clause) — every publishable module is on Central from 0.12.0
+- [x] AST records module hits Maven Central — from 0.12.0
+- [x] UI kit npm package hits npm registry under `@exeris/ui-kit` — **publication, not version**: the package versions independently of the SDK and gets its own 1.0, freezing the token/class namespace and not the values (`MIGRATION-0.x-to-1.0.md` §2b). Same shape as `@exeris/codegen-ts` at 0.2.0 against `exeris-tooling` 0.8.0. Enforced by `tests/public-surface.txt`. **Wiring landed for 0.12.0:** the package is renamed `@exeris/ui-kit`, `publish-ui-kit.yml` targets registry.npmjs.org with provenance, and `ui-kit-v0.2.0` is tagged beside `v0.12.0`, because `@exeris/codegen-ts` emits the dependency into generated applications and a public package cannot depend on one that needs a registry token. Published: 0.2.0 through 0.5.0 are on registry.npmjs.org, staged and approved with 2FA (ADR-094)
 - [x] **Contract test suite shippable as `exeris-sdk-tck` for downstream consumers** — four abstract JUnit suites a binder extends: producer, reader, parity, and consumer mapper posture. The parity suite is the point of the module: ADR-042's "the reader reads what the processor writes" had been a discipline enforced by whoever remembered it, and the record of that is three shipped defects of one shape — `@ExerisDomain(name)`, `@Relationship.relationshipType`, `@ActionParam.label` — each a side reading an attribute under a key the other did not use, each caught by hand long after. They are hard to catch because **nothing fails**: both sides emit well-formed metadata and the divergence is visible only by comparing them, which is what the suite does. **Corpus ships inside the jar** (a binder-supplied corpus measures the binder's imagination), and each entity carries a case with a real defect behind it. **Facets** let a binder declare unbuilt surface so its cases skip — reading ahead of a producer manufactures exactly the drift the gate exists to catch — with identity and fields non-optional, so the all-skips-green trapdoor is closed by a case that cannot be skipped. **Implementation-agnostic by enforcer:** JavaParser and `-io` are banned from the dependency tree, since a kit able to reach the SDK's own reader would be testing that instead of the binding. **Every case proven non-vacuous** against a conforming and a deliberately broken binding, committed as self-tests rather than done once and described — the kernel TCK's rule, adopted whole. That rule paid for itself immediately: it deleted three of the four cases first written for the mapper-posture suite, each asserting something true that no binding could get wrong (unknown properties are handled by `@JsonIgnoreProperties` on the record; a per-component `NON_NULL` beats a mapper-wide inclusion; `@JsonTypeInfo` resolves the polymorphic subtype on a stock mapper), and it **falsified a claim this repo has carried since the format was written** — see the correction below. **Extended in 0.12.0:** `Facet.SAGA` and a saga-version case in the reader, producer and parity suites. The prompt was the `@Saga.version` divergence (K5), which the kit could not have caught because nothing bound it. `exeris-sdk-source-model-io` now binds the reader suite, so the SDK's own reader runs the kit on every build. The parity suite can only be bound where both halves exist, which today means `exeris-tooling`
 - [x] **Module pages carry the module-page sections** (docs-guardrails-review rule 10): `docs/modules/` holds one page per module with `## Contract`, `## Hot path`, `## Failure modes` and `## Owning ADRs`, and the `exeris-sdk-tck`, `exeris-sdk-source-model` and `exeris-sdk-ui-kit` READMEs point to it
 - [x] Semver enforcement via `revapi` or `japicmp` in CI — **configured in 0.10.0** against the record-growth stance (see above), **opt-in since 0.12.0** (founder direction, 2026-09-26), and **in CI since the 0.13.0 line opened**. All of the gate's configuration and both bindings live in one `semver` profile in the root pom, so `mvn -Psemver verify` runs it and a plain local build does not. `japicmp.baseline.version` is `0.12.0`, the first version Maven Central serves (0.6.0–0.11.0 are git tag + GitHub Release only), and `build.yml` and `release.yml` pass `-Psemver`, so every CI build and every release is compared with it; that edit is what started 1.x binary enforcement. Inside the profile an absent baseline fails loudly rather than passing quietly. The baseline-free guards (`AnnotationSurfaceContractTest`, `RecordComponentOrderTest`, `RecordConstructorLedgerTest`) run in every build, and no workflow passes `-Djapicmp.skip=true`. A baseline has to be a *published* version, which is why landing the Central wiring in 0.12.0 was not enough on its own: the first version the gate could resolve was 0.12.0 itself
