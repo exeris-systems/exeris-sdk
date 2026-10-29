@@ -13,11 +13,10 @@ import java.lang.annotation.Target;
  * (kernel ADR-061, {@code eu.exeris.kernel.spi.http.HttpRoutePolicy} /
  * {@code RouteRequirement}). It is a separate annotation because the other
  * security-shaped attributes cannot say that a route is public:
- * {@link ExerisDomain#roles()} / {@link ExerisDomain#permissions()} and
- * {@link Action#roles()} / {@link Action#permissions()} read an empty value as
- * "nothing declared", and {@code @Action.roles} documents empty as "accessible to
- * all authenticated users". The empty case cannot also mean "public" without
- * colliding with that published meaning.
+ * {@link ExerisDomain#permissions()} and {@link Action#permissions()}, like the
+ * deprecated, unenforced {@code roles} beside them, read an empty value as
+ * "nothing declared". The empty case cannot also mean "public" without colliding
+ * with that meaning.
  *
  * <h2>Basic usage</h2>
  * {@snippet lang="java" :

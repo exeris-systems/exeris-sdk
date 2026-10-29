@@ -488,9 +488,8 @@ public final class AstSchemaProcessor extends AbstractProcessor {
     }
 
     /**
-     * The two postures a reader must adopt, carried in the document rather than left as
-     * folklore. Both have cost real debugging time in this ecosystem, and neither is
-     * inferable from the property types.
+     * The two postures a reader must adopt, carried in the document rather than left
+     * implicit, because neither is inferable from the property types.
      */
     private ArrayNode readerRequirements() {
         ArrayNode requirements = json.arrayNode();

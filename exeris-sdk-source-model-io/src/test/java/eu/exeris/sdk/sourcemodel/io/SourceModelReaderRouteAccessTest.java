@@ -110,6 +110,7 @@ class SourceModelReaderRouteAccessTest {
             "@RouteAccess(Level.PUBLIC)",
             "@RouteAccess(PUBLIC)",
             "@RouteAccess(value = RouteAccess.Level.PUBLIC)",
+            "@RouteAccess((Level.PUBLIC))",
             "@eu.exeris.sdk.annotation.RouteAccess(eu.exeris.sdk.annotation.RouteAccess.Level.PUBLIC)"})
     @DisplayName("every spelling of the level is read")
     void everySpellingIsRead(String declaration) {
@@ -143,6 +144,50 @@ class SourceModelReaderRouteAccessTest {
                 @RouteAccess(RouteAccess.Level.SOMETIMES)
                 public class A {}
                 """).routeAccess()).isNull();
+    }
+
+    @Test
+    @DisplayName("a @RouteAccess value that is no Level constant is reported on the carrier")
+    void unresolvedRouteAccessIsReported() {
+        String entityLevel = """
+                package x;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.RouteAccess;
+                @ExerisDomain
+                @RouteAccess(Levels.pick())
+                public class A {}
+                """;
+        assertThat(reader.unmodeledFacets(entityLevel)).containsExactly("@RouteAccess");
+
+        String actionLevel = """
+                package x;
+                import eu.exeris.sdk.annotation.Action;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+                import eu.exeris.sdk.annotation.RouteAccess;
+                @ExerisDomain
+                public class A {
+                    @Action(name = "approve", label = "Approve")
+                    @RouteAccess(value = RouteAccess.Level.SOMETIMES)
+                    public void approve() {}
+                }
+                """;
+        assertThat(reader.unmodeledFacets(actionLevel)).containsExactly("@RouteAccess");
+    }
+
+    @Test
+    @DisplayName("a resolvable @RouteAccess, parenthesised or not, leaves the guard silent")
+    void resolvedRouteAccessIsNotReported() {
+        for (String declaration : new String[] {"@RouteAccess(RouteAccess.Level.AUTHENTICATED)",
+                "@RouteAccess((RouteAccess.Level.AUTHENTICATED))"}) {
+            assertThat(reader.unmodeledFacets("""
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.RouteAccess;
+                    @ExerisDomain
+                    %s
+                    public class A {}
+                    """.formatted(declaration))).isEmpty();
+        }
     }
 
     @Test

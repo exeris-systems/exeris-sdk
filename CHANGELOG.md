@@ -55,6 +55,13 @@ for per-version upgrade steps.
   (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
   than a 0.10.x processor baseline holds.
 
+- **`SourceModelReader.unmodeledFacets()` reports `@RouteAccess`, and `read()` folds its parentheses.**
+  A `@RouteAccess` on the entity or on an `@Action` whose value is not a bare or qualified `Level`
+  constant was dropped without a report, which left an `AUTHENTICATED` declaration on the fail-open
+  fallback for routes that declare nothing. `unmodeledFacets()` now returns `@RouteAccess` for it,
+  so a reattach or conflict-detection caller refuses the source (ADR-042). A constant in
+  parentheses, `@RouteAccess((Level.AUTHENTICATED))`, is read as javac folds it for the processor.
+
 - **`exeris-sdk-source-model-io` reads `@GraphProperty`, `@UIGroup` and `@Blob`**, in the shape the
   ADR-042 reader-shape amendment fixes for exeris-tooling to match. `@GraphProperty` under a `@Graph`
   fills `GraphMetadata.properties`, one property per annotated field in declaration order, an empty
@@ -123,7 +130,8 @@ for per-version upgrade steps.
   two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
   `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
   name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
-  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+  / `tableName` to pin the old value. The TS copy in `exeris-codegen-ts`
+  (`dsl-mapper.ts`) follows in exeris-tooling#431.
 
 ### Fixed
 
@@ -438,6 +446,19 @@ for per-version upgrade steps.
 
 ### Deprecated
 
+- **`@ExerisDomain.roles` and `@Action.roles`** — `@Deprecated(since = "0.13.0", forRemoval =
+  true)`, removal at 1.0.0. Neither is extracted or enforced, and neither has a destination: the
+  kernel's `RouteRequirement` decides on scopes and declares no role kind, and the kernel enforces
+  a role only through its own `@RequiresRole` (kernel ADR-014), against a build-time method id no
+  SDK declaration generates. Replacement: `@ExerisDomain.permissions` / `@Action.permissions`,
+  compiled into the generated route policy (exeris-tooling ADR-105), and `@RouteAccess`. Role-based
+  access has no SDK declaration at 1.0. No producer reads either attribute, so nothing a build
+  emits changes; a source that sets one compiles with a `[removal]` warning. The javadoc of both
+  attributes, `@RowLevelSecurity`, `@Encrypted`, `@RouteAccess`, `@Schedule`, both package-infos
+  and `DomainMetadata.roles` no longer present `roles` as enforced or as a replacement. ADR-072
+  gains obligation 36: kernel ADR-057 A1's premise about `@Action.roles`, quoted in obligation 31,
+  does not hold, and A1's conclusion does not depend on it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
   `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and
   `SagaMetadata.TriggerType` now correspond one-to-one by name, as `@SagaTransition.on()` does onto
@@ -457,10 +478,10 @@ for per-version upgrade steps.
   the contract each would compile against: the kernel publishes no principal session key, and
   field-level encryption at rest is outside kernel scope in every tier. Replacements:
   `TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`; `readRoles` / `writeRoles` /
-  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain` / `@Action` `roles` and `permissions`,
-  `@RouteAccess`; the masking flags → `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed
-  policies and the encryption scheme have no replacement: they belong to the application.
-  Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
+  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain.permissions`, `@Action.permissions`,
+  `@RouteAccess`, with no SDK declaration for role-based access; the masking flags →
+  `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed policies and the encryption
+  scheme have no replacement: they belong to the application. Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
   other option, was not taken, and neither annotation is kept as a reserved surface outside the
   freeze (ADR-072), because the kernel ruled the binding out rather than shipping it in preview.
   No reader extracts any of them and no AST record carries them, so metadata and generated output
@@ -540,6 +561,15 @@ for per-version upgrade steps.
   uses, was never managed here and is unaffected.
 
 ### Security
+
+- **`@Action.roles` did not protect an action, and its javadoc no longer says it does.** The
+  javadoc said "User must have at least one of these roles" and that an empty array made the
+  action "accessible to all authenticated users". Neither held: no producer extracts the attribute
+  and nothing enforces it, and the same is true of `@ExerisDomain.roles`. An action or entity
+  that declares only `roles` admits whatever its `permissions` and `@RouteAccess` admit, and with
+  neither declared it falls to the generated application's `unmatchedRoutes()`, which defaults to
+  `permitAll()`. Declare `permissions` or `@RouteAccess(AUTHENTICATED)` on every route that
+  `roles` was meant to restrict. Both attributes are deprecated (see Deprecated).
 
 - **A route that declares no access is public in a generated application, and the SDK now says
   so.** `RouteAccess.Level.AUTHENTICATED` no longer calls itself the generated default. A route

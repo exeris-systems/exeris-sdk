@@ -54,8 +54,8 @@ import java.lang.annotation.Target;
  * tier {@code stable}, but issues <strong>no service principal</strong>. A declared
  * job has no submitting request, so it runs with no {@code PrincipalContext} bound,
  * and kernel ADR-057 Amendment A1 makes the build refuse a declaration whatever its
- * action requires: every {@link Action} either names roles or requires an
- * authenticated caller, and a job nobody authenticated satisfies neither. A
+ * action requires: with no principal bound, a requirement can only fail, and an action
+ * that declares none would run with an authority no caller granted. A
  * declaration on a {@code TENANT}- or {@code UNIVERSE}-scoped entity is refused as
  * well, because the system storage context a declared job runs under carries no
  * isolation key. No generator submits a job from this annotation, and the

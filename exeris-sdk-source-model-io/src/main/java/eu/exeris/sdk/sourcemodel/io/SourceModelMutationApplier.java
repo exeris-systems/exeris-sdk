@@ -52,8 +52,9 @@ public final class SourceModelMutationApplier {
 
     /**
      * Creates an applier over a fresh {@link SourceModelConflictDetector} and
-     * {@link SourceModelWriter}. Holds no caller-visible state beyond those two, so
-     * one instance may be shared or created per call.
+     * {@link SourceModelWriter}. The writer is not thread-safe (it holds a single
+     * {@code JavaParser}), so neither is the applier: use one instance per thread or
+     * call site, or guard it externally.
      *
      * <p>Declared rather than left implicit: 1.0.0 freezes the public surface, and
      * an undeclared constructor is still part of it. Stating it makes instantiation

@@ -263,6 +263,56 @@ reader nor the `exeris-tooling` processor reads `@Saga.trigger` yet, so
   name and reads the three deprecated constants as their replacements, with a
   warning, until 1.0.0.
 
+### `@ExerisDomain.roles` and `@Action.roles` are deprecated — removal in 1.0.0
+
+**Why:** neither attribute was ever enforced. No processor or reader extracts them, so a
+declared role reaches no generated route and no generated check; `@Action.roles` has no AST
+component at all, and `DomainMetadata.roles` is filled by no producer. They have nothing to
+compile into either: the kernel's `RouteRequirement` decides a route on scopes and declares no
+role kind, and the kernel enforces a role only through its own `@RequiresRole` (kernel
+ADR-014), against a build-time method id that no SDK declaration generates. The
+`@Action.roles` javadoc described it as "User must have at least one of these roles", and an
+empty array as "accessible to all authenticated users"; neither held.
+
+**Impact:** a source that sets either attribute compiles with a `[removal]` warning. Nothing a
+build emits changes. The protection the attribute appeared to give was never there, so
+removing it loses nothing, and replacing it adds protection a route did not have:
+
+- Route authorization is `permissions` on `@ExerisDomain` (every route of the entity) and on
+  `@Action` (that action's route, replacing the entity's list), any-of, compiled by the
+  generated route policy into a scope requirement (exeris-tooling ADR-105), plus
+  `@RouteAccess(AUTHENTICATED)` for a route that requires only a verified identity and
+  `@RouteAccess(PUBLIC)` for one that admits anyone.
+- A route that declares neither falls to the generated application's `unmatchedRoutes()`,
+  which admits any caller unless the application overrides it.
+- Role-based access has no SDK declaration at 1.0. An application that needs a role check
+  writes the kernel's `@RequiresRole` on its own method.
+
+```java
+// before — compiled, and protected nothing
+@ExerisDomain(module = "sales", path = "/orders", roles = "SALES")
+public class Order {
+    @Action(name = "approve", label = "Approve", roles = {"ROLE_MANAGER"})
+    public void approve() { ... }
+}
+
+// after — enforced by the generated route policy
+@ExerisDomain(module = "sales", path = "/orders", permissions = "orders:read")
+public class Order {
+    @Action(name = "approve", label = "Approve", permissions = "orders:approve")
+    public void approve() { ... }
+}
+```
+
+The permission names are the scopes the identity provider issues; they are not derived from
+role names.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on both
+  attributes).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads neither, so there is no fallback to keep; its
+  `-Aexeris.strict` audit reports both as inert, and the two entries go with the SDK 1.0 bump.
+
 ### `@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted` are deprecated — removal in 1.0.0
 
 **Why:** kernel ADR-012 §4c.1 rules out, at 1.0, the contract each would compile
@@ -309,10 +359,10 @@ public class Order {
     private String ssn;
 }
 
-// after — the tier on dataScope, the role on the route surface,
+// after — the tier on dataScope, access on the route surface,
 // encryption in the application or the database
 @ExerisDomain(module = "sales", path = "/orders",
-              dataScope = ExerisDomain.DataScope.TENANT, roles = "SALES")
+              dataScope = ExerisDomain.DataScope.TENANT, permissions = "orders:read")
 public class Order {
     @Field(label = "SSN", sensitive = true)
     private String ssn;
