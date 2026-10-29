@@ -170,12 +170,7 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     @DisplayName("the relationship carries the display field the source declares")
     void relationshipDisplayFieldIsTheDeclaredOne() {
         requireSupported(Facet.RELATIONSHIPS);
-        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
-        RelationshipMetadata orders = customer.relationships().stream()
-                .filter(r -> "orders".equals(r.fieldName()) || "orders".equals(r.name()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                        "No relationship read for Customer.orders; got " + customer.relationships()));
+        RelationshipMetadata orders = relationship(TckCorpus.CUSTOMER, "orders");
         assertThat(orders.displayField())
                 .withFailMessage(
                         "Customer.orders declares displayField = \"reference\" and was read as '%s'. "
@@ -184,6 +179,16 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                                 + "the target may not have.",
                         orders.displayField())
                 .isEqualTo("reference");
+    }
+
+    private RelationshipMetadata relationship(String entity, String field) {
+        DomainMetadata domain = read(TckCorpus.sourceOf(entity));
+        // fieldName() falls back to name(), so one comparison covers both ways of naming the edge.
+        return domain.relationships().stream()
+                .filter(r -> field.equals(r.fieldName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "No relationship read for " + entity + "." + field + "; got " + domain.relationships()));
     }
 
     @Test
@@ -213,15 +218,6 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                                 + "the explicit-key style point at UUID, an entity that does not exist.",
                         lastOrder.targetEntity())
                 .isEqualTo(TckCorpus.ORDER);
-    }
-
-    private RelationshipMetadata relationship(String entity, String field) {
-        DomainMetadata domain = read(TckCorpus.sourceOf(entity));
-        return domain.relationships().stream()
-                .filter(r -> field.equals(r.fieldName()) || field.equals(r.name()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                        "No relationship read for " + entity + "." + field + "; got " + domain.relationships()));
     }
 
     @Test

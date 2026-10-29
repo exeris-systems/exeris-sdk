@@ -132,6 +132,17 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("a relationship read under another field name is reported as missing")
+    void missingRelationshipIsReported() {
+        Reader renaming = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : List.of(RelationshipMetadata.oneToMany("purchases", TckCorpus.ORDER, "customer"))));
+        assertThatThrownBy(renaming::relationshipDisplayFieldIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("No relationship read for Customer.orders");
+    }
+
+    @Test
     @DisplayName("a cascade pair left unread is caught")
     void cascadeCaseIsNotVacuous() {
         Reader unread = new Reader(m -> withRelationships(m, m.relationships() == null
