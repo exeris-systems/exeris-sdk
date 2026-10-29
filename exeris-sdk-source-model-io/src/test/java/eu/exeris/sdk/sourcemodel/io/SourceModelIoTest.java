@@ -2193,8 +2193,8 @@ class SourceModelIoTest {
             // …and an unset dataType stays null (no "" leaking onto the wire)
             assertThat(domain.findField("reference")).get()
                     .extracting("dataType").isNull();
-            // the equivalence guard stays empty (dataType is an attribute, not a
-            // guarded annotation; UNMODELED_FACET_ANNOTATIONS remains empty)
+            // the equivalence guard stays empty: dataType is an attribute, not a
+            // guarded annotation
             assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
     }

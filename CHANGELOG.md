@@ -43,16 +43,9 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
-### Changed
-
-- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
-  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
-  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
-  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
-  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
-  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
-
 - **`exeris-sdk-source-model-io` reads `@PrimaryKey` into `SystemFieldsMetadata.primaryKeyField`.**
+  For a source that declares the marker, `read()` returns a different `primaryKeyField` than
+  before, and a `systemFields` record where the marker was the only declaration.
   The marker is resolved under the rules of the other ten `annotation.system` markers: on exactly
   one field, and not contradicting a non-blank `@ExerisDomain(primaryKeyField)`, it names the key;
   otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
@@ -62,11 +55,21 @@ for per-version upgrade steps.
   than a 0.10.x processor baseline holds.
 
 - **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
-  `@Channel`.** exeris-tooling 0.11.0 is scheduled to fill `GraphMetadata.properties`,
-  `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
+  `@Channel`.** It returned nothing for them before. exeris-tooling 0.11.0 is scheduled to fill
+  `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
   extraction rules are not fixed yet, so `read()` leaves the four carriers at their defaults and
   the guard names the annotation. A reattach or conflict-detection caller refuses a source that
   uses one of them. Each leaves the guard in the release that reads it as the processor does.
+  See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+### Changed
+
+- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
+  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
+  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
+  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
+  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
+  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
 
 ### Fixed
 
