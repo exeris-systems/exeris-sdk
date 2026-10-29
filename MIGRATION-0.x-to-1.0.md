@@ -124,6 +124,13 @@ survives into 1.x unchanged.
   reads any of the six and no AST component carries them, so the removal changes no metadata and
   no generated output. `@QueryParam` itself stays: `value`, `required`, `description` and
   `defaultValue` are carried on `ActionParamMetadata`.
+- **`@Saga.encryptState` / `.stateEncryptionKeyAlias`, `@EventSourced.encryptSnapshots` /
+  `.snapshotEncryptionKeyAlias`, `@DomainEvent.encryptFields`, `@GraphProperty.encrypted`,
+  `@ActionParam.encrypted`** — deprecated since 0.13.0 (`forRemoval = true`), by the ruling that
+  deprecates `@Encrypted` (kernel ADR-012 §4c.1). **No replacement:** encrypt in the application
+  (an encrypting `FlowSnapshotStore` or `EventPayloadCodec` is the application's to bind) or in
+  the database; an action parameter is protected in transit by the transport's TLS. None is
+  extracted, so the removal changes no metadata and no generated output.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`

@@ -467,18 +467,30 @@ public @interface Saga {
     StateFormat stateFormat() default StateFormat.JSON;
 
     /**
-     * Encrypt saga state.
-     * <p>For sagas handling sensitive data.
+     * Deprecated, no effect: the saga's state is not encrypted at rest.
+     * <p>Setting it to {@code true} changes nothing. No processor extracts it, no AST record
+     * carries it and no generator reads it. The kernel's durable saga state is the
+     * {@code FlowSnapshotStore} contract ({@code eu.exeris.kernel.spi.flow.model}), which stores
+     * the snapshot it is given and names no encryption scheme. Kernel ADR-012 §4c.1 rules
+     * encryption at rest outside kernel scope at 1.0, in every tier, and rules that tooling must
+     * not invent a scheme, so no generator will honour it.
      *
      * @return true to encrypt
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Encrypt the state in
+     *         the application: bind a {@code FlowSnapshotStore} that encrypts what it writes, or
+     *         let the database encrypt its storage. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encryptState() default false;
 
     /**
-     * Encryption key alias.
+     * Deprecated, no effect: the key alias for {@link #encryptState()}, which encrypts nothing.
      *
      * @return key alias
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link #encryptState()} and with no
+     *         replacement. No kernel tier defines a key registry at 1.0 (kernel ADR-012 §4c.1).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String stateEncryptionKeyAlias() default "";
 
     /**

@@ -422,6 +422,19 @@ for per-version upgrade steps.
   `description` and `defaultValue` are carried. `@NavMenu` and `@Tab` move to PARTIAL too. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`@Saga.encryptState`, `@EventSourced.encryptSnapshots`, `@DomainEvent.encryptFields`,
+  `@GraphProperty.encrypted` and `@ActionParam.encrypted`**, with the key aliases
+  `@Saga.stateEncryptionKeyAlias` and `@EventSourced.snapshotEncryptionKeyAlias` —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0, no replacement. Kernel
+  ADR-012 §4c.1, which deprecates `@Encrypted` and `@Field.encrypted`, covers them too: encryption
+  at rest is outside kernel scope at 1.0 in every tier, and tooling may not invent a scheme. The
+  kernel contract for each store exists and names no scheme: `FlowSnapshotStore` for saga state,
+  the event log (no aggregate snapshot store at all) for event sourcing, the outbox and
+  `EventPayloadCodec` for event payloads, the preview `spi.graph` for graph properties. An action
+  parameter travels over the transport's TLS, which covers the whole connection. No producer reads
+  any of the seven and no AST component carries them, so nothing a build emits changes. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Removed
 
 - **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**
