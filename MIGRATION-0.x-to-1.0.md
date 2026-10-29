@@ -104,6 +104,11 @@ survives into 1.x unchanged.
   Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
   body moves into that method. No producer reads the attribute and no AST component carries it,
   so the removal changes no metadata and no generated output.
+- **`@SagaStep.compensationClass`, `.compensationPayloadExpression`, `.compensationService`** —
+  deprecated since 0.13.0 (`forRemoval = true`). Replacement: `@SagaStep.compensation`; the
+  compensation method constructs the command, builds its payload and dispatches it to the
+  service. No producer reads them and no AST component carries them, so the removal changes no
+  metadata and no generated output.
 - **Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and the nested
   `@GraphEdge.ComputedProperty`** — deprecated since 0.13.0 (`forRemoval = true`). None has a
   kernel graph binding to compile against: weight naming, expression and normalisation;

@@ -412,6 +412,15 @@ for per-version upgrade steps.
   changes; a source that sets it compiles with a `[removal]` warning. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService`** —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. Replacement:
+  `@SagaStep.compensation`. Each describes a compensating command (its class, its payload as an
+  expression, its target service), and the compensation method named by `compensation` decides
+  all three in Java. The kernel registers a compensation as one action over the flow context, with
+  no command type, payload or target of its own, so no generator has anything to honour them with.
+  No producer reads them and no AST component carries them, so nothing a build emits changes. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`@QueryParam.transform`, `validation`, `validationMessage`, `type`, `elementType` and
   `sanitize`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. `type` and
   `elementType` restate the declared parameter type, which `ActionParamMetadata.type` carries. The

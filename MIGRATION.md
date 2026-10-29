@@ -367,6 +367,45 @@ that sets it compiles with a `[removal]` warning from javac.
 - **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
 
+### `@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService` are deprecated — removal in 1.0.0
+
+**Why:** the three describe a compensating *command*: its class, its payload as an expression,
+and the service it is sent to. `@SagaStep.compensation` names the compensation method instead,
+and that method decides what undoing the step takes — which command, built from which state,
+sent where, or no command at all. The kernel's saga contract has nothing for the three to bind
+to: `FlowDefinitionBuilder.step` registers a compensation as one `FlowStepAction`, a function
+from the flow context to an outcome, with no command type, payload or target. A generator could
+only check the attributes against the method body, which it cannot read, so a value written there
+would either repeat the method or contradict it unnoticed.
+
+**Impact:** a source that sets any of them now compiles with a `[removal]` warning from javac.
+No processor and no `-io` reader reads them and no AST record carries them, so the metadata and
+generated output are the same as on 0.12.x.
+
+```java
+// before
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment",
+          compensationClass = RefundCommand.class,
+          compensationPayloadExpression = "#state.paymentId",
+          compensationService = "refund-service")
+public SagaAction chargePayment() { … }
+
+// after — the compensation method says all three
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment")
+public SagaAction chargePayment() { … }
+
+public SagaAction refundPayment() {
+    return new SagaAction.ExecuteCommand(new RefundCommand(state.getPaymentId()));
+}
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of the three, so there is no fallback to keep;
+  javac's `[removal]` warning is the build-time signal.
+
 ### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
 
 **Impact on code: none required to keep building.** `GraphEdgeMetadata` gained eight trailing,
