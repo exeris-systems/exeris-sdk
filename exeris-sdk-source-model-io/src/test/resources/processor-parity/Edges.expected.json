@@ -1,6 +1,7 @@
 {
   "graphMetadata": {
     "label": "EdgeNode",
+    "properties": [],
     "edges": [
       {
         "name": "car",

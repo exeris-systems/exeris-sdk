@@ -1091,12 +1091,11 @@ class SourceModelIoTest {
                         @Blob(contentTypes = {"image/png"}) private String scan;
                     }
                     """;
-            assertThat(reader.unmodeledFacets(src))
-                    .containsExactlyInAnyOrder("@GraphProperty", "@UIGroup", "@Blob", "@Channel");
+            assertThat(reader.unmodeledFacets(src)).containsExactly("@Channel");
         }
 
         @Test
-        void unflaggedCarriersStayAtTheirDefaults() {
+        void theUnflaggedChannelCarrierStaysAtItsDefault() {
             String src = """
                     package x;
                     import eu.exeris.sdk.annotation.Blob;
@@ -1114,10 +1113,7 @@ class SourceModelIoTest {
                     }
                     """;
             DomainMetadata domain = reader.read(src).orElseThrow();
-            assertThat(domain.graphMetadata().properties()).isNull();
-            assertThat(domain.uiMetadata().groups()).isEmpty();
             assertThat(domain.channel()).isNull();
-            assertThat(domain.fields()).allSatisfy(field -> assertThat(field.blob()).isNull());
         }
 
         @Test
@@ -1465,8 +1461,8 @@ class SourceModelIoTest {
                     """;
             assertThat(reader.read(withNodeClass).orElseThrow().graphMetadata()).satisfies(g -> {
                 assertThat(g.label()).isEqualTo("PersonNode");
-                // mirrors the processor: properties null, edges/queries empty
-                assertThat(g.properties()).isNull();
+                // no @GraphProperty: properties empty, as edges are without @GraphEdge
+                assertThat(g.properties()).isEmpty();
                 assertThat(g.edges()).isEmpty();
                 assertThat(g.queries()).isEmpty();
             });

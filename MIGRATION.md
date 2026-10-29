@@ -818,7 +818,7 @@ reader, producer and parity suites each gain a case under it. A binding whose si
 sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
 `Facet` needs a new arm.
 
-### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports four more annotations
+### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports `@Channel`
 
 `read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
 as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
@@ -828,11 +828,42 @@ entity whose only system-field declaration is the marker now reads with a `syste
 where it read `null` before. exeris-tooling reads the marker the same way from 0.11.0; a baseline
 written by an earlier processor carries `id` for such an entity, so regenerate it.
 
-`unmodeledFacets()` now returns `@GraphProperty`, `@UIGroup`, `@Blob` and `@Channel` when the
-source uses them. It returned nothing for them before. A round-trip, reattach or conflict-detection
-caller that refuses on a non-empty result now refuses those sources; `read()` itself is unchanged
-for them and leaves `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and
-`DomainMetadata.channel` at their defaults.
+`unmodeledFacets()` now returns `@Channel` when the source uses it. It returned nothing for it
+before. A round-trip, reattach or conflict-detection caller that refuses on a non-empty result now
+refuses those sources; `read()` itself is unchanged for them and leaves `DomainMetadata.channel`
+`null`. The channel encodes the kernel WebSocket SPI, which stays `preview` at kernel 1.0, so its
+shape is not fixed here.
+
+### `SourceModelReader` reads `@GraphProperty`, `@UIGroup` and `@Blob`; `GraphPropertyMetadata` gains `field`
+
+`read()` now fills three components it left at their defaults, in the shape ADR-042's reader-shape
+amendment fixes. exeris-tooling extracts them the same way in the release that pins SDK 0.13; a
+baseline written by an earlier processor lacks them, so regenerate it.
+
+- **`GraphMetadata.properties`** — under a type-level `@Graph`, one `GraphPropertyMetadata` per
+  `@GraphProperty` field variable, in declaration order, and an empty list where it was `null`
+  when none is declared. `name` is the declared `name`, else the field's; `field` names the field
+  when the two differ; `type` is the declared `graphType` constant name and absent for `AUTO`, so
+  a consumer types an `AUTO` property from the field's `FieldMetadata.type`. A `@GraphProperty` on
+  a type without `@Graph` is not read.
+- **`UIMetadata.groups`** — one `UIGroupMetadata` per `@UIGroup` name, in the order each name is
+  first declared. Each attribute comes from the first member field that declares it; an undeclared
+  one is the annotation default, written out (`order` `999`, `collapsible` `true`, `collapsed`
+  `false`), and `gridSpan` is `12`. A type with groups and no `@UI` now reads with a `UIMetadata`
+  where it read `null`, its other components at the builder defaults. `@UIGroup.columns`,
+  `cssClass` and `visibleWhen` have no component.
+- **`FieldMetadata.blob`** — on any field carrying `@Blob`, with or without `@Field`, as written:
+  `container` when declared non-blank, `contentTypes` in declaration order. A `GLOBAL`-scoped entity
+  is read the same; exeris-tooling refuses that combination at build time.
+
+`unmodeledFacets()` no longer names the three. A consumer that builds `GraphPropertyMetadata`
+positionally keeps compiling: the 3-component constructor stays. A consumer that compared a
+reader's `GraphMetadata.properties` to `null` to mean "no property declared" reads an empty list
+instead.
+
+TCK binders: `Facet.GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS` are new, and the corpus `Product`
+and `Customer` declare the annotations. A binding whose side does not extract one declares it in
+`unsupportedFacets()`; a binding that switches exhaustively over `Facet` needs three new arms.
 
 ---
 

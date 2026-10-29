@@ -239,27 +239,29 @@
  *       {@link eu.exeris.sdk.annotation.Tab @Tab} are carried by the {@code -io}
  *       reader only — in {@code ActionParamMetadata}, {@code NavMenuMetadata} and
  *       {@code UIMetadata.UITabMetadata} — and the processor does not extract them
- *       yet.</dd>
+ *       yet. So are the layout annotation
+ *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup}
+ *       ({@code UIMetadata.UIGroupMetadata}), the graph detail annotation
+ *       {@link eu.exeris.sdk.annotation.GraphProperty @GraphProperty}
+ *       ({@code GraphMetadata.properties}) and the kernel-preview facet
+ *       {@link eu.exeris.sdk.annotation.Blob @Blob} ({@code FieldMetadata.blob}),
+ *       in the shape ADR-042's reader-shape amendment fixes.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
  *       {@link eu.exeris.sdk.annotation.Derived @Derived} /
  *       {@link eu.exeris.sdk.annotation.Rule @Rule}
  *       ({@link eu.exeris.sdk.annotation.Rules @Rules});
- *       the graph detail annotations
- *       {@link eu.exeris.sdk.annotation.GraphProperty @GraphProperty},
+ *       the graph detail annotation
  *       {@link eu.exeris.sdk.annotation.GraphQuery @GraphQuery};
  *       the saga state-machine half
  *       {@link eu.exeris.sdk.annotation.SagaTransition @SagaTransition};
  *       {@link eu.exeris.sdk.annotation.EventHandler @EventHandler},
  *       {@link eu.exeris.sdk.annotation.Projection @Projection};
  *       the kernel-preview facets
- *       {@link eu.exeris.sdk.annotation.Blob @Blob},
  *       {@link eu.exeris.sdk.annotation.Schedule @Schedule},
  *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess},
- *       {@link eu.exeris.sdk.annotation.Channel @Channel};
- *       and the layout annotation
- *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup}.
+ *       {@link eu.exeris.sdk.annotation.Channel @Channel}.
  *       See the note below on system fields.</dd>
  *
  *   <dt><strong>DEPRECATED</strong> — read by nobody, removed at 1.0.0</dt>
@@ -392,14 +394,15 @@
  * generator consumes them, so declaring them today has no generated effect.
  * Direction in RFC-2026-06-18 (ACCEPTED).
  *
- * <h2>Kernel-0.11 facets ({@code @Blob} / {@code @Schedule}) — RESERVED</h2>
+ * <h2>Kernel-0.11 facets ({@code @Blob} / {@code @Schedule})</h2>
  * <p>{@link eu.exeris.sdk.annotation.Blob} declares that a field holds a binary
  * object (an attachment) rather than an inline value, and
  * {@link eu.exeris.sdk.annotation.Schedule} declares that an
  * {@link eu.exeris.sdk.annotation.Action} also fires on a trigger rather than
  * only when called. They express the Entity-First shape for kernel packages
  * {@code …spi.storage.blob} (kernel ADR-056) and {@code …spi.scheduling}
- * (kernel ADR-057).
+ * (kernel ADR-057). {@code @Blob} is PARTIAL — the {@code -io} reader carries it in
+ * {@code FieldMetadata.blob} — and {@code @Schedule} is RESERVED.
  *
  * <p>Unlike the other RESERVED entries above, the reservation here is not waiting
  * on a platform that does not exist — both kernel packages are available with their

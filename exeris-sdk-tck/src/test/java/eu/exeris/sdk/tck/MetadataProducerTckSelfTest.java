@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -36,6 +37,9 @@ class MetadataProducerTckSelfTest {
             producer.queryParamsReachTheProducedJson();
             producer.navMenuReachesTheProducedJson();
             producer.tabsReachTheProducedJson();
+            producer.graphPropertiesReachTheProducedJson();
+            producer.uiGroupsReachTheProducedJson();
+            producer.blobsReachTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -270,6 +274,85 @@ class MetadataProducerTckSelfTest {
         assertThatThrownBy(permissionBlind::routeAccessReachesTheProducedJson)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Order/actions/approve/permissions — declared [order:approve], got []");
+    }
+
+    @Test
+    @DisplayName("graph properties missing, typed from AUTO, or without their field are caught")
+    void graphPropertyCasesAreNotVacuous() {
+        Producer notExtracted = new Producer(json -> treeEdited(json, root -> {
+            if (root.has("graphMetadata")) {
+                ((ObjectNode) root.get("graphMetadata")).remove("properties");
+            }
+        }));
+        assertThatThrownBy(notExtracted::graphPropertiesReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("does not extract @GraphProperty");
+
+        Producer autoTyped = new Producer(json -> treeEdited(json, root -> {
+            if (root.has("graphMetadata")) {
+                ((ObjectNode) root.get("graphMetadata").get("properties").get(0)).put("type", "STRING");
+            }
+        }));
+        assertThatThrownBy(autoTyped::graphPropertiesReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("AUTO is written as no type");
+
+        Producer fieldBlind = new Producer(json -> json.replace(",\"field\":\"sku\"", ""));
+        assertThatThrownBy(fieldBlind::graphPropertiesReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("'skuCode'");
+    }
+
+    @Test
+    @DisplayName("groups missing, or a collapsible default not written out, are caught")
+    void uiGroupCasesAreNotVacuous() {
+        Producer groupBlind = new Producer(json -> treeEdited(json, root -> {
+            if (root.path("uiMetadata").path("groups").size() == 2) {
+                root.remove("uiMetadata");
+            }
+        }));
+        assertThatThrownBy(groupBlind::uiGroupsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("uiMetadata.groups");
+
+        Producer recordDefault = new Producer(json -> treeEdited(json, root -> {
+            if (root.path("uiMetadata").path("groups").size() == 2) {
+                ((ObjectNode) root.get("uiMetadata").get("groups").get(0)).put("collapsible", false);
+            }
+        }));
+        assertThatThrownBy(recordDefault::uiGroupsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("written out");
+
+        Producer falseBlind = new Producer(json -> treeEdited(json, root -> {
+            if (root.path("uiMetadata").path("groups").size() == 2) {
+                ((ObjectNode) root.get("uiMetadata").get("groups").get(1)).remove("collapsible");
+            }
+        }));
+        assertThatThrownBy(falseBlind::uiGroupsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("collapsible = false");
+    }
+
+    @Test
+    @DisplayName("a blob dropped from a field without @Field, or reordered, is caught")
+    void blobCasesAreNotVacuous() {
+        Producer fieldOnly = new Producer(json -> json.replace(",\"blob\":{\"container\":\"contracts\",\"contentTypes\":[]}", ""));
+        assertThatThrownBy(fieldOnly::blobsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no @Field");
+
+        Producer reordered = new Producer(json -> json.replace("[\"image/png\",\"image/jpeg\"]", "[\"image/jpeg\",\"image/png\"]"));
+        assertThatThrownBy(reordered::blobsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Customer.avatar");
+    }
+
+    /** The JSON with its tree edited; the edit decides which entity it applies to. */
+    private static String treeEdited(String json, Consumer<ObjectNode> edit) {
+        ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+        edit.accept(root);
+        return root.toString();
     }
 
     static class Producer extends AbstractMetadataProducerTck {

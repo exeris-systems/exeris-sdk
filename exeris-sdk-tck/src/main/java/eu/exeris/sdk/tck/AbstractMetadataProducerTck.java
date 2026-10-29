@@ -3,6 +3,7 @@ package eu.exeris.sdk.tck;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import eu.exeris.sdk.sourcemodel.mutation.SchemaVersion;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -370,6 +371,90 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
         assertThat(summary.path("fields").toString()).isEqualTo("[\"reference\",\"totalCents\"]");
         assertThat(tabs.get(1).path("name").asString("")).isEqualTo("notes");
         assertThat(tabs.get(1).path("lazy").asBoolean(false)).isTrue();
+    }
+
+    @Test
+    @DisplayName("@GraphProperty reaches the produced JSON, AUTO untyped and a renamed property with its field")
+    void graphPropertiesReachTheProducedJson() {
+        requireSupported(Facet.GRAPH_PROPERTIES);
+        JsonNode properties = tree(TckCorpus.PRODUCT).path("graphMetadata").path("properties");
+        assertThat(properties.isArray() && properties.size() == 2)
+                .withFailMessage(
+                        "Product's fields declare two @GraphProperty; the produced "
+                                + "graphMetadata.properties is %s. An absent key means the producer "
+                                + "does not extract @GraphProperty.",
+                        properties)
+                .isTrue();
+        JsonNode name = properties.get(0);
+        assertThat(name.path("name").asString("")).isEqualTo("name");
+        assertThat(name.path("indexed").asBoolean(false)).isTrue();
+        assertThat(name.has("type"))
+                .withFailMessage(
+                        "Product.name declares no graphType and the produced property has type %s. "
+                                + "AUTO is written as no type at all.",
+                        name.path("type"))
+                .isFalse();
+        JsonNode sku = properties.get(1);
+        assertThat(sku.path("name").asString("")).isEqualTo("skuCode");
+        assertThat(sku.path("type").asString("")).isEqualTo("STRING");
+        assertThat(sku.path("field").asString(""))
+                .withFailMessage(
+                        "Product.sku is the graph property 'skuCode' and the produced property has "
+                                + "field %s.",
+                        sku.path("field"))
+                .isEqualTo("sku");
+    }
+
+    @Test
+    @DisplayName("@UIGroup reaches the produced JSON on an entity with no @UI, defaults written out")
+    void uiGroupsReachTheProducedJson() {
+        requireSupported(Facet.UI_GROUPS);
+        JsonNode groups = tree(TckCorpus.CUSTOMER).path("uiMetadata").path("groups");
+        assertThat(groups.isArray() && groups.size() == 2)
+                .withFailMessage(
+                        "Customer's fields declare two groups and the type no @UI; the produced "
+                                + "uiMetadata.groups is %s.",
+                        groups)
+                .isTrue();
+        JsonNode identity = groups.get(0);
+        assertThat(identity.path("name").asString("")).isEqualTo("identity");
+        assertThat(identity.path("fields").toString()).isEqualTo("[\"email\",\"displayName\"]");
+        assertThat(identity.path("collapsible").isBoolean() && identity.path("collapsible").asBoolean())
+                .withFailMessage(
+                        "No 'identity' member declares collapsible and the produced group has "
+                                + "collapsible = %s. The annotation default, true, is written out.",
+                        identity.path("collapsible"))
+                .isTrue();
+        assertThat(identity.path("gridSpan").asInt(0)).isEqualTo(UIMetadata.UIGroupMetadata.DEFAULT_GRID_SPAN);
+        JsonNode media = groups.get(1);
+        assertThat(media.path("name").asString("")).isEqualTo("media");
+        assertThat(media.path("collapsible").isBoolean() && !media.path("collapsible").asBoolean())
+                .withFailMessage(
+                        "Customer.avatar declares @UIGroup(collapsible = false) and the produced group "
+                                + "has collapsible = %s.",
+                        media.path("collapsible"))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("@Blob reaches the produced JSON, on a field without @Field too")
+    void blobsReachTheProducedJson() {
+        requireSupported(Facet.BLOBS);
+        JsonNode fields = tree(TckCorpus.CUSTOMER).path("fields");
+        JsonNode avatar = element(fields, "avatar", "The produced Customer carries no field 'avatar'.");
+        assertThat(avatar.path("blob").path("contentTypes").toString())
+                .withFailMessage(
+                        "Customer.avatar declares @Blob(contentTypes = {\"image/png\", \"image/jpeg\"}) "
+                                + "and the produced field has blob %s.",
+                        avatar.path("blob"))
+                .isEqualTo("[\"image/png\",\"image/jpeg\"]");
+        JsonNode contract = element(fields, "contract", "The produced Customer carries no field 'contract'.");
+        assertThat(contract.path("blob").path("container").asString(""))
+                .withFailMessage(
+                        "Customer.contract declares @Blob(container = \"contracts\") and no @Field, and "
+                                + "the produced field has blob %s.",
+                        contract.path("blob"))
+                .isEqualTo("contracts");
     }
 
     /**

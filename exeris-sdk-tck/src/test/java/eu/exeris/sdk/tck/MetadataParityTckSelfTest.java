@@ -11,6 +11,8 @@ import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 import java.util.Set;
@@ -47,6 +49,9 @@ class MetadataParityTckSelfTest {
             parity.queryParamsAgree();
             parity.navMenuAgrees();
             parity.tabsAgree();
+            parity.graphPropertiesAgree();
+            parity.uiGroupsAgree();
+            parity.blobsAgree();
         }).doesNotThrowAnyException();
     }
 
@@ -327,6 +332,56 @@ class MetadataParityTckSelfTest {
                 .hasMessageContaining("tabs/summary");
     }
 
+    @Test
+    @DisplayName("graph properties one side does not extract, or carries without the field, are caught")
+    void graphPropertyDivergenceIsCaught() {
+        Parity notExtracted = new Parity(m -> m.graphMetadata() == null ? m : ReferenceBinding.edited(m,
+                node -> ((ObjectNode) node.get("graphMetadata")).remove("properties")), UnaryOperator.identity());
+        assertThatThrownBy(notExtracted::graphPropertiesAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("graphMetadata/properties — producer: <absent>");
+
+        Parity fieldBlind = new Parity(UnaryOperator.identity(), m -> m.graphMetadata() == null ? m
+                : ReferenceBinding.edited(m, node ->
+                        ((ObjectNode) node.get("graphMetadata").get("properties").get(1)).remove("field")));
+        assertThatThrownBy(fieldBlind::graphPropertiesAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("graphMetadata/properties");
+    }
+
+    @Test
+    @DisplayName("groups one side does not carry, or orders differently, are caught")
+    void uiGroupDivergenceIsCaught() {
+        Parity uiOnly = new Parity(m -> m.uiMetadata() == null || m.uiMetadata().groups().isEmpty()
+                ? m : withNavAndUi(m, m.navMenu(), null), UnaryOperator.identity());
+        assertThatThrownBy(uiOnly::uiGroupsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("groups — reader emitted 'identity', producer did not");
+
+        List<UIMetadata.UIGroupMetadata> reference = ReferenceBinding.customerGroups();
+        Parity sorted = new Parity(UnaryOperator.identity(), m -> m.uiMetadata() == null
+                || m.uiMetadata().groups().isEmpty() ? m : withNavAndUi(m, m.navMenu(),
+                UIMetadata.builder().groups(List.of(reference.get(1), reference.get(0))).build()));
+        assertThatThrownBy(sorted::uiGroupsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("groups (order)");
+    }
+
+    @Test
+    @DisplayName("a blob one side drops is caught")
+    void blobDivergenceIsCaught() {
+        Parity fieldOnly = new Parity(UnaryOperator.identity(), m -> ReferenceBinding.edited(m, node -> {
+            for (JsonNode field : node.path("fields")) {
+                if ("contract".equals(field.path("name").asString(""))) {
+                    ((ObjectNode) field).remove("blob");
+                }
+            }
+        }));
+        assertThatThrownBy(fieldOnly::blobsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("fields/contract/blob — producer:");
+    }
+
     /** A parity binding whose two sides are the reference binding, each put through a defect. */
     static class Parity extends AbstractMetadataParityTck {
 
@@ -352,7 +407,8 @@ class MetadataParityTckSelfTest {
     private static DomainMetadata.Builder copyOf(DomainMetadata source) {
         return DomainMetadata.builder(source.entityName(), source.packageName())
                 .fields(source.fields()).actions(source.actions()).relationships(source.relationships())
-                .sagaMetadata(source.sagaMetadata()).navMenu(source.navMenu()).uiMetadata(source.uiMetadata());
+                .sagaMetadata(source.sagaMetadata()).navMenu(source.navMenu()).uiMetadata(source.uiMetadata())
+                .graphMetadata(source.graphMetadata());
     }
 
     private static DomainMetadata withSearch(DomainMetadata source, ActionMetadata search) {

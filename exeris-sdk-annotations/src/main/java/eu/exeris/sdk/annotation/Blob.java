@@ -46,10 +46,12 @@ import java.lang.annotation.Target;
  *
  * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
  * <p>Declared shape, not yet a live attachment. The kernel provides
- * {@code BlobStore} / {@code BlobRef} with {@code AbstractBlobStorageTck} — but
- * no {@code exeris-tooling} processor extracts {@code @Blob}, no generator emits
- * the upload/download surfaces from it, and the {@code exeris-sdk-source-model-io}
- * reader does not read it, so declaring it today has no generated effect. The
+ * {@code BlobStore} / {@code BlobRef} with {@code AbstractBlobStorageTck}, and the
+ * {@code exeris-sdk-source-model-io} reader carries the declaration as written in
+ * {@code FieldMetadata.blob} — on a field with or without {@link Field @Field}, whatever
+ * the entity's data scope — but no {@code exeris-tooling} processor extracts
+ * {@code @Blob} yet and no generator emits the upload/download surfaces from it, so
+ * declaring it today has no generated effect. The
  * kernel holds {@code …spi.storage.blob} at tier {@code preview}, so this surface
  * is <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
  * change it; it is promoted when the kernel package leaves {@code preview} <em>and</em>

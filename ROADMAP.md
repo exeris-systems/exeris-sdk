@@ -196,7 +196,9 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [ ] **`-io` reader parity** — deliberately not taken here, on the ADR-042
   discipline ADR-059 already applied: the reader reads what the processor writes,
   and no processor writes these yet. A source using either annotation correctly
-  reports an unmodeled facet meanwhile. Lands lockstep with the tooling slice
+  reports an unmodeled facet meanwhile. Lands lockstep with the tooling slice.
+  **`@Blob` taken in 0.13.0:** the SDK fixes the shape and the reader ships first
+  (ADR-042 reader-shape amendment), and tooling matches it; `@Schedule` stays open
 - [ ] **`exeris-tooling` transcription (cross-repo)** — extraction, the
   upload/download and job-submission emitters, and the two build-time rejections
   ADR-072 records: `@Blob` on a `GLOBAL`-scoped entity (unstorable — no isolation

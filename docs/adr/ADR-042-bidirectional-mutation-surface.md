@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-06-26
+last-verified: 2026-10-29
 slug: adr/ADR-042
 ---
 
@@ -115,3 +115,43 @@ Obligation 5 names the last-codegen `exeris-metadata/<entity>.json` as the basel
 
 - Obligation 5 for a caller that passes codegen baseline JSON: trust gating, `sourceDigest` and `schemaVersion` stand as written.
 - The `MutationOp` / `MutationResult` vocabulary and wire shape.
+
+## The SDK Fixes the Reader Shape for `@GraphProperty`, `@UIGroup` and `@Blob` (2026-10-29 amendment)
+
+The reader reads what the processor writes, so until now a carrier the processor did not fill stayed at its default in the reader, and `unmodeledFacets()` named the annotation. For `@GraphProperty`, `@UIGroup` and `@Blob` that order cannot hold. SDK 0.13 is the last SDK before 1.0, and exeris-tooling 0.11 and 0.12 both pin it; a shape the processor chose after that pin would be drift against every 0.13 reader until SDK 1.0. exeris-tooling#438 lists the questions the shape has to answer. This amendment answers them; it takes for these three annotations the order exeris-tooling ADR-105 obligation 26 took for `@RouteAccess`: the SDK fixes the shape, the reader ships first, and the processor matches it.
+
+### The Decision
+
+1. **`@GraphProperty` → `GraphMetadata.properties`.**
+   - Read under a type-level `@Graph` only, as `@GraphEdge` is. On a type without `@Graph` it is not read and `graphMetadata` stays `null`.
+   - One `GraphPropertyMetadata` per annotated field variable, in field declaration order.
+   - `name` is a non-blank `@GraphProperty.name`, else the field name. `GraphPropertyMetadata` gains a trailing `field` naming the declaring field, `null` when it equals `name`, the rule `GraphEdgeMetadata.field` already follows. Without it a renamed property names no field to read its value from.
+   - `type` is the `graphType` constant name (`"DOUBLE"`, …) when declared, and `null` for `AUTO`. No producer derives a graph type from a Java type: the store type of an `AUTO` property follows the field's Java type, which `FieldMetadata.type` already carries, so two producers cannot derive different ones. The kernel graph SPI types no property (`GraphNodeDescriptor.properties` is a list of names), so nothing downstream needs a derived value.
+   - `indexed` is the declared value, else `false`. The other attributes have no component and are not read.
+   - `properties` is an empty list when `@Graph` is present and no field declares `@GraphProperty`, the form `edges` takes. `null` keeps its meaning of "not carried": the producer does not extract `@GraphProperty`.
+2. **`@UIGroup` → `UIMetadata.groups`.** The rules `@Tab` already follows in the reader, for the same reasons.
+   - One `UIGroupMetadata` per distinct `name`, in the order each name is first declared, not sorted by `order`; a consumer sorts by `order`. Each variable of a multi-variable declaration is one member, and a `@Relationship` field is a member.
+   - A conflicting declaration is resolved per attribute: the first member field, in declaration order, that declares an attribute gives its value, and a later one is ignored. A blank string counts as undeclared. This is what `@UIGroup.label` documents ("subsequent fields inherit from the first declaration").
+   - `UIGroupMetadata`'s numeric and boolean components are primitive, so an attribute no member declares is written as the annotation default: `order` `999`, `collapsible` `true`, `collapsed` `false`. An undeclared string is `null`.
+   - `gridSpan` has no `@UIGroup` attribute and is `12`, the full width of the form grid `UIMetadata.columns` defaults to, which is also what `UIGroupMetadata.simple` writes. `@UIGroup.columns` is the column count inside the group, a different quantity, and is not mapped onto it.
+   - `@UIGroup.columns`, `cssClass` and `visibleWhen` have no component and are not read.
+   - A type with groups and no `@UI` gets a `UIMetadata` whose other components are the builder defaults, as a type with tabs does. A type with no group keeps the builder's empty `groups`.
+   - A `@UIGroup` whose `name` is not a non-blank string literal is skipped.
+3. **`@Blob` → `FieldMetadata.blob`, as written.**
+   - On every field carrying it, with or without `@Field`. A field without `@Field` keeps the `FieldMetadata.simple` values and gains the blob.
+   - `container` is a non-blank literal, else `null` (derive from the domain). `contentTypes` holds the declared media types in declaration order, an empty list when none are declared. A `@Blob` declaring nothing is `BlobMetadata.unrestricted()`, not an absent facet.
+   - The entity's data scope is not consulted. `@Blob` on a `GLOBAL`-scoped entity stays a build-time rejection in exeris-tooling (ADR-072's open question); the reader reads the declaration the source makes.
+4. **`@Channel` stays unread.** `DomainMetadata.channel` encodes the kernel WebSocket SPI, which stays `preview` at kernel 1.0, so its shape is not fixed here. It remains in `UNMODELED_FACET_ANNOTATIONS`, and `unmodeledFacets()` names it.
+5. **Parity is held by fixtures and the TCK.** The `-io` reader's processor-parity fixtures (`GraphProperties`, `GraphNoProperties`, `UiGroups`, `Blobs`) pin the shape above. `exeris-sdk-tck` gains `GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS`, each with reader, producer and parity cases; the reader's binding runs them on every build. A producer binding declares a facet unsupported until it extracts it.
+
+### Consequences
+
+- `read()` returns these three components for a source that uses them, and `unmodeledFacets()` names only `@Channel` of the four. Against a processor baseline written before tooling extracts them, a source declaring one reads as changed, as it does for `@Tab` and `@QueryParam`.
+- `@GraphProperty`, `@UIGroup` and `@Blob` move from RESERVED to PARTIAL: carried by the reader, extracted by no processor yet, read by no generator. `@UIGroup` was the last RESERVED layout annotation.
+- The reader clause of ADR-072 obligation 7 no longer holds for `@Blob`. It still holds for `@Schedule` and `@Channel`.
+
+### What this amendment does NOT change
+
+- The freeze status of any of the three. `@Blob` and `BlobMetadata` stay under ADR-072; `GraphPropertyMetadata` grows by one trailing component under the record-growth stance and keeps its 3-component constructor.
+- `GraphMetadata.queries` and `@GraphQuery`, which neither side reads.
+- The mutation surface, `MutationResult`, and the baseline-trust rules above.

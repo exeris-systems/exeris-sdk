@@ -22,10 +22,19 @@ import java.util.List;
  * deliberately carries no size bound — constraint values have one carrier,
  * {@link FieldMetadata} (ADR-054), and the kernel states no size policy to carry.
  *
- * <p><strong>Reserved surface (ADR-072).</strong> No {@code exeris-tooling}
- * processor populates this record and no generator consumes it; the kernel holds
- * {@code …spi.storage.blob} at tier {@code preview}, so the shape is excluded from
- * the 1.0.0 freeze and a 1.x minor may still change it.
+ * <p><strong>Read as written.</strong> A {@code @Blob} field carries one, whatever
+ * else it declares and whether or not it carries {@code @Field}: {@code container} is
+ * the literal declared, {@code null} when it is absent or blank, and {@code contentTypes}
+ * the declared media types in declaration order, empty when none are declared. A
+ * {@code @Blob} that declares nothing is {@link #unrestricted()}, not an absent facet.
+ * The entity's data scope does not change what is read: the {@code GLOBAL}-scoped
+ * combination the platform refuses is rejected at build time by {@code exeris-tooling},
+ * not dropped here.
+ *
+ * <p><strong>Reserved surface (ADR-072).</strong> The {@code -io} reader populates this
+ * record; the {@code exeris-tooling} processor does not yet, and no generator consumes
+ * it. The kernel holds {@code …spi.storage.blob} at tier {@code preview}, so the shape
+ * is excluded from the 1.0.0 freeze and a 1.x minor may still change it.
  *
  * @param container the container the object is addressed in, relative to the caller's
  *        namespace — never an absolute or physical location. Absent means the tooling derives

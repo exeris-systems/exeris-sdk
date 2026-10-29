@@ -31,9 +31,14 @@ import java.lang.annotation.*;
  * }
  *
  *
- * <p><strong>Status: RESERVED</strong> — the type-level {@link Graph @Graph} is read, and
- * so is {@link GraphEdge @GraphEdge}; this one is not. {@code GraphMetadata.properties} is
- * passed as null in consequence, so a property declared here reaches no graph-sync writer.
+ * <p><strong>Status: PARTIAL</strong> — the {@code -io} reader carries it in
+ * {@code GraphMetadata.properties}, one {@code GraphPropertyMetadata} per annotated field, in
+ * declaration order, on an entity that also declares {@link Graph @Graph}; under no
+ * {@code @Graph} it is not read. Three attributes are carried: {@link #name()} (the field name
+ * when blank, with the field kept beside a renamed property), {@link #graphType()} as its constant
+ * name ({@code AUTO} carries no type, and the store type then follows the field's Java type), and
+ * {@link #indexed()}. Every other attribute has no carrier and is read by nobody. The
+ * {@code exeris-tooling} processor does not extract it yet, and no graph-sync writer reads it.
  * @since 0.1
  * @see Graph
  */

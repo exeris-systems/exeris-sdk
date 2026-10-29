@@ -2,9 +2,12 @@ package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.BlobMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata;
 import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -258,10 +261,45 @@ final class ReferenceBinding {
                                 .required(true)
                                 .minLength(1)
                                 .maxLength(120)
+                                .build(),
+                        FieldMetadata.builder("avatar", "String")
+                                .displayName("Avatar")
+                                .blob(BlobMetadata.ofContentTypes(List.of("image/png", "image/jpeg")))
+                                .build(),
+                        FieldMetadata.builder("contract", "String")
+                                .searchable(true)
+                                .sortable(true)
+                                .filterable(true)
+                                .blob(new BlobMetadata("contracts", List.of()))
                                 .build()))
                 .relationships(List.of(
                         RelationshipMetadata.oneToMany("orders", TckCorpus.ORDER, "customer")))
+                .uiMetadata(UIMetadata.builder().groups(customerGroups()).build())
                 .build();
+    }
+
+    /**
+     * The groups {@code Customer}'s fields declare.
+     *
+     * @return the reference groups, in first-declared order
+     */
+    static List<UIMetadata.UIGroupMetadata> customerGroups() {
+        return List.of(
+                new UIMetadata.UIGroupMetadata("identity", "Identity", null, 2, true, true, null,
+                        UIMetadata.UIGroupMetadata.DEFAULT_GRID_SPAN, List.of("email", "displayName")),
+                new UIMetadata.UIGroupMetadata("media", "Media", null, 0, false, false, null,
+                        UIMetadata.UIGroupMetadata.DEFAULT_GRID_SPAN, List.of("avatar")));
+    }
+
+    /**
+     * The graph properties {@code Product}'s fields declare.
+     *
+     * @return the reference properties, in declaration order
+     */
+    static List<GraphPropertyMetadata> productProperties() {
+        return List.of(
+                new GraphPropertyMetadata("name", null, true),
+                new GraphPropertyMetadata("skuCode", "STRING", false, "sku"));
     }
 
     /**
@@ -335,7 +373,11 @@ final class ReferenceBinding {
                         FieldMetadata.builder("name", "String")
                                 .displayName("Name")
                                 .required(true)
+                                .build(),
+                        FieldMetadata.builder("sku", "String")
+                                .displayName("SKU")
                                 .build()))
+                .graphMetadata(new GraphMetadata(TckCorpus.PRODUCT, productProperties(), List.of(), null))
                 .actions(List.of(ActionMetadata.builder("reprice")
                         .methodName("reprice")
                         .resultType("void")
