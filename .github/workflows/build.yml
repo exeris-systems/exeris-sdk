@@ -44,6 +44,14 @@ jobs:
           cache: npm
           cache-dependency-path: exeris-sdk-ui-kit/package-lock.json
 
+      # Every `Source:` citation in docs/guides, docs/examples and docs/modules names a file that
+      # exists and a symbol that still occurs in it; test.sh holds the checker to its own cases
+      # first, so a checker that passes everything cannot pass here.
+      - name: Docs citations
+        run: |
+          bash tools/docs-citations/test.sh
+          bash tools/docs-citations/check.sh
+
       # -Psemver runs japicmp against the last release, `japicmp.baseline.version` in the root
       # pom, which Maven Central serves; a binary-incompatible change outside the record-growth
       # stance fails the build. The half of the stance that needs no baseline —
