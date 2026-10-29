@@ -30,8 +30,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * {@code bidirectional}, {@code inverseType}, {@code weighted}, {@code weightField} and
  * {@code staticWeight}. They encode the kernel graph SPI, which is at tier {@code preview};
  * no generator reads them yet. They are promoted into the frozen surface when the kernel moves
- * {@code …spi.graph} to {@code stable} and the {@code exeris-tooling} graph-sync generator
- * reads them (ADR-072). The remaining {@code @GraphEdge} attributes have no component; each
+ * {@code …spi.graph} to {@code stable}, which kernel ADR-102 leaves to a 1.x minor; the kernel
+ * tier is the whole condition (ADR-072). The remaining {@code @GraphEdge} attributes have no component; each
  * says why on the annotation.
  *
  * @param name the edge's identity, unique within its entity

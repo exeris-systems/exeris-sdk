@@ -346,10 +346,21 @@ public @interface SagaStep {
     String compensation() default "";
 
     /**
-     * Compensation command class.
+     * The class of the command that compensates this step.
+     *
+     * <p>Read by neither producer: no processor, reader or AST component carries it, so writing
+     * it has no effect.
      *
      * @return compensation class
+     * @deprecated since 0.13.0, for removal in 1.0.0. {@link #compensation()} names the
+     *         compensation method, and that method decides what undoing the step takes, a
+     *         command of whatever class it constructs included. The kernel registers a
+     *         compensation as one action over the flow context, with no command type of its
+     *         own, so no generator has anything to check this class against or dispatch it
+     *         through. Construct the command in the compensation method. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<?> compensationClass() default void.class;
 
     /**
@@ -369,17 +380,36 @@ public @interface SagaStep {
     String compensationBuilder() default "";
 
     /**
-     * Compensation payload expression (SpEL).
+     * An expression that builds the compensating command's payload.
+     *
+     * <p>Read by neither producer: no processor, reader or AST component carries it, so writing
+     * it has no effect. No expression language is evaluated by the SDK, the generators or the
+     * kernel.
      *
      * @return payload expression
+     * @deprecated since 0.13.0, for removal in 1.0.0. {@link #compensation()} names the
+     *         compensation method, which reads the saga state and builds the payload in Java, so
+     *         a second, string-typed description of that payload has nothing left to do. Move
+     *         the expression into the compensation method's body. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationPayloadExpression() default "";
 
     /**
-     * Service for compensation (if different from main service).
+     * The service the compensating command is sent to, when it differs from {@link #service()}.
+     *
+     * <p>Read by neither producer: no processor, reader or AST component carries it, so writing
+     * it has no effect.
      *
      * @return compensation service
+     * @deprecated since 0.13.0, for removal in 1.0.0. {@link #compensation()} names the
+     *         compensation method, and where undoing the step sends anything is decided in that
+     *         method: it may dispatch to any service, publish an event or start another saga. A
+     *         declared target could only repeat what the method does, or contradict it with
+     *         nothing to notice. Dispatch to the service from the compensation method. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationService() default "";
 
     /**

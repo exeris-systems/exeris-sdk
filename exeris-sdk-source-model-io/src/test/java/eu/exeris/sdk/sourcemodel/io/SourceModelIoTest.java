@@ -1096,6 +1096,30 @@ class SourceModelIoTest {
         }
 
         @Test
+        void scheduledActionIsFlaggedAndItsCarrierStaysEmpty() {
+            // @Schedule is reserved: ActionMetadata.schedule has no extraction rule while a
+            // declared job is refused at build time, so a round-trip would drop it (ADR-072
+            // obligations 7 and 33).
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.Action;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Schedule;
+
+                    @ExerisDomain
+                    public class Ledger {
+                        @Action(name = "reconcile", httpMethod = "POST")
+                        @Schedule(cron = "0 3 * * *")
+                        public void reconcile() {}
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(src)).containsExactly("@Schedule");
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.actions()).singleElement()
+                    .satisfies(action -> assertThat(action.schedule()).isNull());
+        }
+
+        @Test
         void unflaggedCarriersStayAtTheirDefaults() {
             String src = """
                     package x;

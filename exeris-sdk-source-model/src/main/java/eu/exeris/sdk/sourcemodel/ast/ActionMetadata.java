@@ -42,14 +42,14 @@ import java.util.Objects;
  *        the AST twin of {@code @Schedule} on the action method. Optional:
  *        {@code null} when the action is call-only, which is the common case.
  *
- *        <p><strong>Open-Core status — reserved, extraction pending
- *        tooling:</strong> the kernel side exists ({@code JobScheduler} /
- *        {@code JobTrigger}, kernel ADR-057), but no {@code exeris-tooling}
- *        processor extracts {@code @Schedule} and no generator submits a job
- *        from this component, so on the build-time path it is always
- *        {@code null}. The kernel holds {@code …spi.scheduling} at tier
- *        {@code preview}, so the component is excluded from the 1.0.0 freeze
- *        and a 1.x minor may still change it (ADR-072).
+ *        <p><strong>Open-Core status — reserved, refused at build time:</strong>
+ *        the kernel side exists ({@code JobScheduler} / {@code JobTrigger}, kernel
+ *        ADR-057), but the kernel issues no service principal, so a declared job
+ *        would run with no identity bound and the build refuses every
+ *        {@code @Schedule} (kernel ADR-057 Amendment A1). No producer fills this
+ *        component, so on the build-time path it is always {@code null}. It is
+ *        excluded from the 1.0.0 freeze and a 1.x minor may still change it
+ *        (ADR-072).
  *
  * @param routeAccess What this action's generated route demands of its caller — the identity
  *        half of the kernel's route-authorization decision (kernel ADR-061), and
@@ -69,8 +69,7 @@ import java.util.Objects;
  *        generator emits the URL-to-policy table from it, in the release that pins
  *        that reader (exeris-tooling ADR-105); until then the build-time path leaves
  *        it {@code null}. The kernel holds route authorization at tier
- *        {@code preview}, so the component is excluded from the 1.0.0 freeze and a
- *        1.x minor may still change it (ADR-072).
+ *        {@code stable}, so the component is part of the 1.0.0 freeze (ADR-072).
  *
  * @param name the action's identity, as the generated surface exposes it — distinct from
  *        {@link #methodName()}, the Java method behind it
