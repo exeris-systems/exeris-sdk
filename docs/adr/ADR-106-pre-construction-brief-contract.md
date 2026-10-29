@@ -3,7 +3,7 @@ title: "ADR-106: A pre-construction brief is a contract in the SDK that referenc
 type: adr
 visibility: public
 owning-repo: exeris-sdk
-status: draft
+status: active
 last-verified: 2026-10-29
 slug: adr/ADR-106
 ---
@@ -12,7 +12,7 @@ slug: adr/ADR-106
 
 | Attribute       | Value                                                                                          |
 |:----------------|:-----------------------------------------------------------------------------------------------|
-| **Status**      | **PROPOSED**                                                                                   |
+| **Status**      | **ACCEPTED**                                                                                   |
 | **Deciders**    | Arkadiusz Przychocki                                                                           |
 | **Date**        | 2026-10-27                                                                                     |
 | **Scope**       | cross-repo (`sdk/source-model`; consumed by `exeris-ai-bridge`)                                |
@@ -20,7 +20,7 @@ slug: adr/ADR-106
 | **Driven By**   | [RFC-2026-10-24](https://github.com/exeris-systems/exeris-docs/blob/main/rfc/RFC-2026-10-24-pre-construction-discovery.md) (ACCEPTED 2026-10-27: Q1-C, Q2-B1, Q3-B, Q4-C) |
 | **Compliance**  | [ADR-003](ADR-003-entity-first-development-strategy.md) Entity-First; zero runtime coupling ([policy](../../.agents/policies/zero-runtime-coupling.md)); emitted contracts ([policy](../../.agents/policies/javadoc-and-contract-emitters.md)) |
 
-> The number is held by the [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md) row. This ADR becomes ACCEPTED, with the `briefSchemaFormat` of the first release that ships `brief-schema.json`, once that release is published (RFC-2026-10-24, rollout step 5).
+> The number is held by the [`exeris-docs/adr-index.md`](https://github.com/exeris-systems/exeris-docs/blob/main/adr-index.md) row. The contract ships in SDK 0.13.0 as `briefSchemaFormat` 1, in `exeris-sdk-source-model`'s jar.
 
 ## Context and Problem Statement
 
