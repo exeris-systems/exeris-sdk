@@ -12,7 +12,7 @@ last-verified: 2026-10-29
 **Audience:** you are declaring a capability, the services it provides and requires, and the
 lifecycle hooks the SKU bootstrap drives at boot.
 
-> **Verified against** `0.13.0-SNAPSHOT` at commit `0753b7d0`, 2026-10-29. Every snippet is quoted
+> **Verified against** `0.13.0-SNAPSHOT` at commit `33574011`, 2026-10-29. Every snippet is quoted
 > or minimally adapted from the cited file, by path and symbol, never a line range. If a snippet and
 > its source disagree, **the source wins and this guide is the bug**.
 

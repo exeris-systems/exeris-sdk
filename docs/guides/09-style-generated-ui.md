@@ -13,7 +13,7 @@ last-verified: 2026-10-29
 
 **Goal:** install `@exeris/ui-kit`, import its theme and styles into one stylesheet, and control dark mode and token values.
 
-> **Verified against** the `exeris-sdk-ui-kit` sources at commit `0753b7d0`, 2026-10-29. Every snippet is quoted or adapted from the cited file and symbol, never from a line range. If a snippet and its source disagree, **the source wins and this guide is the bug**. No example module covers the package. Its own test suite compiles the documented setup with Tailwind v4.
+> **Verified against** the `exeris-sdk-ui-kit` sources at commit `33574011`, 2026-10-29. Every snippet is quoted or adapted from the cited file and symbol, never from a line range. If a snippet and its source disagree, **the source wins and this guide is the bug**. No example module covers the package. Its own test suite compiles the documented setup with Tailwind v4.
 
 ## Prerequisites
 

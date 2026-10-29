@@ -12,6 +12,8 @@
 # Usage: check.sh [directory ...]   (default: docs/guides docs/examples docs/modules)
 # Env:   CITATIONS_ROOT  repository root that cited paths resolve against (default: this repo)
 # Exit:  0 when every citation resolves, 1 otherwise.
+# A Java-style symbol matches as a whole word, so `Order` does not pass on a file that only has
+# `OrderLine`. Runs on bash 3.2 and later. Its own cases are in test.sh.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,8 +41,10 @@ check_file() {
     [ "$in_fence" -eq 1 ] && continue
     [[ "$line" == Source:* ]] || continue
 
-    local tokens=()
-    mapfile -t tokens < <(printf '%s\n' "$line" | grep -o '`[^`]*`' | sed 's/^`//; s/`$//' || true)
+    local tokens=() token
+    while IFS= read -r token; do
+      tokens+=("$token")
+    done < <(printf '%s\n' "$line" | grep -o '`[^`]*`' | sed 's/^`//; s/`$//' || true)
     [ "${#tokens[@]}" -ge 1 ] || continue
 
     local path="${tokens[0]}"
@@ -51,20 +55,19 @@ check_file() {
       continue
     fi
 
-    local i sym name
+    local i sym name match
     for ((i = 1; i < ${#tokens[@]}; i++)); do
       sym="${tokens[$i]}"
       if [[ "$sym" =~ $java_symbol ]]; then
         name="${sym%%(*}"
         name="${name##*[.#]}"
+        match=(-qwF)
       else
         name="$sym"
+        match=(-qF)
       fi
-      if [ -d "$root/$path" ]; then
-        grep -rqF -- "$name" "$root/$path" || { echo "STALE: $md: $path lacks $sym"; errors=$((errors + 1)); }
-      else
-        grep -qF -- "$name" "$root/$path" || { echo "STALE: $md: $path lacks $sym"; errors=$((errors + 1)); }
-      fi
+      [ -d "$root/$path" ] && match+=(-r)
+      grep "${match[@]}" -- "$name" "$root/$path" || { echo "STALE: $md: $path lacks $sym"; errors=$((errors + 1)); }
     done
   done < "$md"
 }

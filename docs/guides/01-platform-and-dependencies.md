@@ -13,7 +13,7 @@ last-verified: 2026-10-29
 
 **Goal:** pick the smallest set of SDK artifacts for what you do, and resolve them.
 
-> **Verified against** `0.13.0-SNAPSHOT` at commit `0753b7d0`, 2026-10-29, on `main`. Coordinates were read from the module poms and `package.json`, not from memory. If this page and a pom disagree, **the pom wins and this guide is the defect**.
+> **Verified against** `0.13.0-SNAPSHOT` at commit `33574011`, 2026-10-29, on `main`. Coordinates were read from the module poms and `package.json`, not from memory. If this page and a pom disagree, **the pom wins and this guide is the defect**.
 
 ## Prerequisites
 

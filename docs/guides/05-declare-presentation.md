@@ -13,7 +13,7 @@ last-verified: 2026-10-29
 
 **Goal:** declare entity-level presentation with `@UI`, `@UIGroup`, `@Tab` and `@NavMenu`, declare a page with `@View`, and check what the SDK reads back.
 
-> **Verified against** `0.13.0-SNAPSHOT` at commit `0753b7d0`, 2026-10-29. Every snippet is quoted or adapted from the cited file and symbol, never from a line range. If a snippet and its source disagree, **the source wins and this guide is the bug**. The sources compile and run in `exeris-sdk-examples`, so a removed annotation attribute fails that build first.
+> **Verified against** `0.13.0-SNAPSHOT` at commit `33574011`, 2026-10-29. Every snippet is quoted or adapted from the cited file and symbol, never from a line range. If a snippet and its source disagree, **the source wins and this guide is the bug**. The sources compile and run in `exeris-sdk-examples`, so a removed annotation attribute fails that build first.
 
 ## Prerequisites
 

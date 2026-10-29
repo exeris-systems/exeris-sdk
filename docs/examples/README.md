@@ -11,7 +11,7 @@ last-verified: 2026-10-29
 
 The `exeris-sdk-examples` module holds annotated sources and tests that the guides in [`docs/guides`](../guides) quote. Each scenario is a package `eu.exeris.sdk.examples.<scenario>`, in `src/main/java`, `src/test/java` or both. Its test reads the scenario's `.java` files through `SourceModelReader` and asserts the metadata they declare, except `tckbinding`, which binds the reader to the kit's own corpus. A removed annotation attribute in a scenario that has sources fails this build before it fails a guide.
 
-> **Verified against** `0.13.0-SNAPSHOT` at commit `0753b7d0`, 2026-10-29. If this table and the module disagree, **the module wins and this page is the bug**. The module is not published and is not in `exeris-sdk-bom`.
+> **Verified against** `0.13.0-SNAPSHOT` at commit `33574011`, 2026-10-29. If this table and the module disagree, **the module wins and this page is the bug**. The module is not published and is not in `exeris-sdk-bom`.
 
 ## Scenarios
 

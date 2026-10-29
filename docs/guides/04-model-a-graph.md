@@ -13,7 +13,7 @@ last-verified: 2026-10-29
 
 **Goal:** declare a node, its properties and its edges on one entity, and read them back.
 
-> **Verified against** `0.13.0-SNAPSHOT` at commit `0753b7d0`, 2026-10-29, on `main`. Snippets are quoted or adapted from the cited class, by path and symbol. If a snippet and its source disagree, **the source wins and this guide is the defect**.
+> **Verified against** `0.13.0-SNAPSHOT` at commit `33574011`, 2026-10-29, on `main`. Snippets are quoted or adapted from the cited class, by path and symbol. If a snippet and its source disagree, **the source wins and this guide is the defect**.
 
 ## Prerequisites
 

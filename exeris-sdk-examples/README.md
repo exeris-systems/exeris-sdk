@@ -6,6 +6,9 @@ Annotated example sources of the SDK surface, compiled and read back. Each scena
 metadata they declare. javac compiles the sources against `exeris-sdk-annotations`, so a removed or
 renamed annotation attribute fails the build here.
 
+The guides in [`docs/guides`](../docs/guides/README.md) and the index in
+[`docs/examples`](../docs/examples/README.md) quote these sources by path and symbol.
+
 The module page [`docs/modules/10-examples.md`](../docs/modules/10-examples.md) owns the Contract,
 Hot path, Failure modes and Owning ADRs for this module.
 
