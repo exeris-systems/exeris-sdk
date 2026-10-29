@@ -52,6 +52,22 @@ for per-version upgrade steps.
   name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
   / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
 
+- **`exeris-sdk-source-model-io` reads `@PrimaryKey` into `SystemFieldsMetadata.primaryKeyField`.**
+  The marker is resolved under the rules of the other ten `annotation.system` markers: on exactly
+  one field, and not contradicting a non-blank `@ExerisDomain(primaryKeyField)`, it names the key;
+  otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
+  `NONE`, which ADR-104 refuses, is not read. `generated`, `sequenceName` and `allowClientId` are
+  not carried. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
+  (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
+  than a 0.10.x processor baseline holds.
+
+- **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
+  `@Channel`.** exeris-tooling 0.11.0 is scheduled to fill `GraphMetadata.properties`,
+  `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
+  extraction rules are not fixed yet, so `read()` leaves the four carriers at their defaults and
+  the guard names the annotation. A reattach or conflict-detection caller refuses a source that
+  uses one of them. Each leaves the guard in the release that reads it as the processor does.
+
 ### Fixed
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
