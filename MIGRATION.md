@@ -108,6 +108,22 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `SourceModelReader` reads `@Saga.trigger`
+
+`read()` now fills `SagaMetadata.trigger` for a saga that writes `trigger = @SagaTrigger(...)`:
+`type` by constant name (`SCHEDULE`, `HTTP` and `COMMAND` read as `SCHEDULED`, `API` and
+`MANUAL`), `schedule` as `cronExpression`, `topic` as `topic`, and `source` as the source class
+(fully qualified), else `sourceName`. A saga with no `trigger` attribute still reads `null`; a
+`@SagaTrigger` without `type` reads `MANUAL`. Blank strings and `void.class` read `null`; the
+other `@SagaTrigger` attributes are not carried. Against a processor baseline that does not
+extract the trigger yet, a source declaring one differs in `trigger`; the conflict detector
+compares no saga component, so no conflict is raised.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.SAGA_TRIGGER`, and the corpus `Order` declares an
+`EVENT` trigger. A producer or parity binding whose producer does not extract the trigger fails
+the new cases until it adds `Facet.SAGA_TRIGGER` to `unsupportedFacets()`. A reader binding that
+reads `@Saga` without the trigger does the same.
+
 ### `SourceModelReader` reads `@RouteAccess` and `permissions`
 
 **Impact on code: none required.** No AST component is added. What changes is what

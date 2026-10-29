@@ -147,8 +147,8 @@ import java.util.stream.Collectors;
  *
  * <p>The reverse divergence — a facet this reader carries and a processor does not extract
  * yet — is not reported by the guard. {@code @QueryParam}, {@code @NavMenu}, {@code @Tab} and
- * the {@code @Saga} compensation section are read here ahead of a processor that does not
- * extract them. {@link SourceModelConflictDetector} compares whole actions, so against such a
+ * the {@code @Saga} compensation section and {@code @Saga.trigger} are read here ahead of a
+ * processor that does not extract them. {@link SourceModelConflictDetector} compares whole actions, so against such a
  * processor's baseline an action with a {@code @QueryParam} parameter reads as changed, and a
  * mutation of that action is reported as a conflict rather than applied; it compares no
  * navigation, tab or saga component.
@@ -1506,7 +1506,10 @@ public final class SourceModelReader {
      * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
      * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
      * simple name; {@code description}/{@code timeout}/{@code maxRetries}/{@code version}
-     * are present-only; steps come from {@code @SagaStep} methods.
+     * are present-only; steps come from {@code @SagaStep} methods. {@code trigger} is
+     * present-only too: a saga that does not write {@code trigger = …} reads {@code null},
+     * not the annotation default {@code MANUAL}, so {@code hasTrigger()} says whether the
+     * source declared one; see {@link #sagaTrigger}.
      *
      * <p>{@code version} is the other half of the {@code (name, version)} key kernel
      * ADR-064 addresses a saga plan by, and the processor reads it, so skipping it here
@@ -1554,8 +1557,53 @@ public final class SourceModelReader {
                 .ifPresent(builder::compensationFailureHandler);
         boolAttr(saga.get(), "manualInterventionOnCompensationFailure")
                 .ifPresent(builder::manualInterventionOnCompensationFailure);
+        value(saga.get(), "trigger").filter(Expression::isAnnotationExpr)
+                .map(expression -> sagaTrigger(expression.asAnnotationExpr(), type))
+                .ifPresent(builder::trigger);
         builder.steps(sagaSteps(type));
         return builder.build();
+    }
+
+    /**
+     * {@code @Saga.trigger} → {@link SagaMetadata.SagaTrigger}, mapped as the processor maps it.
+     * {@code type} is read by constant name, and the constants deprecated for removal read as
+     * the ones they mean: {@code SCHEDULE} as {@code SCHEDULED}, {@code HTTP} as {@code API},
+     * {@code COMMAND} as {@code MANUAL}. A {@code @SagaTrigger} that omits {@code type} is
+     * {@code MANUAL}, the annotation default; a constant the AST does not know reads as
+     * {@code null}, not as a default that would claim a kind the source did not declare.
+     * {@code schedule} is {@code cronExpression}, {@code topic} is {@code topic}, and
+     * {@code source} is the class when one is named (fully qualified, see
+     * {@link #qualifiedClassAttr}), else {@code sourceName}. A blank string and {@code void.class}
+     * mean "none" and read as {@code null}. {@code condition} and the remaining attributes
+     * ({@code sourcePattern}, {@code consumerGroup}, {@code filter}, {@code startPosition},
+     * {@code httpPath}, {@code httpMethod}) are not carried.
+     */
+    private SagaMetadata.SagaTrigger sagaTrigger(AnnotationExpr trigger, ClassOrInterfaceDeclaration type) {
+        Optional<String> declared = enumAttr(trigger, "type");
+        SagaMetadata.TriggerType kind = declared.isPresent()
+                ? triggerType(declared.get())
+                : SagaMetadata.TriggerType.MANUAL;
+        String source = qualifiedClassAttr(trigger, "source", type)
+                .or(() -> nonBlankStringAttr(trigger, "sourceName"))
+                .orElse(null);
+        return new SagaMetadata.SagaTrigger(kind, source,
+                nonBlankStringAttr(trigger, "topic").orElse(null),
+                nonBlankStringAttr(trigger, "schedule").orElse(null), null);
+    }
+
+    /** The AST kind a {@code @SagaTrigger.TriggerType} constant name maps to, or {@code null}. */
+    private static SagaMetadata.TriggerType triggerType(String constant) {
+        String name = switch (constant) {
+            case "SCHEDULE" -> "SCHEDULED";
+            case "HTTP" -> "API";
+            case "COMMAND" -> "MANUAL";
+            default -> constant;
+        };
+        try {
+            return SagaMetadata.TriggerType.valueOf(name);
+        } catch (IllegalArgumentException _) {
+            return null;
+        }
     }
 
     /**

@@ -47,6 +47,7 @@ class MetadataReaderTckSelfTest {
             reader.actionResultTypeIsTheDeclaredOne();
             reader.sagaVersionIsTheDeclaredOne();
             reader.sagaCompensationIsTheDeclaredOne();
+            reader.sagaTriggerIsTheDeclaredOne();
             reader.routeAccessIsTheDeclaredOne();
             reader.queryParamsAreTheDeclaredOnes();
             reader.navMenuIsTheDeclaredOne();
@@ -232,6 +233,43 @@ class MetadataReaderTckSelfTest {
             }
         };
         assertThatThrownBy(notBuiltYet::sagaCompensationIsTheDeclaredOne)
+                .isInstanceOf(TestAbortedException.class);
+        assertThatCode(notBuiltYet::sagaVersionIsTheDeclaredOne).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("a trigger not read, a kind read as the default, or a source carried as written is caught")
+    void sagaTriggerCasesAreNotVacuous() {
+        Reader triggerBlind = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga().trigger(null).build()));
+        assertThatThrownBy(triggerBlind::sagaTriggerIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("reader returned none");
+
+        Reader defaultKind = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga().trigger(
+                new SagaMetadata.SagaTrigger(SagaMetadata.TriggerType.MANUAL,
+                        ReferenceBinding.ORDER_SAGA_TRIGGER_SOURCE, "sales.orders", null, null)).build()));
+        assertThatThrownBy(defaultKind::sagaTriggerIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("type EVENT");
+
+        Reader writtenForm = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga().trigger(
+                new SagaMetadata.SagaTrigger(SagaMetadata.TriggerType.EVENT, "Order.Placed",
+                        "sales.orders", null, null)).build()));
+        assertThatThrownBy(writtenForm::sagaTriggerIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("fully-qualified");
+    }
+
+    @Test
+    @DisplayName("an unbuilt trigger facet skips rather than failing")
+    void anUnbuiltTriggerFacetSkips() {
+        Reader notBuiltYet = new Reader(m -> withSaga(m, ReferenceBinding.orderSaga().trigger(null).build())) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.SAGA_TRIGGER);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::sagaTriggerIsTheDeclaredOne)
                 .isInstanceOf(TestAbortedException.class);
         assertThatCode(notBuiltYet::sagaVersionIsTheDeclaredOne).doesNotThrowAnyException();
     }

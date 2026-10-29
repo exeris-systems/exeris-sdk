@@ -31,6 +31,7 @@ class MetadataProducerTckSelfTest {
             producer.aZeroValuedBoundSurvivesSerialization();
             producer.sagaVersionReachesTheProducedMetadata();
             producer.sagaCompensationReachesTheProducedJson();
+            producer.sagaTriggerReachesTheProducedJson();
             producer.actionResultTypeReachesTheProducedJson();
             producer.routeAccessReachesTheProducedJson();
             producer.queryParamsReachTheProducedJson();
@@ -244,6 +245,30 @@ class MetadataProducerTckSelfTest {
         assertThatThrownBy(zeroBlind::tabsReachTheProducedJson)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("@Tab(order = 0)");
+    }
+
+    @Test
+    @DisplayName("a trigger missing, a kind dropped, or a source written as declared is caught")
+    void sagaTriggerCasesAreNotVacuous() {
+        Producer triggerBlind = new Producer(json -> withoutSagaKey(json, "trigger"));
+        assertThatThrownBy(triggerBlind::sagaTriggerReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("carries no trigger");
+
+        Producer kindBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            ((ObjectNode) root.get("sagaMetadata").get("trigger")).remove("type");
+            return root.toString();
+        });
+        assertThatThrownBy(kindBlind::sagaTriggerReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("type EVENT");
+
+        Producer writtenForm = new Producer(json -> json.replace(
+                "\"" + ReferenceBinding.ORDER_SAGA_TRIGGER_SOURCE + "\"", "\"Order.Placed\""));
+        assertThatThrownBy(writtenForm::sagaTriggerReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("fully-qualified");
     }
 
     private static String withoutSagaKey(String json, String key) {

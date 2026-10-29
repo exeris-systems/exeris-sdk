@@ -375,6 +375,37 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
         return metadata.uiMetadata() == null ? null : metadata.uiMetadata().tabs();
     }
 
+    /**
+     * The saga's trigger, component by component. The divergences are a side that does not read the
+     * trigger, one that drops the first enum constant as a default, and one that carries the source
+     * as written rather than fully qualified.
+     */
+    @Test
+    @DisplayName("producer and reader agree on the saga's trigger")
+    void sagaTriggerAgrees() {
+        requireSupported(Facet.SAGA_TRIGGER);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            SagaMetadata p = produced.sagaMetadata();
+            SagaMetadata r = wasRead.sagaMetadata();
+            if (p == null || r == null) {
+                // Presence is the SAGA facet's comparison; here there is nothing to compare.
+                return gaps;
+            }
+            SagaMetadata.SagaTrigger pt = p.trigger();
+            SagaMetadata.SagaTrigger rt = r.trigger();
+            if (pt == null || rt == null) {
+                compare(gaps, SAGA + "/trigger", pt, rt);
+                return gaps;
+            }
+            compare(gaps, SAGA + "/trigger/type", pt.type(), rt.type());
+            compare(gaps, SAGA + "/trigger/source", pt.source(), rt.source());
+            compare(gaps, SAGA + "/trigger/topic", pt.topic(), rt.topic());
+            compare(gaps, SAGA + "/trigger/cronExpression", pt.cronExpression(), rt.cronExpression());
+            return gaps;
+        });
+    }
+
     /** A comparison over one entity, returning the paths on which the two sides disagreed. */
     @FunctionalInterface
     private interface EntityComparison {
