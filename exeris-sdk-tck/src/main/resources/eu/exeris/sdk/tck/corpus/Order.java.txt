@@ -39,6 +39,12 @@ import java.util.List;
  * that carries the written form instead of the fully-qualified name javac reports disagrees with
  * every side that does not.
  *
+ * <p>The trigger is the case behind the {@code SAGA_TRIGGER} facet. {@code EVENT} is the first
+ * constant of its enum, so a side that drops an ordinal-0 value reads the saga as untriggered, and
+ * the default {@code MANUAL} is not what the source says. {@code source} names a member type
+ * through its declaring class, so a side that carries the written form disagrees with one
+ * carrying the fully-qualified name javac reports.
+ *
  * <p>{@code @NavMenu}, the {@code @Tab}s and the {@code search} action are the cases behind the
  * {@code NAV_MENU}, {@code TABS} and {@code QUERY_PARAMS} facets. {@code order = 0} on the menu
  * entry and on the {@code summary} tab is a declared position that a side writing only
@@ -87,7 +93,12 @@ import java.util.List;
         continueCompensationOnFailure = false,
         compensationDlq = "sales.order-compensation.dlq",
         compensationFailureHandler = Order.CompensationEscalation.class,
-        manualInterventionOnCompensationFailure = false
+        manualInterventionOnCompensationFailure = false,
+        trigger = @Saga.SagaTrigger(
+                type = Saga.SagaTrigger.TriggerType.EVENT,
+                source = Order.Placed.class,
+                topic = "sales.orders"
+        )
 )
 public class Order {
 
@@ -155,6 +166,10 @@ public class Order {
 
     /** What the {@code receipt} action returns. */
     public record Receipt(String reference, long totalCents) {
+    }
+
+    /** The event that starts the saga. */
+    public static final class Placed {
     }
 
     /** The handler the saga names for a compensation that fails. */

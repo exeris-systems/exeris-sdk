@@ -31,8 +31,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *
  * <p><strong>Reserved surface (ADR-072).</strong> No {@code exeris-tooling} processor
  * populates this record and no generator consumes it; the kernel holds
- * {@code …spi.websocket} at tier {@code preview}, so the shape is excluded from the
- * 1.0.0 freeze and a 1.x minor may still change it. That {@code preview} is
+ * {@code …spi.websocket} at tier {@code preview}, and keeps it there at its 1.0
+ * (kernel ADR-100), so the shape is excluded from the 1.0.0 freeze and a 1.x minor
+ * may still change it. That {@code preview} is
  * benchmark-gated rather than shape-gated (kernel ADR-084 §10): the contract is
  * settled and what waits on evidence is durability under load, which is why a
  * design-time carrier can be shaped against it now.

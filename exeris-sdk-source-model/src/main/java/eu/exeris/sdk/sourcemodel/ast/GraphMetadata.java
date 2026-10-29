@@ -13,7 +13,10 @@ import java.util.List;
  *        declares none. {@code null} means the producer does not extract {@code @GraphProperty},
  *        and a consumer reading this component handles both
  * @param edges the edges leaving the node
- * @param queries the traversals declared against it
+ * @param queries the traversals declared against it; {@code null} when they are not carried, which
+ *     is what both the processor and the {@code -io} reader write, because neither extracts
+ *     {@code @GraphQuery}. {@code null} stays off the wire and means "not carried"; an empty list
+ *     claims the entity declares none, and a consumer reading this component handles both
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

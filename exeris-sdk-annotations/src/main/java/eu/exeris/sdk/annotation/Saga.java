@@ -67,8 +67,8 @@ import java.lang.annotation.*;
  * the no-op holds only for the life of the engine (kernel ADR-013 A1).
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
- * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
- * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
+ * the flow starts and how it retries: {@link #trigger()} is read by the {@code -io} reader only and
+ * {@link #retryPolicy()} is unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
  * order.
  * @since 0.1
  * @see DomainEvent
@@ -467,18 +467,30 @@ public @interface Saga {
     StateFormat stateFormat() default StateFormat.JSON;
 
     /**
-     * Encrypt saga state.
-     * <p>For sagas handling sensitive data.
+     * Deprecated, no effect: the saga's state is not encrypted at rest.
+     * <p>Setting it to {@code true} changes nothing. No processor extracts it, no AST record
+     * carries it and no generator reads it. The kernel's durable saga state is the
+     * {@code FlowSnapshotStore} contract ({@code eu.exeris.kernel.spi.flow.model}), which stores
+     * the snapshot it is given and names no encryption scheme. Kernel ADR-012 §4c.1 rules
+     * encryption at rest outside kernel scope at 1.0, in every tier, and rules that tooling must
+     * not invent a scheme, so no generator will honour it.
      *
      * @return true to encrypt
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Encrypt the state in
+     *         the application: bind a {@code FlowSnapshotStore} that encrypts what it writes, or
+     *         let the database encrypt its storage. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encryptState() default false;
 
     /**
-     * Encryption key alias.
+     * Deprecated, no effect: the key alias for {@link #encryptState()}, which encrypts nothing.
      *
      * @return key alias
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link #encryptState()} and with no
+     *         replacement. No kernel tier defines a key registry at 1.0 (kernel ADR-012 §4c.1).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String stateEncryptionKeyAlias() default "";
 
     /**
@@ -1058,9 +1070,15 @@ public @interface Saga {
      * {@link TriggerType#MANUAL} trigger naming no source: the saga is started by
      * application code.
      *
-     * <p><strong>Status: RESERVED</strong> — {@link Saga#trigger()} is not extracted.
-     * {@code @Saga} itself is read and drives the emitted saga, but what starts it is not
-     * carried.
+     * <p><strong>Status: PARTIAL</strong> — the {@code exeris-sdk-source-model-io} reader reads
+     * {@link Saga#trigger()} into {@code SagaMetadata.trigger()}: {@link #type()} by constant name
+     * (the deprecated {@code SCHEDULE}, {@code HTTP} and {@code COMMAND} read as
+     * {@code SCHEDULED}, {@code API} and {@code MANUAL}), {@link #schedule()} as
+     * {@code cronExpression}, {@link #source()} (else {@link #sourceName()}) as {@code source}, and
+     * {@link #topic()}. A saga that declares no {@code trigger} carries none. No
+     * {@code exeris-tooling} processor extracts it yet, and no generator reads it, so it changes no
+     * generated artifact. {@link #sourcePattern()}, {@link #consumerGroup()}, {@link #filter()},
+     * {@link #startPosition()}, {@link #httpPath()} and {@link #httpMethod()} are not carried.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})

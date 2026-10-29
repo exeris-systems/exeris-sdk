@@ -31,10 +31,11 @@ import java.util.List;
  * combination the platform refuses is rejected at build time by {@code exeris-tooling},
  * not dropped here.
  *
- * <p><strong>Reserved surface (ADR-072).</strong> The {@code -io} reader populates this
- * record; the {@code exeris-tooling} processor does not yet, and no generator consumes
- * it. The kernel holds {@code …spi.storage.blob} at tier {@code preview}, so the shape
- * is excluded from the 1.0.0 freeze and a 1.x minor may still change it.
+ * <p><strong>Frozen for 1.0 (ADR-072).</strong> The {@code -io} reader populates this
+ * record in the shape the ADR-042 reader-shape amendment fixes; the {@code exeris-tooling}
+ * processor does not yet, and no generator consumes it. The kernel holds
+ * {@code …spi.storage.blob} at tier {@code stable}, so the shape is part of the
+ * 1.0.0 freeze: frozen as declared, with population arriving additively.
  *
  * @param container the container the object is addressed in, relative to the caller's
  *        namespace — never an absolute or physical location. Absent means the tooling derives

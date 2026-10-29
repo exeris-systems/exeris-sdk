@@ -19,10 +19,10 @@
    - Every change to what the reader writes for these four components lands with a case in `exeris-sdk-tck`'s `ROUTE_ACCESS` facet, the parity suite a processor binding runs against the reader (ADR-042).
 5. **Open-Core status — RESERVED, validated but not compiled into a route:**
    - Declared shape, not yet an enforced route. Downstream `exeris-tooling` validates `@RouteAccess` (rule 3); it extracts the declarations and emits the route policy in the release that pins the reader of rule 4 (ADR-105 obligation 26). Until then every generated route is registered as if the annotation were absent.
-   - Excluded from the 1.0.0 freeze while the kernel holds route authorization at tier `preview` (ADR-072).
+   - Part of the 1.0.0 freeze: the kernel holds route authorization at tier `stable` (kernel ADR-100), so `@RouteAccess`, `Level`, the AST `RouteAccess` and both `routeAccess` components are frozen as declared and may only grow additively in 1.x (ADR-072 obligation 29).
 
 ## References
 
-- ADR-072 (amended), obligations 9–15.
+- ADR-072 (amended), obligations 9–15 and 29.
 - exeris-tooling ADR-105 (generated route-policy emission), obligations 10, 12 and 26.
 - Javadoc of `eu.exeris.sdk.annotation.RouteAccess`.

@@ -266,10 +266,14 @@
  * {@code AstJsonRoundTripTest}.
  *
  * <p>Both are <strong>reserved</strong>: no processor populates them and no
- * generator consumes them, the kernel holds both SPI packages at tier
- * {@code preview}, and neither enters the 1.0.0 freeze. {@code SchemaVersion}
- * moves to {@code "0.11.0"} regardless — the schema names the shape, not its
- * population.
+ * generator consumes them. The {@code -io} reader populates the blob facet, in the
+ * shape the ADR-042 reader-shape amendment fixes, and leaves the schedule facet
+ * {@code null}. The kernel holds both SPI packages at tier
+ * {@code stable}. The blob facet is part of the 1.0.0 freeze, frozen as declared.
+ * The schedule facet is not: the kernel issues no service principal, so the build
+ * refuses every {@code @Schedule} (kernel ADR-057 Amendment A1), and the facet waits
+ * on one. {@code SchemaVersion} names the shape, not its population, so an
+ * unpopulated facet still counts toward it.
  *
  * <h2>Route access, duplex channel, shared-scope key</h2>
  * <p>Three trailing, nullable components, each the AST twin of an annotation:
@@ -301,13 +305,14 @@
  * populated by the {@code exeris-tooling} processor on a {@code DataScope.UNIVERSE}
  * entity only, and read by its shared-scope migration and repository generators.
  * The {@code -io} reader reads {@code SystemFieldsMetadata}, {@code sharedScopeField}
- * included, as the processor builds it; it leaves {@code routeAccess} and
- * {@code channel} unread by the ADR-042 rule that the reader reads what the
- * processor writes. {@code routeAccess} and {@code channel} are also
- * <strong>outside the 1.0.0 freeze</strong> (ADR-072): they encode kernel surfaces
- * held at tier {@code preview}, so a 1.x minor may change or drop them.
- * {@code sharedScopeField} is not on that list and is frozen as declared, like the
- * other system-field components. All three arrived with {@code SchemaVersion}
+ * included, as the processor builds it. It reads {@code routeAccess} ahead of the
+ * processor, which exeris-tooling ADR-105 requires, and leaves {@code channel} unread
+ * by the ADR-042 rule that the reader reads what the processor writes.
+ * {@code routeAccess} and {@code sharedScopeField} are frozen as declared: route
+ * authorization is {@code stable} in the kernel. {@code channel} is
+ * <strong>outside the 1.0.0 freeze</strong> (ADR-072): it encodes the kernel's
+ * WebSocket SPI, which stays at tier {@code preview} at the kernel's 1.0, so a 1.x
+ * minor may change or drop it. All three arrived with {@code SchemaVersion}
  * {@code "0.12.0"}. Each is a trailing parameter of its record's
  * canonical constructor, and each record keeps its 0.11.0 arity as a public
  * constructor that delegates with {@code null} for the components it lacks, so code

@@ -35,7 +35,6 @@
         "name": "right",
         "relationType": "PAIR"
       }
-    ],
-    "queries": []
+    ]
   }
 }

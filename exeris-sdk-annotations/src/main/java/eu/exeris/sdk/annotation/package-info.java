@@ -404,14 +404,18 @@
  * (kernel ADR-057). {@code @Blob} is PARTIAL — the {@code -io} reader carries it in
  * {@code FieldMetadata.blob} — and {@code @Schedule} is RESERVED.
  *
- * <p>Unlike the other RESERVED entries above, the reservation here is not waiting
+ * <p>Unlike the RESERVED entries above, the reservation here is not waiting
  * on a platform that does not exist — both kernel packages are available with their
- * TCKs. It is waiting on the {@code exeris-tooling} transcription, and on the
- * kernel promoting each package out of tier {@code preview}. Until both happen,
- * <strong>neither surface enters the 1.0.0 freeze</strong> and a 1.x minor may
- * still change them; see {@code docs/adr/ADR-072}.
+ * TCKs, at tier {@code stable}. The two differ in what they wait on.
+ * {@code @Blob} waits on the {@code exeris-tooling} transcription only, so it is
+ * <strong>part of the 1.0.0 freeze</strong>, frozen as declared like the entries
+ * above. {@code @Schedule} has no target at 1.0: the kernel issues no service
+ * principal, so a declared job would run with no identity bound, and the build
+ * refuses every declaration (kernel ADR-057 Amendment A1). It is
+ * <strong>excluded from the 1.0.0 freeze</strong> until the kernel issues one, and a
+ * 1.x minor may still change it; see {@code docs/adr/ADR-072}.
  *
- * <p>Each annotation also records the one combination its counterpart platform
+ * <p>Each annotation also records the combination its counterpart platform
  * contract refuses outright — a {@code @Blob} field on a {@code GLOBAL}-scoped
  * entity has no isolation key and is terminally denied, and a declared schedule
  * has no submission event and therefore no identity to capture. Both are for
@@ -443,14 +447,14 @@
  * "declared nothing" and "declared on purpose" that the annotation exists to
  * remove.
  *
- * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape: the kernel
- * provides {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the
- * {@code exeris-tooling} slice that emits a URL-to-policy table. The processor
- * already validates the declaration — {@code PUBLIC} beside a non-empty
- * {@code permissions} is refused — but does not extract it, so no generated route
- * changes. The kernel
- * holds route authorization at tier {@code preview}. So this surface does
- * <strong>not</strong> enter the 1.0.0 freeze either; see {@code docs/adr/ADR-072}.
+ * <p>The reservation is the {@code @Blob} shape: the kernel provides
+ * {@code AbstractHttpRoutePolicyTck}, and the remaining gap is the
+ * {@code exeris-tooling} slice that emits a URL-to-policy table. The
+ * {@code exeris-sdk-source-model-io} reader reads it; the processor validates the
+ * declaration — {@code PUBLIC} beside a non-empty {@code permissions} is refused —
+ * but does not extract it yet, so no generated route changes. The kernel holds route
+ * authorization at tier {@code stable}, so this surface is <strong>part of the 1.0.0
+ * freeze</strong>, frozen as declared; see {@code docs/adr/ADR-072}.
  *
  * <h2>Duplex channel ({@code @Channel}) — RESERVED</h2>
  * <p>{@link eu.exeris.sdk.annotation.Channel} declares that an entity exposes a
@@ -472,12 +476,12 @@
  * collapses the middle one into the first, so {@code DomainMetadata.channel} is a
  * nullable {@code ChannelMetadata} whose mere presence is the declaration.
  *
- * <p>The reservation is the {@code @Blob} / {@code @Schedule} shape once more: the
- * kernel provides {@code AbstractWebSocketExchangeTck}, and the remaining gap
- * is the {@code exeris-tooling} slice that opens an endpoint from the declaration.
- * The kernel holds {@code …spi.websocket} at tier {@code preview} — so this
- * surface does <strong>not</strong> enter the 1.0.0 freeze; see
- * {@code docs/adr/ADR-072}. Read that {@code preview} precisely: kernel ADR-084 §10
+ * <p>The reservation is the {@code @Blob} shape once more: the kernel provides
+ * {@code AbstractWebSocketExchangeTck}, and the remaining gap is the
+ * {@code exeris-tooling} slice that opens an endpoint from the declaration. The
+ * kernel holds {@code …spi.websocket} at tier {@code preview}, and keeps it there at
+ * its 1.0 (kernel ADR-100) — so this surface does <strong>not</strong> enter the
+ * 1.0.0 freeze; see {@code docs/adr/ADR-072}. Read that {@code preview} precisely: kernel ADR-084 §10
  * gates promotion on benchmark evidence a TCK cannot supply (concurrent connections,
  * throughput, a slow reader, a dead peer), not on the contract still being in
  * question. What is unproven is durability under load, not the shape.

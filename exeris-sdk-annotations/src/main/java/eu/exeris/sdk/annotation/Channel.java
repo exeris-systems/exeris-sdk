@@ -69,9 +69,10 @@ import java.lang.annotation.Target;
  * the {@code exeris-sdk-source-model-io} reader does not read it, so declaring it
  * today has no generated effect.
  *
- * <p>The kernel holds {@code …spi.websocket} at tier {@code preview}, so this surface
- * is <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still change
- * it. Worth reading precisely: that {@code preview} is <em>benchmark-gated, not
+ * <p>The kernel holds {@code …spi.websocket} at tier {@code preview}, and keeps it
+ * there at its 1.0 (kernel ADR-100), so this surface is <strong>excluded from the
+ * 1.0.0 freeze</strong> and a 1.x minor may still change it. It is promoted when the
+ * kernel moves {@code …spi.websocket} to {@code stable}. Worth reading precisely: that {@code preview} is <em>benchmark-gated, not
  * shape-gated</em>. Kernel ADR-084 §10 states the contract is settled and that
  * promotion waits on evidence a TCK structurally cannot supply — concurrent
  * connection count, frame throughput, backpressure under a slow reader, teardown of a

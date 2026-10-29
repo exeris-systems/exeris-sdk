@@ -76,7 +76,32 @@ for per-version upgrade steps.
   reattach or conflict-detection caller refuses a source that uses it.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`SourceModelReader` writes `GraphMetadata.queries` as `null` for an `@Graph` entity.** It wrote
+  `[]` before. Neither the reader nor the processor extracts `@GraphQuery`, so both now write `null`,
+  which stays off the wire and reads as "not carried"; an empty list would claim the entity declares
+  no traversal. A consumer of the reader's output that called `queries().isEmpty()` handles `null`.
+  `GraphMetadata.queries` documents the form. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+- **`SourceModelReader.unmodeledFacets()` reports `@Schedule`.** ADR-072 obligation 7 has always
+  said a source using it reports an unmodeled facet, and the guard did not name it. `read()`
+  leaves `ActionMetadata.schedule` `null`, and no producer fills it while kernel ADR-057
+  Amendment A1 refuses every declared job at build time. A reattach or conflict-detection caller
+  now refuses a source that uses it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Changed
+
+- **`@RouteAccess` and `@Blob` are part of the 1.0.0 freeze; `@Schedule` and `@Channel` stay
+  outside it.** ADR-072 is amended (2026-10-29, obligations 29–35): the freeze criterion for a
+  reserved surface is the kernel tier, read from kernel v0.13.0 and kernel ADR-100. Route
+  authorization and `…spi.storage.blob` are `stable`, so `@RouteAccess`, `@Blob`,
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
+  `FieldMetadata.blob` and `BlobMetadata` are frozen as declared. `@Channel` and its carriers stay
+  outside, because `…spi.websocket` stays `preview` at the kernel's 1.0. `@Schedule` and its
+  carriers stay outside although `…spi.scheduling` is `stable`: the kernel issues no service
+  principal at 1.0, so kernel ADR-057 Amendment A1 refuses every declaration at build time, and the
+  `@Schedule` javadoc now says so in place of a promised transcription. ADR-077's `LONG_RUNNING`
+  route facet is deferred to a 1.x minor until exeris-tooling chooses its emission (tooling ADR-105
+  obligation 18). No signature or wire key changes. `MIGRATION-0.x-to-1.0.md` §2, `ROADMAP.md` and
+  the javadoc of the annotations, records and package-infos follow.
 
 - **Javadoc states the kernel 0.13 behaviour of row-level security, graph depth and saga retention.**
   `@SharedScope` and `@RowLevelSecurity` say that a statement without a tenant bound fails and
@@ -192,6 +217,25 @@ for per-version upgrade steps.
   notes. `SourceModelConflictDetector` compares no saga component, so a baseline from a processor
   that does not extract the section yet raises no conflict. **Tooling:** the processor reads the
   same seven the same way (ADR-042).
+
+- **`exeris-sdk-source-model-io` reads `@Saga.trigger` into `SagaMetadata.trigger`.** `type` is
+  read by constant name, and the deprecated `SCHEDULE`, `HTTP` and `COMMAND` read as `SCHEDULED`,
+  `API` and `MANUAL`; `schedule` is `cronExpression`, `topic` is `topic`, and `source` is the class
+  when one is named (fully qualified, `void.class` meaning none), else `sourceName`. A saga that
+  declares no `trigger` reads `null`; a `@SagaTrigger` that omits `type` reads `MANUAL`, the
+  annotation default; blank strings read `null`; a constant the AST does not know reads a `null`
+  type. `sourcePattern`, `consumerGroup`, `filter`, `startPosition`, `httpPath` and `httpMethod`
+  are not carried. `@SagaTrigger` is PARTIAL in its status note. `SourceModelConflictDetector`
+  compares no saga component. **Tooling:** exeris-tooling#432 has the processor read the same
+  mapping; until then a processor baseline holds a `null` trigger where the reader holds one.
+
+- **`exeris-sdk-tck`: `Facet.SAGA_TRIGGER`, with a case in the reader, producer and parity
+  suites.** The corpus `Order`'s `@Saga` declares an `EVENT` trigger, the first constant of its
+  enum, with `source = Order.Placed.class` (a member type whose fully-qualified name differs from
+  the written form) and a topic. Each case has self-tests against a conforming binding and a
+  binding broken in one way. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a
+  producer or parity binding whose processor does not extract the trigger declares `SAGA_TRIGGER`
+  in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
 - **`exeris-sdk-tck`: `Facet.SAGA_COMPENSATION`, with a case in the reader, producer and parity
   suites.** The corpus `Order`'s `@Saga` declares the section with the values a dropped
@@ -438,6 +482,15 @@ for per-version upgrade steps.
   changes; a source that sets it compiles with a `[removal]` warning. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService`** —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. Replacement:
+  `@SagaStep.compensation`. Each describes a compensating command (its class, its payload as an
+  expression, its target service), and the compensation method named by `compensation` decides
+  all three in Java. The kernel registers a compensation as one action over the flow context, with
+  no command type, payload or target of its own, so no generator has anything to honour them with.
+  No producer reads them and no AST component carries them, so nothing a build emits changes. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`@QueryParam.transform`, `validation`, `validationMessage`, `type`, `elementType` and
   `sanitize`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. `type` and
   `elementType` restate the declared parameter type, which `ActionParamMetadata.type` carries. The
@@ -446,6 +499,19 @@ for per-version upgrade steps.
   the value is bound as a typed parameter. No producer reads any of them and no AST component
   carries them. `@QueryParam` itself moves from RESERVED to PARTIAL: `value`, `required`,
   `description` and `defaultValue` are carried. `@NavMenu` and `@Tab` move to PARTIAL too. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **`@Saga.encryptState`, `@EventSourced.encryptSnapshots`, `@DomainEvent.encryptFields`,
+  `@GraphProperty.encrypted` and `@ActionParam.encrypted`**, with the key aliases
+  `@Saga.stateEncryptionKeyAlias` and `@EventSourced.snapshotEncryptionKeyAlias` —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0, no replacement. Kernel
+  ADR-012 §4c.1, which deprecates `@Encrypted` and `@Field.encrypted`, covers them too: encryption
+  at rest is outside kernel scope at 1.0 in every tier, and tooling may not invent a scheme. The
+  kernel contract for each store exists and names no scheme: `FlowSnapshotStore` for saga state,
+  the event log (no aggregate snapshot store at all) for event sourcing, the outbox and
+  `EventPayloadCodec` for event payloads, the preview `spi.graph` for graph properties. An action
+  parameter travels over the transport's TLS, which covers the whole connection. No producer reads
+  any of the seven and no AST component carries them, so nothing a build emits changes. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 ### Removed

@@ -138,8 +138,8 @@ import java.util.stream.Collectors;
  * {@code read()} drops no annotation-level facet the processor emits, and the field facet is
  * attribute-complete against {@code extractFieldMetadata}. {@link #unmodeledFacets} reports
  * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
- * is scheduled to fill, in a shape this reader does not read ({@code @Channel}), a
- * {@code @SagaStep.order} the reader
+ * is scheduled to fill, in a shape this reader does not read ({@code @Channel}), the reserved
+ * {@code @Schedule} whose carrier this reader leaves empty, a {@code @SagaStep.order} the reader
  * cannot resolve, and a {@code permissions} element that is not a string literal. A round-trip /
  * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
  * reads and no carrier is scheduled for — {@code @Projection}, {@code @EventHandler},
@@ -150,9 +150,10 @@ import java.util.stream.Collectors;
  *
  * <p>The reverse divergence — a facet this reader carries and a processor does not extract
  * yet — is not reported by the guard. {@code @QueryParam}, {@code @NavMenu}, {@code @Tab},
- * {@code @UIGroup}, {@code @GraphProperty}, {@code @Blob} and the {@code @Saga} compensation
- * section are read here ahead of a processor that does not extract them, in the shape ADR-042's
- * reader-shape amendment fixes for the last three. {@link SourceModelConflictDetector} compares whole actions, so against such a
+ * {@code @UIGroup}, {@code @GraphProperty}, {@code @Blob}, the {@code @Saga} compensation section
+ * and {@code @Saga.trigger} are read here ahead of a processor that does not extract them, in the
+ * shape ADR-042's reader-shape amendment fixes for {@code @UIGroup}, {@code @GraphProperty} and
+ * {@code @Blob}. {@link SourceModelConflictDetector} compares whole actions, so against such a
  * processor's baseline an action with a {@code @QueryParam} parameter reads as changed, and a
  * mutation of that action is reported as a conflict rather than applied; it compares no
  * navigation, tab or saga component.
@@ -184,14 +185,17 @@ public final class SourceModelReader {
      * processor's codegen output, so a facet the processor keeps and the reader drops
      * would be misread as a user edit.
      *
-     * <p>The one member, {@code @Channel} ({@code DomainMetadata.channel}), has an AST carrier
-     * whose shape is not fixed: it encodes the kernel WebSocket SPI, which stays at tier
-     * {@code preview}. Reading it before the shape is fixed would produce a value the processor
-     * may not, which is the drift this guard reports, so the reader leaves the carrier at its
-     * default and the guard names the annotation instead. A member leaves the set in the change
-     * that fixes its shape and reads it. Matched by simple name (no import resolution).
+     * <p>Each member has an AST carrier whose shape or extraction rule is not fixed:
+     * {@code @Channel} ({@code DomainMetadata.channel}) encodes the kernel WebSocket SPI, which
+     * stays at tier {@code preview}, and {@code @Schedule} ({@code ActionMetadata.schedule}) has
+     * no extraction rule at all while the kernel issues no service principal: a declared job is
+     * refused at build time (kernel ADR-057 Amendment A1), and a round-trip that dropped the
+     * declaration would hide it. Reading one would produce a value the processor may not, which
+     * is the drift this guard reports, so the reader leaves the carrier at its default and the
+     * guard names the annotation instead. A member leaves the set in the change that fixes its
+     * shape and reads it. Matched by simple name (no import resolution).
      */
-    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of("Channel");
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of("Channel", "Schedule");
 
     /** Attribute names several annotations share. */
     private static final String LABEL = "label";
@@ -207,6 +211,10 @@ public final class SourceModelReader {
 
     /** The route-authorization scope attribute on both {@code @ExerisDomain} and {@code @Action}. */
     private static final String PERMISSIONS = "permissions";
+    private static final String TOPIC = "topic";
+    private static final String TRIGGER = "trigger";
+    /** The {@code CREATE} constant shared by {@code @DomainEvent.trigger} and the deprecated {@code validateOn}. */
+    private static final String CREATE = "CREATE";
 
     private final JavaParser javaParser;
 
@@ -296,8 +304,8 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
-     * {@code @Channel}, whose carrier {@link #read} leaves at its default. <b>Not</b> flagged:
-     * facets neither side reads and no carrier is scheduled for ({@code @Projection},
+     * {@code @Channel} and {@code @Schedule}, whose carriers {@link #read} leaves at their
+     * defaults. <b>Not</b> flagged: facets neither side reads and no carrier is scheduled for ({@code @Projection},
      * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations), and
      * facets this reader reads ahead of the processor ({@code @QueryParam}, {@code @NavMenu},
      * {@code @Tab}, {@code @UIGroup}, {@code @GraphProperty}, {@code @Blob}): the guard reports
@@ -1117,7 +1125,7 @@ public final class SourceModelReader {
                 // processor (which reads no payload attributes on this path).
                 nested.getAnnotationByName("DomainEvent").ifPresent(annotation ->
                         events.add(DomainEventMetadata.withTopic(
-                                nested.getNameAsString(), stringAttr(annotation, "topic").orElse(null))));
+                                nested.getNameAsString(), stringAttr(annotation, TOPIC).orElse(null))));
             }
         }
         return events;
@@ -1138,8 +1146,8 @@ public final class SourceModelReader {
         String name = stringAttr(annotation, "name")
                 .filter(s -> !s.isBlank())
                 .orElseGet(() -> entitySimpleName
-                        + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
-        String topic = stringAttr(annotation, "topic").orElse(null);
+                        + triggerToEventSuffix(enumAttr(annotation, TRIGGER).orElse(CREATE)));
+        String topic = stringAttr(annotation, TOPIC).orElse(null);
         String description = stringAttr(annotation, "description").orElse(null);
         // EV2: the trigger triple. Note the asymmetry with the name derivation above — that
         // one defaults an ABSENT trigger to CREATE because it only needs a suffix, whereas
@@ -1233,13 +1241,13 @@ public final class SourceModelReader {
      * silently matching a prefix.
      */
     private String triggerToEventSuffix(String trigger) {
-        // Unreachable from singleEvent (which passes enumAttr(...).orElse("CREATE")),
+        // Unreachable from singleEvent (which passes enumAttr(...).orElse(CREATE)),
         // but kept to mirror the processor verbatim and defend any future direct caller.
         if (trigger == null) {
             return "Event";
         }
         return switch (trigger) {
-            case "CREATE" -> "CreatedEvent";
+            case CREATE -> "CreatedEvent";
             case "UPDATE" -> "UpdatedEvent";
             case "DELETE" -> "DeletedEvent";
             case "FIELD_CHANGED" -> "ChangedEvent";
@@ -1434,10 +1442,11 @@ public final class SourceModelReader {
      * absent. Mirrors {@code extractGraphMetadata}: the label is
      * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
      * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
-     * queries empty. {@code @GraphQuery} is read by neither side. The properties are the
-     * fields' {@code @GraphProperty}s ({@link #graphProperties}), an empty list when none is
-     * declared; a {@code @GraphProperty} on a type without {@code @Graph} is not read, as a
-     * {@code @GraphEdge} there is not.
+     * queries {@code null}, which reads as "not carried" and keeps them off the wire.
+     * {@code @GraphQuery} is read by neither side. The properties are the fields'
+     * {@code @GraphProperty}s ({@link #graphProperties}), an empty list when none is declared; a
+     * {@code @GraphProperty} on a type without {@code @Graph} is not read, as a {@code @GraphEdge}
+     * there is not.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
@@ -1445,7 +1454,7 @@ public final class SourceModelReader {
             return null;
         }
         String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
-        return new GraphMetadata(label, graphProperties(type), graphEdges(type), List.of());
+        return new GraphMetadata(label, graphProperties(type), graphEdges(type), null);
     }
 
     /**
@@ -1607,7 +1616,10 @@ public final class SourceModelReader {
      * Class-level {@code @Saga} → {@link SagaMetadata}, or {@code null} when absent.
      * Mirrors {@code extractSagaMetadata}: {@code name} falls back to the class
      * simple name; {@code description}/{@code timeout}/{@code maxRetries}/{@code version}
-     * are present-only; steps come from {@code @SagaStep} methods.
+     * are present-only; steps come from {@code @SagaStep} methods. {@code trigger} is
+     * present-only too: a saga that does not write {@code trigger = …} reads {@code null},
+     * not the annotation default {@code MANUAL}, so {@code hasTrigger()} says whether the
+     * source declared one; see {@link #sagaTrigger}.
      *
      * <p>{@code version} is the other half of the {@code (name, version)} key kernel
      * ADR-064 addresses a saga plan by, and the processor reads it, so skipping it here
@@ -1655,8 +1667,53 @@ public final class SourceModelReader {
                 .ifPresent(builder::compensationFailureHandler);
         boolAttr(saga.get(), "manualInterventionOnCompensationFailure")
                 .ifPresent(builder::manualInterventionOnCompensationFailure);
+        value(saga.get(), TRIGGER).filter(Expression::isAnnotationExpr)
+                .map(expression -> sagaTrigger(expression.asAnnotationExpr(), type))
+                .ifPresent(builder::trigger);
         builder.steps(sagaSteps(type));
         return builder.build();
+    }
+
+    /**
+     * {@code @Saga.trigger} → {@link SagaMetadata.SagaTrigger}, mapped as the processor maps it.
+     * {@code type} is read by constant name, and the constants deprecated for removal read as
+     * the ones they mean: {@code SCHEDULE} as {@code SCHEDULED}, {@code HTTP} as {@code API},
+     * {@code COMMAND} as {@code MANUAL}. A {@code @SagaTrigger} that omits {@code type} is
+     * {@code MANUAL}, the annotation default; a constant the AST does not know reads as
+     * {@code null}, not as a default that would claim a kind the source did not declare.
+     * {@code schedule} is {@code cronExpression}, {@code topic} is {@code topic}, and
+     * {@code source} is the class when one is named (fully qualified, see
+     * {@link #qualifiedClassAttr}), else {@code sourceName}. A blank string and {@code void.class}
+     * mean "none" and read as {@code null}. {@code condition} and the remaining attributes
+     * ({@code sourcePattern}, {@code consumerGroup}, {@code filter}, {@code startPosition},
+     * {@code httpPath}, {@code httpMethod}) are not carried.
+     */
+    private SagaMetadata.SagaTrigger sagaTrigger(AnnotationExpr trigger, ClassOrInterfaceDeclaration type) {
+        Optional<String> declared = enumAttr(trigger, "type");
+        SagaMetadata.TriggerType kind = declared.isPresent()
+                ? triggerType(declared.get())
+                : SagaMetadata.TriggerType.MANUAL;
+        String source = qualifiedClassAttr(trigger, "source", type)
+                .or(() -> nonBlankStringAttr(trigger, "sourceName"))
+                .orElse(null);
+        return new SagaMetadata.SagaTrigger(kind, source,
+                nonBlankStringAttr(trigger, TOPIC).orElse(null),
+                nonBlankStringAttr(trigger, "schedule").orElse(null), null);
+    }
+
+    /** The AST kind a {@code @SagaTrigger.TriggerType} constant name maps to, or {@code null}. */
+    private static SagaMetadata.TriggerType triggerType(String constant) {
+        String name = switch (constant) {
+            case "SCHEDULE" -> "SCHEDULED";
+            case "HTTP" -> "API";
+            case "COMMAND" -> "MANUAL";
+            default -> constant;
+        };
+        try {
+            return SagaMetadata.TriggerType.valueOf(name);
+        } catch (IllegalArgumentException _) {
+            return null;
+        }
     }
 
     /**
@@ -1956,7 +2013,7 @@ public final class SourceModelReader {
      * @since 0.11
      */
     private Optional<DomainEventMetadata.Trigger> eventTrigger(AnnotationExpr annotation) {
-        return enumAttr(annotation, "trigger")
+        return enumAttr(annotation, TRIGGER)
                 .flatMap(name -> {
                     try {
                         return Optional.of(DomainEventMetadata.Trigger.valueOf(name));
@@ -2190,7 +2247,7 @@ public final class SourceModelReader {
             builder.required(true);
         }
         stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {
-            if ("CREATE".equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
+            if (CREATE.equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
                 builder.inUpdate(false);
             } else if ("UPDATE".equals(validateOn) && boolAttr(field, "inCreate").isEmpty()) {
                 builder.inCreate(false);

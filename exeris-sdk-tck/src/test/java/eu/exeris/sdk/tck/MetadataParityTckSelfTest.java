@@ -45,6 +45,7 @@ class MetadataParityTckSelfTest {
             parity.actionResultTypesAgree();
             parity.sagaIdentityAgrees();
             parity.sagaCompensationAgrees();
+            parity.sagaTriggerAgrees();
             parity.routeAccessAgrees();
             parity.queryParamsAgree();
             parity.navMenuAgrees();
@@ -245,6 +246,49 @@ class MetadataParityTckSelfTest {
         assertThatThrownBy(parity::routeAccessAgrees)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Order: permissions — producer: '[order:read, order:write]'");
+    }
+
+    @Test
+    @DisplayName("a trigger one side does not read is caught")
+    void sagaTriggerAbsenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, ReferenceBinding.orderSaga().trigger(null).build()));
+        assertThatThrownBy(parity::sagaTriggerAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/trigger");
+    }
+
+    @Test
+    @DisplayName("a trigger source one side carries as written is caught")
+    void sagaTriggerSourceDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, ReferenceBinding.orderSaga().trigger(new SagaMetadata.SagaTrigger(
+                                SagaMetadata.TriggerType.EVENT, "Order.Placed", "sales.orders", null, null))
+                                .build()));
+        assertThatThrownBy(parity::sagaTriggerAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/trigger/source");
+    }
+
+    @Test
+    @DisplayName("a trigger kind one side reads as the default is caught")
+    void sagaTriggerTypeDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.sagaMetadata() == null
+                        ? m
+                        : withSaga(m, ReferenceBinding.orderSaga().trigger(new SagaMetadata.SagaTrigger(
+                                SagaMetadata.TriggerType.MANUAL, ReferenceBinding.ORDER_SAGA_TRIGGER_SOURCE,
+                                "sales.orders", null, null)).build()));
+        assertThatThrownBy(parity::sagaTriggerAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("saga/trigger/type — producer: 'EVENT', reader: 'MANUAL'");
     }
 
     @Test

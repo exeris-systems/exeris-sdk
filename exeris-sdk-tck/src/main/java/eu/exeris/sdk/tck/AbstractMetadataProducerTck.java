@@ -476,6 +476,35 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Read from the tree rather than through the record, because what is asserted is the key: the
+     * first constant of the enum must be written by name, and the source as the fully-qualified
+     * name.
+     */
+    @Test
+    @DisplayName("the saga's trigger reaches the produced JSON, by constant name and fully qualified")
+    void sagaTriggerReachesTheProducedJson() {
+        requireSupported(Facet.SAGA_TRIGGER);
+        JsonNode trigger = tree(TckCorpus.ORDER).path("sagaMetadata").path("trigger");
+        assertThat(trigger.isObject())
+                .withFailMessage("Order declares @Saga(trigger = ...); the produced sagaMetadata carries no trigger.")
+                .isTrue();
+        assertThat(trigger.path("type").asString(""))
+                .withFailMessage(
+                        "Order declares a trigger of type EVENT and the produced trigger has type = %s. "
+                                + "The kind is written by constant name.",
+                        trigger.path("type"))
+                .isEqualTo("EVENT");
+        String source = TckCorpus.packageName() + ".Order.Placed";
+        assertThat(trigger.path("source").asString(""))
+                .withFailMessage(
+                        "Order declares source = Order.Placed.class and the produced trigger names '%s'. "
+                                + "The component carries the fully-qualified name, %s.",
+                        trigger.path("source"), source)
+                .isEqualTo(source);
+        assertThat(trigger.path("topic").asString("")).isEqualTo("sales.orders");
+    }
+
+    /**
      * Produces the entity's metadata JSON and parses it as a tree.
      *
      * @param entityName one of {@link TckCorpus#entityNames()}

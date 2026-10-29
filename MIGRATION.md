@@ -108,6 +108,22 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `SourceModelReader` reads `@Saga.trigger`
+
+`read()` now fills `SagaMetadata.trigger` for a saga that writes `trigger = @SagaTrigger(...)`:
+`type` by constant name (`SCHEDULE`, `HTTP` and `COMMAND` read as `SCHEDULED`, `API` and
+`MANUAL`), `schedule` as `cronExpression`, `topic` as `topic`, and `source` as the source class
+(fully qualified), else `sourceName`. A saga with no `trigger` attribute still reads `null`; a
+`@SagaTrigger` without `type` reads `MANUAL`. Blank strings and `void.class` read `null`; the
+other `@SagaTrigger` attributes are not carried. Against a processor baseline that does not
+extract the trigger yet, a source declaring one differs in `trigger`; the conflict detector
+compares no saga component, so no conflict is raised.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.SAGA_TRIGGER`, and the corpus `Order` declares an
+`EVENT` trigger. A producer or parity binding whose producer does not extract the trigger fails
+the new cases until it adds `Facet.SAGA_TRIGGER` to `unsupportedFacets()`. A reader binding that
+reads `@Saga` without the trigger does the same.
+
 ### `SourceModelReader` reads `@RouteAccess` and `permissions`
 
 **Impact on code: none required.** No AST component is added. What changes is what
@@ -134,6 +150,36 @@ of a source declaring them, differs on any action that declares `permissions` or
 `Product`. A binding that compiles the corpus presents all three sources. A producer or
 parity binding whose producer does not extract route access adds `Facet.ROUTE_ACCESS` to
 `unsupportedFacets()` until it does.
+
+### `@RouteAccess` and `@Blob` enter the 1.0.0 freeze; `@Schedule` and `@Channel` stay outside it
+
+**Impact on code: a caller that refuses a source on a non-empty
+`SourceModelReader.unmodeledFacets()` now refuses one that uses `@Schedule`** (see the end of
+this entry). No signature, component or wire key changes. What also
+changes is the stability promise ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
+amended 2026-10-29), decided on the kernel tier at kernel v0.13.0 (kernel ADR-100):
+
+- **Frozen as declared:** `@RouteAccess` and `RouteAccess.Level`, `@Blob`,
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
+  `FieldMetadata.blob` and `BlobMetadata`. Route authorization and `…spi.storage.blob` are
+  `stable` at the kernel's 1.0. A 1.x minor may add to them; it may not change or drop them.
+  Neither has a generated effect yet: `exeris-tooling` compiles `@RouteAccess` into a route
+  policy in the release that pins this SDK's reader (tooling ADR-105), and no generator reads
+  `@Blob`.
+- **Still outside the freeze:** `@Channel`, `ChannelMetadata` and `DomainMetadata.channel`,
+  because the kernel keeps `…spi.websocket` at `preview` at 1.0. Promoted when it moves to
+  `stable`.
+- **Still outside the freeze, and refused at build time:** `@Schedule`, `ScheduleMetadata` and
+  `ActionMetadata.schedule`. `…spi.scheduling` is `stable`, but the kernel issues no service
+  principal at 1.0, so a declared job would run with no identity bound; kernel ADR-057
+  Amendment A1 refuses every declaration at build time, and every declaration on a
+  tenant-partitioned (`TENANT` or `UNIVERSE`) entity. Do not write `@Schedule` on 1.0. Promoted when the kernel issues a
+  service principal.
+
+`SourceModelReader.unmodeledFacets()` now returns `@Schedule` when the source uses it. It
+returned nothing for it before, although `read()` has always left `ActionMetadata.schedule`
+`null`. A round-trip, reattach or conflict-detection caller that refuses on a non-empty result
+now refuses such a source.
 
 ### `SourceModelReader` fills `ActionMetadata.resultType`
 
@@ -162,6 +208,14 @@ declares four more actions, returning an entity, a `record`, a `List` of it and 
 `int`. A producer or parity binding whose producer does not extract `resultType` fails
 the new cases until it adds `Facet.ACTION_RESULT_TYPE` to `unsupportedFacets()`. A
 reader binding that does not read it does the same.
+
+### `SourceModelReader` writes `GraphMetadata.queries` as `null`
+
+For an entity declaring `@Graph`, `read()` returns `queries() == null` where it returned an
+empty list. The processor already wrote `null` for it: neither side extracts `@GraphQuery`, and
+`null` is the form that reads as "not carried" and stays off the wire. A caller of the reader's
+output that dereferenced `queries()` without a null check adds one; `properties()` has always
+needed it. The `@Graph` case in `processor-parity/` no longer carries a `queries` key.
 
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
@@ -278,6 +332,47 @@ policy DDL itself.
   its `-Aexeris.strict` audit reports both annotations as unread and `@Field.encrypted`
   as inert.
 
+### Encryption attributes on saga state, snapshots, events, graph properties and action parameters are deprecated — removal in 1.0.0
+
+**Why:** the ruling that deprecates `@Encrypted` and `@Field.encrypted` covers every other
+attribute that promises encryption of stored data. Kernel ADR-012 §4c.1 rules encryption at rest
+"outside kernel scope at 1.0, in every tier", and "Tooling must not invent a scheme either". Each
+store these attributes name has a kernel contract, and none of those contracts names an encryption
+scheme:
+
+| Attribute | Store | Kernel contract (v0.13.0) |
+|---|---|---|
+| `@Saga.encryptState`, `.stateEncryptionKeyAlias` | saga state | `FlowSnapshotStore` (`spi.flow`, stable) stores the snapshot it is given |
+| `@EventSourced.encryptSnapshots`, `.snapshotEncryptionKeyAlias` | aggregate snapshots | none: the kernel's event sourcing is the event log (`EventStreamAppender` / `EventStreamReader`); it has no snapshot store |
+| `@DomainEvent.encryptFields` | event payload | the outbox (`EventStore.OutboxEvent`) stores serialised bytes; `EventPayloadCodec` produces them |
+| `@GraphProperty.encrypted` | graph store | `spi.graph` (preview at 1.0) writes the values it is given |
+| `@ActionParam.encrypted` | the request, then storage | the transport's TLS encrypts the whole connection; storage falls under §4c.1 |
+
+**Impact:** a source that sets any of them now compiles with a `[removal]` warning from javac.
+Nothing else changes: no processor and no `-io` reader reads them, no AST record carries them,
+and the generated output and metadata JSON are the same as on 0.12.x.
+
+```java
+// before
+@Saga(name = "order-fulfilment", encryptState = true, stateEncryptionKeyAlias = "saga-key")
+@DomainEvent(name = "CustomerRegistered", encryptFields = {"ssn"})
+
+// after — encryption belongs to the application or the database
+@Saga(name = "order-fulfilment")
+@DomainEvent(name = "CustomerRegistered")
+```
+
+Where encryption is required, the application owns it: it binds a `FlowSnapshotStore` that
+encrypts what it writes, registers an `EventPayloadCodec` that encrypts the payload it encodes,
+encrypts a value before it is stored or projected into the graph, or lets the database encrypt its
+storage. An action parameter needs no attribute for transit: serve the route over TLS.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on all seven).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal. Its `-Aexeris.strict` audit lists
+  `@DomainEvent.encryptFields` as not extracted.
+
 ### `@SagaStep.compensation` names a method; `@SagaStep.compensationBuilder` is deprecated — removal in 1.0.0
 
 **What the value names.** `@SagaStep.compensation` is the name of the step's compensation
@@ -325,6 +420,45 @@ that sets it compiles with a `[removal]` warning from javac.
 - **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
 - **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
+
+### `@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService` are deprecated — removal in 1.0.0
+
+**Why:** the three describe a compensating *command*: its class, its payload as an expression,
+and the service it is sent to. `@SagaStep.compensation` names the compensation method instead,
+and that method decides what undoing the step takes — which command, built from which state,
+sent where, or no command at all. The kernel's saga contract has nothing for the three to bind
+to: `FlowDefinitionBuilder.step` registers a compensation as one `FlowStepAction`, a function
+from the flow context to an outcome, with no command type, payload or target. A generator could
+only check the attributes against the method body, which it cannot read, so a value written there
+would either repeat the method or contradict it unnoticed.
+
+**Impact:** a source that sets any of them now compiles with a `[removal]` warning from javac.
+No processor and no `-io` reader reads them and no AST record carries them, so the metadata and
+generated output are the same as on 0.12.x.
+
+```java
+// before
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment",
+          compensationClass = RefundCommand.class,
+          compensationPayloadExpression = "#state.paymentId",
+          compensationService = "refund-service")
+public SagaAction chargePayment() { … }
+
+// after — the compensation method says all three
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment")
+public SagaAction chargePayment() { … }
+
+public SagaAction refundPayment() {
+    return new SagaAction.ExecuteCommand(new RefundCommand(state.getPaymentId()));
+}
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of the three, so there is no fallback to keep;
+  javac's `[removal]` warning is the build-time signal.
 
 ### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
 
@@ -557,6 +691,7 @@ know before you write it:
 - It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
   as amended), because the kernel holds route authorization at tier `preview`.
   A 1.x minor may change or drop it. Pin exactly if you adopt it early.
+  *(0.13.0 freezes it: see the 0.12.x → 0.13.x entry above.)*
 
 Do not reach for `roles = {}` or `permissions = {}` to mean "public" — empty
 already means "nothing declared" on all four attributes, and `@Action.roles` has
@@ -576,6 +711,7 @@ constructor, which leaves `channel` absent (first entry above).
   ADR-084) at tier `preview`. That tier is gated on evidence under load rather
   than on the contract's shape, but it still bars freezing: a 1.x minor may
   change or drop the annotation. Pin exactly if you adopt it early.
+  *(Unchanged in 0.13.0: the kernel keeps `…spi.websocket` at `preview` at 1.0.)*
 
 It is not another spelling of `@ExerisDomain(realTimeApi = true)` or
 `@Action(streaming = true)`. Those are server push over SSE, one-directional by
@@ -950,7 +1086,8 @@ will correctly report an unmodeled facet). Declaring them today has no generated
 effect. Because the kernel holds both SPI packages at tier `preview`, **neither
 surface enters the 1.0.0 freeze** — a 1.x minor may still change or drop them.
 They are promoted when the kernel package leaves `preview` *and* the tooling
-transcription exists.
+transcription exists. *(0.13.0 freezes `@Blob` and keeps `@Schedule` outside the
+freeze: see the 0.12.x → 0.13.x entry.)*
 
 Two combinations the platform will refuse once the transcription lands, worth
 knowing before writing them:
@@ -963,6 +1100,8 @@ knowing before writing them:
   `PrincipalContext` at job *submission* and fails a job closed if none was
   captured (kernel ADR-057 obligation 5); a declared trigger has no submission
   event. How a scheduled action authenticates is open — tracked in ADR-072.
+  *(Answered in kernel ADR-057 Amendment A1: no service principal at 1.0, so the
+  build refuses every declaration.)*
 
 Also note what `@Blob` deliberately does **not** declare: a `maxSizeBytes`. A
 size bound is a constraint rule, and constraint rules have one declaration site

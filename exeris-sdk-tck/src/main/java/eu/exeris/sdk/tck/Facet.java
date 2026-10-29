@@ -52,6 +52,15 @@ public enum Facet {
     SAGA_COMPENSATION,
 
     /**
+     * {@code @Saga.trigger}, carried as {@code SagaMetadata.trigger} — the kind by constant name,
+     * the source class as a fully-qualified name, and the topic. {@code EVENT}, the first constant,
+     * is the kind a side that treats ordinal 0 as a default drops.
+     *
+     * @since 0.13
+     */
+    SAGA_TRIGGER,
+
+    /**
      * {@code ActionMetadata.resultType} — each {@code @Action} method's return type, fully
      * qualified with its type arguments, and {@code "void"} for an action that returns nothing.
      * The streaming generators type an action's result frame from it, and emit none for

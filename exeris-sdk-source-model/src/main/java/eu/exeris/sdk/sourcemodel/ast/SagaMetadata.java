@@ -34,7 +34,8 @@ import java.util.Objects;
  *        extract it, so a build-time baseline holds the builder default, {@code "PT10M"}
  * @param maxRetries how many times a failed step is retried before compensating
  * @param retryBackoff the backoff strategy between retries
- * @param trigger what starts the saga
+ * @param trigger what starts the saga; {@code null} when the source declares no {@code trigger}, and
+ *     never the annotation's default {@code MANUAL} standing in for an absent one
  * @param persistent whether saga state survives a restart
  * @param stateClass the type carrying the saga's accumulated state
  * @param permissions the permissions required to start the saga
