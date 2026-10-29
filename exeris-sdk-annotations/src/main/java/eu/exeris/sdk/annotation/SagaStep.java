@@ -43,33 +43,13 @@ import java.lang.annotation.*;
  * // See parallel() for why, and for what has to change first.
  * }
  *
- * <h2>Conditional Step:</h2>
- * {@snippet lang="java" :
- * @SagaStep(
- *     order = 3,
- *     name = "applyDiscount",
- *     condition = "state.totalAmount > 100",
- *     skipOnConditionFalse = true
- * )
- * public SagaAction applyDiscount() { ... }
- * }
- *
- * <h2>With Dependencies:</h2>
- * {@snippet lang="java" :
- * @SagaStep(
- *     order = 4,
- *     name = "finalizeOrder",
- *     dependsOn = {"reserveInventory", "processPayment"},
- *     required = true
- * )
- * public SagaAction finalizeOrder() { ... }
- * }
- *
- *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaStepMetadata} and read by
- * {@code KernelSagaGenerator} and the TypeScript saga emitter. Its four nested mapping
- * types are not extracted — see their own notes — so a step reaches the generator as a
- * named, ordered unit without its command headers, input/output mappings or metric tags.
+ * {@code KernelSagaGenerator} and the TypeScript saga emitter. A step reaches the kernel as a
+ * named, ordered action with an optional compensation; the kernel runs it and acts on the outcome
+ * it returns. Attributes that describe what the kernel does not do for a step — dispatch,
+ * routing, per-step retry, conditions, dependencies, state mapping, monitoring, authorization —
+ * are deprecated for removal, and each one says where that work lives instead: mostly in the
+ * step method.
  * @since 0.1
  * @see Saga
  * @see DomainEvent
@@ -166,6 +146,9 @@ public @interface SagaStep {
     /**
      * Step tags for categorization.
      *
+     * <p><strong>Status: RESERVED.</strong> Neither producer reads them and no AST component
+     * carries them, so they change no generated artifact.
+     *
      * @return tags
      */
     String[] tags() default {};
@@ -217,7 +200,12 @@ public @interface SagaStep {
      * <p>For versioned service routing.
      *
      * @return service version
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method calls the
+     *         service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String serviceVersion() default "";
 
     /**
@@ -225,21 +213,36 @@ public @interface SagaStep {
      * <p>Override default endpoint derived from command.
      *
      * @return endpoint path
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method calls the
+     *         service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String endpoint() default "";
 
     /**
      * Service instance selection strategy.
      *
      * @return instance selection
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method calls the
+     *         service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     InstanceSelection instanceSelection() default InstanceSelection.ANY;
 
     /**
      * Specific instance ID to route to (if selection = SPECIFIC).
      *
      * @return instance ID
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method calls the
+     *         service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String instanceId() default "";
 
     /**
@@ -247,7 +250,12 @@ public @interface SagaStep {
      * <p>SpEL expression for session affinity key.
      *
      * @return sticky key expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method calls the
+     *         service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String stickyKey() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -266,7 +274,12 @@ public @interface SagaStep {
      * Command class (alternative to string name).
      *
      * @return command class
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method builds the
+     *         command, its payload and its headers, and sends it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<?> commandClass() default void.class;
 
     /**
@@ -274,7 +287,12 @@ public @interface SagaStep {
      * <p>Method in saga class that creates command from state.
      *
      * @return builder method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method builds the
+     *         command, its payload and its headers, and sends it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String commandBuilder() default "";
 
     /**
@@ -282,14 +300,24 @@ public @interface SagaStep {
      * <p>Build command inline from state.
      *
      * @return payload expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method builds the
+     *         command, its payload and its headers, and sends it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String commandPayloadExpression() default "";
 
     /**
      * Command headers.
      *
      * @return headers
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by the step method. A step is a
+     *         {@code FlowStepAction} over the flow context, registered under its name with its
+     *         compensation; the kernel dispatches nothing on its behalf. The step method builds the
+     *         command, its payload and its headers, and sends it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     CommandHeader[] commandHeaders() default {};
 
     /**
@@ -297,7 +325,14 @@ public @interface SagaStep {
      * <p>Events that indicate command completed successfully.
      *
      * @return success event names
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by a {@code FlowChoreographyMapper}
+     *         and the step method. A step that waits returns {@code FlowOutcome.PARK}; a mapper the
+     *         application registers for the event type answers {@code Wake} for the instance, from
+     *         the event's routing metadata alone. The woken step reads what the event changed and
+     *         returns {@code CONTINUE}, {@code PARK} or {@code FAIL}, which compensates. No kernel
+     *         contract matches an event to a step by name.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] expectedEvents() default {};
 
     /**
@@ -305,7 +340,14 @@ public @interface SagaStep {
      * <p>Receiving these events triggers compensation.
      *
      * @return failure event names
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by a {@code FlowChoreographyMapper}
+     *         and the step method. A step that waits returns {@code FlowOutcome.PARK}; a mapper the
+     *         application registers for the event type answers {@code Wake} for the instance, from
+     *         the event's routing metadata alone. The woken step reads what the event changed and
+     *         returns {@code CONTINUE}, {@code PARK} or {@code FAIL}, which compensates. No kernel
+     *         contract matches an event to a step by name.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] failureEvents() default {};
 
     /**
@@ -313,7 +355,14 @@ public @interface SagaStep {
      * <p>Events that indicate timeout (optional, can use default timeout).
      *
      * @return timeout event names
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by a {@code FlowChoreographyMapper}
+     *         and the step method. A step that waits returns {@code FlowOutcome.PARK}; a mapper the
+     *         application registers for the event type answers {@code Wake} for the instance, from
+     *         the event's routing metadata alone. The woken step reads what the event changed and
+     *         returns {@code CONTINUE}, {@code PARK} or {@code FAIL}, which compensates. No kernel
+     *         contract matches an event to a step by name.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] timeoutEvents() default {};
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -417,42 +466,74 @@ public @interface SagaStep {
      * <p>If false, compensation failure doesn't block saga.
      *
      * @return true if required
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no per-compensation setting: a compensation is one action, run once when
+     *         a later step fails. Its Core runtime reports a compensation that throws and runs the
+     *         rest. Retry or bound the work inside the compensation method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean compensationRequired() default true;
 
     /**
      * Compensation timeout.
      *
      * @return timeout duration
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no per-compensation setting: a compensation is one action, run once when
+     *         a later step fails. Its Core runtime reports a compensation that throws and runs the
+     *         rest. Retry or bound the work inside the compensation method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationTimeout() default "PT1M";
 
     /**
      * Max retries for compensation.
      *
      * @return max retries
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no per-compensation setting: a compensation is one action, run once when
+     *         a later step fails. Its Core runtime reports a compensation that throws and runs the
+     *         rest. Retry or bound the work inside the compensation method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int compensationRetries() default 5;
 
     /**
      * Delay between compensation retries.
      *
      * @return retry delay
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no per-compensation setting: a compensation is one action, run once when
+     *         a later step fails. Its Core runtime reports a compensation that throws and runs the
+     *         rest. Retry or bound the work inside the compensation method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationRetryDelay() default "PT5S";
 
     /**
      * Continue saga compensation if this step's compensation fails.
      *
      * @return true to continue
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no per-compensation setting: a compensation is one action, run once when
+     *         a later step fails. Its Core runtime reports a compensation that throws and runs the
+     *         rest. Retry or bound the work inside the compensation method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean continueOnCompensationFailure() default true;
 
     /**
      * Expected events for successful compensation.
      *
      * @return success events
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by a {@code FlowChoreographyMapper}
+     *         and the step method. A step that waits returns {@code FlowOutcome.PARK}; a mapper the
+     *         application registers for the event type answers {@code Wake} for the instance, from
+     *         the event's routing metadata alone. The woken step reads what the event changed and
+     *         returns {@code CONTINUE}, {@code PARK} or {@code FAIL}, which compensates. No kernel
+     *         contract matches an event to a step by name.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] compensationExpectedEvents() default {};
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -461,7 +542,12 @@ public @interface SagaStep {
 
     /**
      * Step timeout (ISO-8601 duration).
-     * <p>Step fails if not completed within timeout.
+     *
+     * <p><strong>Status: PARTIAL.</strong> Both producers carry it into
+     * {@code SagaStepMetadata.timeout}, and no generator reads it. The kernel's flow contract has
+     * no per-step deadline: a step is registered with a name, an action and a compensation only,
+     * and the one deadline an instance has is {@link Saga#timeout()}. Setting it here bounds
+     * nothing.
      *
      * @return timeout duration
      */
@@ -471,63 +557,108 @@ public @interface SagaStep {
      * Maximum retry attempts for this step.
      *
      * @return max retries
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int retries() default 3;
 
     /**
      * Initial delay before first retry.
      *
      * @return initial delay
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String retryDelay() default "PT1S";
 
     /**
      * Retry backoff multiplier.
      *
      * @return backoff multiplier
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     double retryBackoff() default 2.0;
 
     /**
      * Maximum delay between retries.
      *
      * @return max delay
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String maxRetryDelay() default "PT30S";
 
     /**
      * Jitter factor for retry delays (0.0 - 1.0).
      *
      * @return jitter factor
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     double retryJitter() default 0.1;
 
     /**
      * Exceptions that should trigger retry.
      *
      * @return retryable exceptions
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<? extends Throwable>[] retryOn() default {};
 
     /**
      * Exceptions that should NOT trigger retry.
      *
      * @return non-retryable exceptions
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<? extends Throwable>[] noRetryOn() default {};
 
     /**
      * Retry on timeout.
      *
      * @return true to retry on timeout
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean retryOnTimeout() default true;
 
     /**
      * Retry on network errors.
      *
      * @return true to retry on network error
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link Saga#maxRetries()} for the
+     *         count. The kernel's one retry setting is that count, per definition, not per step; no
+     *         kernel contract spaces retries or filters them by exception type. A step that needs
+     *         either retries inside its own method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean retryOnNetworkError() default true;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -539,7 +670,12 @@ public @interface SagaStep {
      * <p>Optional steps can fail without triggering compensation.
      *
      * @return true if required
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A step that returns
+     *         {@code FAIL} or throws compensates the saga; no kernel contract marks a step
+     *         optional. A step whose failure should not compensate catches it and returns
+     *         {@code CONTINUE}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean required() default true;
 
     /**
@@ -565,7 +701,11 @@ public @interface SagaStep {
      * <p>Overrides order-based sequencing.
      *
      * @return dependency step names
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The order is
+     *         {@link #order()}. The kernel's Core runtime follows one outgoing transition per step
+     *         and evaluates no condition, so a dependency graph has no runtime to run it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] dependsOn() default {};
 
     /**
@@ -573,39 +713,44 @@ public @interface SagaStep {
      * <p>Evaluated against saga state.
      *
      * @return condition expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel evaluates no
+     *         condition on a step. The step method checks the state and returns {@code CONTINUE} to
+     *         skip its work, or {@code FAIL} to compensate.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String condition() default "";
 
     /**
      * Skip step if condition is false (vs fail).
      *
      * @return true to skip, false to fail
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel evaluates no
+     *         condition on a step. The step method checks the state and returns {@code CONTINUE} to
+     *         skip its work, or {@code FAIL} to compensate.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean skipOnConditionFalse() default true;
 
     /**
      * Wait for all parallel steps to complete before continuing.
      * <p>Only applies to parallel steps.
      *
-     * <p><strong>Inert while {@link #parallel()} is.</strong> It qualifies a concurrency the
-     * generated flow does not yet express — a linear chain has nothing to wait for — and it is
-     * neither extracted nor carried on {@code SagaStepMetadata}. It becomes meaningful in the same
-     * change that makes {@code parallel} meaningful, and not before.
-     *
      * @return true to wait for all
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. It qualifies concurrent
+     *         steps, and the kernel's flow definition has none: its steps run one at a time.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean waitForAll() default true;
 
     /**
      * Fail fast on parallel step failure.
      * <p>Cancel other parallel steps immediately.
      *
-     * <p><strong>Inert while {@link #parallel()} is</strong>, on the same terms as
-     * {@link #waitForAll()}: it describes cancelling siblings that a linear chain never starts
-     * concurrently, and it is neither extracted nor carried on {@code SagaStepMetadata}.
-     *
      * @return true for fail fast
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. It qualifies concurrent
+     *         steps, and the kernel's flow definition has none: its steps run one at a time.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean failFast() default false;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -617,7 +762,12 @@ public @interface SagaStep {
      * <p>Idempotent steps can be safely retried.
      *
      * @return true if idempotent
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Step deduplication is
+     *         not configurable: the kernel claims every step of an instance through its
+     *         {@code IdempotencyGuard}, keyed by the instance id and the step position, before the
+     *         step runs, and skips a step already claimed.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean idempotent() default true;
 
     /**
@@ -625,7 +775,12 @@ public @interface SagaStep {
      * <p>Unique key for deduplication.
      *
      * @return key expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Step deduplication is
+     *         not configurable: the kernel claims every step of an instance through its
+     *         {@code IdempotencyGuard}, keyed by the instance id and the step position, before the
+     *         step runs, and skips a step already claimed.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String idempotencyKey() default "";
 
     /**
@@ -633,7 +788,12 @@ public @interface SagaStep {
      * <p>Skip if already executed with same key.
      *
      * @return true to check
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Step deduplication is
+     *         not configurable: the kernel claims every step of an instance through its
+     *         {@code IdempotencyGuard}, keyed by the instance id and the step position, before the
+     *         step runs, and skips a step already claimed.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean checkIdempotency() default true;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -645,7 +805,12 @@ public @interface SagaStep {
      * <p>Field paths from response to copy to state.
      *
      * @return field mappings (format: "responseField:stateField")
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] storeInState() default {};
 
     /**
@@ -653,7 +818,12 @@ public @interface SagaStep {
      * <p>Method to process command response and update state.
      *
      * @return handler method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String responseHandler() default "";
 
     /**
@@ -661,7 +831,12 @@ public @interface SagaStep {
      * <p>Called on step failure before compensation decision.
      *
      * @return error handler method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String errorHandler() default "";
 
     /**
@@ -669,7 +844,12 @@ public @interface SagaStep {
      * <p>Store state snapshot for potential rollback.
      *
      * @return true to snapshot
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean snapshotStateBeforeStep() default false;
 
     /**
@@ -677,7 +857,12 @@ public @interface SagaStep {
      * <p>Restore state snapshot if step fails.
      *
      * @return true to rollback state
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean rollbackStateOnFailure() default false;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -689,7 +874,12 @@ public @interface SagaStep {
      * <p>Map of command field to state expression.
      *
      * @return input mappings
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     InputMapping[] inputMappings() default {};
 
     /**
@@ -697,7 +887,12 @@ public @interface SagaStep {
      * <p>Map of state field to response expression.
      *
      * @return output mappings
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     OutputMapping[] outputMappings() default {};
 
     /**
@@ -705,7 +900,12 @@ public @interface SagaStep {
      * <p>SpEL expression to transform response.
      *
      * @return transform expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String responseTransform() default "";
 
     /**
@@ -713,7 +913,12 @@ public @interface SagaStep {
      * <p>SpEL expression returning boolean.
      *
      * @return validation expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state or response: {@code FlowContext} exposes the instance id, the
+     *         definition name, the current step, the state and the deadline. The step method reads
+     *         and writes the data it needs, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String responseValidation() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -724,35 +929,60 @@ public @interface SagaStep {
      * Emit metrics for this step.
      *
      * @return true to emit
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean emitMetrics() default true;
 
     /**
      * Custom metric tags.
      *
      * @return metric tags
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     MetricTag[] metricTags() default {};
 
     /**
      * Alert if step duration exceeds threshold.
      *
      * @return alert threshold
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String alertThreshold() default "";
 
     /**
      * Alert on step failure.
      *
      * @return true to alert
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean alertOnFailure() default false;
 
     /**
      * Log level for this step.
      *
      * @return log level
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     LogLevel logLevel() default LogLevel.INFO;
 
     /**
@@ -760,21 +990,36 @@ public @interface SagaStep {
      * <p>Warning: May expose sensitive data.
      *
      * @return true to log payload
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean logPayload() default false;
 
     /**
      * Log response payload.
      *
      * @return true to log response
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean logResponse() default false;
 
     /**
      * Trace span name override.
      *
      * @return span name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per step: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts, log
+     *         levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String traceSpanName() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -785,21 +1030,33 @@ public @interface SagaStep {
      * Required roles to execute this step.
      *
      * @return required roles
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no principal ({@code FlowContext}), and nothing checks a role or a permission when a
+     *         step runs. Authorize the request that starts the saga.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] roles() default {};
 
     /**
      * Required permissions.
      *
      * @return required permissions
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no principal ({@code FlowContext}), and nothing checks a role or a permission when a
+     *         step runs. Authorize the request that starts the saga.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] permissions() default {};
 
     /**
      * Propagate security context to service.
      *
      * @return true to propagate
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no principal ({@code FlowContext}), and nothing checks a role or a permission when a
+     *         step runs. Authorize the request that starts the saga.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean propagateSecurityContext() default true;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -810,35 +1067,55 @@ public @interface SagaStep {
      * Enable circuit breaker for this step.
      *
      * @return true to enable
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract
+     *         defines a circuit breaker for a step; one belongs to the client the step method
+     *         calls.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean circuitBreaker() default false;
 
     /**
      * Circuit breaker name (shared across steps).
      *
      * @return circuit breaker name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract
+     *         defines a circuit breaker for a step; one belongs to the client the step method
+     *         calls.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String circuitBreakerName() default "";
 
     /**
      * Failure threshold to open circuit.
      *
      * @return failure threshold (percentage)
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract
+     *         defines a circuit breaker for a step; one belongs to the client the step method
+     *         calls.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int circuitBreakerThreshold() default 50;
 
     /**
      * Time circuit stays open before half-open.
      *
      * @return open duration
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract
+     *         defines a circuit breaker for a step; one belongs to the client the step method
+     *         calls.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String circuitBreakerOpenDuration() default "PT30S";
 
     /**
      * Fallback method when circuit is open.
      *
      * @return fallback method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract
+     *         defines a circuit breaker for a step; one belongs to the client the step method
+     *         calls.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String circuitBreakerFallback() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -881,7 +1158,13 @@ public @interface SagaStep {
 
     /**
      * Which service instance a step's command is routed to.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#instanceSelection()};
+     *         replaced by the step method. A step is a {@code FlowStepAction} over the flow
+     *         context, registered under its name with its compensation; the kernel dispatches
+     *         nothing on its behalf. The step method calls the service it needs, however it routes.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum InstanceSelection {
         /** Any available instance. */
         ANY,
@@ -907,7 +1190,13 @@ public @interface SagaStep {
 
     /**
      * How much detail the generated code logs for this surface.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#logLevel()} and with no
+     *         replacement. The kernel's flow telemetry is per engine, not per step: flight-recorder
+     *         events and {@code FlowEngine.stats()}. No kernel contract sets metrics, tags, alerts,
+     *         log levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum LogLevel {
         /** Finest detail; every step and its payload. */
         TRACE,
@@ -936,7 +1225,14 @@ public @interface SagaStep {
      *
      * <p><strong>Status: RESERVED</strong> — {@link SagaStep#commandHeaders()} is not
      * extracted.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#commandHeaders()};
+     *         replaced by the step method. A step is a {@code FlowStepAction} over the flow
+     *         context, registered under its name with its compensation; the kernel dispatches
+     *         nothing on its behalf. The step method builds the command, its payload and its
+     *         headers, and sends it.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface CommandHeader {
@@ -972,7 +1268,14 @@ public @interface SagaStep {
      * <p><strong>Status: RESERVED</strong> — {@link SagaStep#inputMappings()} is not
      * extracted, so the dispatched command is populated by generated defaults rather than
      * by a mapping declared here.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#inputMappings()} and
+     *         with no replacement. A flow instance carries no application state or response:
+     *         {@code FlowContext} exposes the instance id, the definition name, the current step,
+     *         the state and the deadline. The step method reads and writes the data it needs, keyed
+     *         by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface InputMapping {
@@ -999,7 +1302,14 @@ public @interface SagaStep {
      *
      * <p><strong>Status: RESERVED</strong> — {@link SagaStep#outputMappings()} is not
      * extracted.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#outputMappings()} and
+     *         with no replacement. A flow instance carries no application state or response:
+     *         {@code FlowContext} exposes the instance id, the definition name, the current step,
+     *         the state and the deadline. The step method reads and writes the data it needs, keyed
+     *         by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface OutputMapping {
@@ -1026,7 +1336,13 @@ public @interface SagaStep {
      *
      * <p><strong>Status: RESERVED</strong> — {@link SagaStep#metricTags()} is not
      * extracted.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link SagaStep#metricTags()} and with
+     *         no replacement. The kernel's flow telemetry is per engine, not per step:
+     *         flight-recorder events and {@code FlowEngine.stats()}. No kernel contract sets
+     *         metrics, tags, alerts, log levels, payload logging or span names per step.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface MetricTag {
