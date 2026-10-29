@@ -136,6 +136,21 @@ survives into 1.x unchanged.
   (an encrypting `FlowSnapshotStore` or `EventPayloadCodec` is the application's to bind) or in
   the database; an action parameter is protected in transit by the transport's TLS. None is
   extracted, so the removal changes no metadata and no generated output.
+- **Seventy-six `@Saga` elements and sixty-seven `@SagaStep` elements with no kernel flow
+  contract** — deprecated since 0.13.0 (`forRemoval = true`). On `@Saga`: correlation, tenant,
+  user and initial-state expressions; the retry policy family and `SagaRetryPolicy`;
+  `compensationOrder` and `compensationStrategy`; persistence, command dispatch, idempotency,
+  lifecycle hooks, concurrency limits, monitoring, debugging and test-fixture attributes, with
+  their nested enums. On `@SagaStep`: routing, command construction, awaited events, per-step
+  compensation settings, per-step retry, `required`, `dependsOn`, `condition`,
+  `skipOnConditionFalse`, `waitForAll`, `failFast`, idempotency, state and response handling,
+  monitoring, security and circuit-breaker attributes, with `CommandHeader`, `InputMapping`,
+  `OutputMapping`, `MetricTag`, `InstanceSelection` and `LogLevel`. The full list and where each
+  behaviour goes is the [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md) table. Replacement where
+  one exists: `@Saga.maxRetries` for a retry count, `@SagaStep.order` for sequencing, the
+  instance id for correlation and per-key exclusion, a `FlowChoreographyMapper` for awaited
+  events, otherwise the step or compensation method. No producer reads any of them, so the removal
+  changes no metadata and no generated output.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`

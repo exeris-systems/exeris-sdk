@@ -514,6 +514,20 @@ for per-version upgrade steps.
   any of the seven and no AST component carries them, so nothing a build emits changes. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **76 `@Saga` and 67 `@SagaStep` elements with no kernel flow contract** —
+  `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. The kernel's flow contract
+  is a definition of named steps, each an action with an optional compensation, plus one deadline
+  and one retry count. Per-key exclusion, correlation and deduplication expressions, overflow
+  handling, per-saga persistence, command dispatch and routing, per-step retry, conditions and
+  dependencies, lifecycle hooks, state mapping, monitoring, step authorization and circuit
+  breakers have nothing in it to compile to: the kernel deduplicates a `Start` by instance id,
+  fences only an instance's own snapshot row, has no distributed lock, and bounds concurrency per
+  engine. Each deprecation note names where the behaviour lives instead. No producer reads any of
+  them, so nothing a build emits changes. The Javadoc of `@Saga.timeout` and `@Saga.maxRetries`
+  now states what the generated flow does with them, and the seven carried compensation
+  attributes state that the kernel has no setting for them. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Removed
 
 - **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**

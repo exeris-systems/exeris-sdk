@@ -40,17 +40,6 @@ import java.lang.annotation.*;
  * public class SubscriptionRenewalSaga implements Saga<RenewalState> {}
  * }
  *
- * <h2>With Compensation Configuration:</h2>
- * {@snippet lang="java" :
- * @Saga(
- *     name = "TransferMoneySaga",
- *     compensationOrder = CompensationOrder.REVERSE,
- *     compensationStrategy = CompensationStrategy.ALL_OR_NOTHING,
- *     compensationTimeout = "PT10M"
- * )
- * public class TransferMoneySaga implements Saga<TransferState> {}
- * }
- *
  * <h2>One saga per type</h2>
  * A type hosts at most one saga. This annotation is not {@link Repeatable}, and the metadata
  * both producers build for a type ({@code DomainMetadata.sagaMetadata}) holds a single saga, so
@@ -66,10 +55,13 @@ import java.lang.annotation.*;
  * the deduplication window. Deleting the row lets the instance id run again. With no store bound,
  * the no-op holds only for the life of the engine (kernel ADR-013 A1).
  *
- * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
- * the flow starts and how it retries: {@link #trigger()} is read by the {@code -io} reader only and
- * {@link #retryPolicy()} is unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
- * order.
+ * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by
+ * {@code KernelSagaGenerator} and the TypeScript saga emitter. The generated flow carries
+ * {@link #name()}, {@link #version()}, {@link #timeout()} and {@link #maxRetries()} to the kernel
+ * and runs its steps as a strict linear chain in declaration order. {@link #trigger()} is read by
+ * the {@code -io} reader only. Attributes that name behaviour no kernel flow contract has —
+ * per-saga persistence, command dispatch, idempotency, concurrency limits, lifecycle hooks,
+ * monitoring — are deprecated for removal, and each one says where that behaviour lives instead.
  * @since 0.1
  * @see DomainEvent
  * @see EventSourced
@@ -158,8 +150,10 @@ public @interface Saga {
     int version() default 1;
 
     /**
-     * Module this saga belongs to.
-     * <p>Used for organization and routing.
+     * Module this saga belongs to, as a descriptive label.
+     *
+     * <p><strong>Status: RESERVED.</strong> Neither producer reads it and no AST component
+     * carries it, so it routes nothing and changes no generated artifact.
      *
      * @return module name
      */
@@ -167,6 +161,9 @@ public @interface Saga {
 
     /**
      * Tags for categorization.
+     *
+     * <p><strong>Status: RESERVED.</strong> Neither producer reads them and no AST component
+     * carries them, so they change no generated artifact.
      *
      * @return array of tags
      */
@@ -197,7 +194,14 @@ public @interface Saga {
      * </ul>
      *
      * @return correlation ID expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel identifies an
+     *         instance by the 128-bit id the caller passes to {@code FlowScheduler.schedule}, or
+     *         that a {@code FlowChoreographyMapper} returns in its {@code Start} or {@code Wake}
+     *         decision. The mapper receives the event's routing metadata and no payload, and no
+     *         kernel contract evaluates an expression. Derive the id where the saga is scheduled,
+     *         or in the mapper.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String correlationIdExpression() default "#trigger.correlationId ?: T(java.util.UUID).randomUUID().toString()";
 
     /**
@@ -205,7 +209,12 @@ public @interface Saga {
      * <p>Extracts tenant ID from trigger payload.
      *
      * @return tenant ID expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no tenant: {@code FlowContext} exposes the instance id, the definition name, the
+     *         current step, the state and the deadline, and nothing else. Keep it with the
+     *         application data the steps read, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String tenantIdExpression() default "#trigger.tenantId";
 
     /**
@@ -213,7 +222,12 @@ public @interface Saga {
      * <p>Extracts user ID who initiated the saga.
      *
      * @return user ID expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no user: {@code FlowContext} exposes the instance id, the definition name, the
+     *         current step, the state and the deadline, and nothing else. Keep it with the
+     *         application data the steps read, keyed by the instance id.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String userIdExpression() default "#trigger.userId ?: #securityContext.userId";
 
     /**
@@ -221,7 +235,13 @@ public @interface Saga {
      * <p>Creates initial saga state from trigger.
      *
      * @return state factory expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state: {@code FlowContext} exposes the instance id, the definition
+     *         name, the current step, the state and the deadline, and nothing else. The application
+     *         writes the data its steps read, keyed by the instance id, before it schedules the
+     *         saga.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String initialStateExpression() default "";
 
     /**
@@ -229,7 +249,13 @@ public @interface Saga {
      * <p>Must implement {@code SagaStateFactory<T, S>}.
      *
      * @return factory class
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. A flow instance carries
+     *         no application state: {@code FlowContext} exposes the instance id, the definition
+     *         name, the current step, the state and the deadline, and nothing else. The application
+     *         writes the data its steps read, keyed by the instance id, before it schedules the
+     *         saga.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<?> stateFactory() default void.class;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -238,7 +264,12 @@ public @interface Saga {
 
     /**
      * Overall saga timeout (ISO-8601 duration).
-     * <p>Saga is considered failed if not completed within timeout.
+     *
+     * <p>The generated flow passes it to the kernel's {@code FlowDefinitionBuilder.timeoutDuration},
+     * the deadline of each instance. The kernel's Core runtime checks the deadline before it runs
+     * a step and compensates an instance past it. Both producers carry a declared value; when the
+     * attribute is absent they carry {@code "PT30M"}, the metadata default, not the
+     * {@code "PT5M"} written below.
      *
      * <p><strong>Examples:</strong>
      * <ul>
@@ -252,8 +283,13 @@ public @interface Saga {
     String timeout() default "PT5M";
 
     /**
-     * Maximum retry attempts for the entire saga.
-     * <p>Saga restarts from beginning on failure.
+     * How many times a failed step may be retried before the saga compensates.
+     *
+     * <p>The generated flow passes it to the kernel's {@code FlowDefinitionBuilder.maxRetries},
+     * whose contract is a step-level retry count, not a restart of the saga. The kernel's Core
+     * runtime records the count on the definition and does not re-run a failed step: a step that
+     * fails goes to compensation. The generator treats a value below {@code 1} as absent and emits
+     * {@code 3}, so {@code maxRetries = 0} does not declare "no retries".
      *
      * @return max retries
      */
@@ -263,21 +299,39 @@ public @interface Saga {
      * Retry policy configuration.
      *
      * @return retry policy
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     SagaRetryPolicy retryPolicy() default @SagaRetryPolicy;
 
     /**
      * Delay before first saga retry (ISO-8601 duration).
      *
      * @return initial retry delay
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String retryInitialDelay() default "PT1S";
 
     /**
      * Maximum delay between saga retries.
      *
      * @return max retry delay
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String retryMaxDelay() default "PT1M";
 
     /**
@@ -285,7 +339,13 @@ public @interface Saga {
      * <p>Each retry delay = previous * multiplier.
      *
      * @return backoff multiplier
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     double retryBackoffMultiplier() default 2.0;
 
     /**
@@ -293,7 +353,13 @@ public @interface Saga {
      * <p>Adds randomness to prevent thundering herd.
      *
      * @return jitter factor
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     double retryJitter() default 0.1;
 
     /**
@@ -301,7 +367,13 @@ public @interface Saga {
      * <p>Empty = retry on all exceptions.
      *
      * @return retryable exceptions
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<? extends Throwable>[] retryOn() default {};
 
     /**
@@ -309,7 +381,13 @@ public @interface Saga {
      * <p>These exceptions cause immediate failure.
      *
      * @return non-retryable exceptions
+     * @deprecated since 0.13.0, for removal in 1.0.0, replaced by {@link #maxRetries()} for the
+     *         count. The kernel's one retry setting is that count,
+     *         {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Class<? extends Throwable>[] noRetryOn() default {};
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -325,12 +403,15 @@ public @interface Saga {
      * {@code SagaMetadata.compensationOrder()} holds its builder default on every
      * build path and setting it here changes no generated artifact. The reader leaves it
      * unread because {@link CompensationOrder#CUSTOM} has no counterpart in
-     * {@code SagaMetadata.CompensationOrder}, so a read by constant name would carry a wrong value. The attribute is
-     * kept rather than removed because the compensation semantics it names are real —
-     * what is missing is the extraction and a generator that acts on it.
+     * {@code SagaMetadata.CompensationOrder}, so a read by constant name would carry a wrong
+     * value.
      *
      * @return compensation order
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The order is fixed: when
+     *         a step fails, the kernel runs the compensations of the completed steps in reverse
+     *         order ({@code FlowOutcome.FAIL}).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     CompensationOrder compensationOrder() default CompensationOrder.REVERSE;
 
     /**
@@ -343,12 +424,16 @@ public @interface Saga {
      * build path and setting it here changes no generated artifact. The reader leaves it
      * unread because {@link CompensationStrategy#STOP_ON_FAILURE} and
      * {@link CompensationStrategy#MANUAL} have no counterpart in
-     * {@code SagaMetadata.CompensationStrategy}, so a read by constant name would carry a wrong value. The attribute is
-     * kept rather than removed because the compensation semantics it names are real —
-     * what is missing is the extraction and a generator that acts on it.
+     * {@code SagaMetadata.CompensationStrategy}, so a read by constant name would carry a wrong
+     * value.
      *
      * @return compensation strategy
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no strategy setting. Its Core runtime runs every registered
+     *         compensation, reports one that throws and runs the rest, and the instance ends
+     *         {@code FAILED_ROLLEDBACK}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     CompensationStrategy compensationStrategy() default CompensationStrategy.ALL_OR_NOTHING;
 
     /**
@@ -359,6 +444,9 @@ public @interface Saga {
      * {@code SagaMetadata.compensationTimeout()}; no {@code exeris-tooling} processor extracts it
      * yet, so a build-time baseline holds the builder default, {@code "PT10M"}, and no generator
      * reads it, so setting it here changes no generated artifact.
+     *
+     * <p>The kernel's flow contract has no compensation deadline: an instance has one deadline,
+     * {@link #timeout()}.
      *
      * @return compensation timeout
      */
@@ -372,6 +460,8 @@ public @interface Saga {
      * {@code SagaMetadata.compensationMaxRetries()}; no {@code exeris-tooling} processor extracts it yet,
      * and no generator reads it, so setting it here changes no generated artifact.
      *
+     * <p>The kernel's flow contract has no compensation retry setting.
+     *
      * @return compensation max retries
      */
     int compensationMaxRetries() default 5;
@@ -383,6 +473,8 @@ public @interface Saga {
      * {@code exeris-sdk-source-model-io} reader reads it into
      * {@code SagaMetadata.compensationRetryDelay()}; no {@code exeris-tooling} processor extracts it yet,
      * and no generator reads it, so setting it here changes no generated artifact.
+     *
+     * <p>The kernel's flow contract has no compensation retry setting.
      *
      * @return compensation retry delay
      */
@@ -397,6 +489,9 @@ public @interface Saga {
      * {@code SagaMetadata.continueCompensationOnFailure()}; no {@code exeris-tooling} processor extracts it yet,
      * and no generator reads it, so setting it here changes no generated artifact.
      *
+     * <p>The kernel's flow contract has no such setting, and its Core runtime always continues: a
+     * compensation that throws is reported and the remaining ones still run.
+     *
      * @return continue on failure
      */
     boolean continueCompensationOnFailure() default true;
@@ -409,6 +504,9 @@ public @interface Saga {
      * {@code exeris-sdk-source-model-io} reader reads it into
      * {@code SagaMetadata.compensationDlq()}; no {@code exeris-tooling} processor extracts it yet,
      * and no generator reads it, so setting it here changes no generated artifact.
+     *
+     * <p>The kernel's flow contract names no destination for a failed compensation; its Core
+     * runtime reports the failure as a flight-recorder event.
      *
      * @return DLQ topic name
      */
@@ -424,6 +522,9 @@ public @interface Saga {
      * and no generator reads it, so setting it here changes no generated artifact. The component
      * carries the class's fully-qualified name.
      *
+     * <p>The kernel's flow contract registers no compensation-failure handler; its Core runtime
+     * reports the failure as a flight-recorder event.
+     *
      * @return handler class
      */
     Class<?> compensationFailureHandler() default void.class;
@@ -435,6 +536,9 @@ public @interface Saga {
      * {@code exeris-sdk-source-model-io} reader reads it into
      * {@code SagaMetadata.manualInterventionOnCompensationFailure()}; no {@code exeris-tooling} processor extracts it yet,
      * and no generator reads it, so setting it here changes no generated artifact.
+     *
+     * <p>The kernel's flow contract has no intervention state: a failed instance ends
+     * {@code FAILED_ROLLEDBACK}.
      *
      * @return true to trigger intervention
      */
@@ -448,7 +552,13 @@ public @interface Saga {
      * Saga state persistence strategy.
      *
      * @return persistence type
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     SagaPersistence persistence() default SagaPersistence.DATABASE;
 
     /**
@@ -456,14 +566,26 @@ public @interface Saga {
      * <p>Defaults to "saga_{name}_state".
      *
      * @return table name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String stateTable() default "";
 
     /**
      * State serialization format.
      *
      * @return state format
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     StateFormat stateFormat() default StateFormat.JSON;
 
     /**
@@ -497,7 +619,13 @@ public @interface Saga {
      * Compress saga state.
      *
      * @return compression algorithm
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     Compression stateCompression() default Compression.NONE;
 
     /**
@@ -505,7 +633,13 @@ public @interface Saga {
      * <p>Completed saga states are deleted after this period.
      *
      * @return retention days
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int stateRetentionDays() default 90;
 
     /**
@@ -513,21 +647,39 @@ public @interface Saga {
      * <p>0 = keep until retention period.
      *
      * @return cleanup delay hours
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int cleanupAfterHours() default 24;
 
     /**
      * Archive completed sagas.
      *
      * @return true to archive
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean archiveCompletedSagas() default false;
 
     /**
      * Archive storage location.
      *
      * @return archive path
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. How saga state is stored
+     *         is decided once per engine, not per saga: {@code FlowEngineConfig.persistenceEnabled}
+     *         turns persistence on, and the {@code FlowSnapshotStore} the bootstrapper binds
+     *         decides the storage, its table and its encoding. The kernel never deletes a finished
+     *         instance's row; retention and archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String archiveStorage() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -539,7 +691,13 @@ public @interface Saga {
      * <p>How saga commands are sent to services.
      *
      * @return dispatch method
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     CommandDispatch commandDispatch() default CommandDispatch.KAFKA;
 
     /**
@@ -553,7 +711,13 @@ public @interface Saga {
      * </ul>
      *
      * @return topic pattern
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String commandTopicPattern() default "saga.commands.{service}";
 
     /**
@@ -561,7 +725,13 @@ public @interface Saga {
      * <p>Where services send command results.
      *
      * @return reply topic
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String replyTopic() default "";
 
     /**
@@ -569,7 +739,13 @@ public @interface Saga {
      * <p>Commands are written to outbox within saga transaction.
      *
      * @return true to use outbox
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean useOutbox() default true;
 
     /**
@@ -577,14 +753,26 @@ public @interface Saga {
      * <p>Default timeout for all steps (can be overridden per step).
      *
      * @return command timeout
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String defaultCommandTimeout() default "PT30S";
 
     /**
      * Command acknowledgment mode.
      *
      * @return ack mode
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel dispatches no
+     *         command for a saga: a step is a {@code FlowStepAction} that returns an outcome, so
+     *         the step method sends what it sends, over the transport it chooses, with the timeout
+     *         and acknowledgement that transport offers. A transactional outbox is the persistence
+     *         engine's, used from that method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     AckMode commandAckMode() default AckMode.AUTO;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -595,7 +783,14 @@ public @interface Saga {
      * Ensure saga is started only once per correlation ID.
      *
      * @return true for idempotent start
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Deduplication is not
+     *         configurable: the kernel treats a {@code Start} for an instance id it already holds
+     *         as a no-op, and with a snapshot store bound a finished instance keeps its terminal
+     *         row, so the window is how long whoever binds the store retains that row (see
+     *         <em>Finished instances</em> above). The key is the instance id the saga is scheduled
+     *         under.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean idempotent() default true;
 
     /**
@@ -603,7 +798,14 @@ public @interface Saga {
      * <p>Unique key for deduplication.
      *
      * @return idempotency key expression
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Deduplication is not
+     *         configurable: the kernel treats a {@code Start} for an instance id it already holds
+     *         as a no-op, and with a snapshot store bound a finished instance keeps its terminal
+     *         row, so the window is how long whoever binds the store retains that row (see
+     *         <em>Finished instances</em> above). The key is the instance id the saga is scheduled
+     *         under.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String idempotencyKeyExpression() default "#correlationId";
 
     /**
@@ -611,14 +813,28 @@ public @interface Saga {
      * <p>How long to remember processed saga IDs.
      *
      * @return idempotency window
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Deduplication is not
+     *         configurable: the kernel treats a {@code Start} for an instance id it already holds
+     *         as a no-op, and with a snapshot store bound a finished instance keeps its terminal
+     *         row, so the window is how long whoever binds the store retains that row (see
+     *         <em>Finished instances</em> above). The key is the instance id the saga is scheduled
+     *         under.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String idempotencyWindow() default "PT24H";
 
     /**
      * Idempotency storage.
      *
      * @return storage type
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Deduplication is not
+     *         configurable: the kernel treats a {@code Start} for an instance id it already holds
+     *         as a no-op, and with a snapshot store bound a finished instance keeps its terminal
+     *         row, so the window is how long whoever binds the store retains that row (see
+     *         <em>Finished instances</em> above). The key is the instance id the saga is scheduled
+     *         under.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     IdempotencyStorage idempotencyStorage() default IdempotencyStorage.DATABASE;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -630,7 +846,13 @@ public @interface Saga {
      * <p>Can modify initial state or validate preconditions.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String beforeStart() default "";
 
     /**
@@ -638,56 +860,104 @@ public @interface Saga {
      * <p>Called after first step begins.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String afterStart() default "";
 
     /**
      * Method to call before each step.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String beforeStep() default "";
 
     /**
      * Method to call after each step completes.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String afterStep() default "";
 
     /**
      * Method to call when saga completes successfully.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String onComplete() default "";
 
     /**
      * Method to call when saga fails.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String onFail() default "";
 
     /**
      * Method to call before compensation starts.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String beforeCompensate() default "";
 
     /**
      * Method to call after compensation completes.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String afterCompensate() default "";
 
     /**
      * Method to call on saga timeout.
      *
      * @return method name
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         contract has no lifecycle callback: {@code FlowEngine} offers plans, the scheduler,
+     *         the registry, capabilities, statistics, choreography-mapper registration, start and
+     *         close. Put the work in a step or compensation method; a saga past its
+     *         {@link #timeout()} is compensated.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String onTimeout() default "";
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -699,14 +969,26 @@ public @interface Saga {
      * <p>0 = unlimited.
      *
      * @return max instances
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel bounds
+     *         concurrency per engine, not per saga: {@code FlowEngineConfig.maxConcurrentFlows} and
+     *         {@code schedulerQueueCapacity}, and a scheduler that cannot admit an instance refuses
+     *         it with {@code QUEUE_FULL}. Nothing counts instances per definition or tenant, and
+     *         nothing queues on overflow.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int maxConcurrentInstances() default 0;
 
     /**
      * Maximum concurrent instances per tenant.
      *
      * @return max per tenant
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel bounds
+     *         concurrency per engine, not per saga: {@code FlowEngineConfig.maxConcurrentFlows} and
+     *         {@code schedulerQueueCapacity}, and a scheduler that cannot admit an instance refuses
+     *         it with {@code QUEUE_FULL}. Nothing counts instances per definition or tenant, and
+     *         nothing queues on overflow.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int maxConcurrentPerTenant() default 0;
 
     /**
@@ -714,21 +996,39 @@ public @interface Saga {
      * <p>Prevents duplicate saga for same entity.
      *
      * @return max per key
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. One instance per key is
+     *         the instance id: schedule the saga under an id derived from the key, and a second
+     *         {@code Start} for that id is a no-op. Exclusion between different instances is not
+     *         the kernel's: it fences each instance's own snapshot row and has no distributed lock
+     *         (kernel ADR-013), so two instances that write one entity need that entity versioned.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int maxConcurrentPerKey() default 1;
 
     /**
      * Behavior when concurrency limit reached.
      *
      * @return overflow behavior
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel bounds
+     *         concurrency per engine, not per saga: {@code FlowEngineConfig.maxConcurrentFlows} and
+     *         {@code schedulerQueueCapacity}, and a scheduler that cannot admit an instance refuses
+     *         it with {@code QUEUE_FULL}. Nothing counts instances per definition or tenant, and
+     *         nothing queues on overflow.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     OverflowBehavior overflowBehavior() default OverflowBehavior.QUEUE;
 
     /**
      * Queue size when overflow = QUEUE.
      *
      * @return queue size
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel bounds
+     *         concurrency per engine, not per saga: {@code FlowEngineConfig.maxConcurrentFlows} and
+     *         {@code schedulerQueueCapacity}, and a scheduler that cannot admit an instance refuses
+     *         it with {@code QUEUE_FULL}. Nothing counts instances per definition or tenant, and
+     *         nothing queues on overflow.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int overflowQueueSize() default 1000;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -739,49 +1039,91 @@ public @interface Saga {
      * Emit metrics for this saga.
      *
      * @return true to emit metrics
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean emitMetrics() default true;
 
     /**
      * Metric name prefix.
      *
      * @return metric prefix
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String metricPrefix() default "";
 
     /**
      * Alert if saga duration exceeds threshold.
      *
      * @return duration alert threshold
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String durationAlertThreshold() default "PT10M";
 
     /**
      * Alert if saga fails.
      *
      * @return true to alert on failure
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean alertOnFailure() default true;
 
     /**
      * Alert if compensation fails.
      *
      * @return true to alert on compensation failure
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean alertOnCompensationFailure() default true;
 
     /**
      * Alert if saga times out.
      *
      * @return true to alert on timeout
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean alertOnTimeout() default true;
 
     /**
      * Alert if step retries exceed threshold.
      *
      * @return retry alert threshold
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     int retryAlertThreshold() default 2;
 
     /**
@@ -789,28 +1131,52 @@ public @interface Saga {
      * <p>Slack channels, email addresses, PagerDuty keys.
      *
      * @return alert channels
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] alertChannels() default {};
 
     /**
      * Alert severity levels.
      *
      * @return alert severities
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     AlertSeverity failureAlertSeverity() default AlertSeverity.ERROR;
 
     /**
      * Health check endpoint.
      *
      * @return true to expose health check
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean healthCheck() default true;
 
     /**
      * Expose saga status API endpoint.
      *
      * @return true to expose API
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. The kernel's flow
+     *         telemetry is per engine, not per saga: flight-recorder events and
+     *         {@code FlowEngine.stats()}. No kernel contract names a metric prefix, an alert, a
+     *         channel, a severity, a health check or a status endpoint; alerting is built over that
+     *         telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean exposeStatusApi() default true;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -821,7 +1187,11 @@ public @interface Saga {
      * Log level for saga execution.
      *
      * @return log level
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract sets
+     *         a log level, state logging, tracing or a trace sample rate per saga; the engine's
+     *         flow telemetry is its flight-recorder events.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     LogLevel logLevel() default LogLevel.INFO;
 
     /**
@@ -829,21 +1199,33 @@ public @interface Saga {
      * <p>Warning: May expose sensitive data in logs.
      *
      * @return true to log state
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract sets
+     *         a log level, state logging, tracing or a trace sample rate per saga; the engine's
+     *         flow telemetry is its flight-recorder events.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean logStateOnStep() default false;
 
     /**
      * Enable distributed tracing.
      *
      * @return true to enable tracing
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract sets
+     *         a log level, state logging, tracing or a trace sample rate per saga; the engine's
+     *         flow telemetry is its flight-recorder events.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean enableTracing() default true;
 
     /**
      * Trace sample rate (0.0 - 1.0).
      *
      * @return sample rate
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel contract sets
+     *         a log level, state logging, tracing or a trace sample rate per saga; the engine's
+     *         flow telemetry is its flight-recorder events.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     double traceSampleRate() default 1.0;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -854,21 +1236,33 @@ public @interface Saga {
      * Generate test fixtures for this saga.
      *
      * @return true to generate
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No test generation reads
+     *         it: a generated saga flow gets a generated test whatever this says, and that test
+     *         runs against a recording double with no persistence and no services to mock.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean generateTestFixtures() default true;
 
     /**
      * Use in-memory persistence in tests.
      *
      * @return true for in-memory
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No test generation reads
+     *         it: a generated saga flow gets a generated test whatever this says, and that test
+     *         runs against a recording double with no persistence and no services to mock.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean inMemoryPersistenceInTests() default true;
 
     /**
      * Mock all external services in tests.
      *
      * @return true to mock
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No test generation reads
+     *         it: a generated saga flow gets a generated test whatever this says, and that test
+     *         runs against a recording double with no persistence and no services to mock.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean mockServicesInTests() default true;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -877,7 +1271,12 @@ public @interface Saga {
 
     /**
      * The order in which a failed saga's compensations run.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#compensationOrder()} and
+     *         with no replacement. The order is fixed: when a step fails, the kernel runs the
+     *         compensations of the completed steps in reverse order ({@code FlowOutcome.FAIL}).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum CompensationOrder {
         /** Execute compensation in reverse order of execution. */
         REVERSE,
@@ -894,7 +1293,13 @@ public @interface Saga {
 
     /**
      * How compensation is driven once a step fails.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#compensationStrategy()} and
+     *         with no replacement. The kernel's flow contract has no strategy setting. Its Core
+     *         runtime runs every registered compensation, reports one that throws and runs the
+     *         rest, and the instance ends {@code FAILED_ROLLEDBACK}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum CompensationStrategy {
         /** All compensations must succeed or saga remains in failed state. */
         ALL_OR_NOTHING,
@@ -911,7 +1316,15 @@ public @interface Saga {
 
     /**
      * Where saga state is kept between steps.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#persistence()} and with no
+     *         replacement. How saga state is stored is decided once per engine, not per saga:
+     *         {@code FlowEngineConfig.persistenceEnabled} turns persistence on, and the
+     *         {@code FlowSnapshotStore} the bootstrapper binds decides the storage, its table and
+     *         its encoding. The kernel never deletes a finished instance's row; retention and
+     *         archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum SagaPersistence {
         /** PostgreSQL/MySQL database. */
         DATABASE,
@@ -931,7 +1344,15 @@ public @interface Saga {
 
     /**
      * How saga state is encoded when persisted.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#stateFormat()} and with no
+     *         replacement. How saga state is stored is decided once per engine, not per saga:
+     *         {@code FlowEngineConfig.persistenceEnabled} turns persistence on, and the
+     *         {@code FlowSnapshotStore} the bootstrapper binds decides the storage, its table and
+     *         its encoding. The kernel never deletes a finished instance's row; retention and
+     *         archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum StateFormat {
         /** Human-readable JSON. */
         JSON,
@@ -945,7 +1366,15 @@ public @interface Saga {
 
     /**
      * How persisted saga state is compressed.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#stateCompression()} and with
+     *         no replacement. How saga state is stored is decided once per engine, not per saga:
+     *         {@code FlowEngineConfig.persistenceEnabled} turns persistence on, and the
+     *         {@code FlowSnapshotStore} the bootstrapper binds decides the storage, its table and
+     *         its encoding. The kernel never deletes a finished instance's row; retention and
+     *         archiving belong to whoever binds the store.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum Compression {
         /** Stored uncompressed. */
         NONE,
@@ -961,7 +1390,15 @@ public @interface Saga {
 
     /**
      * How a step's command reaches the service that runs it.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#commandDispatch()} and with
+     *         no replacement. The kernel dispatches no command for a saga: a step is a
+     *         {@code FlowStepAction} that returns an outcome, so the step method sends what it
+     *         sends, over the transport it chooses, with the timeout and acknowledgement that
+     *         transport offers. A transactional outbox is the persistence engine's, used from that
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum CommandDispatch {
         /** Apache Kafka. */
         KAFKA,
@@ -984,7 +1421,15 @@ public @interface Saga {
 
     /**
      * When a consumed message is acknowledged.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#commandAckMode()} and with
+     *         no replacement. The kernel dispatches no command for a saga: a step is a
+     *         {@code FlowStepAction} that returns an outcome, so the step method sends what it
+     *         sends, over the transport it chooses, with the timeout and acknowledgement that
+     *         transport offers. A transactional outbox is the persistence engine's, used from that
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum AckMode {
         /** Automatic acknowledgment. */
         AUTO,
@@ -998,7 +1443,15 @@ public @interface Saga {
 
     /**
      * Where the keys guarding against duplicate work are kept.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#idempotencyStorage()} and
+     *         with no replacement. Deduplication is not configurable: the kernel treats a
+     *         {@code Start} for an instance id it already holds as a no-op, and with a snapshot
+     *         store bound a finished instance keeps its terminal row, so the window is how long
+     *         whoever binds the store retains that row (see <em>Finished instances</em> above). The
+     *         key is the instance id the saga is scheduled under.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum IdempotencyStorage {
         /** In the application's own database. */
         DATABASE,
@@ -1010,7 +1463,14 @@ public @interface Saga {
 
     /**
      * What happens when the saga's work queue is full.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#overflowBehavior()} and with
+     *         no replacement. The kernel bounds concurrency per engine, not per saga:
+     *         {@code FlowEngineConfig.maxConcurrentFlows} and {@code schedulerQueueCapacity}, and a
+     *         scheduler that cannot admit an instance refuses it with {@code QUEUE_FULL}. Nothing
+     *         counts instances per definition or tenant, and nothing queues on overflow.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum OverflowBehavior {
         /** Queue excess requests. */
         QUEUE,
@@ -1027,7 +1487,14 @@ public @interface Saga {
 
     /**
      * How urgent an alert raised by this saga is.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#failureAlertSeverity()} and
+     *         with no replacement. The kernel's flow telemetry is per engine, not per saga:
+     *         flight-recorder events and {@code FlowEngine.stats()}. No kernel contract names a
+     *         metric prefix, an alert, a channel, a severity, a health check or a status endpoint;
+     *         alerting is built over that telemetry.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum AlertSeverity {
         /** Worth recording; no action expected. */
         INFO,
@@ -1041,7 +1508,12 @@ public @interface Saga {
 
     /**
      * How much detail the generated code logs for this surface.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#logLevel()} and with no
+     *         replacement. No kernel contract sets a log level, state logging, tracing or a trace
+     *         sample rate per saga; the engine's flow telemetry is its flight-recorder events.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum LogLevel {
         /** Finest detail; every step and its payload. */
         TRACE,
@@ -1255,7 +1727,14 @@ public @interface Saga {
      *
      * <p><strong>Status: RESERVED</strong> — {@link Saga#retryPolicy()} is not extracted,
      * so the emitted saga applies no declared retry behaviour.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Saga#retryPolicy()}; replaced by
+     *         {@link Saga#maxRetries()} for the count. The kernel's one retry setting is that
+     *         count, {@code FlowDefinitionBuilder.maxRetries}; no kernel contract spaces retries or
+     *         filters them by exception type. A step that needs either retries inside its own
+     *         method.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
     @interface SagaRetryPolicy {

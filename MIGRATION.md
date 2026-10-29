@@ -460,6 +460,77 @@ public SagaAction refundPayment() {
 - **Processor:** `exeris-tooling` reads none of the three, so there is no fallback to keep;
   javac's `[removal]` warning is the build-time signal.
 
+### `@Saga` and `@SagaStep` attributes with no kernel flow contract are deprecated — removal in 1.0.0
+
+**Why:** most of `@Saga` and `@SagaStep` describes a saga engine with its own dispatch, retry,
+deduplication, concurrency and monitoring machinery. The kernel's flow contract
+(`eu.exeris.kernel.spi.flow`, stable at 1.0) is narrower: a saga is a definition of named steps,
+each a `FlowStepAction` with an optional compensation, plus one deadline and one retry count.
+An attribute with nothing in that contract to compile to would be frozen at 1.0 as a promise no
+build can keep, so each one is deprecated for removal and says where the behaviour lives instead.
+None is read by a producer except where the table says so.
+
+| Family | Attributes | What the kernel does instead (v0.13.0) | Where it goes |
+|---|---|---|---|
+| Correlation and idempotency | `@Saga.correlationIdExpression`, `.idempotent`, `.idempotencyKeyExpression`, `.idempotencyWindow`, `.idempotencyStorage`; `@SagaStep.idempotent`, `.idempotencyKey`, `.checkIdempotency` | An instance is the 128-bit id passed to `FlowScheduler.schedule` or returned by a `FlowChoreographyMapper`; a `Start` for a held id is a no-op; the dedup window is the binder's retention of the terminal row (ADR-013 A1); every step is claimed through `IdempotencyGuard` | choose the instance id where the saga is scheduled or in the mapper |
+| Instance context | `@Saga.tenantIdExpression`, `.userIdExpression`, `.initialStateExpression`, `.stateFactory` | `FlowContext` carries id, definition, step, state and deadline — no tenant, user or application state | application data keyed by the instance id |
+| Retry | `@Saga.retryPolicy` (and `@Saga.SagaRetryPolicy`), `.retryInitialDelay`, `.retryMaxDelay`, `.retryBackoffMultiplier`, `.retryJitter`, `.retryOn`, `.noRetryOn`; `@SagaStep.retries`, `.retryDelay`, `.retryBackoff`, `.maxRetryDelay`, `.retryJitter`, `.retryOn`, `.noRetryOn`, `.retryOnTimeout`, `.retryOnNetworkError` | one count per definition, `FlowDefinitionBuilder.maxRetries` | `@Saga.maxRetries`; spacing and filtering inside the step method |
+| Compensation | `@Saga.compensationOrder`, `.compensationStrategy` (and their enums); `@SagaStep.compensationRequired`, `.compensationTimeout`, `.compensationRetries`, `.compensationRetryDelay`, `.continueOnCompensationFailure` | compensations of completed steps run once, in reverse order; Core reports one that throws and runs the rest | the compensation method |
+| Persistence | `@Saga.persistence`, `.stateTable`, `.stateFormat`, `.stateCompression`, `.stateRetentionDays`, `.cleanupAfterHours`, `.archiveCompletedSagas`, `.archiveStorage` (and their enums) | per engine: `FlowEngineConfig.persistenceEnabled` and the bound `FlowSnapshotStore`; the kernel never deletes a finished row | the store the bootstrapper binds |
+| Dispatch and routing | `@Saga.commandDispatch`, `.commandTopicPattern`, `.replyTopic`, `.useOutbox`, `.defaultCommandTimeout`, `.commandAckMode` (and their enums); `@SagaStep.serviceVersion`, `.endpoint`, `.instanceSelection`, `.instanceId`, `.stickyKey`, `.commandClass`, `.commandBuilder`, `.commandPayloadExpression`, `.commandHeaders` (and `CommandHeader`, `InstanceSelection`) | a step is an action returning an outcome; the kernel dispatches nothing | the step method |
+| Events | `@SagaStep.expectedEvents`, `.failureEvents`, `.timeoutEvents`, `.compensationExpectedEvents` | a waiting step returns `PARK`; a mapper answers `Wake` from the event's routing metadata alone | a registered `FlowChoreographyMapper`; the woken step decides |
+| Flow shape | `@SagaStep.required`, `.dependsOn`, `.condition`, `.skipOnConditionFalse`, `.waitForAll`, `.failFast` | `FAIL` always compensates; Core follows one outgoing transition per step and evaluates no condition; steps run one at a time | `@SagaStep.order`; the step method returns `CONTINUE` or `FAIL` |
+| Step state | `@SagaStep.storeInState`, `.responseHandler`, `.errorHandler`, `.snapshotStateBeforeStep`, `.rollbackStateOnFailure`, `.inputMappings`, `.outputMappings`, `.responseTransform`, `.responseValidation` (and `InputMapping`, `OutputMapping`) | no response or application state on the flow | the step method |
+| Concurrency | `@Saga.maxConcurrentInstances`, `.maxConcurrentPerTenant`, `.maxConcurrentPerKey`, `.overflowBehavior`, `.overflowQueueSize` (and `OverflowBehavior`) | per engine: `FlowEngineConfig.maxConcurrentFlows`, `schedulerQueueCapacity`, `QUEUE_FULL`; no distributed lock (ADR-013) | one instance per key is one instance id; shared entities are versioned |
+| Lifecycle hooks | `@Saga.beforeStart`, `.afterStart`, `.beforeStep`, `.afterStep`, `.onComplete`, `.onFail`, `.beforeCompensate`, `.afterCompensate`, `.onTimeout` | no callback in `FlowEngine` | step and compensation methods |
+| Monitoring, logging, tests | `@Saga.emitMetrics`, `.metricPrefix`, `.durationAlertThreshold`, `.alertOnFailure`, `.alertOnCompensationFailure`, `.alertOnTimeout`, `.retryAlertThreshold`, `.alertChannels`, `.failureAlertSeverity`, `.healthCheck`, `.exposeStatusApi`, `.logLevel`, `.logStateOnStep`, `.enableTracing`, `.traceSampleRate`, `.generateTestFixtures`, `.inMemoryPersistenceInTests`, `.mockServicesInTests` (and `AlertSeverity`, `LogLevel`); `@SagaStep.emitMetrics`, `.metricTags`, `.alertThreshold`, `.alertOnFailure`, `.logLevel`, `.logPayload`, `.logResponse`, `.traceSpanName` (and `MetricTag`, `LogLevel`) | per-engine flight-recorder events and `FlowEngine.stats()`; the generated saga test is emitted regardless | operator tooling over that telemetry |
+| Security | `@SagaStep.roles`, `.permissions`, `.propagateSecurityContext` | no principal on the flow; nothing checks a role when a step runs | authorize the request that starts the saga |
+| Circuit breaker | `@SagaStep.circuitBreaker`, `.circuitBreakerName`, `.circuitBreakerThreshold`, `.circuitBreakerOpenDuration`, `.circuitBreakerFallback` | none | the client the step method calls |
+
+**What stays.** `@Saga.name`, `version`, `timeout`, `maxRetries` reach the generated flow;
+`description` and `trigger` are carried; the seven compensation attributes the `-io` reader reads
+(`compensationTimeout` through `manualInterventionOnCompensationFailure`) stay, carried and inert,
+and each now says the kernel has no setting for it. `module` and `tags` are descriptive labels.
+On `@SagaStep`, `order`, `name`, `description`, `service`, `command`, `compensation`, `timeout`,
+`parallel`, `kind` and `tags` stay. The Javadoc of `@Saga.timeout` and `@Saga.maxRetries` now
+states what the generated flow does: an absent `timeout` is carried as `"PT30M"`, `maxRetries` is
+a step-level retry count rather than a restart, the Core runtime does not yet re-run a failed
+step, and a declared `maxRetries = 0` is emitted as `3`.
+
+**Impact:** a source that sets any deprecated attribute now compiles with a `[removal]` warning
+from javac. Nothing else changes: no processor and no `-io` reader reads any of them, and the
+metadata and generated output are the same as on 0.12.x. `SagaMetadata.compensationStrategy`,
+`compensationOrder`, `retryBackoff` and `monitoring`, and the `SagaStepMetadata` components no
+producer fills, are unchanged; they stay frozen as declared under
+[`MIGRATION-0.x-to-1.0.md` §3](MIGRATION-0.x-to-1.0.md).
+
+```java
+// before
+@Saga(name = "OrderFulfilmentSaga", timeout = "PT30M",
+      correlationIdExpression = "#event.orderId", maxConcurrentPerKey = 1,
+      persistence = Saga.SagaPersistence.DATABASE, onFail = "notifyOps")
+public class OrderFulfilmentSaga {
+    @SagaStep(order = 1, name = "reserveStock", service = "inventory", command = "Reserve",
+              compensation = "releaseStock", retries = 5, condition = "#state.inStock")
+    public SagaAction reserveStock() { … }
+}
+
+// after — identity, deadline and retry count on the annotation; the rest in code
+@Saga(name = "OrderFulfilmentSaga", timeout = "PT30M")
+public class OrderFulfilmentSaga {
+    @SagaStep(order = 1, name = "reserveStock", service = "inventory", command = "Reserve",
+              compensation = "releaseStock")
+    public SagaAction reserveStock() { … }   // checks stock, retries, reports — in the method
+}
+// The instance id is chosen where the saga is scheduled, e.g. derived from the order id.
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on 143 elements:
+  76 on `@Saga`, 67 on `@SagaStep`, counting the nested types).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
+
 ### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
 
 **Impact on code: none required to keep building.** `GraphEdgeMetadata` gained eight trailing,
