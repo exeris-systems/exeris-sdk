@@ -98,8 +98,9 @@ import java.util.stream.Collectors;
  * into the matching {@link DomainMetadata} facets, each mirroring the processor's
  * extraction (including its {@code streamPrefix→aggregateType} translation and
  * presence-only {@code @InternalApi}). {@link DomainMetadata#systemFields} is read
- * from the {@code annotation.system} field markers and the {@code @ExerisDomain}
- * {@code *Field} override attributes, resolved as the processor resolves them.
+ * from the {@code annotation.system} field markers, {@code @PrimaryKey} included, and the
+ * {@code @ExerisDomain} {@code *Field} override attributes, resolved as the processor
+ * resolves them.
  *
  * <p>Capability scope: {@link #readCapabilityModule} is the capability counterpart of {@link #read}:
  * it locates the first {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
@@ -115,16 +116,15 @@ import java.util.stream.Collectors;
  * build-time tooling to link (the processor sees the whole round).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
- * {@code read()} drops no annotation-level facet the processor emits:
- * {@link #unmodeledFacets} is empty for every source whose saga step orders it can
- * resolve, and the field facet is attribute-complete against {@code extractFieldMetadata}.
- * A round-trip / reattach caller should still consult {@link #unmodeledFacets} and
- * refuse (or warn) when it is non-empty — that is how a <em>future</em> processor facet
- * (e.g. a new annotation) re-arms the guard before the reader catches up, and how a
- * {@code @SagaStep.order} the reader cannot resolve is reported. (Facets the processor
- * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
- * {@code @GraphProperty}/{@code @GraphQuery}, {@code @PrimaryKey}, the
- * {@code security} annotations — are not divergences.) The guard is
+ * {@code read()} drops no annotation-level facet the processor emits, and the field facet is
+ * attribute-complete against {@code extractFieldMetadata}. {@link #unmodeledFacets} reports
+ * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
+ * is scheduled to fill, in a shape this reader does not read ({@code @GraphProperty},
+ * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), and a {@code @SagaStep.order} the reader
+ * cannot resolve. A round-trip / reattach caller consults it and refuses (or warns) when it is
+ * non-empty. (Facets neither side reads and no carrier is scheduled for — {@code @Projection},
+ * {@code @NavMenu}, {@code @EventHandler}, {@code @GraphQuery}, the {@code security}
+ * annotations — are not divergences.) The guard is
  * annotation-level, with that one attribute as the exception: attribute completeness
  * of the <em>other</em> read annotations (e.g. {@code @Relationship}, {@code @Action})
  * is verified per-slice, not by it.
@@ -149,21 +149,24 @@ import java.util.stream.Collectors;
 public final class SourceModelReader {
 
     /**
-     * Annotation simple names where {@link #read} <em>diverges from the annotation
-     * processor</em>: the processor populates a distinct {@link DomainMetadata}
-     * facet from them, but the reader does not yet. These are the dangerous ones
-     * for reattach — the conflict-detection baseline is the processor's codegen
-     * output, so a facet the processor keeps and the reader drops would be
-     * misread as a user edit.
+     * Annotation simple names where {@link #read} <em>may diverge from the annotation
+     * processor</em>: the processor populates, or is scheduled to populate, a
+     * {@link DomainMetadata} component from them, and this reader does not read them.
+     * These are the dangerous ones for reattach — the conflict-detection baseline is the
+     * processor's codegen output, so a facet the processor keeps and the reader drops
+     * would be misread as a user edit.
      *
-     * <p><b>Empty</b>: every facet the processor emits is read — domain attributes,
-     * events, graph (with its edges)/saga/event-sourcing/internal-API, system fields,
-     * and the field {@code @Field}/{@code @Validation} surface. The set is retained as the
-     * guard's contract: a future processor facet (a new annotation the reader does
-     * not yet read) is added here, which re-arms {@link #unmodeledFacets} until the
-     * reader catches up. Matched by simple name (no import resolution).
+     * <p>Each member has an AST carrier whose extraction rules the processor has not fixed:
+     * {@code @GraphProperty} ({@code GraphMetadata.properties}), {@code @UIGroup}
+     * ({@code UIMetadata.groups}), {@code @Blob} ({@code FieldMetadata.blob}) and
+     * {@code @Channel} ({@code DomainMetadata.channel}). Reading one before those rules are
+     * fixed would produce a value the processor may not, which is the drift this guard
+     * reports, so the reader leaves the carrier at its default and the guard names the
+     * annotation instead. A member leaves the set in the change that reads it the way the
+     * processor does. Matched by simple name (no import resolution).
      */
-    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS =
+            Set.of("GraphProperty", "UIGroup", "Blob", "Channel");
 
     /**
      * How many constant references and wrappers {@link #intConstant} follows before giving up,
@@ -258,13 +261,12 @@ public final class SourceModelReader {
      * <b>empty</b> result means {@code read()} produces the same {@code DomainMetadata}
      * facets the processor would for this source.
      *
-     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
-     * which is <b>empty</b> — every processor facet is read, the capability surface
-     * included. That part re-arms only when a future processor facet is registered in
-     * that set ahead of the reader. <b>Not</b> flagged: facets neither side reads
-     * ({@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
-     * {@code @GraphProperty}/{@code @GraphQuery}, {@code @Tab}/{@code @UIGroup},
-     * {@code @PrimaryKey}, the {@code security} annotations).
+     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
+     * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob} and {@code @Channel}, whose
+     * carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
+     * side reads and no carrier is scheduled for ({@code @Projection}, {@code @NavMenu},
+     * {@code @EventHandler}, {@code @GraphQuery}, {@code @Tab}, the {@code security}
+     * annotations).
      *
      * <p>Also detected, as {@code @SagaStep}: a saga step on the {@code @ExerisDomain}
      * type whose {@code order} this reader cannot resolve — a constant from another file,
@@ -419,12 +421,23 @@ public final class SourceModelReader {
     private record SystemFieldRole(String annotation, String overrideAttribute) {
     }
 
+    /** The {@code @ExerisDomain} attribute, and {@link SystemFieldsMetadata} component, naming the key. */
+    private static final String PRIMARY_KEY_FIELD = "primaryKeyField";
+
     /**
-     * The roles {@link #systemFields} reads, in the processor's order ({@code SYSTEM_FIELD_ROLES}).
-     * {@code @PrimaryKey} is absent on both sides: {@code primaryKeyField} comes from the override
-     * attribute only.
+     * The {@code @PrimaryKey.strategy} values the processor refuses (ADR-104): {@code SEQUENCE} and
+     * {@code IDENTITY} need a key that is not a {@code UUID}, and {@code NONE} a create path that
+     * never assigns one. A marker declaring one of them is not read.
+     */
+    private static final Set<String> REFUSED_PRIMARY_KEY_STRATEGIES = Set.of("SEQUENCE", "IDENTITY", "NONE");
+
+    /**
+     * The roles {@link #systemFields} reads: the processor's ten ({@code SYSTEM_FIELD_ROLES}), in its
+     * order, and {@code @PrimaryKey}, which fills {@code primaryKeyField} under the same rules
+     * (ADR-104).
      */
     private static final List<SystemFieldRole> SYSTEM_FIELD_ROLES = List.of(
+            new SystemFieldRole("PrimaryKey", PRIMARY_KEY_FIELD),
             new SystemFieldRole("TenantId", "tenantIdField"),
             new SystemFieldRole("Version", "versionField"),
             new SystemFieldRole("SoftDelete", "softDeleteField"),
@@ -446,8 +459,13 @@ public final class SourceModelReader {
      * nothing reads with no record, as it is emitted.
      *
      * <p>A role the processor refuses is left to the override here, as the refusal leaves it
-     * there: a marker on more than one field, and a marker whose field differs from a non-blank
-     * override. {@code sharedScopeField} is recorded under an explicit
+     * there: a marker on more than one field, a marker whose field differs from a non-blank
+     * override, and a {@code @PrimaryKey} whose {@code strategy} is one the processor refuses.
+     * The refusals ADR-104 places on the key itself — a key that is not a {@code UUID}, a missing
+     * key field, a renamed key beside a field {@code id} — are not mirrored, for the marker as for
+     * the override: the processor emits nothing for such an entity. An explicit
+     * {@code primaryKeyField = "id"} declares nothing on its own, since {@code "id"} is the
+     * attribute's default. {@code sharedScopeField} is recorded under an explicit
      * {@code dataScope = UNIVERSE} only; on any other tier the processor drops the marker with a
      * warning. Markers are matched by simple name, as every annotation here is, so another
      * library's {@code @Version} on an entity field reads as the system marker.
@@ -460,6 +478,9 @@ public final class SourceModelReader {
                 continue;
             }
             String annotated = carriers.getFirst();
+            if (PRIMARY_KEY_FIELD.equals(role.overrideAttribute()) && refusedPrimaryKeyStrategy(type)) {
+                continue;
+            }
             Optional<String> override = nonBlankStringAttr(domain, role.overrideAttribute());
             if (override.isPresent() && !override.get().equals(annotated)) {
                 continue;
@@ -471,15 +492,16 @@ public final class SourceModelReader {
         }
 
         boolean anyOverride = SYSTEM_FIELD_ROLES.stream()
+                .filter(role -> !PRIMARY_KEY_FIELD.equals(role.overrideAttribute()))
                 .anyMatch(role -> nonBlankStringAttr(domain, role.overrideAttribute()).isPresent())
-                || nonBlankStringAttr(domain, "primaryKeyField").filter(name -> !"id".equals(name)).isPresent();
+                || nonBlankStringAttr(domain, PRIMARY_KEY_FIELD).filter(name -> !"id".equals(name)).isPresent();
         if (!anyOverride && declared.isEmpty()) {
             return null;
         }
 
         SystemFieldsMetadata d = SystemFieldsMetadata.defaults();
         return new SystemFieldsMetadata(
-                nonBlankStringAttr(domain, "primaryKeyField").orElse(d.primaryKeyField()),
+                resolvedSystemField(declared, domain, PRIMARY_KEY_FIELD, d.primaryKeyField()),
                 resolvedSystemField(declared, domain, "createdAtField", d.createdAtField()),
                 resolvedSystemField(declared, domain, "createdByField", d.createdByField()),
                 resolvedSystemField(declared, domain, "updatedAtField", d.updatedAtField()),
@@ -490,6 +512,19 @@ public final class SourceModelReader {
                 resolvedSystemField(declared, domain, "softDeleteTimestampField", d.softDeleteTimestampField()),
                 resolvedSystemField(declared, domain, "softDeletedByField", d.softDeletedByField()),
                 declared.get("sharedScopeField"));
+    }
+
+    /**
+     * Whether the {@code @PrimaryKey} on {@code type}'s fields declares a {@code strategy} the
+     * processor refuses. Called with exactly one carrier, so at most one marker is inspected.
+     */
+    private boolean refusedPrimaryKeyStrategy(ClassOrInterfaceDeclaration type) {
+        return type.getFields().stream()
+                .flatMap(field -> field.getAnnotations().stream())
+                .filter(annotation -> "PrimaryKey".equals(simpleName(annotation.getNameAsString())))
+                .anyMatch(marker -> enumAttr(marker, "strategy")
+                        .filter(REFUSED_PRIMARY_KEY_STRATEGIES::contains)
+                        .isPresent());
     }
 
     /** One role's field: the marker's, else the override, else {@code fallback}. */
@@ -1102,8 +1137,8 @@ public final class SourceModelReader {
      * absent. Mirrors {@code extractGraphMetadata}: the label is
      * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
      * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
-     * properties stay {@code null} and queries empty. The {@code @GraphProperty} /
-     * {@code @GraphQuery} member annotations are read by neither side.
+     * properties stay {@code null} and queries empty. {@code @GraphQuery} is read by neither
+     * side; {@code @GraphProperty} is not read here and {@link #unmodeledFacets} reports it.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");

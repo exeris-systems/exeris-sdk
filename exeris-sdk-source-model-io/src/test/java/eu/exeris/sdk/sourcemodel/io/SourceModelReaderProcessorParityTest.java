@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -29,6 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * to produce the same two JSON values, absence included. The fixtures cover
  * only declarations the processor accepts; the ones it refuses are pinned below against the
  * processor's documented outcome, since a refused build emits nothing to compare against.
+ *
+ * <p>The {@code PrimaryKey*} fixtures pin the {@code @PrimaryKey} marker ahead of its processor
+ * half: their expected JSON is what ADR-104 obligations 11 and 12 require the processor to emit
+ * once it reads the marker, under the rules of the other ten system-field markers.
  */
 @DisplayName("reader↔processor parity: systemFields and graph edges")
 class SourceModelReaderProcessorParityTest {
@@ -52,7 +57,7 @@ class SourceModelReaderProcessorParityTest {
 
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"OverrideOnly", "Markers", "Universe", "SharedScopeOffTier", "SharedScopeOnly",
-            "Plain", "Edges", "EdgesMixed"})
+            "Plain", "Edges", "EdgesMixed", "PrimaryKeyMarker", "PrimaryKeyAgreeing", "PrimaryKeyOnId"})
     void readerEmitsWhatTheProcessorEmits(String name) {
         JsonNode expected = MAPPER.readTree(fixture(name + ".expected.json"));
         JsonNode actual = MAPPER.valueToTree(read(fixture(name + ".java")));
@@ -111,6 +116,50 @@ class SourceModelReaderProcessorParityTest {
                 assertThat(fields.versionField()).isEqualTo("named");
                 assertThat(fields.createdAtField()).isEqualTo("born");
             });
+        }
+
+        /**
+         * A refused {@code @PrimaryKey} leaves the key to the override, else {@code id}; an
+         * {@code expected} of {@code null} means no {@code systemFields} record at all.
+         */
+        @ParameterizedTest(name = "{0}")
+        @CsvSource(delimiter = '|', value = {
+                "contradicting its override | (primaryKeyField = \"named\") | @PrimaryKey private java.util.UUID marked; private java.util.UUID named; | named",
+                "contradicting an explicit default | (primaryKeyField = \"id\") | @PrimaryKey private java.util.UUID marked; |",
+                "on two fields | | @PrimaryKey private java.util.UUID one; @PrimaryKey private java.util.UUID two; |"})
+        void aRefusedPrimaryKeyMarkerIsNotRead(String refusal, String domainAttributes, String members,
+                                               String expected) {
+            DomainMetadata domain = read("""
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey;
+                    @ExerisDomain%s
+                    public class A { %s }
+                    """.formatted(domainAttributes == null ? "" : domainAttributes, members));
+            if (expected == null) {
+                assertThat(domain.systemFields()).as(refusal).isNull();
+            } else {
+                assertThat(domain.systemFields().primaryKeyField()).as(refusal).isEqualTo(expected);
+            }
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"PrimaryKey.Strategy.SEQUENCE", "Strategy.IDENTITY", "NONE"})
+        void aPrimaryKeyMarkerWithARefusedStrategyIsNotRead(String strategy) {
+            DomainMetadata domain = read("""
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey.Strategy;
+                    import static eu.exeris.sdk.annotation.system.PrimaryKey.Strategy.NONE;
+                    @ExerisDomain(versioned = true, versionField = "rev")
+                    public class A {
+                        @PrimaryKey(strategy = %s) private java.util.UUID orderId;
+                        private long rev;
+                    }
+                    """.formatted(strategy));
+            assertThat(domain.systemFields().primaryKeyField()).isEqualTo("id");
+            assertThat(domain.systemFields().versionField()).isEqualTo("rev");
         }
 
         @Test

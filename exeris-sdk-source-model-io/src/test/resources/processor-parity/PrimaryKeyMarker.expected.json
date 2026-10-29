@@ -1,0 +1,11 @@
+{
+  "systemFields": {
+    "primaryKeyField": "orderId",
+    "createdAtField": "createdAt",
+    "createdByField": "createdBy",
+    "updatedAtField": "updatedAt",
+    "updatedByField": "updatedBy",
+    "tenantIdField": "tenantId",
+    "versionField": "revision"
+  }
+}

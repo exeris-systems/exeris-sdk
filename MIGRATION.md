@@ -642,6 +642,22 @@ reader, producer and parity suites each gain a case under it. A binding whose si
 sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
 `Facet` needs a new arm.
 
+### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports four more annotations
+
+`read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
+as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
+unless a non-blank `@ExerisDomain(primaryKeyField)` names a different field, which then wins. A
+marker with `strategy = SEQUENCE`, `IDENTITY` or `NONE` is not read (ADR-104 refuses those). An
+entity whose only system-field declaration is the marker now reads with a `systemFields` record
+where it read `null` before. exeris-tooling reads the marker the same way from 0.11.0; a baseline
+written by an earlier processor carries `id` for such an entity, so regenerate it.
+
+`unmodeledFacets()` now returns `@GraphProperty`, `@UIGroup`, `@Blob` and `@Channel` when the
+source uses them. It returned nothing for them before. A round-trip, reattach or conflict-detection
+caller that refuses on a non-empty result now refuses those sources; `read()` itself is unchanged
+for them and leaves `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and
+`DomainMetadata.channel` at their defaults.
+
 ---
 
 ## 0.10.x → 0.11.x

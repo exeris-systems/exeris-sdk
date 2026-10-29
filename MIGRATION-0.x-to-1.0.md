@@ -380,7 +380,7 @@ freeze or is explicitly re-dispositioned here.
       `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
       `derived`, `blob`.
     - `SystemFieldsMetadata` — 0 of 11. (`primaryKeyField` is populated and
-      read by no generator, which is a different gap.)
+      read by the generators, so it is not part of this count.)
 
     That is 26. Five are the ADR-072 exception §2 already excludes from the
     freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,

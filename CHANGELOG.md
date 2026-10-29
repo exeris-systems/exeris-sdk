@@ -43,6 +43,26 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` reads `@PrimaryKey` into `SystemFieldsMetadata.primaryKeyField`.**
+  For a source that declares the marker, `read()` returns a different `primaryKeyField` than
+  before, and a `systemFields` record where the marker was the only declaration.
+  The marker is resolved under the rules of the other ten `annotation.system` markers: on exactly
+  one field, and not contradicting a non-blank `@ExerisDomain(primaryKeyField)`, it names the key;
+  otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
+  `NONE`, which ADR-104 refuses, is not read. `generated`, `sequenceName` and `allowClientId` are
+  not carried. `@PrimaryKey` is labelled PARTIAL in its javadoc, the `system` package javadoc and
+  the root `package-info` index. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
+  (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
+  than a 0.10.x processor baseline holds.
+
+- **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
+  `@Channel`.** It returned nothing for them before. exeris-tooling 0.11.0 is scheduled to fill
+  `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
+  extraction rules are not fixed yet, so `read()` leaves the four carriers at their defaults and
+  the guard names the annotation. A reattach or conflict-detection caller refuses a source that
+  uses one of them. Each leaves the guard in the release that reads it as the processor does.
+  See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Changed
 
 - **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
@@ -53,6 +73,12 @@ for per-version upgrade steps.
   / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
 
 ### Fixed
+
+- **`@ExerisDomain.primaryKeyField` is labelled LIVE.** `exeris-tooling`
+  0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
+  foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
+  by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
+  that.
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
   class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
@@ -65,6 +91,26 @@ for per-version upgrade steps.
   `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
 
 ### Added
+
+- **The pre-construction brief contract (ADR-106).** `exeris-sdk-source-model` gains
+  `eu.exeris.sdk.brief`: `Brief` and the records it carries (`Actor`, `GlossaryTerm`, `Workflow`
+  with `EarsCriterion`, `NonFunctionalRequirement`, `Integration`, `OpenQuestion`, `FulfilledBy`),
+  and `BriefReadiness`, the readiness gate as a function. A brief is
+  `docs/briefs/<area>.brief.yaml` in an application project, opening with `briefSchema: <sdk
+  version>`. It carries what `DomainMetadata` cannot and references the source model without
+  re-encoding it: `DataScope` is reused by type, concern hints are catalog annotation names, and
+  `fulfilledBy` names an entity, action, rule or saga. `BriefSchemaProcessor` emits
+  `META-INF/exeris/brief-schema.json` into the source-model jar, stamped `briefSchemaFormat: 1`;
+  every object is `additionalProperties: false`, and the concern-hint `enum` is read from the
+  annotation sources of the same build. `BriefSchemaContractTest` holds the schema to its contract:
+  one rejection case per structure `DomainMetadata` carries, derived from its record components;
+  EARS fields checked per kind; every hint in the catalog; fixtures with planted gaps run through
+  both a draft 2020-12 validator and `BriefReadiness`. The module's compile classpath is unchanged
+  (`jackson-annotations`); `jackson-dataformat-yaml` and `json-schema-validator` 3.0.8 are test
+  scope and managed in the BOM. **Freeze rule:** before 1.0 a change to the brief is recorded here
+  and ships with its fixtures updated in the same change; from 1.0 it is additive only, and
+  removing or renaming a brief property is a breaking change under the rule for an annotation
+  attribute.
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
   named after their attributes: `compensationMaxRetries`, `compensationRetryDelay`,

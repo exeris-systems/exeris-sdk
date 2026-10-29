@@ -31,6 +31,12 @@
              the declaration model. The duplication is guarded, not tolerated:
              AstSchemaContractTest fails if the two disagree. Bump both together. -->
         <ast.schema.version>0.13.0</ast.schema.version>
+
+        <!-- The brief wire-format integer stamped into META-INF/exeris/brief-schema.json as
+             briefSchemaFormat (ADR-106). A consumer pins to this number, not to the SDK
+             version, so it moves only when a brief written for the previous number would stop
+             validating. -->
+        <brief.schema.format>1</brief.schema.format>
     </properties>
 
     <dependencies>
@@ -62,12 +68,24 @@
             <artifactId>jackson-databind</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Test scope: the brief fixtures are YAML, as briefs are, and are validated against
+             the emitted brief-schema.json. Neither reaches the published dependency set. -->
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- The AST JSON Schema is generated from THIS module's own sources, by a
-                 processor on the javac processor path. That path is not this project's
+            <!-- The AST JSON Schema and the brief JSON Schema (ADR-106) are generated from THIS
+                 module's own sources, by processors on the javac processor path. That path is not this project's
                  dependency tree: the published jar stays free of the emitter and of
                  databind. (The enforcer rule below proves the JavaParser half of zero
                  coupling only — ADR-037; databind is held at test scope by its declaration
@@ -88,10 +106,17 @@
                             </annotationProcessorPaths>
                             <annotationProcessors>
                                 <processor>eu.exeris.sdk.catalog.AstSchemaProcessor</processor>
+                                <processor>eu.exeris.sdk.catalog.BriefSchemaProcessor</processor>
                             </annotationProcessors>
                             <compilerArgs>
                                 <arg>-Aexeris.schema.sdkVersion=${project.version}</arg>
                                 <arg>-Aexeris.schema.astVersion=${ast.schema.version}</arg>
+                                <arg>-Aexeris.brief.schemaFormat=${brief.schema.format}</arg>
+                                <!-- The concern-hint vocabulary is read from the annotation
+                                     sources themselves, the input AnnotationCatalogProcessor
+                                     reads, so neither processor depends on the other's output
+                                     or on the order the modules build in. -->
+                                <arg>-Aexeris.brief.annotationSources=${project.basedir}/../exeris-sdk-annotations/src/main/java</arg>
                             </compilerArgs>
                         </configuration>
                     </execution>
