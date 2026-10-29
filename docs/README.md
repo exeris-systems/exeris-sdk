@@ -13,6 +13,9 @@ Find the page that owns an answer. Each fact has one home; the other pages link 
 
 | Question | Page |
 |---|---|
+| Where do I start, and how do I do a given task with the SDK? | [guides/README.md](guides/README.md) |
+| Is there a compiled example of a given annotation or API? | [examples/README.md](examples/README.md) |
+| What does one module guarantee, and how does it fail? | [modules/README.md](modules/README.md) |
 | How do the modules fit together, and what does the SDK never do? | [architecture.md](architecture.md) |
 | What does a term such as baseline, facet or SKU mean? | [glossary.md](glossary.md) |
 | Which annotation or record is frozen for 1.0, reserved, or deprecated? | [stability-matrix.md](stability-matrix.md) |
