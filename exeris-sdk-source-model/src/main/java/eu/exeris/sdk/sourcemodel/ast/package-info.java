@@ -270,8 +270,8 @@
  * {@code stable}. The blob facet is part of the 1.0.0 freeze, frozen as declared.
  * The schedule facet is not: the kernel issues no service principal, so the build
  * refuses every {@code @Schedule} (kernel ADR-057 Amendment A1), and the facet waits
- * on one. {@code SchemaVersion} moved to {@code "0.11.0"} with them — the schema
- * names the shape, not its population.
+ * on one. {@code SchemaVersion} names the shape, not its population, so an
+ * unpopulated facet still counts toward it.
  *
  * <h2>Route access, duplex channel, shared-scope key</h2>
  * <p>Three trailing, nullable components, each the AST twin of an annotation:

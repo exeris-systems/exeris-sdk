@@ -19,6 +19,9 @@ slug: adr/ADR-072
 | **Owning Repo** | `exeris-sdk`                                                                                              |
 | **Driven By**   | [`ROADMAP.md`](../../ROADMAP.md) §"Kernel 0.11 SPI — dispositioned, deliberately not pre-1.0" — this ADR amends that disposition |
 | **Compliance**  | AST wire-format contract; record-growth stance ([`MIGRATION-0.x-to-1.0.md`](../../MIGRATION-0.x-to-1.0.md) §3); Field/Validation canonical scoping ([ADR-054](ADR-054-field-validation-min-max-pattern-cut.md)); inert-attribute honesty rule |
+| **Amended**     | 2026-08-28 (`@RouteAccess`); 2026-09-03 (`@Channel`); 2026-10-29 (`-io` reader reads route access); 2026-10-29 (0.13.0: `@RouteAccess` and `@Blob` frozen) |
+
+> **Current status (2026-10-29 amendment, obligations 29–35).** The title and the decision below record the reservation as accepted. Since kernel v0.13.0, `@RouteAccess` and `@Blob` and their carriers are part of the 1.0.0 freeze; `@Schedule` and `@Channel` remain reserved and outside it.
 
 > **Registry note.** Drafted as `ADR-070` against a stale local checkout of [`exeris-docs`](https://github.com/exeris-systems/exeris-docs); upstream, `070` belongs to `exeris-tooling` (generated composition root) and `071` to the kernel (operational-limits configuration path), so this is `072`. The house rule is to reserve the number in `exeris-docs/adr-index.md` **before** writing the content, and that ordering was inverted here — the index row is owed. Fetch before taking a number; the ecosystem shares one namespace and a local index goes stale silently.
 
@@ -34,7 +37,7 @@ This repo's ROADMAP dispositioned both as **"1.x, not before"**, on one argument
 
 ## 🏁 The Decision
 
-**Both surfaces land in 0.11.0 as `@Retention(SOURCE)` annotations plus AST carriers, shipped *reserved* — no processor extracts them, no generator consumes them, and each says so — and are excluded from the 1.0.0 freeze until the kernel promotes its package out of `preview` and the `exeris-tooling` transcription exists.**
+**Both surfaces land in 0.11.0 as `@Retention(SOURCE)` annotations plus AST carriers, shipped *reserved* — no processor extracts them, no generator consumes them, and each says so — and are excluded from the 1.0.0 freeze until the kernel promotes its package out of `preview` and the `exeris-tooling` transcription exists.** *(Superseded by obligation 29 for `@Blob`, and by obligations 31 and 32 for the promotion condition of `@Schedule` and `@Channel`.)*
 
 The reservation is not a new device. `UNIVERSE` shipped exactly this way in 0.10.0 ([ADR-059](ADR-059-data-scope-expression.md)), and `ActionMetadata.realTimeUpdates` carries the same "reserved, extraction pending tooling" note. What makes it legitimate in all three cases is the same three-part test, which this ADR adopts as the standing rule for reserved surface:
 
@@ -122,7 +125,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 27. **A permission the reader cannot fold is reported.** The reader reads string literals; a `permissions` element written as a constant reference reaches the processor folded by javac and the reader not at all. `unmodeledFacets()` reports such a source as `@ExerisDomain` or `@Action`, the way it reports an unresolvable `@SagaStep.order`, because a dropped permission widens the route it guards.
 
-28. **No schema or freeze change.** No AST component is added, so `SchemaVersion.CURRENT` and the record arities stay; the freeze status of route access is settled by the 2026-10-29 (0.13.0) amendment below, obligation 29.
+28. **No schema or freeze change.** No AST component is added, so `SchemaVersion.CURRENT` and the record arities stay; obligation 15's exclusion from the 1.0.0 freeze stands. *(Superseded by obligation 29: route access enters the 1.0.0 freeze.)*
 
 ## Amendment — 2026-10-29 (0.13.0): kernel v0.13.0 settles the reservation — `@RouteAccess` and `@Blob` frozen, `@Schedule` and `@Channel` stay reserved
 
@@ -146,7 +149,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 **Positive.** The Entity-First premise stops having two holes the kernel has already filled: an author can express an attachment and a schedule in the one place ADR-003 says the truth lives. `exeris-tooling` gets a target to generate against instead of a design task, which is the sequencing kernel ADR-056 asked for by name. And the reservation costs nothing that a 1.x-deferred surface would have saved — the design pressure is paid now either way, and paying it while breaking changes are still legal is strictly cheaper than paying it after the freeze, when the shape would arrive as an irrevocable additive minor.
 
-**Negative / accepted cost.** Two more reserved surfaces in a published `0.x` artifact, which is the shape the 0.6.x honesty pass exists to police, and there are now three of them (`UNIVERSE`, `realTimeUpdates`, and this pair). The three-part test above is the guard, but the honest accounting is that reserved surface has a carrying cost and the count is going up, not down. If the tooling transcription slips past 1.0.0, the right move is to say so in the notes — or to drop the surface in the freeze cut, which 0.x still permits.
+**Negative / accepted cost.** Two more reserved surfaces in a published `0.x` artifact, which is the shape the 0.6.x honesty pass exists to police, and there are now three of them (`UNIVERSE`, `realTimeUpdates`, and this pair). *(Superseded by obligation 35: of the four surfaces this ADR reserved, two remain outside the freeze.)* The three-part test above is the guard, but the honest accounting is that reserved surface has a carrying cost and the count is going up, not down. If the tooling transcription slips past 1.0.0, the right move is to say so in the notes — or to drop the surface in the freeze cut, which 0.x still permits.
 
 **Neutral.** The `SchemaVersion` bump degrades `exeris/applyMutation` to `NO_BASELINE` in `exeris-platform`'s LSP until codegen re-stamps its baselines. This is the same one-milestone degradation ADR-059 caused and is expected, not a defect.
 
