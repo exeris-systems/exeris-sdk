@@ -214,8 +214,9 @@ The 1.0.0 contract in this document is the **Java** surface: annotations, AST re
 parser/writer, the composition modules. The npm package `exeris-sdk-ui-kit` is not part of it and
 does not freeze with it.
 
-It is at `0.2.0` today against a `0.12.0` Java line, and the precedent is already in the
-ecosystem: `@exeris/codegen-ts` runs at `0.2.0` against `exeris-tooling`'s `0.8.0`. The two kinds
+Its version is the one in `exeris-sdk-ui-kit/package.json`, on a line of its own that does not
+follow the Java modules', and the precedent is already in the ecosystem: `@exeris/codegen-ts`
+versions apart from `exeris-tooling` the same way. The two kinds
 of contract fail differently — a Java break is a compile error in a consumer's build, a CSS break
 is a visual regression — and binding a design system's release cadence to a compilation
 contract's would hold back the half Studio and a headless CMS drive hardest.
