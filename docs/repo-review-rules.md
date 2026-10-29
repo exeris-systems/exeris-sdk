@@ -4,7 +4,7 @@ type: reference
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-09-25
+last-verified: 2026-10-29
 ---
 
 # Review rules for `exeris-sdk`
@@ -14,10 +14,10 @@ The `repo-routine` extension of `exeris-systems/.github`'s `docs-guardrails-revi
 and raises severities; it lowers nothing and skips nothing. One review, one verdict, one publisher.
 
 **The criteria are not authored here.** They are owned by the policies under `.agents/policies/`,
-which `AGENTS.md` names and `.agents/workflows/sdk-pr-review.md` orders. This file names the
-questions a reviewer must reach for and the severity each answer carries. Read the policy a rule
-names before applying it: a rule copied here would be a second place to author it, which
-`agents-md-schema.md` rule 2 forbids.
+which `AGENTS.md` names and `.agents/workflows/sdk-pr-review.md` orders, and for S8 by the
+`exeris-sdk-doc-impact-triage` skill. This file names the questions a reviewer must reach for and
+the severity each answer carries. Read the policy or skill a rule names before applying it: a rule
+copied here would be a second place to author it, which `agents-md-schema.md` rule 2 forbids.
 
 ## What this repository is answerable for
 
@@ -67,6 +67,16 @@ S7. **A contract regression has a test that catches it.** This specialises the s
     `AnnotationContractTest` does not reach, or an exception carved out of the JaCoCo gate on
     `exeris-sdk-source-model` or the Vitest gate on `exeris-sdk-ui-kit` → `[CONTRACT]`.
 
+S8. **A published page stays true to the code** (`.agents/skills/exeris-sdk-doc-impact-triage/SKILL.md`,
+    whose path map names the candidate pages for each changed path). A diff that changes what a
+    public type does, what `SourceModelReader` carries, a javadoc `Status:` line, a
+    `forRemoval`, a module's dependencies or the reactor, or a file in `exeris-sdk-examples`, and
+    leaves a candidate page under `docs/` stating what is no longer true → `[DOC DEBT]`. A
+    `docs/stability-matrix.md` row that no longer matches its ruling, or a quoted snippet that no
+    longer matches its cited symbol → `[CONTRACT]`: consumers read the tier and the snippet as the
+    contract. A `last-verified` date or verified-against commit moved on a page the diff did not
+    re-check → `[STYLE]`.
+
 ## Where this does not apply, and what it costs
 
 Not to correctness, scope, or the pull request's body and commits. The shared `code` and `pr` parts
@@ -75,7 +85,9 @@ drifts in one of them. Not to `ui-kit.md` or `javadoc-and-contract-emitters.md`:
 the shared `code-docs` part's and the Javadoc and TSDoc gates', and whether either policy earns a
 rule of its own here is a change of its own.
 
-The cost is that S1 to S7 are prose a reviewer applies, not a program. This repository hands the
+The cost is that S1 to S8 are prose a reviewer applies, not a program. This repository hands the
 review no `repo-checks` output, so the tests these rules name are evidence only through the build
 checks on the pull request, which the reviewer cannot read. A rule the reviewer could only check by
-running a test is reported as unchecked, not as passing.
+running a test is reported as unchecked, not as passing. S8 shares the limit: the `Docs citations`
+step in `build.yml` catches a cited path or symbol that disappears, and the reviewer judges only
+whether a page's claims still hold.
