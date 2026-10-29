@@ -41,6 +41,15 @@ import java.lang.annotation.Target;
  * owner-pinned writes are two predicates over two columns, so an entity that
  * declares this marker and no owner has described a row nothing can write.
  *
+ * <h2>Write pinning and absence</h2>
+ * <p>The write check pins the tag: a written row is tenant-private (no scope) or carries the
+ * scope the request published, so a request cannot publish a row into a scope it does not hold.
+ * An owner may clear its own row's scope from a request that does not carry it, because that
+ * narrows visibility; it cannot keep or set a scope the request does not hold. A request that
+ * publishes no scope reads only its tenant's rows and matches no shared row, and a statement
+ * without a tenant bound fails and does not read an empty table (kernel ADR-012 §4c.2 and
+ * §4c.3).
+ *
  * <h2>Supported Types:</h2>
  * <ul>
  *   <li>{@code UUID} - recommended</li>

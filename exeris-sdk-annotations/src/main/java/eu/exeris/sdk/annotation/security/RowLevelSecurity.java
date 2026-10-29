@@ -44,6 +44,13 @@ import java.lang.annotation.*;
  *       row.</li>
  * </ul>
  *
+ * <p>A policy that claims conformance with kernel ADR-012 §4c.3 raises when no tenant key is
+ * published, for reads and for writes: a request without a tenant bound fails the statement
+ * ({@code EX-PERS-5003}) and does not read an empty table. The shared-scope arm differs, because
+ * an absent scope is the tenant-private case and matches no row. The platform refuses to boot a
+ * pool whose database role carries {@code SUPERUSER} or {@code BYPASSRLS} (see
+ * {@link #bypassRoles()}), because such a role skips every policy.
+ *
  * <p>Migration:
  * {@snippet lang="java" :
  * // before
