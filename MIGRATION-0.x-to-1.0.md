@@ -4,7 +4,7 @@ type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
 status: draft
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Migration guide: 0.x → 1.0.0 (skeleton)
@@ -146,30 +146,36 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   1.x line. That sequencing constraint is why 0.10.0 exists as a milestone.
 - **Reserved surfaces** (`@Derived` / `@Rule` / `@SagaTransition` /
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
-  `system` field markers, `@ExerisDomain.validationMode`) — frozen as
-  declared; extraction/generation lands additively in 1.x. The `security`
-  annotations are not among them: they are in §1.
-- **`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and their AST carriers are
-  the one exception: NOT frozen**
+  `system` field markers, `@ExerisDomain.validationMode`, `@Blob` with
+  `FieldMetadata.blob` and `BlobMetadata`, `@RouteAccess` with
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess` and the AST
+  `RouteAccess`) — frozen as declared; extraction/generation lands additively in
+  1.x. The `security` annotations are not among them: they are in §1. `@Blob` and
+  `@RouteAccess` encode kernel surfaces that are `stable` at the kernel's 1.0
+  (kernel ADR-100), so what they still wait on is the `exeris-tooling`
+  transcription, which is downstream work against a settled premise
+  ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md), amended
+  2026-10-29, obligation 29).
+- **`@Schedule` / `@Channel` and their AST carriers are the exception: NOT frozen**
   ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md), as
-  amended 2026-08-28 and 2026-09-03). Every other reserved surface above is frozen
-  as declared, because what it waits on is downstream work against a settled
-  premise. These four encode kernel SPI surfaces the kernel itself holds at tier
-  **`preview`** in its `docs/stability-matrix.md`. Freezing an SDK annotation
-  against that would make the SDK's 1.0 promise stronger than the surface it
-  describes, which is the wrong way round. Route authorization is the clearest
-  case: the kernel moved it twice inside one minor.
+  amended 2026-10-29, obligations 31 and 32). Every other reserved surface above is
+  frozen as declared. The criterion is the kernel's, and the two fail it
+  differently.
 
-  The four are not `preview` for the same reason, and the difference is worth
-  carrying because it decides what may still be built against them. Blob,
-  scheduling and route authorization are `preview` with their shape still open.
-  WebSocket is not: kernel ADR-084 §10 gates promotion on benchmark evidence a TCK
+  `@Channel` encodes the kernel's WebSocket SPI, which kernel ADR-100 keeps at
+  tier **`preview`** at 1.0. Freezing an SDK annotation against that would make the
+  SDK's 1.0 promise stronger than the surface it describes. That `preview` is not
+  about shape: kernel ADR-084 §10 gates promotion on benchmark evidence a TCK
   structurally cannot supply — concurrent connections, throughput, a slow reader, a
-  dead peer — so what is unproven there is durability under load. That still bars
-  freezing (the kernel may yet change the contract, and a 1.0 promise over it would
-  invert the ordering), which is why `@Channel` is on this list; it does not bar
-  shaping a design-time carrier against a settled contract, which is why the
-  surface exists at all.
+  dead peer. It still bars freezing, because the kernel may yet change the
+  contract; it does not bar shaping a design-time carrier against a settled
+  contract, which is why the surface exists at all.
+
+  `@Schedule` encodes `…spi.scheduling`, which is `stable`, but it has no target at
+  1.0. The kernel issues no service principal, so a declared job would run with no
+  identity bound, and kernel ADR-057 Amendment A1 refuses every declaration at
+  build time — on any action, and on any tenant-partitioned entity. Freezing an
+  annotation no source can use would fix a shape nothing has exercised.
 
   **The graph edge's kernel-model attributes are in the same position (0.13.0).**
   `@GraphEdge.direction`, `.bidirectional`, `.inverseType`, `.weighted`, `.weightField` and
@@ -181,14 +187,12 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   change or be dropped in a 1.x minor, and are promoted when the kernel moves `…spi.graph` to
   `stable` **and** the `exeris-tooling` graph-sync generator reads them.
 
-  So `@Blob`, `@Schedule`, `@RouteAccess`, `@Channel`, `FieldMetadata.blob`,
-  `ActionMetadata.schedule`, `DomainMetadata.routeAccess`,
-  `ActionMetadata.routeAccess` and `DomainMetadata.channel` may be changed, or
-  dropped, in a 1.x minor. They
-  are promoted into the frozen surface when the kernel moves each surface to
-  `stable` **and** the `exeris-tooling` transcription exists — at which point
-  this bullet moves up into the list above. Consumers should treat them as
-  preview and pin exactly.
+  So `@Schedule`, `@Channel`, `ScheduleMetadata`, `ChannelMetadata`,
+  `ActionMetadata.schedule` and `DomainMetadata.channel` may be changed, or
+  dropped, in a 1.x minor. `@Channel` is promoted into the frozen surface when the
+  kernel moves `…spi.websocket` to `stable`; `@Schedule` when the kernel issues a
+  service principal for declared jobs — at which point each moves up into the list
+  above. Consumers should treat them as preview and pin exactly.
 
 ## 2b. `@exeris/ui-kit` is outside this freeze, and has its own
 
@@ -282,8 +286,8 @@ removals and renames fail.
   every module here is a deliberate API surface, so there is no implementation
   detail for one to hold. Practical consequence for a consumer: if it is
   `public` in a publishable module, 1.0.0 freezes it — with the single stated
-  exception in §2 (`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and
-  their AST carriers).
+  exception in §2 (`@Schedule` / `@Channel` and their AST carriers, and the
+  graph edge's kernel-model attributes).
 - **`SchemaVersion` names the wire shape**, decoupled from the artifact
   version; a baseline stamped with an older schema reads as
   `NO_BASELINE(SCHEMA_VERSION_SKEW)` — re-run codegen once after upgrading.
@@ -385,7 +389,8 @@ freeze or is explicitly re-dispositioned here.
     declared**: the processor declines it by name ("deliberately NOT extracted
     here … extracting it would only create an inert `ActionMetadata` attribute")
     and the extraction lands with its consumer. `ActionMetadata.schedule` is
-    **excluded from the freeze** per ADR-072, alongside `FieldMetadata.blob`.
+    **excluded from the freeze** per ADR-072 (obligation 31); `FieldMetadata.blob`,
+    excluded with it until the 2026-10-29 amendment, is now frozen as declared.
     `InternalApiMetadata` is the one that needed a decision: **six of its seven
     components are never populated by either path.** The processor
     (`extractInternalApiMetadata`) and the `-io` reader
@@ -412,10 +417,13 @@ freeze or is explicitly re-dispositioned here.
     - `SystemFieldsMetadata` — 0 of 11. (`primaryKeyField` is populated and
       read by the generators, so it is not part of this count.)
 
-    That is 26. Five are the ADR-072 exception §2 already excludes from the
-    freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
-    `DomainMetadata.channel`); the other 21 are frozen as declared under §3's
-    rule that everything public is contract. Whole records no producer
+    That is 26. Five were the ADR-072 exception from the freeze
+    (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
+    `DomainMetadata.channel`); since the 2026-10-29 amendment two of them
+    (`ActionMetadata.schedule`, `DomainMetadata.channel`) remain excluded under
+    §2, and the other 24 are frozen as declared under §3's rule that everything
+    public is contract. The `-io` reader has filled both `routeAccess` components
+    since 0.13.0. Whole records no producer
     populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
     `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
     `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`

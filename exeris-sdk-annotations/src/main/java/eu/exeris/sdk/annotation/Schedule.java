@@ -32,10 +32,10 @@ import java.lang.annotation.Target;
  * they are the three trigger kinds {@code JobTrigger} covers, and a declaration
  * setting two of them is not a trigger. The SDK does not enforce this: it is a
  * design-time carrier that stores what the author wrote and interprets nothing
- * (zero runtime coupling). {@code exeris-tooling} rejects a multi-kind or empty
- * declaration at build time, and the AST collapses the three attributes into a
- * single {@code ScheduleMetadata.TriggerKind} discriminator so a nonsense
- * combination is unrepresentable downstream.
+ * (zero runtime coupling). A multi-kind or empty declaration is a producer's to
+ * reject, and the AST collapses the three attributes into a single
+ * {@code ScheduleMetadata.TriggerKind} discriminator so a nonsense combination is
+ * unrepresentable downstream.
  *
  * <h2>Cron is the standard five-field syntax and nothing more</h2>
  * <p>No seconds field, no {@code @reboot}, no vendor extensions. The kernel states
@@ -48,28 +48,26 @@ import java.lang.annotation.Target;
  * <p>The kernel's fourth, event-driven kind is excluded there and therefore absent
  * here. Event-driven work is already expressible — see {@link EventHandler}.
  *
- * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
- * <p>Declared shape, not yet a running job. The kernel provides
- * {@code JobScheduler} / {@code JobDescriptor} / {@code JobTrigger} with
- * {@code AbstractJobSchedulerTck} — but no {@code exeris-tooling} processor
- * extracts {@code @Schedule}, no generator submits a job from it, and the
- * {@code exeris-sdk-source-model-io} reader does not read it, so declaring it
- * today has no generated effect. The kernel holds {@code …spi.scheduling} at
- * tier {@code preview}, so this surface is <strong>excluded from the 1.0.0
- * freeze</strong> and a 1.x minor may still change
- * it; it is promoted when the kernel package leaves {@code preview} <em>and</em> the
- * tooling transcription exists. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
+ * <h2>Open-Core status — RESERVED, refused at build time, outside the 1.0.0 freeze</h2>
+ * <p>Declared shape with no target. The kernel provides {@code JobScheduler} /
+ * {@code JobDescriptor} / {@code JobTrigger} with {@code AbstractJobSchedulerTck}, at
+ * tier {@code stable}, but issues <strong>no service principal</strong>. A declared
+ * job has no submitting request, so it runs with no {@code PrincipalContext} bound,
+ * and kernel ADR-057 Amendment A1 makes the build refuse a declaration whatever its
+ * action requires: every {@link Action} either names roles or requires an
+ * authenticated caller, and a job nobody authenticated satisfies neither. A
+ * declaration on a {@code TENANT}- or {@code UNIVERSE}-scoped entity is refused as
+ * well, because the system storage context a declared job runs under carries no
+ * isolation key. No generator submits a job from this annotation, and the
+ * {@code exeris-sdk-source-model-io} reader does not read it: it reports the
+ * annotation as an unmodeled facet.
  *
- * <p><strong>One question this surface deliberately does not answer:</strong> which
- * identity a scheduled action runs as. The kernel captures {@code PrincipalContext}
- * and {@code StorageContext} <em>at submission</em> and makes a job with no captured
- * context fail closed rather than run under an ambient identity (ADR-057 obligation
- * 5) — correctly. A declared schedule has no submission event and therefore no
- * principal to capture. Naming a run-as identity here would put an authorization
- * decision inside a design-time annotation, which is the worse of the two available
- * answers; the other is a kernel-side notion of a service principal for declared
- * jobs. It is open, it is tracked in ADR-072, and it is one of the reasons this
- * surface ships reserved rather than live.
+ * <p>This surface is <strong>excluded from the 1.0.0 freeze</strong>, and a 1.x minor
+ * may change or drop it. It is promoted when the kernel issues a service principal.
+ * That principal comes from {@code SecurityProvider} and takes its roles from
+ * application configuration; naming a run-as identity here would put an
+ * authorization decision inside a design-time annotation, so this annotation will not
+ * carry one. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
  * @since 0.11
  * @see Action

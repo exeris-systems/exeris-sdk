@@ -49,12 +49,11 @@ import java.lang.annotation.Target;
  * {@code BlobStore} / {@code BlobRef} with {@code AbstractBlobStorageTck} — but
  * no {@code exeris-tooling} processor extracts {@code @Blob}, no generator emits
  * the upload/download surfaces from it, and the {@code exeris-sdk-source-model-io}
- * reader does not read it, so declaring it today has no generated effect. The
- * kernel holds {@code …spi.storage.blob} at tier {@code preview}, so this surface
- * is <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
- * change it; it is promoted when the kernel package leaves {@code preview} <em>and</em>
- * the tooling transcription exists. See {@code docs/adr/ADR-072} and
- * {@code ROADMAP.md}.
+ * reader does not read it (it reports the annotation as an unmodeled facet), so
+ * declaring it today has no generated effect. The kernel holds
+ * {@code …spi.storage.blob} at tier {@code stable} (kernel ADR-100), so this surface
+ * is part of the 1.0.0 freeze: frozen as declared, with the transcription arriving
+ * additively. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
  * <p><strong>One combination the platform will refuse:</strong> a {@code @Blob} field
  * on an entity declared {@code @ExerisDomain(dataScope = GLOBAL)}. Global scope leaves

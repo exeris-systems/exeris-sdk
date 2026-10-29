@@ -3,7 +3,7 @@ title: Exeris SDK — Roadmap to 1.0.0 GA
 type: roadmap
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Exeris SDK — Roadmap to 1.0.0 GA
@@ -228,6 +228,11 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 > surface is conditional on the kernel moving each package to `stable` **and**
 > the `exeris-tooling` transcription existing. The other four items below are
 > unchanged — none of them meets that test today.
+>
+> **Amended 2026-10-29 (ADR-072, 0.13.0).** The promotion condition is now the
+> kernel tier alone. `@Blob` enters the 1.0.0 freeze (`…spi.storage.blob` is
+> `stable`); `@Schedule` stays reserved, because the kernel issues no service
+> principal at 1.0. See *Kernel 0.13* below.
 
 - [x] **Blob storage (kernel ADR-056)** — `BlobStore` / `BlobRef` / upload+download handles with `StorageContext.isolationKey` scoping. Entity-First gap: there is no way to declare "this entity has an attachment" — `@Field.dataType` is a free-form String hint, and the ui-kit's `.exeris-file` class is presentation-only. The kernel ADR names the consumer explicitly ("`exeris-tooling` gains something to generate against": upload and download surfaces). ~~SDK slice would be a field-level binary facet; **1.x, not before**~~ — **landed reserved in 0.11.0 (ADR-072):** `@Blob` (`container` + `contentTypes`, field-level) with `BlobMetadata` carried on `FieldMetadata.blob`. It declares **no** `maxSizeBytes` on two independent grounds — a size bound is a constraint rule, and constraint rules have one declaration site (`@Validation`) and one carrier (`FieldMetadata`) since ADR-054; and the kernel states no size policy, so the attribute would be inert against a platform with no opinion to be inert against, which is worse than inert against an unbuilt consumer. **Recorded for the transcription slice:** `@Blob` on a `dataScope = GLOBAL` entity is unstorable *by construction* — global scope leaves `isolationKey` empty and a store must terminally deny in that state rather than fall back to an unscoped location (ADR-056 obligation 5), and system-scope blob storage is named out of scope there. That is a combination for `exeris-tooling` to reject at build time, not a gap to close
 - [x] **Job scheduling (kernel ADR-057)** — `JobScheduler` / `JobDescriptor` / `JobTrigger` (cron / interval / one-shot), `PrincipalContext` + `StorageContext` captured at submission and rebound on dispatch. Entity-First gap: no way to declare "run this action on a schedule". Note the cap-facing half needs **nothing** from the SDK — `@Requires(service = JobScheduler.class)` already expresses "this cap needs the scheduler" (ADR-038: services are source-written name strings). ~~SDK slice would be an action-level trigger facet; **1.x, not before**~~ — **landed reserved in 0.11.0 (ADR-072):** `@Schedule` (`cron` / `every` / `at`, method-level beside an `@Action`) with `ScheduleMetadata` carried on `ActionMetadata.schedule`. Cron is the standard **five-field** syntax and nothing more, and the kernel's fourth (event-driven) kind is excluded there and therefore here — the SDK must not widen at the declaration site what the kernel narrowed at the execution site. The AST collapses the three mutually exclusive attributes into one `TriggerKind` discriminator, so a cron-*and*-interval combination the annotation forbids only in prose is unrepresentable downstream; both new records are class-level `NON_NULL`, the posture every small facet record in the package already uses — *not*, as this milestone initially reasoned, to dodge an ordinal-0 drop, which measurement showed does not happen (see the corrected DataScope note above). **Open, and one of the reasons this ships reserved:** a declaratively-scheduled action has no submitter, so there is no `PrincipalContext` to capture, and the kernel correctly fails a context-less job closed rather than running it under an ambient identity (ADR-057 obligation 5). The two available answers are a kernel-side service principal for declared jobs, or an SDK attribute naming a run-as identity — the latter puts an authorization decision in a design-time annotation and is the worse one on its face. Not the SDK's to settle alone; tracked in ADR-072
@@ -244,7 +249,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
   **What made the gap load-bearing rather than theoretical.** `exeris-tooling` measured the cost of a naive fail-closed default and found two facts: an emitted application wires no identity at all, so `AUTHENTICATED` everywhere is 401 on everything; and one `HttpRoutePolicy` governs *every* path, so a fail-closed unmatched answer also closes hand-written consumer routes, health and docs. Both are documented consequences of the kernel contract, not defects — `HttpRoutePolicy.unmatched()` states them, and deliberately declines to exempt anything driver-side ("a driver-local notion of 'public' would be a second answer to the question this contract now owns"). The resulting shape — fail-closed for emitted routes, delegate the rest — makes a *generated* route fail closed, and a public one then has to be declarable or it becomes unbuildable.
 
-  **Landed reserved in 0.12.0:** `@RouteAccess(PUBLIC | AUTHENTICATED)`, `@Target({TYPE, METHOD})`, with `DomainMetadata.routeAccess` / `ActionMetadata.routeAccess` carrying it. Meets ADR-072's three-part test — `HttpRoutePolicy` / `RouteRequirement` shipped with `AbstractHttpRoutePolicyTck`, the remaining gap is the one named `exeris-tooling` slice, and both the annotation and the components say so — so it ships **outside the 1.0.0 freeze**, on exactly the terms `@Blob` / `@Schedule` did. The ordering argument is untouched and if anything reinforced: the kernel holds route authorization at tier `preview` and moved it twice in one minor (ADR-077's `Execution` facet, then the composition work)
+  **Landed reserved in 0.12.0:** `@RouteAccess(PUBLIC | AUTHENTICATED)`, `@Target({TYPE, METHOD})`, with `DomainMetadata.routeAccess` / `ActionMetadata.routeAccess` carrying it. Meets ADR-072's three-part test — `HttpRoutePolicy` / `RouteRequirement` shipped with `AbstractHttpRoutePolicyTck`, the remaining gap is the one named `exeris-tooling` slice, and both the annotation and the components say so — so it ships **outside the 1.0.0 freeze**, on exactly the terms `@Blob` / `@Schedule` did. The ordering argument is untouched and if anything reinforced: the kernel holds route authorization at tier `preview` and moved it twice in one minor (ADR-077's `Execution` facet, then the composition work). **Frozen in 0.13.0:** kernel ADR-100 makes route authorization `stable` at 1.0, so `@RouteAccess` and its carriers enter the 1.0.0 freeze (ADR-072 obligation 29; see *Kernel 0.13* below)
 - [x] **Flow step identity (kernel ADR-062)** — resume now binds to a step's *name* rather than its position: `FlowDefinition` rejects duplicate step names, a parked snapshot records the name it stopped at, and a wake whose plan disagrees fails closed. `@SagaStep.name` has always been documented "unique within saga", so the surface needs no change — but the sentence stopped being a convention and became an enforced contract, and *renaming* a step is now a breaking change for in-flight sagas rather than a refactor. **Landed (0.10.0):** javadoc refreshed to say so, including the kernel's drain-before-reorder procedure. Deliberately **not** adding cross-step uniqueness validation to `SagaStepMetadata` — it is a per-step record and the constraint is a property of the list; the kernel validates it where definitions are built, which is the right place for a design-time carrier to defer to
 
 ## 0.12.0 — the SDK's own contract, made machine-readable
@@ -420,7 +425,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 ### Kernel 0.12 — verified, and nothing moves
 
 > Checked rather than assumed, on the standing rule that a kernel release is
-> read for what it *contains*. Kernel 0.12 changes no SDK disposition.
+> read for what it *contains*. Kernel 0.12 changes no SDK disposition. The
+> freeze status of the reserved facets below is settled by *Kernel 0.13*.
 
 - [x] **Both reserved facets stay reserved** — `…spi.storage.blob` and
   `…spi.scheduling` are still **`preview`** in the kernel's
@@ -464,7 +470,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   ADR-061 and ADR-077, the tier ADR-072 reserves against. Re-assessed at 0.13.0 on
   ADR-072's three-part test, together with the `@RouteAccess` transcription; the likely
   shape is an attribute on `@Action` carried by `ActionMetadata`, trailing and nullable,
-  under the record-growth rule
+  under the record-growth rule. Re-assessed in 0.13.0 and deferred; see *Kernel 0.13*
+  below
 - [x] **The rest of the 0.12 train has no SDK surface.** `RouteRequirement.abstain()`
   (ADR-061 Amendment A2) composes route policies; no entity declares it, and it agrees
   with `@RouteAccess`, where absence already means "declared nothing".
@@ -516,6 +523,41 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   `@RouteAccess` has zero tooling references. The test would have failed all three
   approved surfaces, and it inverts the dependency direction: a processor cannot be
   written against an annotation that does not exist.
+
+### Kernel 0.13 — the reserved facets settled before the freeze (ADR-072, 2026-10-29)
+
+> Kernel v0.13.0 is tagged, and SDK 0.13.0 is the last SDK release before 1.0.0.
+> exeris-tooling 0.11.0 and 0.12.0 both pin SDK 0.13, so what tooling transcribes, and
+> when, is tooling's schedule against a fixed SDK. The freeze criterion for a reserved
+> facet is therefore the kernel tier alone, read from v0.13.0's
+> `docs/stability-matrix.md` and kernel ADR-100.
+
+- [x] **`@RouteAccess` and `@Blob` enter the 1.0.0 freeze** (ADR-072 obligation 29) —
+  route authorization (`HttpRoutePolicy`, `RouteRequirement`, ADR-077's `Execution`
+  included) and `…spi.storage.blob` are `stable` at the kernel's 1.0. Frozen as
+  declared: both annotations, `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`,
+  the AST `RouteAccess`, `FieldMetadata.blob` and `BlobMetadata`. The `exeris-tooling`
+  transcriptions (route policy: tooling ADR-105 J3-3, in tooling 0.11.0; blob: tooling
+  ROADMAP K6) arrive additively. `@Blob` on a `GLOBAL`-scoped entity stays a build-time
+  rejection for tooling (obligation 30)
+- [x] **`@Schedule` stays reserved, outside the freeze** (obligation 31) —
+  `…spi.scheduling` is `stable`, but kernel ADR-057 Amendment A1 issues no service
+  principal at 1.0 and refuses every declared job at build time, so the annotation has no
+  target. Promoted when the kernel issues a service principal. The javadoc says so and
+  promises no transcription. The `-io` reader now reports `@Schedule` as an unmodeled
+  facet, which obligation 7 promised and the guard did not do (obligation 33)
+- [x] **`@Channel` stays reserved, outside the freeze** (obligation 32) — kernel ADR-100
+  keeps `…spi.websocket` at `preview` at 1.0, gated on ADR-084 §10's benchmark evidence.
+  Promoted when the kernel moves it to `stable`. The javadoc was checked against v0.13.0:
+  the SPI, the codec, the Community binding and the four non-declarations still hold
+- [ ] **ADR-077 `LONG_RUNNING` — deferred, additive in 1.x** (obligation 34). The kernel
+  `Execution` facet is `stable` now, so the stability-ordering reason of the 0.12.0
+  deferral is gone. Two reasons remain. exeris-tooling ADR-105 obligation 18 leaves
+  `.longRunning()` to its J3-2 slice and emits `PROMPT` until then. And kernel ADR-077
+  keeps `PROMPT` as the default and warns that a `LONG_RUNNING` declaration can go stale,
+  so whether the fact is the author's to state is open. **Condition for adding it:**
+  tooling picks the shape. The SDK surface is then an `@Action` attribute carried by a
+  trailing, nullable `ActionMetadata` component, under the record-growth rule
 
 ### Decided before the cut (2026-09-26)
 
@@ -597,7 +639,7 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 
   **What it deliberately did not do.** 326 of 440 public methods carry no javadoc, which sounds alarming and is not: the number decomposes to 220 builder setters, 40 boolean predicates (`hasX` / `isX`), 40 static factories and 26 `build()` / sealed-interface overrides. That surface is mechanical, not contract-ambiguous — the interpretive contract lives in the two package-infos and is documented there — so no pre-freeze javadoc campaign was run. `-io`, both composition modules and the annotation surface are fully documented already.
 
-  **Four surfaces are deliberately outside the freeze** — `@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and their AST carriers (`FieldMetadata.blob`, `ActionMetadata.schedule`, `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, `DomainMetadata.channel`), per ADR-072 as amended 2026-08-28 and 2026-09-03: they encode kernel packages still at tier `preview`, so freezing them would make the SDK's 1.0 promise stronger than the surface it describes. They may change or be dropped in a 1.x minor, and are promoted into the frozen surface when the kernel moves each package to `stable` and the `exeris-tooling` transcription exists. The graph edge's kernel-model attributes and components join them in 0.13.0 on the same ground (kernel ADR-100 keeps `…spi.graph` at `preview` at 1.0). Recorded in `MIGRATION-0.x-to-1.0.md` §2 — every *other* reserved surface is frozen as declared, and this exception exists for one specific reason rather than as a general escape hatch
+  **Two surfaces are deliberately outside the freeze** — `@Schedule` / `@Channel` and their AST carriers (`ActionMetadata.schedule` with `ScheduleMetadata`, `DomainMetadata.channel` with `ChannelMetadata`), per ADR-072 as amended 2026-10-29. `@Channel` encodes `…spi.websocket`, which kernel ADR-100 keeps at `preview` at 1.0, so freezing it would make the SDK's 1.0 promise stronger than the surface it describes. `@Schedule` encodes a `stable` package but has no target at 1.0: the kernel issues no service principal and refuses every declared job at build time (kernel ADR-057 Amendment A1). Both may change or be dropped in a 1.x minor; `@Channel` is promoted when the kernel moves `…spi.websocket` to `stable`, `@Schedule` when the kernel issues a service principal. `@Blob` and `@RouteAccess`, outside the freeze until 0.13.0, are frozen as declared now that their kernel surfaces are `stable`. The graph edge's kernel-model attributes and components are outside the freeze on the same ground as `@Channel` (kernel ADR-100 keeps `…spi.graph` at `preview` at 1.0). Recorded in `MIGRATION-0.x-to-1.0.md` §2 — every *other* reserved surface is frozen as declared, and this exception exists for one specific reason rather than as a general escape hatch
 - [ ] `MIGRATION-0.x-to-1.0.md` written and validated against the consumers that cross the freeze — the `exeris-tooling` processor and codegen, and `exeris-platform-lsp` — **and Stellar Tactics for the author-facing parts** (founder decision, 2026-09-26): 36 `@ExerisDomain` classes across two generated services, and the consumer that found Stellar finding S6. "Validated" there means, on the SDK 1.0.0-RC plus a tooling and a kernel build on that RC: `./build.sh` green with zero platform patches; a hand-written source diff containing only what the guide lists; every generated-tree hunk traced to the guide or to tooling's changelog; `-Aexeris.strict` warning changes explained; and the pass recorded as a dated entry in the Stellar findings log and a line in the guide's §5. **Not budgetHQ:** it consumes the platform through `exeris-spring-runtime` and authors no `@ExerisDomain` sources, so it exercises none of the surface this guide describes. Its role here is the entity corpus of the 0.3.0 round-trip tests — evidence already collected, not a validation pass still owed
 - [ ] Annotations module hits Maven Central (Apache-2.0, no Commons Clause)
 - [ ] AST records module hits Maven Central

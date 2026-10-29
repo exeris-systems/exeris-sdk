@@ -63,7 +63,27 @@ for per-version upgrade steps.
   uses one of them. Each leaves the guard in the release that reads it as the processor does.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`SourceModelReader.unmodeledFacets()` reports `@Schedule`.** ADR-072 obligation 7 has always
+  said a source using it reports an unmodeled facet, and the guard did not name it. `read()`
+  leaves `ActionMetadata.schedule` `null`, and no producer fills it while kernel ADR-057
+  Amendment A1 refuses every declared job at build time. A reattach or conflict-detection caller
+  now refuses a source that uses it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Changed
+
+- **`@RouteAccess` and `@Blob` are part of the 1.0.0 freeze; `@Schedule` and `@Channel` stay
+  outside it.** ADR-072 is amended (2026-10-29, obligations 29–35): the freeze criterion for a
+  reserved surface is the kernel tier, read from kernel v0.13.0 and kernel ADR-100. Route
+  authorization and `…spi.storage.blob` are `stable`, so `@RouteAccess`, `@Blob`,
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
+  `FieldMetadata.blob` and `BlobMetadata` are frozen as declared. `@Channel` and its carriers stay
+  outside, because `…spi.websocket` stays `preview` at the kernel's 1.0. `@Schedule` and its
+  carriers stay outside although `…spi.scheduling` is `stable`: the kernel issues no service
+  principal at 1.0, so kernel ADR-057 Amendment A1 refuses every declaration at build time, and the
+  `@Schedule` javadoc now says so in place of a promised transcription. ADR-077's `LONG_RUNNING`
+  route facet is deferred to a 1.x minor until exeris-tooling chooses its emission (tooling ADR-105
+  obligation 18). No signature or wire key changes. `MIGRATION-0.x-to-1.0.md` §2, `ROADMAP.md` and
+  the javadoc of the annotations, records and package-infos follow.
 
 - **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
   `@Action.permissions` admit a caller holding at least one listed permission, and an action's

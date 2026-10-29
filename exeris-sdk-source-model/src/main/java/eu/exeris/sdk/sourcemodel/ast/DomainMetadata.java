@@ -98,7 +98,7 @@ import java.util.Locale;
  * @param routeAccess whether the entity's generated routes admit unauthenticated callers.
  *        Absent means the author declared nothing and the generated policy's default decides.
  *        Reserved: the {@code exeris-sdk-source-model-io} reader reads it, the processor extracts
- *        it in the release that pins that reader (exeris-tooling ADR-105), and it is outside the
+ *        it in the release that pins that reader (exeris-tooling ADR-105), and it is part of the
  *        1.0.0 freeze (ADR-072)
  *
  * @param channel the duplex channel this entity exposes, or absent if it exposes none. Present
@@ -199,18 +199,18 @@ public record DomainMetadata(
         // Route access: the identity half of the kernel's route-authorization decision
         // (kernel ADR-061), covering the routes generated for this entity. Absent ⇒ the
         // author declared nothing and the generated policy's default decides — there is no
-        // UNSPECIFIED constant, by design. Reserved: no processor writes it and no generator
-        // reads it, and the kernel holds route authorization at tier preview, so it is
-        // outside the 1.0.0 freeze. See ADR-072.
+        // UNSPECIFIED constant, by design. Reserved: the -io reader reads it, no processor
+        // writes it yet and no generator reads it; the kernel holds route authorization at
+        // tier stable, so it is part of the 1.0.0 freeze. See ADR-072.
         @JsonProperty("routeAccess") RouteAccess routeAccess,
 
         // Duplex channel: the one shape the SSE surface above cannot express, because SSE
         // is one-directional by construction and this entity's clients also speak. Absent ⇒
         // no channel; present with nothing set ⇒ a channel that declares nothing further,
         // which a boolean could not distinguish from the first. Reserved: no processor writes
-        // it and no generator reads it, and the kernel holds …spi.websocket at tier preview —
-        // benchmark-gated, not shape-gated (kernel ADR-084 §10) — so it is outside the 1.0.0
-        // freeze. See ADR-072.
+        // it and no generator reads it, and the kernel holds …spi.websocket at tier preview at
+        // its 1.0 — benchmark-gated, not shape-gated (kernel ADR-084 §10) — so it is outside the
+        // 1.0.0 freeze. See ADR-072.
         @JsonProperty("channel") ChannelMetadata channel,
 
         // Navigation entry declared with @NavMenu. Absent ⇒ the author placed none and a generator

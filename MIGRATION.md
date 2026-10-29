@@ -135,6 +135,34 @@ of a source declaring them, differs on any action that declares `permissions` or
 parity binding whose producer does not extract route access adds `Facet.ROUTE_ACCESS` to
 `unsupportedFacets()` until it does.
 
+### `@RouteAccess` and `@Blob` enter the 1.0.0 freeze; `@Schedule` and `@Channel` stay outside it
+
+**Impact on code: none required.** No signature, component or wire key changes. What
+changes is the stability promise ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
+amended 2026-10-29), decided on the kernel tier at kernel v0.13.0 (kernel ADR-100):
+
+- **Frozen as declared:** `@RouteAccess` and `RouteAccess.Level`, `@Blob`,
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
+  `FieldMetadata.blob` and `BlobMetadata`. Route authorization and `…spi.storage.blob` are
+  `stable` at the kernel's 1.0. A 1.x minor may add to them; it may not change or drop them.
+  Neither has a generated effect yet: `exeris-tooling` compiles `@RouteAccess` into a route
+  policy in the release that pins this SDK's reader (tooling ADR-105), and no generator reads
+  `@Blob`.
+- **Still outside the freeze:** `@Channel`, `ChannelMetadata` and `DomainMetadata.channel`,
+  because the kernel keeps `…spi.websocket` at `preview` at 1.0. Promoted when it moves to
+  `stable`.
+- **Still outside the freeze, and refused at build time:** `@Schedule`, `ScheduleMetadata` and
+  `ActionMetadata.schedule`. `…spi.scheduling` is `stable`, but the kernel issues no service
+  principal at 1.0, so a declared job would run with no identity bound; kernel ADR-057
+  Amendment A1 refuses every declaration at build time, and every declaration on a `TENANT` or
+  `UNIVERSE` entity. Do not write `@Schedule` on 1.0. Promoted when the kernel issues a
+  service principal.
+
+`SourceModelReader.unmodeledFacets()` now returns `@Schedule` when the source uses it. It
+returned nothing for it before, although `read()` has always left `ActionMetadata.schedule`
+`null`. A round-trip, reattach or conflict-detection caller that refuses on a non-empty result
+now refuses such a source.
+
 ### `SourceModelReader` fills `ActionMetadata.resultType`
 
 **Impact on code: none required.** The `-io` reader writes each `@Action` method's
@@ -557,6 +585,7 @@ know before you write it:
 - It is **not frozen at 1.0.0** ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
   as amended), because the kernel holds route authorization at tier `preview`.
   A 1.x minor may change or drop it. Pin exactly if you adopt it early.
+  *(0.13.0 freezes it: see the 0.12.x → 0.13.x entry above.)*
 
 Do not reach for `roles = {}` or `permissions = {}` to mean "public" — empty
 already means "nothing declared" on all four attributes, and `@Action.roles` has
@@ -576,6 +605,7 @@ constructor, which leaves `channel` absent (first entry above).
   ADR-084) at tier `preview`. That tier is gated on evidence under load rather
   than on the contract's shape, but it still bars freezing: a 1.x minor may
   change or drop the annotation. Pin exactly if you adopt it early.
+  *(Unchanged in 0.13.0: the kernel keeps `…spi.websocket` at `preview` at 1.0.)*
 
 It is not another spelling of `@ExerisDomain(realTimeApi = true)` or
 `@Action(streaming = true)`. Those are server push over SSE, one-directional by
@@ -919,7 +949,8 @@ will correctly report an unmodeled facet). Declaring them today has no generated
 effect. Because the kernel holds both SPI packages at tier `preview`, **neither
 surface enters the 1.0.0 freeze** — a 1.x minor may still change or drop them.
 They are promoted when the kernel package leaves `preview` *and* the tooling
-transcription exists.
+transcription exists. *(0.13.0 freezes `@Blob` and keeps `@Schedule` outside the
+freeze: see the 0.12.x → 0.13.x entry.)*
 
 Two combinations the platform will refuse once the transcription lands, worth
 knowing before writing them:
@@ -932,6 +963,8 @@ knowing before writing them:
   `PrincipalContext` at job *submission* and fails a job closed if none was
   captured (kernel ADR-057 obligation 5); a declared trigger has no submission
   event. How a scheduled action authenticates is open — tracked in ADR-072.
+  *(Answered in kernel ADR-057 Amendment A1: no service principal at 1.0, so the
+  build refuses every declaration.)*
 
 Also note what `@Blob` deliberately does **not** declare: a `maxSizeBytes`. A
 size bound is a constraint rule, and constraint rules have one declaration site

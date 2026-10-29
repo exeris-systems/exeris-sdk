@@ -23,9 +23,9 @@ import java.util.List;
  * {@link FieldMetadata} (ADR-054), and the kernel states no size policy to carry.
  *
  * <p><strong>Reserved surface (ADR-072).</strong> No {@code exeris-tooling}
- * processor populates this record and no generator consumes it; the kernel holds
- * {@code …spi.storage.blob} at tier {@code preview}, so the shape is excluded from
- * the 1.0.0 freeze and a 1.x minor may still change it.
+ * processor populates this record and no generator consumes it. The kernel holds
+ * {@code …spi.storage.blob} at tier {@code stable}, so the shape is part of the
+ * 1.0.0 freeze: frozen as declared, with population arriving additively.
  *
  * @param container the container the object is addressed in, relative to the caller's
  *        namespace — never an absolute or physical location. Absent means the tooling derives
