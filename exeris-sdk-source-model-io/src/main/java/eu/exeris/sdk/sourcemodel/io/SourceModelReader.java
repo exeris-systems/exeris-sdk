@@ -213,6 +213,8 @@ public final class SourceModelReader {
     private static final String PERMISSIONS = "permissions";
     private static final String TOPIC = "topic";
     private static final String TRIGGER = "trigger";
+    /** The {@code CREATE} constant shared by {@code @DomainEvent.trigger} and the deprecated {@code validateOn}. */
+    private static final String CREATE = "CREATE";
 
     private final JavaParser javaParser;
 
@@ -1075,7 +1077,7 @@ public final class SourceModelReader {
         String name = stringAttr(annotation, "name")
                 .filter(s -> !s.isBlank())
                 .orElseGet(() -> entitySimpleName
-                        + triggerToEventSuffix(enumAttr(annotation, TRIGGER).orElse("CREATE")));
+                        + triggerToEventSuffix(enumAttr(annotation, TRIGGER).orElse(CREATE)));
         String topic = stringAttr(annotation, TOPIC).orElse(null);
         String description = stringAttr(annotation, "description").orElse(null);
         // EV2: the trigger triple. Note the asymmetry with the name derivation above — that
@@ -1170,13 +1172,13 @@ public final class SourceModelReader {
      * silently matching a prefix.
      */
     private String triggerToEventSuffix(String trigger) {
-        // Unreachable from singleEvent (which passes enumAttr(...).orElse("CREATE")),
+        // Unreachable from singleEvent (which passes enumAttr(...).orElse(CREATE)),
         // but kept to mirror the processor verbatim and defend any future direct caller.
         if (trigger == null) {
             return "Event";
         }
         return switch (trigger) {
-            case "CREATE" -> "CreatedEvent";
+            case CREATE -> "CreatedEvent";
             case "UPDATE" -> "UpdatedEvent";
             case "DELETE" -> "DeletedEvent";
             case "FIELD_CHANGED" -> "ChangedEvent";
@@ -2126,7 +2128,7 @@ public final class SourceModelReader {
             builder.required(true);
         }
         stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {
-            if ("CREATE".equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
+            if (CREATE.equals(validateOn) && boolAttr(field, "inUpdate").isEmpty()) {
                 builder.inUpdate(false);
             } else if ("UPDATE".equals(validateOn) && boolAttr(field, "inCreate").isEmpty()) {
                 builder.inCreate(false);
