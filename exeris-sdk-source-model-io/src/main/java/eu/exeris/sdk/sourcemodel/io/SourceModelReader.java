@@ -80,7 +80,7 @@ import java.util.stream.Collectors;
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
  * For relationships, {@code targetEntity} (collection element type unwrapped),
- * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
+ * {@code relationshipType}, {@code mappedBy} and {@code displayField} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, permissions, the return type as {@code resultType}, and
  * the parameters carrying {@code @ActionParam}, {@code @QueryParam} or both, a
@@ -1947,6 +1947,7 @@ public final class SourceModelReader {
                 stringAttr(rel.get(), "mappedBy")
                         .filter(s -> !s.isBlank())
                         .ifPresent(builder::mappedBy);
+                stringAttr(rel.get(), "displayField").ifPresent(builder::displayField);
                 relationships.add(builder.build());
             }
         }

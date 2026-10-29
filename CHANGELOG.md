@@ -110,6 +110,12 @@ for per-version upgrade steps.
   (`dsl-mapper.ts`) follows in exeris-tooling#431. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` reads `@Relationship.displayField`.** `read()` now sets
+  `RelationshipMetadata.displayField` to the declared value, as the exeris-tooling processor does.
+  It read every relationship as `name`, the record default, so for any other declared value the
+  reader returns a different `displayField` than before. The parity TCK compares the component
+  and the reader TCK asserts it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Added
 
 - **The pre-construction brief contract (ADR-106).** `exeris-sdk-source-model` gains

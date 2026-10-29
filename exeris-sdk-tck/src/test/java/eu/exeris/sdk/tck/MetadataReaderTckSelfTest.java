@@ -47,6 +47,7 @@ class MetadataReaderTckSelfTest {
             reader.validationConstraintsLandOnFieldMetadata();
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
+            reader.relationshipDisplayFieldIsTheDeclaredOne();
             reader.actionIsReadUnderTheDeclaredName();
             reader.actionResultTypeIsTheDeclaredOne();
             reader.sagaVersionIsTheDeclaredOne();
@@ -110,6 +111,22 @@ class MetadataReaderTckSelfTest {
         assertThatThrownBy(defaulting::relationshipCardinalityIsTheDeclaredOne)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("MANY_TO_ONE");
+    }
+
+    @Test
+    @DisplayName("a display field silently left at the record default is caught")
+    void displayFieldCaseIsNotVacuous() {
+        Reader defaulting = new Reader(m -> m.relationships() == null || m.relationships().isEmpty()
+                ? m
+                : DomainMetadata.builder(m.entityName(), m.packageName())
+                        .fields(m.fields())
+                        .actions(m.actions())
+                        .relationships(List.of(
+                                RelationshipMetadata.oneToMany("orders", TckCorpus.ORDER, "customer")))
+                        .build());
+        assertThatThrownBy(defaulting::relationshipDisplayFieldIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("read as 'name'");
     }
 
     @Test

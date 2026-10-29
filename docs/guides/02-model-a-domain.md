@@ -74,7 +74,7 @@ The scoping rule has one home, [field and validation scoping](../../.agents/poli
 
 ### 3. Relate entities
 
-A `@Relationship` names the target entity and the cardinality. The one-to-many side names the field on the other side in `mappedBy`. The reader takes the target from the declared type of the field, unwrapping a collection, and not from `targetEntity`.
+A `@Relationship` names the target entity and the cardinality. The one-to-many side names the field on the other side in `mappedBy`. The reader takes the target from the declared type of the field, unwrapping a collection, and not from `targetEntity`. It carries `displayField` as declared: the target field a picker or label shows for the association.
 
 Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/Invoice.java`, the `customer` and `lines` fields (quoted).
 
