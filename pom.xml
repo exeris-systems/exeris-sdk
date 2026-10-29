@@ -138,7 +138,12 @@
              comparison, and "no baseline found" must not read as "no breaks found".
 
              CI runs it: build.yml and release.yml pass -Psemver, against a baseline Maven Central
-             serves. -->
+             serves.
+
+             This gate is the Java modules' API ledger; they keep no accepted-api-changes.json
+             (that file is @exeris/ui-kit's golden). A change japicmp cannot see, such as a module
+             dropping a dependency from its published set, is recorded as a CHANGELOG Breaking
+             entry with a MIGRATION.md section. -->
         <japicmp.version>0.23.1</japicmp.version>
         <japicmp.baseline.version>0.12.0</japicmp.baseline.version>
         <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the

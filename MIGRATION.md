@@ -64,6 +64,20 @@ only classes that stay in `@exeris/ui-kit/styles`: `exeris-btn` with `-primary`,
 
 ## 0.12.x → 0.13.x
 
+### `exeris-sdk-source-model` no longer brings `exeris-sdk-annotations`
+
+**Impact on code: a build that used the annotations without declaring them stops compiling.**
+`exeris-sdk-source-model` has no type that uses `eu.exeris.sdk.annotation`; its compile
+dependencies are `jackson-annotations` only. Declare the annotations directly wherever they are used:
+
+```xml
+<dependency>
+    <groupId>eu.exeris</groupId>
+    <artifactId>exeris-sdk-annotations</artifactId>
+    <scope>provided</scope>
+</dependency>
+```
+
 ### `SagaMetadata` carries the `@Saga` compensation section + `SchemaVersion.CURRENT` is `"0.13.0"`
 
 **Impact on code: none required.** `SagaMetadata` gained six trailing, nullable
