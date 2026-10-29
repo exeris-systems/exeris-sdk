@@ -3,7 +3,7 @@ title: Changelog
 type: changelog
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-04
+last-verified: 2026-10-29
 ---
 
 # Changelog
@@ -23,11 +23,12 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [Unreleased]
+## [0.13.0] — 2026-10-29
 
 ### Breaking
 
 - **`exeris-sdk-source-model` no longer depends on `exeris-sdk-annotations`.** No source-model main type uses `eu.exeris.sdk.annotation`, so the compile-scope dependency is gone and the module's compile and runtime classpath is `jackson-annotations` alone; the module's tests keep the annotations at test scope. A consumer that compiled against the annotations through source-model declares `eu.exeris:exeris-sdk-annotations` directly; see `MIGRATION.md` (0.12.x → 0.13.x).
+
 - **`@exeris/ui-kit` 0.3.0: 25 component classes move to `@exeris/ui-kit/preview`.** No generator
   emits them; `exeris-tooling` 0.9.0 uses the 22 that stay in `@exeris/ui-kit/styles`, which are the
   classes the package freezes at its 1.0. The moved classes keep their names and declarations, sit
@@ -39,8 +40,11 @@ for per-version upgrade steps.
 
 - **`exeris-sdk-source-model`: `SchemaVersion.CURRENT` moves `"0.12.0"` → `"0.13.0"`** — a baseline
   stamped `"0.12.0"` now reads as schema skew, and ADR-042 conflict detection refuses it. Regenerate
-  baselines against 0.13.0. The growth behind the bump is additive: `SagaMetadata`'s six new
-  components are by-name and nullable, and the record keeps its 16-component constructor. See
+  baselines against 0.13.0. The growth behind the bump is additive: trailing, by-name, nullable
+  components on `SagaMetadata` (six), `GraphEdgeMetadata` (eight), `ActionParamMetadata` (two),
+  `GraphPropertyMetadata`, `DomainMetadata` and `UIMetadata` (one each), and the new
+  `NavMenuMetadata` and `UIMetadata.UITabMetadata`. Each grown record keeps its previous
+  constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`exeris-sdk-source-model-io` reads `@PrimaryKey` into `SystemFieldsMetadata.primaryKeyField`.**
@@ -51,9 +55,10 @@ for per-version upgrade steps.
   otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
   `NONE`, which ADR-104 refuses, is not read. `generated`, `sequenceName` and `allowClientId` are
   not carried. `@PrimaryKey` is labelled PARTIAL in its javadoc, the `system` package javadoc and
-  the root `package-info` index. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
-  (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
-  than a 0.10.x processor baseline holds.
+  the root `package-info` index. **Tooling:** the processor does not read the marker yet; reading it
+  the same way is planned for exeris-tooling 0.11.0 (ADR-104 obligations 11 and 12). Until then a
+  source declaring it reads a different key than a processor baseline holds. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`SourceModelReader.unmodeledFacets()` reports `@RouteAccess`, and `read()` folds its parentheses.**
   A `@RouteAccess` on the entity or on an `@Action` whose value is not a bare or qualified `Level`
@@ -61,6 +66,7 @@ for per-version upgrade steps.
   fallback for routes that declare nothing. `unmodeledFacets()` now returns `@RouteAccess` for it,
   so a reattach or conflict-detection caller refuses the source (ADR-042). A constant in
   parentheses, `@RouteAccess((Level.AUTHENTICATED))`, is read as javac folds it for the processor.
+  See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`exeris-sdk-source-model-io` reads `@GraphProperty`, `@UIGroup` and `@Blob`**, in the shape the
   ADR-042 reader-shape amendment fixes for exeris-tooling to match. `@GraphProperty` under a `@Graph`
@@ -72,9 +78,9 @@ for per-version upgrade steps.
   `FieldMetadata.blob` as written, beside `@Field` or without it, whatever the entity's data scope.
   For a source that uses them, `read()` returns these components where it left them at their
   defaults, and `unmodeledFacets()` no longer names the three. `@GraphProperty`, `@UIGroup` and
-  `@Blob` are labelled PARTIAL in their javadoc and the root `package-info` index. **Tooling:** the
-  processor extracts them the same way in the release that pins SDK 0.13; until then a source
-  declaring one reads differently from a processor baseline. See
+  `@Blob` are labelled PARTIAL in their javadoc and the root `package-info` index. **Tooling:**
+  pending: the processor does not extract them yet, and exeris-tooling#444 has it extract them the
+  same way. Until it does, a source declaring one reads differently from a processor baseline. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`SourceModelReader.unmodeledFacets()` reports `@Channel`.** It returned nothing for it before.
@@ -88,42 +94,12 @@ for per-version upgrade steps.
   which stays off the wire and reads as "not carried"; an empty list would claim the entity declares
   no traversal. A consumer of the reader's output that called `queries().isEmpty()` handles `null`.
   `GraphMetadata.queries` documents the form. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`SourceModelReader.unmodeledFacets()` reports `@Schedule`.** ADR-072 obligation 7 has always
   said a source using it reports an unmodeled facet, and the guard did not name it. `read()`
   leaves `ActionMetadata.schedule` `null`, and no producer fills it while kernel ADR-057
   Amendment A1 refuses every declared job at build time. A reattach or conflict-detection caller
   now refuses a source that uses it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
-
-### Changed
-
-- **`@RouteAccess` and `@Blob` are part of the 1.0.0 freeze; `@Schedule` and `@Channel` stay
-  outside it.** ADR-072 is amended (2026-10-29, obligations 29–35): the freeze criterion for a
-  reserved surface is the kernel tier, read from kernel v0.13.0 and kernel ADR-100. Route
-  authorization and `…spi.storage.blob` are `stable`, so `@RouteAccess`, `@Blob`,
-  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
-  `FieldMetadata.blob` and `BlobMetadata` are frozen as declared. `@Channel` and its carriers stay
-  outside, because `…spi.websocket` stays `preview` at the kernel's 1.0. `@Schedule` and its
-  carriers stay outside although `…spi.scheduling` is `stable`: the kernel issues no service
-  principal at 1.0, so kernel ADR-057 Amendment A1 refuses every declaration at build time, and the
-  `@Schedule` javadoc now says so in place of a promised transcription. ADR-077's `LONG_RUNNING`
-  route facet is deferred to a 1.x minor until exeris-tooling chooses its emission (tooling ADR-105
-  obligation 18). No signature or wire key changes. `MIGRATION-0.x-to-1.0.md` §2, `ROADMAP.md` and
-  the javadoc of the annotations, records and package-infos follow.
-
-- **Javadoc states the kernel 0.13 behaviour of row-level security, graph depth and saga retention.**
-  `@SharedScope` and `@RowLevelSecurity` say that a statement without a tenant bound fails and
-  does not read an empty table, that a written row's shared-scope tag is pinned to the scope the
-  request published, and that the platform refuses a role with `SUPERUSER` or `BYPASSRLS`
-  (kernel ADR-012 §4c.2 to §4c.4). `@GraphQuery.maxDepth` and `@Graph.defaultMaxDepth` state the
-  Community cap of 64 and its refusal, and that graph is `preview` at 1.0.0 (kernel ADR-102). `@Saga`
-  states that finished instances keep their row and that a redelivered `Start` is a no-op while it
-  exists (kernel ADR-013 A1). No attribute, default or signature changes.
-
-- **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
-  `@Action.permissions` admit a caller holding at least one listed permission, and an action's
-  non-empty list replaces the entity's for its route (exeris-tooling ADR-105 obligations 10 and
-  12). ADR-072 is amended: for route access the `-io` reader reads ahead of the processor, as
-  ADR-105 obligation 26 requires.
 
 - **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
   `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
@@ -131,25 +107,8 @@ for per-version upgrade steps.
   `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
   name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
   / `tableName` to pin the old value. The TS copy in `exeris-codegen-ts`
-  (`dsl-mapper.ts`) follows in exeris-tooling#431.
-
-### Fixed
-
-- **`@ExerisDomain.primaryKeyField` is labelled LIVE.** `exeris-tooling`
-  0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
-  foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
-  by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
-  that.
-
-- **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
-  class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
-  reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
-  `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
-  file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
-
-- **`-javadoc.jar` artifacts no longer bundle fonts.** `maven-javadoc-plugin` moves 3.11.2 → 3.12.0,
-  which passes `--no-fonts` to the JDK javadoc tool. Each javadoc jar drops the ~4.1 MB of
-  `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
+  (`dsl-mapper.ts`) follows in exeris-tooling#431. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 ### Added
 
@@ -207,7 +166,7 @@ for per-version upgrade steps.
 - **`exeris-sdk-source-model-io` reads `@GraphEdge`'s direction, weight and description.**
   `direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField` and
   `staticWeight` are read present-only; a declared `false`, `OUTGOING` or `0.0` is carried. The
-  `exeris-tooling` processor does not extract them yet. A field with two edges is still dropped,
+  `exeris-tooling` processor does not extract them yet (exeris-tooling#437). A field with two edges is still dropped,
   as the processor still refuses it.
 
 - **`exeris-sdk-source-model-io` reads `@Saga`'s compensation section.** `compensationTimeout` and
@@ -223,8 +182,8 @@ for per-version upgrade steps.
   `CUSTOM`, and `Saga.CompensationOrder.CUSTOM` has no AST counterpart, so a read by constant
   name would carry a wrong value. The seven read attributes are PARTIAL in `@Saga`'s status
   notes. `SourceModelConflictDetector` compares no saga component, so a baseline from a processor
-  that does not extract the section yet raises no conflict. **Tooling:** the processor reads the
-  same seven the same way (ADR-042).
+  that does not extract the section yet raises no conflict. **Tooling:** the processor does not
+  extract the section yet; when it does, it reads the same seven the same way (ADR-042).
 
 - **`exeris-sdk-source-model-io` reads `@Saga.trigger` into `SagaMetadata.trigger`.** `type` is
   read by constant name, and the deprecated `SCHEDULE`, `HTTP` and `COMMAND` read as `SCHEDULED`,
@@ -264,8 +223,9 @@ for per-version upgrade steps.
   obligation 12). The level is read in the single-member and `value =` forms, qualified, through
   `Level` or statically imported; an unknown constant reads as absent. A `permissions` element that
   is not a string literal is not carried, and `unmodeledFacets()` reports the source as
-  `@ExerisDomain` or `@Action`. No AST component is added. **Tooling:** the processor extracts the
-  same four components in the release that pins this reader (ADR-105 obligation 26); until then
+  `@ExerisDomain` or `@Action`. No AST component is added. **Tooling:** the processor does not
+  extract the four components yet; exeris-tooling#439 has it extract them the same way (ADR-105
+  obligation 26). Until then
   `SourceModelConflictDetector` reads an `AddAction` / `RemoveAction` over an action that declares
   either as drift. See `MIGRATION.md` (0.12.x → 0.13.x).
 
@@ -289,8 +249,9 @@ for per-version upgrade steps.
   of the file, a single-type import, a public `java.lang` type, then the file's package; under an
   on-demand import an unresolved simple name is kept as written. `SourceModelReaderResultTypeParityTest`
   runs javac over a fixture and compares the reader with `getReturnType().toString()` for
-  eighteen return types. **Tooling:** the processor writes the same form (ADR-042); the streaming
-  generators type an action's result frame from it.
+  eighteen return types. **Tooling:** the processor does not write the component yet;
+  exeris-tooling#436 has it write the same form (ADR-042), from which the streaming generators type
+  an action's result frame.
 
 - **`exeris-sdk-tck`: `Facet.ACTION_RESULT_TYPE`, with a case in the reader, producer and parity
   suites.** The corpus `Order` declares four more actions, returning `Customer`, a member
@@ -317,7 +278,7 @@ for per-version upgrade steps.
   `defaultValue`. `@NavMenu` is read present-only into `navMenu`. `@Tab` is read into one tab per
   name, in the order each name is first declared, each attribute taken from the first member
   field that declares it; a type with tabs and no `@UI` gets a `UIMetadata` at its builder
-  defaults. **Tooling:** the processor does not extract the three yet. Until it does,
+  defaults. **Tooling:** the processor does not extract the three yet (exeris-tooling#440). Until it does,
   `SourceModelConflictDetector` reports a mutation of an action with a `@QueryParam` parameter as a
   conflict against a processor baseline, because it compares whole actions.
 
@@ -359,6 +320,35 @@ for per-version upgrade steps.
   under the default light, default dark and brand themes.
 
 ### Changed
+
+- **`@RouteAccess` and `@Blob` are part of the 1.0.0 freeze; `@Schedule` and `@Channel` stay
+  outside it.** ADR-072 is amended (2026-10-29, obligations 29–35): the freeze criterion for a
+  reserved surface is the kernel tier, read from kernel v0.13.0 and kernel ADR-100. Route
+  authorization and `…spi.storage.blob` are `stable`, so `@RouteAccess`, `@Blob`,
+  `DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`, the AST `RouteAccess`,
+  `FieldMetadata.blob` and `BlobMetadata` are frozen as declared. `@Channel` and its carriers stay
+  outside, because `…spi.websocket` stays `preview` at the kernel's 1.0. `@Schedule` and its
+  carriers stay outside although `…spi.scheduling` is `stable`: the kernel issues no service
+  principal at 1.0, so kernel ADR-057 Amendment A1 refuses every declaration at build time, and the
+  `@Schedule` javadoc now says so in place of a promised transcription. ADR-077's `LONG_RUNNING`
+  route facet is deferred to a 1.x minor until exeris-tooling chooses its emission (tooling ADR-105
+  obligation 18). No signature or wire key changes. `MIGRATION-0.x-to-1.0.md` §2, `ROADMAP.md` and
+  the javadoc of the annotations, records and package-infos follow.
+
+- **Javadoc states the kernel 0.13 behaviour of row-level security, graph depth and saga retention.**
+  `@SharedScope` and `@RowLevelSecurity` say that a statement without a tenant bound fails and
+  does not read an empty table, that a written row's shared-scope tag is pinned to the scope the
+  request published, and that the platform refuses a role with `SUPERUSER` or `BYPASSRLS`
+  (kernel ADR-012 §4c.2 to §4c.4). `@GraphQuery.maxDepth` and `@Graph.defaultMaxDepth` state the
+  Community cap of 64 and its refusal, and that graph is `preview` at 1.0.0 (kernel ADR-102). `@Saga`
+  states that finished instances keep their row and that a redelivered `Start` is a no-op while it
+  exists (kernel ADR-013 A1). No attribute, default or signature changes.
+
+- **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
+  `@Action.permissions` admit a caller holding at least one listed permission, and an action's
+  non-empty list replaces the entity's for its route (exeris-tooling ADR-105 obligations 10 and
+  12). ADR-072 is amended: for route access the `-io` reader reads ahead of the processor, as
+  ADR-105 obligation 26 requires.
 
 - **`@SagaStep.order` states its contract, and the `-io` reader no longer reads an unresolvable
   order as `1` without saying so.** The Javadoc states that the steps of a saga number `1..N`, that
@@ -467,8 +457,9 @@ for per-version upgrade steps.
   `COMMAND` has no counterpart because the kernel has no command-started flow: a flow is scheduled
   by application code (`MANUAL`, which `COMMAND` is read as) or started from an event by a
   choreography mapper (`EVENT`). `@SagaTrigger.type()` defaults to `MANUAL` instead of `COMMAND`.
-  The AST enum, its JSON values and `SchemaVersion` are unchanged. Neither the `-io` reader nor the
-  `exeris-tooling` processor reads `@Saga.trigger` yet, so no build output changes; a source using a
+  The AST enum, its JSON values and `SchemaVersion` are unchanged. The `-io` reader reads a
+  deprecated constant as its replacement, and the `exeris-tooling` processor does not read
+  `@Saga.trigger` yet (exeris-tooling#432), so no generated output changes; a source using a
   deprecated constant compiles with a `[removal]` warning. `SagaMetadataTest` asserts the mapping
   is total in both directions. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
@@ -595,6 +586,24 @@ for per-version upgrade steps.
   (Dependabot #31, high). All three are development-only and transitive, reached through ESLint,
   `minimatch` and PostCSS within their existing ranges, so the lockfile moves and `package.json`
   does not. Nothing in the published tarball depends on them.
+
+### Fixed
+
+- **`@ExerisDomain.primaryKeyField` is labelled LIVE.** `exeris-tooling`
+  0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
+  foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
+  by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
+  that.
+
+- **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
+  class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
+  reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
+  `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
+  file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
+
+- **`-javadoc.jar` artifacts no longer bundle fonts.** `maven-javadoc-plugin` moves 3.11.2 → 3.12.0,
+  which passes `--no-fonts` to the JDK javadoc tool. Each javadoc jar drops the ~4.1 MB of
+  `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
 
 ## [0.12.0] — 2026-10-02
 
