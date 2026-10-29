@@ -130,6 +130,22 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("a relationship read under another field name is reported as missing")
+    void missingRelationshipIsReported() {
+        Reader renaming = new Reader(m -> m.relationships() == null || m.relationships().isEmpty()
+                ? m
+                : DomainMetadata.builder(m.entityName(), m.packageName())
+                        .fields(m.fields())
+                        .actions(m.actions())
+                        .relationships(List.of(
+                                RelationshipMetadata.oneToMany("purchases", TckCorpus.ORDER, "customer")))
+                        .build());
+        assertThatThrownBy(renaming::relationshipDisplayFieldIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("No relationship read for Customer.orders");
+    }
+
+    @Test
     @DisplayName("an action read under the method name rather than the declared name is caught")
     void actionCaseIsNotVacuous() {
         Reader misnaming = new Reader(m -> m.actions() == null || m.actions().isEmpty()
