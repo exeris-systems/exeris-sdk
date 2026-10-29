@@ -1,22 +1,16 @@
 # Exeris SDK TCK
 
+> Contract, hot path, failure modes and owning ADRs for this module are owned by [`docs/modules/08-tck.md`](../docs/modules/08-tck.md). This README carries the background.
+
 **Module:** `eu.exeris:exeris-sdk-tck`
 **Role:** Technology Compatibility Kit for the build-time metadata hand-off
 
 ## What this is for
 
 The SDK publishes a format — `exeris-metadata/<entity>.json` — and a discipline: ADR-042's *the
-reader reads what the processor writes*. The discipline has been enforced by whoever remembered it,
-and the record of that is not good. Four parity defects shipped, all the same shape:
+reader reads what the processor writes*. The defect it guards against has one shape: one side reads an attribute under a key the other does not use.
 
-| defect | what it did |
-|---|---|
-| `@ExerisDomain(name = …)` | the reader read an attribute the annotation never declared, so it could return a different entity identity than the producer for the same file |
-| `@Relationship.relationshipType` | the processor read the cardinality under the AST's name for it, so every edge silently came back as the builder default and the wrong side generated the foreign key |
-| `@ActionParam.label` | the processor reads it under `displayName`, a key the annotation does not declare, so the value is null on every run and a fallback hides it completely |
-| `@Saga.version` | the processor read it and the SDK's own reader never did, so the same source was version 3 to one side and version 1 to the other; the kit had no saga case and was bound nowhere, so it shipped past green builds |
-
-They are hard to catch for one reason: **nothing fails**. Both sides emit well-formed metadata, no
+It is hard to catch for one reason: **nothing fails**. Both sides emit well-formed metadata, no
 exception is raised, no diagnostic appears. The defect is only visible if you compare the two
 outputs — which is what this kit does.
 
@@ -40,12 +34,7 @@ class MyParityTckTest extends AbstractMetadataParityTck {
 }
 ```
 
-| suite | binds | asks |
-|---|---|---|
-| `AbstractMetadataProducerTck` | `produce(source) → json` | is the output readable, stamped, and carrying what the source declared? |
-| `AbstractMetadataReaderTck` | `read(source) → DomainMetadata` | the same, from the other side |
-| `AbstractMetadataParityTck` | both | do they agree? |
-| `AbstractMapperPostureTck` | `readValue(json, type)` | can your mapper read what we emit? |
+The four suites, what each binds and what each asks are listed in [the module page](../docs/modules/08-tck.md#suites).
 
 `exeris-sdk-source-model-io`'s `SourceModelReaderTckTest` is a working reader binding.
 
@@ -55,11 +44,7 @@ corpus measures the binder's imagination. Each entity carries a case with a defe
 It is also **compiled** code that happens to travel as a resource: a producer binding drives javac
 over it, and nothing in this repository would otherwise. `CorpusCompilesTest` compiles it under
 `-Werror -Xlint:deprecation`, which enforces two rules at once — every mandatory attribute is
-supplied, and no attribute deprecated for removal is used. Both had already been broken when the
-guard was written: the corpus was missing `@Action.label`, `@Relationship.targetEntity` and
-`@Relationship.displayField`, so it could not have compiled for any binder, and it declared its
-tenancy tier through `@ExerisDomain.tenantScoped` — removed at 1.0.0, so the kit would have stopped
-compiling at exactly the release it exists to guard.
+supplied, and no attribute deprecated for removal is used.
 
 ## Facets
 
@@ -78,15 +63,7 @@ skips and report green, which reads as conformance and is worse than a failure.
 
 ## Why this is a main jar, not a test-jar
 
-`exeris-kernel-tck` ships its abstract bases from `src/test/java` and publishes a `test-jar`. This
-one does not, and the difference is deliberate: the kit's surface freezes at 1.0.0 like every other
-publishable module here, and japicmp — which guards a frozen surface — compares main artifacts.
-
-The cost is that static analysis reads `src/main/java` as production code and flags the assertions
-as residue (`java:S5960`). In a TCK the assertions *are* the artifact: a binder depends on this jar
-to run them, and a TCK with its assertions stripped is an empty interface. The rule is suppressed
-per class with that rationale rather than satisfied by moving the code, which would trade the
-semver guard for a clean report on a rule that does not apply.
+The kit ships as a main jar so that japicmp, which compares main artifacts, guards its surface. The trade-off is stated in [the module page](../docs/modules/08-tck.md#trade-off).
 
 ## Two rules the kit holds itself to
 
@@ -96,20 +73,10 @@ kit that could reach the SDK's own reader would quietly be testing that instead 
 
 **No case that cannot fail.** Every case is driven, in this module's own tests, against a conforming
 binding and one broken in exactly the way the case describes; the second must fail. Adding a case
-means adding that pair.
+means adding that pair. That is why `AbstractMapperPostureTck` has one case: the other guarantees on
+the wire format belong to the AST records, not to the consumer's mapper, and are documented in the
+javadoc of that class.
 
-The rule is not ceremony. It removed three of the four cases originally written for
-`AbstractMapperPostureTck`, each asserting something true that no binding could get wrong:
-
-- an unknown property cannot break a consumer — the AST records carry `@JsonIgnoreProperties(ignoreUnknown = true)` themselves;
-- a zero-valued bound cannot be lost on write — a per-component `@JsonInclude(NON_NULL)` beats a mapper-wide default inclusion;
-- a polymorphic `MutationOp` resolves its subtype on a stock mapper — `@JsonTypeInfo` drives it.
-
-Each is a real guarantee, and each is the *record's* to keep rather than the consumer's. As TCK
-cases they would have passed for every binding ever written.
-
-The same measurement corrected a claim this repo had carried since the format was written: that
-`@JsonInclude(NON_DEFAULT)` makes absent fields "arrive as `null`", which is why consumers must set
-`FAIL_ON_NULL_FOR_PRIMITIVES = false`. An absent property binds the primitive's own default and
-raises nothing. An **explicit** null throws. The obligation is real — a baseline is a file the
-reader did not necessarily write — but it does not follow from our own writer's inclusion posture.
+An absent property binds the primitive's own default and raises nothing. An **explicit** null throws
+on a default Jackson 3 mapper, so consumers must set `FAIL_ON_NULL_FOR_PRIMITIVES = false`: a
+baseline is a file the reader did not necessarily write.
