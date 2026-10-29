@@ -178,6 +178,9 @@ public final class SourceModelReader {
      */
     private static final int MAX_CONSTANT_DEPTH = 16;
 
+    /** The route-authorization scope attribute on both {@code @ExerisDomain} and {@code @Action}. */
+    private static final String PERMISSIONS = "permissions";
+
     private final JavaParser javaParser;
 
     /**
@@ -407,7 +410,7 @@ public final class SourceModelReader {
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
         stringAttr(ann, "tableName").ifPresent(builder::tableName);
-        stringArrayAttr(ann, "permissions").ifPresent(builder::permissions);
+        stringArrayAttr(ann, PERMISSIONS).ifPresent(builder::permissions);
         boolAttr(ann, "restApi").ifPresent(builder::restApi);
         boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
@@ -610,7 +613,7 @@ public final class SourceModelReader {
             // routeAccess and empty permissions, and inherits the entity's at generation time:
             // the AST carries what each element declares, and nearest-declaration resolution is
             // the generator's (exeris-tooling ADR-105 obligation 12).
-            stringArrayAttr(action.get(), "permissions").ifPresent(builder::permissions);
+            stringArrayAttr(action.get(), PERMISSIONS).ifPresent(builder::permissions);
             routeAccess(method).ifPresent(builder::routeAccess);
             for (Parameter parameter : method.getParameters()) {
                 parameter.getAnnotationByName("ActionParam")
@@ -1481,7 +1484,7 @@ public final class SourceModelReader {
                 .flatMap(name -> {
                     try {
                         return Optional.of(RouteAccess.valueOf(name));
-                    } catch (IllegalArgumentException unknownConstant) {
+                    } catch (IllegalArgumentException _) {
                         return Optional.empty();
                     }
                 });
@@ -1509,7 +1512,7 @@ public final class SourceModelReader {
     }
 
     private boolean hasNonLiteralPermission(AnnotationExpr annotation) {
-        return value(annotation, "permissions").map(expression -> {
+        return value(annotation, PERMISSIONS).map(expression -> {
             if (expression.isArrayInitializerExpr()) {
                 return expression.asArrayInitializerExpr().getValues().stream()
                         .anyMatch(element -> !element.isStringLiteralExpr());
