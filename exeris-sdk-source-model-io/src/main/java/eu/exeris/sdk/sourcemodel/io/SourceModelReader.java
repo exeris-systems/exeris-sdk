@@ -986,8 +986,9 @@ public final class SourceModelReader {
      * mirroring the processor's {@code graphEdges}. A field carries at most one edge, counted
      * across the direct annotation and a {@code @GraphEdges} container together, whether javac
      * wrote the container or the author did. A field declaring more than one is dropped, as the
-     * processor refuses it: {@code GraphEdgeMetadata} identifies an edge by its field, so it
-     * cannot hold two.
+     * processor refuses it. {@code GraphEdgeMetadata} can carry such a field, with one identity
+     * per edge and a shared {@code field}; this reader reads it when the processor does, so the
+     * two keep writing the same edges for the same source (ADR-042).
      */
     private List<GraphEdgeMetadata> graphEdges(ClassOrInterfaceDeclaration type) {
         List<GraphEdgeMetadata> edges = new ArrayList<>();
@@ -1016,6 +1017,14 @@ public final class SourceModelReader {
      * {@code graphEdge}: the identity is the field name, the relation type is {@code type}, and
      * the target label is the first of a non-blank {@code targetLabel}, the simple name of
      * {@code target} (not {@code void.class}), and a non-blank {@code targetName}.
+     *
+     * <p>The field is the identity, so {@code field} stays {@code null}. The other carried
+     * attributes are read present-only: an attribute the source does not write is
+     * {@code null}, so the annotation default applies, and a declared {@code false} or
+     * {@code 0.0} is carried. {@code direction} maps onto the AST's
+     * {@link GraphEdgeMetadata.Direction} by constant name, an unrecognised name reading as
+     * absent. {@code staticWeight} is read from a numeric literal, signed; a value written as a
+     * constant reference is not resolved and reads as absent.
      */
     private GraphEdgeMetadata graphEdge(AnnotationExpr annotation, String fieldName) {
         String label = nonBlankStringAttr(annotation, "targetLabel")
@@ -1024,7 +1033,55 @@ public final class SourceModelReader {
                         .map(this::simpleName))
                 .or(() -> nonBlankStringAttr(annotation, "targetName"))
                 .orElse(null);
-        return new GraphEdgeMetadata(fieldName, label, nonBlankStringAttr(annotation, "type").orElse(null));
+        return new GraphEdgeMetadata(
+                fieldName,
+                label,
+                nonBlankStringAttr(annotation, "type").orElse(null),
+                null,
+                edgeDirection(annotation).orElse(null),
+                boolAttr(annotation, "bidirectional").orElse(null),
+                nonBlankStringAttr(annotation, "inverseType").orElse(null),
+                nonBlankStringAttr(annotation, "description").orElse(null),
+                boolAttr(annotation, "weighted").orElse(null),
+                nonBlankStringAttr(annotation, "weightField").orElse(null),
+                doubleAttr(annotation, "staticWeight").orElse(null));
+    }
+
+    /**
+     * {@code @GraphEdge.direction} → the AST-owned {@link GraphEdgeMetadata.Direction}, bridged
+     * by constant-name identity like {@link #dataScope}. An unrecognised constant reads as absent.
+     */
+    private Optional<GraphEdgeMetadata.Direction> edgeDirection(AnnotationExpr annotation) {
+        return enumAttr(annotation, "direction")
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(GraphEdgeMetadata.Direction.valueOf(name));
+                    } catch (IllegalArgumentException unknownConstant) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    /**
+     * Present-only {@code double} attribute from a numeric literal ({@code 2}, {@code 0.5},
+     * {@code 1.5d}), unwrapping a leading unary minus. Any other expression reads as absent.
+     */
+    private Optional<Double> doubleAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).flatMap(this::asDouble);
+    }
+
+    private Optional<Double> asDouble(Expression expression) {
+        if (expression.isUnaryExpr()) {
+            UnaryExpr unary = expression.asUnaryExpr();
+            if (unary.getOperator() == UnaryExpr.Operator.MINUS) {
+                return asDouble(unary.getExpression()).map(value -> -value);
+            }
+            return Optional.empty();
+        }
+        if (expression.isDoubleLiteralExpr()) {
+            return Optional.of(expression.asDoubleLiteralExpr().asDouble());
+        }
+        return asLong(expression).map(Long::doubleValue);
     }
 
     /**

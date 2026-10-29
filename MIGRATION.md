@@ -271,6 +271,79 @@ that sets it compiles with a `[removal]` warning from javac.
 - **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
 
+### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
+
+**Impact on code: none required to keep building.** `GraphEdgeMetadata` gained eight trailing,
+nullable components and keeps its 0.12.0 constructor:
+
+| Record | Components 0.12.0 → 0.13.0 | Added | Kept constructor |
+|---|---|---|---|
+| `GraphEdgeMetadata` | 3 → 11 | `field`, `direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField`, `staticWeight` | 3 arguments |
+
+**Identity and field.** `name` is the edge's identity, unique within its entity. `field` names the
+entity field that declares the edge, and is `null` when it equals `name`, which is the case for
+every field carrying one edge; the record drops a `field` equal to `name`, so both spellings are one
+value and the JSON is the 0.12.0 JSON. A consumer that derived the entity getter from `name` reads
+`effectiveField()` instead: it returns `field` when set and `name` otherwise, so it is correct for
+metadata written by either version. Two `@GraphEdge`s on one field are now representable, as two
+edges with distinct `name`s and the same `field`; the `exeris-tooling` processor still refuses them
+at the declaration, and the `-io` reader drops them, until the processor extracts them.
+
+**Direction.** `direction` is the AST-owned `GraphEdgeMetadata.Direction` (`OUTGOING`, `INCOMING`,
+`BOTH`), with the meaning of the kernel's `GraphEdgeDescriptor.Direction`. `bidirectional` keeps the
+kernel's meaning too: the edge is stored once and traversed both ways. `effectiveDirection()` applies
+the kernel's rule, `bidirectional ? BOTH : direction`, with `OUTGOING` when neither is declared.
+`@GraphEdge.bidirectional` used to describe two stored edges; the reverse edge is stored only when
+`inverseType` names its type.
+
+**Present-only.** Every new component is `null` when the author declared nothing, so the annotation
+default applies. A declared `false`, `OUTGOING` or `0.0` is written. The `-io` reader populates
+`direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField` and
+`staticWeight`; the `exeris-tooling` processor does not extract them yet, and until it does a
+processor's JSON is the same as it was on 0.12.0. No generator reads them yet.
+
+**Outside the 1.0.0 freeze.** `direction`, `bidirectional`, `inverseType`, `weighted`,
+`weightField` and `staticWeight`, on the annotation and on the record, encode the kernel graph SPI,
+which kernel ADR-100 keeps at tier `preview` at 1.0. Under ADR-072 they are reserved and not frozen;
+so are the not-yet-carried `properties`, `propertyMappings`, `staticProperties` and `upsert`. See
+[`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md).
+
+**Deprecated.** Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and the
+nested `@GraphEdge.ComputedProperty` are deprecated for removal. None is extracted, and none has a
+kernel graph binding to compile against. A source that sets one compiles with a `[removal]` warning
+from javac.
+
+| Attributes | Replacement |
+|---|---|
+| `unique`, `cascadeUpdate` | `upsert` |
+| `traversalCost` | `staticWeight`, which the kernel's shortest path reads as the cost |
+| `weightExpression` | `weightField` or `staticWeight` |
+| `sync` (`false`) | do not declare the edge |
+| `weightProperty`, `normalizeWeight` | none: the kernel stores one weight per edge under a fixed name, as given |
+| `maxEdges`, `minEdges` | none: the graph session enforces no cardinality |
+| `condition`, `traversalCostExpression`, `computedProperties`, `PropertyMapping.transform` | none: nothing evaluates SpEL |
+| `cascadeDelete`, `cascadeDeleteOrphanTarget` | none: deleting a node always deletes its edges, and nothing else |
+| `indexed`, `indexedProperties`, `compositeIndex` | none: edge tables take no index parameter |
+| `temporal`, `createdAtProperty`, `updatedAtProperty`, `validFrom`, `validTo` | none: edges carry no timestamps, and per-hop property filters are outside kernel ADR-102's scope |
+| `syncOnEvents`, `syncProperties`, `batch` | none: the generated sync writes every edge each time it syncs the entity |
+| `traversable` | none: every kernel traversal names the edge it follows |
+| `graphqlExpose`, `graphqlFieldName`, `graphqlDescription` | none: nothing emits GraphQL |
+
+```java
+// before
+@GraphEdge(type = "ROUTE", target = City.class, traversalCost = 4.5, unique = true, indexed = true)
+private City next;
+
+// after
+@GraphEdge(type = "ROUTE", target = City.class, staticWeight = 4.5)
+private City next;
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
+
 ---
 
 ## 0.11.x → 0.12.x
