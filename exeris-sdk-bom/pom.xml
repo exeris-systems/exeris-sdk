@@ -31,6 +31,10 @@
         <jackson.annotations.version>2.22</jackson.annotations.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
+        <!-- Test scope only: BriefSchemaContractTest validates the brief fixtures against the
+             emitted brief-schema.json with a real draft 2020-12 validator rather than a
+             hand-written subset. The 3.x line is the one built on Jackson 3. -->
+        <json-schema-validator.version>3.0.8</json-schema-validator.version>
 
         <!-- JavaParser powers the source-model-io parser/writer (ADR-037).
              Dual-licensed Apache-2.0 OR LGPL-3.0; the SDK ELECTS Apache-2.0
@@ -94,6 +98,11 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+            <dependency>
+                <groupId>tools.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -105,6 +114,12 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${json-schema-validator.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

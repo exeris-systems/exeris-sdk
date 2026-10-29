@@ -73,6 +73,12 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **`@ExerisDomain.primaryKeyField` is labelled LIVE; `@PrimaryKey` stays RESERVED.** `exeris-tooling`
+  0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
+  foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
+  by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
+  that, and say the marker is read by neither reader.
+
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
   class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
   reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
@@ -84,6 +90,26 @@ for per-version upgrade steps.
   `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
 
 ### Added
+
+- **The pre-construction brief contract (ADR-106).** `exeris-sdk-source-model` gains
+  `eu.exeris.sdk.brief`: `Brief` and the records it carries (`Actor`, `GlossaryTerm`, `Workflow`
+  with `EarsCriterion`, `NonFunctionalRequirement`, `Integration`, `OpenQuestion`, `FulfilledBy`),
+  and `BriefReadiness`, the readiness gate as a function. A brief is
+  `docs/briefs/<area>.brief.yaml` in an application project, opening with `briefSchema: <sdk
+  version>`. It carries what `DomainMetadata` cannot and references the source model without
+  re-encoding it: `DataScope` is reused by type, concern hints are catalog annotation names, and
+  `fulfilledBy` names an entity, action, rule or saga. `BriefSchemaProcessor` emits
+  `META-INF/exeris/brief-schema.json` into the source-model jar, stamped `briefSchemaFormat: 1`;
+  every object is `additionalProperties: false`, and the concern-hint `enum` is read from the
+  annotation sources of the same build. `BriefSchemaContractTest` holds the schema to its contract:
+  one rejection case per structure `DomainMetadata` carries, derived from its record components;
+  EARS fields checked per kind; every hint in the catalog; fixtures with planted gaps run through
+  both a draft 2020-12 validator and `BriefReadiness`. The module's compile classpath is unchanged
+  (`jackson-annotations`); `jackson-dataformat-yaml` and `json-schema-validator` 3.0.8 are test
+  scope and managed in the BOM. **Freeze rule:** before 1.0 a change to the brief is recorded here
+  and ships with its fixtures updated in the same change; from 1.0 it is additive only, and
+  removing or renaming a brief property is a breaking change under the rule for an annotation
+  attribute.
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
   named after their attributes: `compensationMaxRetries`, `compensationRetryDelay`,
