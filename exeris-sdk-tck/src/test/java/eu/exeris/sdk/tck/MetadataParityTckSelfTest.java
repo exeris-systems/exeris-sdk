@@ -36,8 +36,10 @@ class MetadataParityTckSelfTest {
             parity.fieldsAgree();
             parity.relationshipsAgree();
             parity.actionsAgree();
+            parity.actionResultTypesAgree();
             parity.sagaIdentityAgrees();
             parity.sagaCompensationAgrees();
+            parity.routeAccessAgrees();
         }).doesNotThrowAnyException();
     }
 
@@ -92,6 +94,41 @@ class MetadataParityTckSelfTest {
         assertThatThrownBy(parity::identityAgrees)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("entityName");
+    }
+
+    @Test
+    @DisplayName("a return type one side carries as written is caught")
+    void actionResultTypeDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> withActionResultType(m, "receipts", "List<Receipt>"));
+        assertThatThrownBy(parity::actionResultTypesAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("actions/receipts/resultType — producer: 'java.util.List<"
+                        + ReferenceBinding.ORDER_RECEIPT + ">', reader: 'List<Receipt>'");
+    }
+
+    @Test
+    @DisplayName("a void action only one side writes as \"void\" is caught")
+    void actionResultTypeVoidDivergenceIsCaught() {
+        Parity parity = new Parity(m -> withActionResultType(m, "submit", null), UnaryOperator.identity());
+        assertThatThrownBy(parity::actionResultTypesAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("actions/submit/resultType — producer: <absent>, reader: 'void'");
+    }
+
+    @Test
+    @DisplayName("a producer that does not extract the return type yet skips the case")
+    void anUnbuiltResultTypeFacetSkips() {
+        Parity notBuiltYet = new Parity(m -> withActionResultType(m, "submit", null), UnaryOperator.identity()) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.ACTION_RESULT_TYPE);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::actionResultTypesAgree)
+                .isInstanceOf(TestAbortedException.class);
+        assertThatCode(notBuiltYet::actionsAgree).doesNotThrowAnyException();
     }
 
     @Test
@@ -170,6 +207,35 @@ class MetadataParityTckSelfTest {
     }
 
     @Test
+    @DisplayName("a PUBLIC one side drops is caught, on the entity and on an action")
+    void droppedPublicIsCaught() {
+        Parity parity = new Parity(UnaryOperator.identity(), ReferenceBinding::publicDropped);
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product: routeAccess — producer: 'PUBLIC', reader: <absent>")
+                .hasMessageContaining("Order: actions/track/routeAccess — producer: 'PUBLIC', reader: <absent>");
+    }
+
+    @Test
+    @DisplayName("an entity declaration one side copies onto an inheriting action is caught")
+    void resolvedInheritanceIsCaught() {
+        Parity parity = new Parity(ReferenceBinding::inheritanceResolved, UnaryOperator.identity());
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order: actions/submit/routeAccess — producer: 'AUTHENTICATED', reader: <absent>")
+                .hasMessageContaining("Order: actions/submit/permissions");
+    }
+
+    @Test
+    @DisplayName("permissions one side reorders are caught")
+    void reorderedPermissionsAreCaught() {
+        Parity parity = new Parity(UnaryOperator.identity(), ReferenceBinding::permissionsReversed);
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order: permissions — producer: '[order:read, order:write]'");
+    }
+
+    @Test
     @DisplayName("an unbuilt facet skips rather than failing")
     void anUnbuiltFacetSkips() {
         Parity notBuiltYet = new Parity(UnaryOperator.identity(), UnaryOperator.identity()) {
@@ -210,6 +276,19 @@ class MetadataParityTckSelfTest {
     private static DomainMetadata rebuild(DomainMetadata source, List<RelationshipMetadata> edges) {
         return DomainMetadata.builder(source.entityName(), source.packageName())
                 .fields(source.fields()).actions(source.actions()).relationships(edges).build();
+    }
+
+    private static DomainMetadata withActionResultType(DomainMetadata source, String actionName, String resultType) {
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields())
+                .actions(source.actions().stream()
+                        .map(a -> actionName.equals(a.name())
+                                ? ReferenceBinding.action(a.name(), a.httpMethod(), resultType)
+                                : a)
+                        .toList())
+                .relationships(source.relationships())
+                .sagaMetadata(source.sagaMetadata())
+                .build();
     }
 
     private static DomainMetadata withSaga(DomainMetadata source, SagaMetadata saga) {

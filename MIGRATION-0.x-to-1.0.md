@@ -393,25 +393,25 @@ freeze or is explicitly re-dispositioned here.
     of the wire:
     - `DomainMetadata` — 8 of 41: `tags`, `roles`, `permissions`,
       `projections`, `eventHandlers`, `rules`, `routeAccess`, `channel`.
-    - `ActionMetadata` — 9 of 18: `resultType`, `idempotent`, `dangerous`,
+    - `ActionMetadata` — 8 of 18: `idempotent`, `dangerous`,
       `requiresConfirmation`, `permissions`, `producesEvents`,
       `realTimeUpdates`, `schedule`, `routeAccess`.
     - `FieldMetadata` — 10 of 31: `columnName`, `audited`, `hidden`,
       `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
       `derived`, `blob`.
     - `SystemFieldsMetadata` — 0 of 11. (`primaryKeyField` is populated and
-      read by no generator, which is a different gap.)
+      read by the generators, so it is not part of this count.)
 
-    That is 27. Five are the ADR-072 exception §2 already excludes from the
+    That is 26. Five are the ADR-072 exception §2 already excludes from the
     freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
-    `DomainMetadata.channel`); the other 22 are frozen as declared under §3's
+    `DomainMetadata.channel`); the other 21 are frozen as declared under §3's
     rule that everything public is contract. Whole records no producer
     populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
     `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
     `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
     — are counted as records rather than components and follow the same two
     rules. Not counted: components one producer sets and the other does not
-    (`ActionMetadata.displayName`). That is an ADR-042 parity question, not a
+    (`ActionMetadata.displayName`, `ActionMetadata.resultType`). That is an ADR-042 parity question, not a
     population one.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*

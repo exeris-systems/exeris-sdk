@@ -31,6 +31,8 @@ class MetadataProducerTckSelfTest {
             producer.aZeroValuedBoundSurvivesSerialization();
             producer.sagaVersionReachesTheProducedMetadata();
             producer.sagaCompensationReachesTheProducedJson();
+            producer.actionResultTypeReachesTheProducedJson();
+            producer.routeAccessReachesTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -140,6 +142,38 @@ class MetadataProducerTckSelfTest {
                 .hasMessageContaining("fully-qualified");
     }
 
+    @Test
+    @DisplayName("a producer that writes no resultType is caught")
+    void actionResultTypeKeyCaseIsNotVacuous() {
+        Producer typeBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            root.path("actions").forEach(action -> ((ObjectNode) action).remove("resultType"));
+            return root.toString();
+        });
+        assertThatThrownBy(typeBlind::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("did not extract it");
+    }
+
+    @Test
+    @DisplayName("a return type written as declared instead of fully qualified is caught")
+    void actionResultTypeWrittenFormIsCaught() {
+        Producer writtenForm = new Producer(json -> json.replace(
+                "\"" + ReferenceBinding.ORDER_RECEIPT + "\"", "\"Receipt\""));
+        assertThatThrownBy(writtenForm::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("'receipt'");
+    }
+
+    @Test
+    @DisplayName("an action missing from the produced JSON is caught")
+    void actionResultTypeMissingActionIsCaught() {
+        Producer dropping = new Producer(json -> json.replace("\"name\":\"lineCount\"", "\"name\":\"count\""));
+        assertThatThrownBy(dropping::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no such action");
+    }
+
     private static String withoutSagaKey(String json, String key) {
         ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
         ((ObjectNode) root.get("sagaMetadata")).remove(key);
@@ -147,6 +181,25 @@ class MetadataProducerTckSelfTest {
     }
 
     /** A producer binding whose output is the reference baseline put through one transformation. */
+    @Test
+    @DisplayName("a PUBLIC missing from the produced JSON is caught")
+    void routeAccessPublicCaseIsNotVacuous() {
+        Producer publicBlind = new Producer(json -> json.replace("\"routeAccess\":\"PUBLIC\"", "\"x\":0"));
+        assertThatThrownBy(publicBlind::routeAccessReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product/routeAccess — no PUBLIC key in the produced JSON")
+                .hasMessageContaining("Order/actions/track/routeAccess — no PUBLIC key in the produced JSON");
+    }
+
+    @Test
+    @DisplayName("an action permission the producer never wrote is caught")
+    void routeAccessPermissionCaseIsNotVacuous() {
+        Producer permissionBlind = new Producer(json -> json.replace("\"order:approve\"", ""));
+        assertThatThrownBy(permissionBlind::routeAccessReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/actions/approve/permissions — declared [order:approve], got []");
+    }
+
     static class Producer extends AbstractMetadataProducerTck {
 
         private final UnaryOperator<String> defect;

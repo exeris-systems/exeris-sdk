@@ -1,5 +1,6 @@
 package eu.exeris.sdk.tck;
 
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -7,7 +8,9 @@ import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -173,6 +176,31 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("each action carries its return type, fully qualified, and void as \"void\"")
+    void actionResultTypeIsTheDeclaredOne() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.ACTION_RESULT_TYPE);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        for (Map.Entry<String, String> expected : TckCorpus.orderResultTypes().entrySet()) {
+            ActionMetadata action = order.actions().stream()
+                    .filter(a -> expected.getKey().equals(a.name()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(
+                            "Order declares @Action(name = \"" + expected.getKey() + "\"); the reader "
+                                    + "did not return it."));
+            assertThat(action.resultType())
+                    .withFailMessage(
+                            "Order's action '%s' was read with resultType '%s'. The component carries "
+                                    + "the return type as javac reports it, %s: fully qualified, type "
+                                    + "arguments kept, and \"void\" for an action that returns nothing. "
+                                    + "The streaming generators type the action's result frame from it, "
+                                    + "and emit none for \"void\".",
+                            expected.getKey(), action.resultType(), expected.getValue())
+                    .isEqualTo(expected.getValue());
+        }
+    }
+
+    @Test
     @DisplayName("the saga carries the version the source declares")
     void sagaVersionIsTheDeclaredOne() {
         requireSupported(Facet.SAGA);
@@ -232,6 +260,29 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
         assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
         assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
         assertThat(saga.compensationDlq()).isEqualTo("sales.order-compensation.dlq");
+    }
+
+    /**
+     * Every route-access declaration in the corpus, read as declared. A {@code PUBLIC} skipped as
+     * if ordinal 0 were a default reads as "declared nothing"; an entity's declaration copied onto
+     * an inheriting action reads as a declaration the author never wrote.
+     */
+    @Test
+    @DisplayName("route access and permissions are carried as each element declares them")
+    void routeAccessIsTheDeclaredOne() {
+        requireSupported(Facet.ROUTE_ACCESS);
+        List<String> gaps = new ArrayList<>();
+        for (String name : TckCorpus.entityNames()) {
+            gaps.addAll(CorpusRouteAccess.gaps(read(TckCorpus.sourceOf(name))));
+        }
+        assertThat(gaps)
+                .withFailMessage(
+                        "The reader's route access disagrees with the corpus on %d path(s):%n  %s%n%n"
+                                + "Each element carries only what it declares: an action without a "
+                                + "declaration of its own carries no routeAccess and no permissions, "
+                                + "and PUBLIC is a declaration, not a default.",
+                        gaps.size(), String.join("\n  ", gaps))
+                .isEmpty();
     }
 
     /**

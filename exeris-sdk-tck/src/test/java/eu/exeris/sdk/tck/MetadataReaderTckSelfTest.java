@@ -39,8 +39,10 @@ class MetadataReaderTckSelfTest {
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
             reader.actionIsReadUnderTheDeclaredName();
+            reader.actionResultTypeIsTheDeclaredOne();
             reader.sagaVersionIsTheDeclaredOne();
             reader.sagaCompensationIsTheDeclaredOne();
+            reader.routeAccessIsTheDeclaredOne();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -106,6 +108,52 @@ class MetadataReaderTckSelfTest {
                         .build());
         assertThatThrownBy(misnaming::actionIsReadUnderTheDeclaredName)
                 .isInstanceOf(AssertionError.class);
+    }
+
+    @Test
+    @DisplayName("a return type carried as written instead of fully qualified is caught")
+    void actionResultTypeWrittenFormIsCaught() {
+        Reader writtenForm = new Reader(m -> withActions(m, "receipts", "List<Receipt>"));
+        assertThatThrownBy(writtenForm::actionResultTypeIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("'receipts'")
+                .hasMessageContaining("fully qualified");
+    }
+
+    @Test
+    @DisplayName("a void action read with no return type is caught")
+    void actionResultTypeAbsentVoidIsCaught() {
+        Reader voidBlind = new Reader(m -> withActions(m, "submit", null));
+        assertThatThrownBy(voidBlind::actionResultTypeIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("'submit'");
+    }
+
+    @Test
+    @DisplayName("an action the reader drops is reported rather than passing the result-type case")
+    void actionResultTypeMissingActionIsCaught() {
+        Reader dropping = new Reader(m -> DomainMetadata.builder(m.entityName(), m.packageName())
+                .fields(m.fields())
+                .actions(m.actions().stream().filter(a -> !"lineCount".equals(a.name())).toList())
+                .relationships(m.relationships())
+                .build());
+        assertThatThrownBy(dropping::actionResultTypeIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("lineCount");
+    }
+
+    @Test
+    @DisplayName("an unbuilt result-type facet skips rather than failing")
+    void anUnbuiltResultTypeFacetSkips() {
+        Reader notBuiltYet = new Reader(m -> withActions(m, "receipt", null)) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.ACTION_RESULT_TYPE);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::actionResultTypeIsTheDeclaredOne)
+                .isInstanceOf(TestAbortedException.class);
+        assertThatCode(notBuiltYet::actionIsReadUnderTheDeclaredName).doesNotThrowAnyException();
     }
 
     @Test
@@ -197,6 +245,21 @@ class MetadataReaderTckSelfTest {
         assertThat(optingOut.unsupportedFacets()).contains(Facet.ACTIONS);
     }
 
+    @Test
+    @DisplayName("a dropped PUBLIC, a resolved inheritance and a reordered list are each caught")
+    void routeAccessCasesAreNotVacuous() {
+        assertThatThrownBy(new Reader(ReferenceBinding::publicDropped)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product/routeAccess — declared PUBLIC, got <absent>")
+                .hasMessageContaining("Order/actions/track/routeAccess — declared PUBLIC, got <absent>");
+        assertThatThrownBy(new Reader(ReferenceBinding::inheritanceResolved)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/actions/submit/routeAccess — declared <absent>, got AUTHENTICATED");
+        assertThatThrownBy(new Reader(ReferenceBinding::permissionsReversed)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/permissions");
+    }
+
     /** A reader binding whose output is the reference metadata put through one transformation. */
     static class Reader extends AbstractMetadataReaderTck {
 
@@ -217,6 +280,23 @@ class MetadataReaderTckSelfTest {
                 .fields(source.fields())
                 .actions(source.actions())
                 .relationships(source.relationships())
+                .build();
+    }
+
+    /** The reference metadata with one action's {@code resultType} replaced; other entities unchanged. */
+    private static DomainMetadata withActions(DomainMetadata source, String actionName, String resultType) {
+        if (source.actions() == null || source.actions().isEmpty()) {
+            return source;
+        }
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields())
+                .actions(source.actions().stream()
+                        .map(a -> actionName.equals(a.name())
+                                ? ReferenceBinding.action(a.name(), a.httpMethod(), resultType)
+                                : a)
+                        .toList())
+                .relationships(source.relationships())
+                .sagaMetadata(source.sagaMetadata())
                 .build();
     }
 

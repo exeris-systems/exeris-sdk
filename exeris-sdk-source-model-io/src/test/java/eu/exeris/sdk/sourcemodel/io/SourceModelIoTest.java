@@ -1040,8 +1040,9 @@ class SourceModelIoTest {
         @Test
         void fullyAnnotatedEntityHasNoDivergences() {
             // every processor facet is read: the guard is empty even
-            // for an entity touching all of them. @Projection/@NavMenu/@PrimaryKey are
-            // processor-gaps (never divergences); @Validation is read into FieldMetadata.
+            // for an entity touching all of them. @Projection/@NavMenu are
+            // processor-gaps (never divergences); @PrimaryKey is read into systemFields
+            // and @Validation into FieldMetadata.
             String src = """
                     package app.budgethq.order;
                     import eu.exeris.sdk.annotation.ExerisDomain;
@@ -1069,6 +1070,54 @@ class SourceModelIoTest {
                     }
                     """;
             assertThat(reader.unmodeledFacets(src)).isEmpty();
+        }
+
+        @Test
+        void annotationsWhoseCarrierIsNotReadAreFlagged() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.Blob;
+                    import eu.exeris.sdk.annotation.Channel;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    import eu.exeris.sdk.annotation.GraphProperty;
+                    import eu.exeris.sdk.annotation.UIGroup;
+                    import eu.exeris.sdk.annotation.system.PrimaryKey;
+
+                    @ExerisDomain @Graph @Channel(messageType = "Ping")
+                    public class Asset {
+                        @PrimaryKey private java.util.UUID assetId;
+                        @GraphProperty(indexed = true) @UIGroup(name = "main") private String title;
+                        @Blob(contentTypes = {"image/png"}) private String scan;
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(src))
+                    .containsExactlyInAnyOrder("@GraphProperty", "@UIGroup", "@Blob", "@Channel");
+        }
+
+        @Test
+        void unflaggedCarriersStayAtTheirDefaults() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.Blob;
+                    import eu.exeris.sdk.annotation.Channel;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Graph;
+                    import eu.exeris.sdk.annotation.GraphProperty;
+                    import eu.exeris.sdk.annotation.UI;
+                    import eu.exeris.sdk.annotation.UIGroup;
+
+                    @ExerisDomain @Graph @UI @Channel(messageType = "Ping")
+                    public class Asset {
+                        @GraphProperty(indexed = true) @UIGroup(name = "main") private String title;
+                        @Blob private String scan;
+                    }
+                    """;
+            DomainMetadata domain = reader.read(src).orElseThrow();
+            assertThat(domain.graphMetadata().properties()).isNull();
+            assertThat(domain.uiMetadata().groups()).isEmpty();
+            assertThat(domain.channel()).isNull();
+            assertThat(domain.fields()).allSatisfy(field -> assertThat(field.blob()).isNull());
         }
 
         @Test
@@ -2144,8 +2193,8 @@ class SourceModelIoTest {
             // …and an unset dataType stays null (no "" leaking onto the wire)
             assertThat(domain.findField("reference")).get()
                     .extracting("dataType").isNull();
-            // the equivalence guard stays empty (dataType is an attribute, not a
-            // guarded annotation; UNMODELED_FACET_ANNOTATIONS remains empty)
+            // the equivalence guard stays empty: dataType is an attribute, not a
+            // guarded annotation
             assertThat(reader.unmodeledFacets(src)).isEmpty();
         }
     }

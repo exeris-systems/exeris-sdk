@@ -49,7 +49,27 @@ public enum Facet {
      *
      * @since 0.13
      */
-    SAGA_COMPENSATION;
+    SAGA_COMPENSATION,
+
+    /**
+     * {@code ActionMetadata.resultType} — each {@code @Action} method's return type, fully
+     * qualified with its type arguments, and {@code "void"} for an action that returns nothing.
+     * The streaming generators type an action's result frame from it, and emit none for
+     * {@code "void"}.
+     *
+     * @since 0.13
+     */
+    ACTION_RESULT_TYPE,
+
+    /**
+     * {@code @RouteAccess} and {@code permissions}, on the entity and on each action, carried as
+     * {@code routeAccess} and {@code permissions} on {@code DomainMetadata} and
+     * {@code ActionMetadata} (exeris-tooling ADR-105) — {@code PUBLIC} included, each element
+     * carrying only what it declares.
+     *
+     * @since 0.13
+     */
+    ROUTE_ACCESS;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);

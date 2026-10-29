@@ -1,0 +1,11 @@
+{
+  "systemFields": {
+    "primaryKeyField": "invoiceNo",
+    "createdAtField": "createdAt",
+    "createdByField": "createdBy",
+    "updatedAtField": "updatedAt",
+    "updatedByField": "updatedBy",
+    "tenantIdField": "tenantId",
+    "versionField": "version"
+  }
+}
