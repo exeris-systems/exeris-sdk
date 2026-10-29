@@ -206,6 +206,8 @@ public final class SourceModelReader {
 
     /** The route-authorization scope attribute on both {@code @ExerisDomain} and {@code @Action}. */
     private static final String PERMISSIONS = "permissions";
+    private static final String TOPIC = "topic";
+    private static final String TRIGGER = "trigger";
 
     private final JavaParser javaParser;
 
@@ -1047,7 +1049,7 @@ public final class SourceModelReader {
                 // processor (which reads no payload attributes on this path).
                 nested.getAnnotationByName("DomainEvent").ifPresent(annotation ->
                         events.add(DomainEventMetadata.withTopic(
-                                nested.getNameAsString(), stringAttr(annotation, "topic").orElse(null))));
+                                nested.getNameAsString(), stringAttr(annotation, TOPIC).orElse(null))));
             }
         }
         return events;
@@ -1068,8 +1070,8 @@ public final class SourceModelReader {
         String name = stringAttr(annotation, "name")
                 .filter(s -> !s.isBlank())
                 .orElseGet(() -> entitySimpleName
-                        + triggerToEventSuffix(enumAttr(annotation, "trigger").orElse("CREATE")));
-        String topic = stringAttr(annotation, "topic").orElse(null);
+                        + triggerToEventSuffix(enumAttr(annotation, TRIGGER).orElse("CREATE")));
+        String topic = stringAttr(annotation, TOPIC).orElse(null);
         String description = stringAttr(annotation, "description").orElse(null);
         // EV2: the trigger triple. Note the asymmetry with the name derivation above — that
         // one defaults an ABSENT trigger to CREATE because it only needs a suffix, whereas
@@ -1557,7 +1559,7 @@ public final class SourceModelReader {
                 .ifPresent(builder::compensationFailureHandler);
         boolAttr(saga.get(), "manualInterventionOnCompensationFailure")
                 .ifPresent(builder::manualInterventionOnCompensationFailure);
-        value(saga.get(), "trigger").filter(Expression::isAnnotationExpr)
+        value(saga.get(), TRIGGER).filter(Expression::isAnnotationExpr)
                 .map(expression -> sagaTrigger(expression.asAnnotationExpr(), type))
                 .ifPresent(builder::trigger);
         builder.steps(sagaSteps(type));
@@ -1587,7 +1589,7 @@ public final class SourceModelReader {
                 .or(() -> nonBlankStringAttr(trigger, "sourceName"))
                 .orElse(null);
         return new SagaMetadata.SagaTrigger(kind, source,
-                nonBlankStringAttr(trigger, "topic").orElse(null),
+                nonBlankStringAttr(trigger, TOPIC).orElse(null),
                 nonBlankStringAttr(trigger, "schedule").orElse(null), null);
     }
 
@@ -1903,7 +1905,7 @@ public final class SourceModelReader {
      * @since 0.11
      */
     private Optional<DomainEventMetadata.Trigger> eventTrigger(AnnotationExpr annotation) {
-        return enumAttr(annotation, "trigger")
+        return enumAttr(annotation, TRIGGER)
                 .flatMap(name -> {
                     try {
                         return Optional.of(DomainEventMetadata.Trigger.valueOf(name));
