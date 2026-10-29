@@ -3,82 +3,43 @@ package eu.exeris.sdk.annotation.security;
 import java.lang.annotation.*;
 
 /**
- * Marks a field for encryption at rest (Field-Level Encryption).
- * <p>Encrypted fields are automatically encrypted before persisting to database
- * and decrypted when reading. Uses AES-256-GCM by default.
+ * Marks a field for field-level encryption at rest.
  *
- * <h2>Basic Usage:</h2>
- * {@snippet lang="java" :
- * @ExerisDomain(module = "crm", path = "/customers")
- * public class Customer {
+ * <p><strong>Status: DEPRECATED</strong>, for removal in 1.0.0. No processor extracts it, no AST
+ * record carries it and no generator reads it, so the field is stored as plaintext exactly as if
+ * the annotation were absent. Nothing in the toolchain will ever honour it at 1.0: kernel ADR-012
+ * §4c.1 rules field-level encryption at rest "outside kernel scope at 1.0, in every tier". The
+ * kernel's cryptography is TLS transport, and "Tooling must not invent a scheme either, so
+ * {@code @Encrypted} has no kernel target at 1.0." The same ruling leaves an Enterprise-tier
+ * capability open after 1.0 "without a commitment": it returns, in any tier, only through its
+ * own ADR, which then defines its own key model rather than inheriting this annotation's.
  *
- *     @Field(label = "Name")
- *     private String name;
- *
- *     @Field(label = "SSN")
- *     @Encrypted
- *     private String ssn;
- *
- *     @Field(label = "Credit Card")
- *     @Encrypted(algorithm = Algorithm.AES_256_GCM, keyId = "payment-key")
- *     private String creditCardNumber;
- * }
- * }
- *
- * <h2>Searchable Encrypted Fields:</h2>
- * {@snippet lang="java" :
- * @Field(label = "Email")
- * @Encrypted(
- *     deterministic = true,  // Allows equality search
- *     keyId = "email-key"
- * )
- * private String email;
- * }
- *
- * <h2>PII Data with Masking:</h2>
- * {@snippet lang="java" :
- * @Field(label = "Phone Number")
- * @Encrypted(
- *     pii = true,
- *     maskPattern = "XXX-XXX-####",  // Show only last 4 digits
- *     maskInLogs = true
- * )
- * private String phoneNumber;
- * }
- *
- * <h2>Key Rotation:</h2>
- * {@snippet lang="java" :
- * @Encrypted(
- *     keyId = "customer-data-key-v2",
- *     previousKeyIds = {"customer-data-key-v1"}  // For migration
- * )
- * private String sensitiveData;
- * }
- *
- * <h2>Target design — the converter this would emit:</h2>
- * {@snippet lang="java" :
- * @Convert(converter = EncryptedStringConverter.class)
- * @Column(name = "ssn", columnDefinition = "bytea")
- * private String ssn;
- * }
- *
- * <h2>Security Considerations:</h2>
+ * <p>None of the attributes has a replacement in the SDK:
  * <ul>
- *   <li>Keys are managed via Vault/AWS KMS/Azure Key Vault</li>
- *   <li>Each tenant can have separate encryption keys (multi-tenant isolation)</li>
- *   <li>Encrypted fields cannot be used in ORDER BY or LIKE queries</li>
- *   <li>Deterministic encryption allows equality search but is less secure</li>
+ *   <li>{@link #algorithm()}, {@link #keyId()}, {@link #previousKeyIds()},
+ *       {@link #deterministic()}, {@link #searchable()}, {@link #indexColumn()} describe an
+ *       encryption scheme, which is the thing no kernel tier and no generator defines.
+ *       Encryption at rest is the application's: it encrypts the value before it reaches the
+ *       generated repository, or the database encrypts the storage.</li>
+ *   <li>{@link #pii()}, {@link #maskPattern()}, {@link #maskInLogs()}, {@link #maskInList()}
+ *       are not encryption. Their field-level declaration sites are
+ *       {@link eu.exeris.sdk.annotation.Field#sensitive() @Field.sensitive} and
+ *       {@link eu.exeris.sdk.annotation.Field#maskPattern() @Field.maskPattern}, which no
+ *       processor extracts either.</li>
+ *   <li>{@link #viewRoles()} is authorization: who may read the entity is
+ *       {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
+ *       {@code permissions} and {@code @RouteAccess}.</li>
  * </ul>
  *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
- * extract this marker, so writing it changes nothing in the emitted output. There is no AST
- * carrier for it, and extraction is gated on the kernel rather than the tooling: the kernel
- * defines no encryption-at-rest seam — no contract for field keys or a converter that
- * generated code could bind to. See the package javadoc.
- *
  * @since 0.1
+ * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Field-level encryption
+ *         at rest is outside kernel scope at 1.0 in every tier (kernel ADR-012 §4c.1), so no
+ *         generator can honour it; encrypt in the application or in the database. Masking and
+ *         PII flags are declared on {@code @Field.sensitive} / {@code @Field.maskPattern}. See
+ *         {@code MIGRATION.md}.
  * @see RowLevelSecurity
  */
+@Deprecated(since = "0.13.0", forRemoval = true)
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)
 @Documented
@@ -86,7 +47,11 @@ public @interface Encrypted {
 
     /**
      * Encryption algorithm to use.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link Encrypted}. No replacement:
+     *         no kernel tier defines an encryption-at-rest scheme at 1.0 (kernel ADR-012 §4c.1).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum Algorithm {
         /** AES-256 with Galois/Counter Mode (default, recommended). */
         AES_256_GCM,

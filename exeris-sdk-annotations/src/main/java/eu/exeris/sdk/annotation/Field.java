@@ -54,11 +54,13 @@ import java.lang.annotation.*;
  *       {@link #descriptionKey()}, {@link #inList()}, {@link #inDetail()},
  *       {@link #order()}, {@link #ui()}, {@link #validation()},
  *       {@link #defaultValue()}, {@link #cssClass()}, {@link #group()},
- *       {@link #sensitive()}, {@link #encrypted()}, {@link #maskPattern()},
- *       {@link #writeOnly()} and {@link #compositeUnique()}. No processor reads
- *       them into the AST and no generator consumes them. The four
- *       security-flavoured entries in that list enforce nothing — see their
- *       individual notes.</li>
+ *       {@link #sensitive()}, {@link #maskPattern()}, {@link #writeOnly()}
+ *       and {@link #compositeUnique()}. No processor reads them into the AST and
+ *       no generator consumes them. The security-flavoured entries in that list
+ *       enforce nothing — see their individual notes.</li>
+ *   <li><strong>Deprecated for removal</strong> — {@link #encrypted()}: no
+ *       processor reads it and no generator will honour it; a field that sets it
+ *       is stored as plaintext (kernel ADR-012 §4c.1).</li>
  * </ul>
  * <p>Nothing warns when a reserved attribute is set: {@code -Aexeris.strict}
  * audits only attributes that are extracted-but-unread, so it is structurally
@@ -593,19 +595,22 @@ public @interface Field {
     boolean sensitive() default false;
 
     /**
-     * Whether this field should be encrypted at rest.
-     * <p>When {@code true}:
-     * <ul>
-     *   <li>Value is encrypted before storing in database</li>
-     *   <li>Value is decrypted when reading</li>
-     *   <li>Uses configured encryption provider</li>
-     *   <li>Key rotation supported</li>
-     * </ul>
+     * Deprecated, no effect: encryption at rest is not performed for this field.
+     * <p>Setting it to {@code true} changes nothing; the value is stored as plaintext, exactly
+     * as if the attribute were absent.
      *
-     * <p>Requires entity-level {@code @ExerisDomain(sensitive=true)}.
+     * <p>It is not extracted, and no generator will honour it at 1.0: kernel ADR-012 §4c.1 rules
+     * field-level encryption at rest outside kernel scope at 1.0, in every tier, and rules that
+     * tooling must not invent a scheme.
      *
      * @return true if field should be encrypted
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. No kernel tier and no
+     *         generator defines encryption at rest at 1.0 (kernel ADR-012 §4c.1); encrypt in the
+     *         application or in the database. The same ruling deprecates
+     *         {@link eu.exeris.sdk.annotation.security.Encrypted @Encrypted}. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encrypted() default false;
 
     /**

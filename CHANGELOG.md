@@ -220,6 +220,23 @@ for per-version upgrade steps.
   deprecated constant compiles with a `[removal]` warning. `SagaMetadataTest` asserts the mapping
   is total in both directions. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted`** — `@Deprecated(since = "0.13.0",
+  forRemoval = true)`, removal at 1.0.0, together with the nested `RowLevelSecurity.Policy`,
+  `RowLevelSecurity.AuditLevel` and `Encrypted.Algorithm`. Kernel ADR-012 §4c.1 rules out, at 1.0,
+  the contract each would compile against: the kernel publishes no principal session key, and
+  field-level encryption at rest is outside kernel scope in every tier. Replacements:
+  `TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`; `readRoles` / `writeRoles` /
+  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain` / `@Action` `roles` and `permissions`,
+  `@RouteAccess`; the masking flags → `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed
+  policies and the encryption scheme have no replacement: they belong to the application.
+  Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
+  other option, was not taken, and neither annotation is kept as a reserved surface outside the
+  freeze (ADR-072), because the kernel ruled the binding out rather than shipping it in preview.
+  No reader extracts any of them and no AST record carries them, so metadata and generated output
+  do not change; a source using them compiles with a `[removal]` warning. The `security` and root
+  package javadoc carry the DEPRECATED status, and `@ExerisDomain.sensitive` states that it enables
+  no encryption at rest. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Removed
 
 - **`tools.jackson.datatype:jackson-datatype-jsr310` is no longer managed by `exeris-sdk-bom`.**

@@ -140,6 +140,75 @@ reader nor the `exeris-tooling` processor reads `@Saga.trigger` yet, so
   name and reads the three deprecated constants as their replacements, with a
   warning, until 1.0.0.
 
+### `@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted` are deprecated — removal in 1.0.0
+
+**Why:** kernel ADR-012 §4c.1 rules out, at 1.0, the contract each would compile
+against.
+
+- **No principal session key.** The kernel publishes exactly two keys to the database
+  session, `exeris.tenant_id` and `exeris.shared_scope`. A policy keyed on a principal
+  (`OWNER`, `TEAM`, `HIERARCHY`, `DEPARTMENT`, a `CUSTOM` predicate that needs one)
+  "belong[s] to the application or its generated binding". `TEAM`, `HIERARCHY` and
+  `DEPARTMENT` need more than one identifier per request, which the kernel declines to
+  encode.
+- **No field-level encryption at rest**, in any tier: "Tooling must not invent a
+  scheme either, so `@Encrypted` has no kernel target at 1.0." An Enterprise-tier
+  capability may return after 1.0, only through its own ADR.
+
+What survives of `@RowLevelSecurity` already has a live declaration site.
+`TENANT_ISOLATION` is `@ExerisDomain(dataScope = DataScope.TENANT)`, whose generated
+policy reads `exeris.tenant_id`; the ADR's "`TENANT_ISOLATION` remains expressible"
+is met there, and a second spelling of the tier could only agree with `dataScope` or
+contradict it. The three role attributes are route authorization, because no role
+reaches the database session. The policy-shape attributes (`policyName`,
+`restrictive`, `applyOnInsert`/`Update`/`Delete`, `auditLevel`) only shape the tenant
+policy the kernel's reference text fixes, and two of them would break it.
+
+The ADR offered a third option for the principal-keyed values: document them as
+compiled against an application-owned key. It is not taken. That key is not a kernel
+contract, its name is the application's, and `TEAM` / `HIERARCHY` / `DEPARTMENT` would
+need the SDK to define the multi-identifier encoding the kernel declined to define.
+Neither annotation is kept as a reserved surface outside the 1.0.0 freeze either: the
+ADR-072 test requires the enforcing platform binding to exist, and here the kernel has
+ruled the binding out rather than shipped it in preview.
+
+**Impact:** a source that uses either annotation, or sets `@Field.encrypted`, now
+compiles with a `[removal]` warning from javac. Nothing else changes: no processor and
+no `-io` reader reads them, no AST record carries them, and the generated output and
+metadata JSON are the same as on 0.12.x.
+
+```java
+// before
+@ExerisDomain(module = "sales", path = "/orders")
+@RowLevelSecurity(policy = Policy.TENANT_ISOLATION, readRoles = "SALES")
+public class Order {
+    @Encrypted(keyId = "pii-key") @Field(label = "SSN", encrypted = true)
+    private String ssn;
+}
+
+// after — the tier on dataScope, the role on the route surface,
+// encryption in the application or the database
+@ExerisDomain(module = "sales", path = "/orders",
+              dataScope = ExerisDomain.DataScope.TENANT, roles = "SALES")
+public class Order {
+    @Field(label = "SSN", sensitive = true)
+    private String ssn;
+}
+```
+
+A principal-keyed policy (`OWNER`, `TEAM`, …) has no SDK replacement. The application
+publishes its own session key with a `ConnectionInterceptor` registered through
+`PersistenceEngine.registerInterceptor`, publishes it on every acquisition (absence
+included, since a session-scoped setting survives connection reuse), and writes the
+policy DDL itself.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on both
+  annotation types, their nested enums, and `@Field.encrypted`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep;
+  its `-Aexeris.strict` audit reports both annotations as unread and `@Field.encrypted`
+  as inert.
+
 ---
 
 ## 0.11.x → 0.12.x

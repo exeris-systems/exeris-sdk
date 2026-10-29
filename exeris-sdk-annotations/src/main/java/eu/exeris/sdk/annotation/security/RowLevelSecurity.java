@@ -3,80 +3,76 @@ package eu.exeris.sdk.annotation.security;
 import java.lang.annotation.*;
 
 /**
- * Configures Row-Level Security (RLS) policies for a domain entity.
- * <p>RLS policies are implemented using PostgreSQL native RLS features,
- * ensuring data isolation at the database level (defense in depth).
+ * Declares a row-level security (RLS) policy for a domain entity.
  *
- * <h2>Basic Tenant Isolation:</h2>
+ * <p><strong>Status: DEPRECATED</strong>, for removal in 1.0.0. No processor extracts it, no AST
+ * record carries it and no generator reads it, so writing it changes nothing in the emitted
+ * output. It will not gain a carrier: no part of it can be compiled against a kernel contract
+ * that tenant isolation does not already use.
+ *
+ * <p>Kernel ADR-012 §4c.1 rules that the kernel publishes exactly two session keys to the
+ * database session, {@code exeris.tenant_id} and {@code exeris.shared_scope}, and "no principal
+ * key at 1.0". Every part of this annotation falls on one side of that ruling:
+ * <ul>
+ *   <li><strong>{@link Policy#TENANT_ISOLATION}</strong> is the one policy that compiles against
+ *       a published key, and {@code @ExerisDomain(dataScope = DataScope.TENANT)} already emits
+ *       it: the tenant column, the RLS policy and the query filter. A second declaration site for
+ *       the same tier could only repeat {@code dataScope} or contradict it.</li>
+ *   <li><strong>{@link Policy#OWNER}, {@link Policy#TEAM}, {@link Policy#HIERARCHY},
+ *       {@link Policy#DEPARTMENT}, {@link Policy#TENANT_AND_OWNER}</strong>, and a
+ *       {@link Policy#CUSTOM} predicate that reads the caller, are keyed on a principal. ADR-012
+ *       §4c.1: "Policies keyed on a principal ({@code OWNER}, {@code TEAM}, {@code HIERARCHY},
+ *       {@code DEPARTMENT}, and a {@code CUSTOM} predicate that needs one) belong to the
+ *       application or its generated binding." The SQL functions {@link #condition()} lists
+ *       ({@code current_user_id()}, {@code has_role(…)}, …) are defined by no kernel and no
+ *       generated schema.</li>
+ *   <li><strong>{@link #readRoles()}, {@link #writeRoles()}, {@link #bypassRoles()}</strong>
+ *       cannot be evaluated by a policy, because no role reaches the database session. Which
+ *       callers may reach an entity is route authorization:
+ *       {@link eu.exeris.sdk.annotation.ExerisDomain#roles() @ExerisDomain.roles} /
+ *       {@link eu.exeris.sdk.annotation.ExerisDomain#permissions() permissions},
+ *       {@link eu.exeris.sdk.annotation.Action#roles() @Action.roles} /
+ *       {@link eu.exeris.sdk.annotation.Action#permissions() permissions}, and
+ *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess}.</li>
+ *   <li><strong>{@link #policyName()}, {@link #restrictive()}, {@link #applyOnInsert()},
+ *       {@link #applyOnUpdate()}, {@link #applyOnDelete()}, {@link #auditLevel()}</strong> shape a
+ *       policy that, for tenant isolation, {@code dataScope} emits and the kernel's reference
+ *       policy fixes. Two of them would break it: {@code applyOnInsert = false} removes, for inserts,
+ *       the write check that ADR-012 §4c.2 makes pin the tenant and the shared-scope tag, and
+ *       {@code restrictive = true} combines the tenant policy with the {@code FOR SELECT}
+ *       shared-scope policy by AND, so the read widening could never admit another tenant's
+ *       row.</li>
+ * </ul>
+ *
+ * <p>Migration:
  * {@snippet lang="java" :
- * @ExerisDomain(module = "sales", path = "/orders", tenantScoped = true)
- * @RowLevelSecurity(policy = Policy.TENANT_ISOLATION)
- * public class Order {
- *     @TenantId
- *     private UUID organizationId;
- *     // ... other fields
- * }
- * }
+ * // before
+ * @ExerisDomain(module = "sales", path = "/orders")
+ * @RowLevelSecurity(policy = Policy.TENANT_ISOLATION, readRoles = "SALES")
+ * public class Order { }
  *
- * <h2>Owner-Based Access:</h2>
- * {@snippet lang="java" :
- * @ExerisDomain(module = "crm", path = "/contacts")
- * @RowLevelSecurity(
- *     policy = Policy.OWNER,
- *     ownerField = "assignedUserId"
- * )
- * public class Contact {
- *     private UUID assignedUserId;
- *     // ... other fields
- * }
+ * // after
+ * @ExerisDomain(module = "sales", path = "/orders",
+ *               dataScope = ExerisDomain.DataScope.TENANT, roles = "SALES")
+ * public class Order { }
  * }
  *
- * <h2>Role-Based Access:</h2>
- * {@snippet lang="java" :
- * @ExerisDomain(module = "hr", path = "/salaries")
- * @RowLevelSecurity(
- *     policy = Policy.CUSTOM,
- *     readRoles = {"HR_MANAGER", "PAYROLL"},
- *     writeRoles = {"PAYROLL"},
- *     condition = "department_id IN (SELECT department_id FROM user_departments WHERE user_id = current_user_id())"
- * )
- * public class Salary { }
- * }
- *
- * <h2>Hierarchical Access (Manager sees team):</h2>
- * {@snippet lang="java" :
- * @RowLevelSecurity(
- *     policy = Policy.HIERARCHY,
- *     hierarchyField = "managerId",
- *     hierarchyDepth = 3  // Up to 3 levels deep
- * )
- * public class Employee { }
- * }
- *
- * <h2>Target design — the policy this would emit:</h2>
- * {@snippet lang="sql" :
- * -- Enable RLS on table
- * ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
- *
- * -- Tenant isolation policy
- * CREATE POLICY orders_tenant_isolation ON orders
- *     USING (organization_id = current_setting('app.tenant_id')::uuid);
- *
- * -- Owner-based policy
- * CREATE POLICY contacts_owner_access ON contacts
- *     USING (assigned_user_id = current_setting('app.user_id')::uuid);
- * }
- *
- * <p><strong>Status: RESERVED</strong> — the {@code exeris-tooling} processor does not
- * extract this marker, so writing it changes nothing in the emitted output. There is no AST
- * carrier for it, and extraction is gated on the kernel rather than the tooling: a
- * principal-scoped policy needs a principal session key, and the kernel publishes only the
- * tenant and shared-scope keys to the database session. Tenant isolation itself is live
- * through {@code @ExerisDomain(dataScope = DataScope.TENANT)}; see the package javadoc.
+ * <p>A principal-keyed policy has no SDK replacement. An application that needs one publishes
+ * its own session key with its own {@code ConnectionInterceptor}, registered through
+ * {@code PersistenceEngine.registerInterceptor}, and writes the policy itself. That key is not a
+ * kernel contract, and the interceptor must publish it on every connection acquisition, absent
+ * value included, because a session-scoped setting survives connection reuse (ADR-012 §4c.1).
  *
  * @since 0.1
+ * @deprecated since 0.13.0, for removal in 1.0.0. Tenant isolation is
+ *         {@code @ExerisDomain(dataScope = DataScope.TENANT)}; route roles and permissions are
+ *         {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
+ *         {@code permissions} and {@code @RouteAccess}. Principal-keyed policies have no
+ *         replacement: the kernel publishes no principal session key at 1.0 (kernel ADR-012
+ *         §4c.1), so they belong to the application. See {@code MIGRATION.md}.
  * @see Encrypted
  */
+@Deprecated(since = "0.13.0", forRemoval = true)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
 @Documented
@@ -84,7 +80,12 @@ public @interface RowLevelSecurity {
 
     /**
      * Predefined RLS policy types.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link RowLevelSecurity}. Tenant
+     *         isolation is {@code @ExerisDomain(dataScope = DataScope.TENANT)}; the
+     *         principal-keyed values have no kernel contract at 1.0 (kernel ADR-012 §4c.1).
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum Policy {
         /**
          * No RLS policy (use application-level security only).
@@ -207,6 +208,13 @@ public @interface RowLevelSecurity {
      * <p>Users with these roles can see all records.
      * <p>Example: "SUPERADMIN", "DATA_EXPORT"
      *
+     * <p>No application role can bypass a policy: no role reaches the database session. Which
+     * callers may reach the entity is route authorization ({@code @ExerisDomain.roles} /
+     * {@code permissions}, {@code @Action.roles} / {@code permissions}, {@code @RouteAccess}).
+     * The bypass PostgreSQL itself knows is a database-role attribute, {@code SUPERUSER} or
+     * {@code BYPASSRLS}, and the kernel refuses to boot a pool whose role carries one unless
+     * {@code persistence.rlsAllowBypassRole} is set (kernel ADR-012 §4c.4).
+     *
      * @return bypass role names
      */
     String[] bypassRoles() default {};
@@ -215,6 +223,10 @@ public @interface RowLevelSecurity {
      * Roles required for read (SELECT) access.
      * <p>Empty array means all authenticated users.
      *
+     * <p>A policy cannot evaluate it, because no role reaches the database session. Use route
+     * authorization: {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
+     * {@code permissions}, {@code @RouteAccess}.
+     *
      * @return required roles for reading
      */
     String[] readRoles() default {};
@@ -222,6 +234,10 @@ public @interface RowLevelSecurity {
     /**
      * Roles required for write (INSERT/UPDATE/DELETE) access.
      * <p>Empty array means all authenticated users with read access.
+     *
+     * <p>A policy cannot evaluate it, because no role reaches the database session. Use route
+     * authorization: {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
+     * {@code permissions}, {@code @RouteAccess}.
      *
      * @return required roles for writing
      */
@@ -268,7 +284,11 @@ public @interface RowLevelSecurity {
 
     /**
      * Audit log level for policy violations.
+     *
+     * @deprecated since 0.13.0, for removal in 1.0.0, with {@link RowLevelSecurity}. No
+     *         replacement.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     enum AuditLevel {
         /** No audit logging. */
         NONE,
