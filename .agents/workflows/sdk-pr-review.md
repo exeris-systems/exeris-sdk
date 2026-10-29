@@ -6,6 +6,7 @@ steps:
   - {agent: exeris-sdk-router, skill: exeris-sdk-task-classifier}
   - {agent: exeris-sdk-architect, when: "the diff touches an annotation, an AST record, a pom or a published surface", gate: verdict}
   - {agent: exeris-sdk-verification, when: "the diff adds a branch, a record component or an annotation", gate: verdict}
+  - {agent: exeris-sdk-docs-adr, skill: exeris-sdk-doc-impact-triage, when: "the diff touches a public surface, a module pom, exeris-sdk-examples or docs/"}
 gates: [ci:*]   # every check run on the pull request, read from it — not a list maintained here
 output: schemas/verdict.schema.json
 ---
@@ -48,6 +49,8 @@ Steps:
    - `exeris-sdk-verification` — whether a new branch, record component or annotation is reachable
      by a test that would fail without it, and whether it landed in the right class rather than a
      parallel one.
+   - `exeris-sdk-docs-adr` with `exeris-sdk-doc-impact-triage` — which published page the change
+     makes untrue. A `DOCS_REVIEW_REQUIRED` page left unchanged in the diff is a finding.
 
 4. **Correctness.** Read the diff for defects, not only for policy breaches: wrong logic, an edge
    case the change introduces, a broken contract, a merge artefact, a reference to a file the change

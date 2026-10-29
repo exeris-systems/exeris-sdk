@@ -12,7 +12,7 @@ Audit release readiness before deploying `exeris-sdk` to Maven Central.
 Priorities:
 1. Javadoc completeness: check that `failOnWarnings` on the 6 modules and `JavadocCompletenessTest` pass cleanly.
 2. Artifact attachments: verify `-sources` and `-javadoc` are attached for all published jars.
-3. Build-tool exclusion: verify `exeris-sdk-annotation-catalog` has `maven.deploy.skip=true` and `<excludeArtifacts>`.
+3. Unpublished-module exclusion: verify `exeris-sdk-annotation-catalog` and `exeris-sdk-examples` each have `maven.deploy.skip=true` and an `<excludeArtifacts>` entry.
 4. Compiler baseline: ensure `maven.compiler.release=25` across all modules.
 5. POM metadata: verify `<scm>`, `<licenses>`, `<developers>`, and `<url>` tags are populated.
 

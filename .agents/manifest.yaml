@@ -31,6 +31,7 @@ skills:
   - exeris-sdk-build-invariants-review
   - exeris-sdk-coverage-gates-review
   - exeris-sdk-deprecation-pipeline-review
+  - exeris-sdk-doc-impact-triage
   - exeris-sdk-field-validation-scoping-review
   - exeris-sdk-publish-readiness-review
   - exeris-sdk-routing-planner
@@ -43,6 +44,7 @@ workflows:
   - ast-wire-format-review
   - field-validation-scoping-audit
   - publish-readiness-audit
+  - docs-drift-audit
 
 # Repository-owned policies only. `agent-safety-and-autonomy` and `error-handling-and-fallback`
 # live in the shared bundle, where a change to them reaches every repository at once; a profile

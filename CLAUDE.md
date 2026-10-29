@@ -19,5 +19,5 @@ rule 7). It states no rule of its own: a rule written here would be a second pla
 semantics, which is what the schema forbids.
 
 Claude-specific adapters generated from `.agents/` are in [`.claude/`](.claude). Profiles and
-workflows are rendered files carrying a do-not-edit marker that names their source; the ten skills
+workflows are rendered files carrying a do-not-edit marker that names their source; the eleven skills
 are symlinks into `.agents/skills/`, so there is no second copy to mark.

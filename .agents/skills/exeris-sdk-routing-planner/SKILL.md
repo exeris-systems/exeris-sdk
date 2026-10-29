@@ -25,7 +25,7 @@ Given a classified task (see `exeris-sdk-task-classifier`), produce a minimal, r
 - `AST_WIRE_FORMAT` → `exeris-sdk-implementer` primary; `verification` mandatory (`AstJsonRoundTripTest`); `architect` for records-only + Jackson 3 contract; `docs-adr` for downstream-consumer impact in `MIGRATION.md`.
 - `UI_KIT` → `exeris-sdk-implementer` primary; `verification` for Vitest 85% per-file gate.
 - `STABILITY_DEPRECATION` → `exeris-sdk-architect` primary (deprecation pipeline policy); `docs-adr` mandatory (`MIGRATION.md` entry); `implementer` for code.
-- `DOCS_ADR` → `exeris-sdk-docs-adr` primary; `architect` if scoping rationale shifts.
+- `DOCS_ADR` → `exeris-sdk-docs-adr` primary, gated by `exeris-sdk-doc-impact-triage` (its status is the gate); `verification` runs `tools/docs-citations/test.sh` and `check.sh` when a page under `docs/` changes; `architect` if scoping rationale shifts or the triage returns `ADR_REVIEW_POSSIBLE`.
 - `PUBLISH_READINESS` → `exeris-sdk-architect` primary (run `exeris-sdk-publish-readiness-review`); `implementer` for pom changes; `verification` for full reactor build green.
 - `BUILD_INVARIANTS` → `exeris-sdk-architect` primary (run `exeris-sdk-build-invariants-review`); `implementer` for the pom/plugin change; `docs-adr` if the JDK baseline (25 LTS, ADR-069) in `README.md`/`ROADMAP.md` shifts.
 - `MULTI_DOMAIN` → start with `architect`, list all dominant handoffs.

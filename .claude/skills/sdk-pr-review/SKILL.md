@@ -44,6 +44,8 @@ Steps:
    - `exeris-sdk-verification` — whether a new branch, record component or annotation is reachable
      by a test that would fail without it, and whether it landed in the right class rather than a
      parallel one.
+   - `exeris-sdk-docs-adr` with `exeris-sdk-doc-impact-triage` — which published page the change
+     makes untrue. A `DOCS_REVIEW_REQUIRED` page left unchanged in the diff is a finding.
 
 4. **Correctness.** Read the diff for defects, not only for policy breaches: wrong logic, an edge
    case the change introduces, a broken contract, a merge artefact, a reference to a file the change

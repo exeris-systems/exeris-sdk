@@ -34,7 +34,7 @@ severity are judgement this skill applies rather than fields it emits: they deci
 - `AST_WIRE_FORMAT`: AST record add / change / remove in `exeris-sdk-source-model`; `AstJsonRoundTripTest` impact; Jackson 3 quirks.
 - `UI_KIT`: TS / CSS / Tailwind v4 theme change in `exeris-sdk-ui-kit`.
 - `STABILITY_DEPRECATION`: public-API removal / rename; deprecation pipeline application.
-- `DOCS_ADR`: `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003.
+- `DOCS_ADR`: `MIGRATION.md`, `ROADMAP.md`, package-info sync, ADR-003, and the pages under `docs/guides`, `docs/modules`, `docs/examples`.
 - `PUBLISH_READINESS`: Sonatype Central Portal, POM metadata, sources/javadoc attachments, version bump.
 - `BUILD_INVARIANTS`: `maven.compiler.release` (JDK baseline, ADR-069), `jacoco-maven-plugin` version, reactor `<modules>`, root/parent build-plugin config.
 - `MULTI_DOMAIN`: ≥2 first-order concerns.
@@ -47,7 +47,8 @@ After classifying, fire the matching enforcement skill (these are the canonical 
 - `UI_KIT` → `exeris-sdk-coverage-gates-review`.
 - `PUBLISH_READINESS` → `exeris-sdk-publish-readiness-review`.
 - `BUILD_INVARIANTS` → `exeris-sdk-build-invariants-review`.
-- `DOCS_ADR` → `exeris-sdk-docs-adr` agent (no enforcement skill — pure doc/ADR work).
+- `DOCS_ADR` → `exeris-sdk-docs-adr` agent with `exeris-sdk-doc-impact-triage`.
+- Any class that changes a public surface, a module pom or `exeris-sdk-examples` → also `exeris-sdk-doc-impact-triage`.
 - Any new dep / import (any class) → `exeris-sdk-zero-runtime-coupling-review`.
 
 ## Guardrails

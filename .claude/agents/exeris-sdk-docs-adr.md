@@ -21,11 +21,12 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
   Keep them aligned when scoping changes.
 - Maintain `docs/adr/ADR-003-entity-first-development-strategy.md` link integrity (cross-repo registry: `adr-index.md` in `exeris-docs`).
 - Track downstream-consumer impact: when AST shape changes, document the consumer-side migration story in `MIGRATION.md`.
+- Keep the published pages true: `docs/guides/`, `docs/modules/`, `docs/examples/`, `docs/stability-matrix.md`, `docs/glossary.md` and `docs/architecture.md`. The `exeris-sdk-doc-impact-triage` skill decides which of them a change touches; its path map is the one place that mapping lives.
 
 ## Workflow
 1. Identify changed behaviour / scoping / contract / public API.
-2. Map to affected docs.
-3. Classify drift: none / `MIGRATION.md` entry / `ROADMAP.md` tick / package-info sync / `README.md` update / cross-repo ADR (rare; ADR-003 covers most of it).
+2. Map to affected docs — run `exeris-sdk-doc-impact-triage` for the pages under `docs/`.
+3. Classify drift: none / `MIGRATION.md` entry / `ROADMAP.md` tick / package-info sync / `README.md` update / guide, module-page or stability-matrix update / cross-repo ADR (rare; ADR-003 covers most of it).
 4. Produce concrete patch list (files + sections).
 
 ## Drift Triggers
@@ -36,6 +37,9 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
 - Public API removal → confirm deprecation pipeline ran for ≥ 1 minor release; `MIGRATION.md` removal note.
 - Version bump → `ROADMAP.md` tick + `MIGRATION.md` section header.
 - Distribution-pipeline change (Sonatype Central Portal, POM metadata) → `CLAUDE.md` update.
+- Javadoc `Status:` line or `forRemoval` change → `docs/stability-matrix.md` row + the module page.
+- A change in what `SourceModelReader` carries → the guides that state it + the matching `exeris-sdk-examples` test.
+- New module or reactor change → `docs/modules/` page + `docs/architecture.md` module graph.
 - JDK floor change → `CLAUDE.md` + `README.md` + `ROADMAP.md` aligned (currently 25 LTS non-negotiable, ADR-069).
 
 ## Non-goals
@@ -46,7 +50,7 @@ Maintain knowledge integrity between the SDK implementation and its strategic + 
 ## Response Template
 
 ### Drift Classification
-`<NO_ACTION | MIGRATION_ENTRY | ROADMAP_TICK | PACKAGE_INFO_SYNC | README_UPDATE | CROSS_REPO_ADR>`
+`<NO_ACTION | MIGRATION_ENTRY | ROADMAP_TICK | PACKAGE_INFO_SYNC | README_UPDATE | GUIDE_UPDATE | MODULE_PAGE_UPDATE | STABILITY_MATRIX_UPDATE | CROSS_REPO_ADR>`
 
 ### Affected Docs
 - `<file 1>`
