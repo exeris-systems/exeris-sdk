@@ -815,7 +815,7 @@ A side that does not read the attribute fails both.
 
 ### `SourceModelReader` reads `@Relationship.targetEntity` and `cascadeDelete`/`cascadeUpdate`
 
-**Impact on code: none required.** Two relationship components now match the exeris-tooling
+**Impact on code: none; the reader's output changes.** No signature changes. Two relationship components now match the exeris-tooling
 processor:
 
 - **`targetEntity`** is the declared `targetEntity = Foo.class` (its simple name) when present and

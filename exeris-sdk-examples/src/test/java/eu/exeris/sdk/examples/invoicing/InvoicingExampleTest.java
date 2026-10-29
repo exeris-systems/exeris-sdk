@@ -129,6 +129,7 @@ class InvoicingExampleTest {
         assertThat(lines.type()).isEqualTo(RelationshipMetadata.RelationType.ONE_TO_MANY);
         assertThat(lines.mappedBy()).isEqualTo("invoice");
         assertThat(lines.displayField()).isEqualTo("description");
+        assertThat(lines.cascade()).isEqualTo(RelationshipMetadata.CascadeType.REMOVE);
 
         assertThat(read("InvoiceLine").relationships()).singleElement()
                 .satisfies(r -> assertThat(r.targetEntity()).isEqualTo("Invoice"));
