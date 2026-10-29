@@ -47,6 +47,20 @@ import java.lang.annotation.*;
  * next to a fulfilment, say — is a second type carrying its own {@code @Saga}, with its own
  * {@link #name()} and its own {@link SagaStep} methods.
  *
+ * <h2>Several processes over one entity</h2>
+ * A {@code @Saga} type needs no {@code @ExerisDomain}, so each process that concerns one entity is
+ * hosted on its own type and correlated by the entity's id. The instance id space is shared by
+ * every definition the engine runs, and a {@code Start} for an id it holds is a no-op whatever
+ * definition its plan names, so each process derives its own instance id from the entity's id
+ * rather than reusing it. The kernel offers no external cancel or abort: one process interrupts
+ * another cooperatively. The long process parks between legs ({@code FlowOutcome.PARK}); an event
+ * wakes it through a {@code FlowChoreographyMapper}; on waking it reads the entity's state and
+ * either fails, which compensates the legs it completed, or parks again. The kernel fences one
+ * instance's own snapshot row, not the shared entity, and has no distributed lock (kernel
+ * ADR-013), so status writes from two processes need a versioned entity
+ * ({@code @ExerisDomain(versioned = true)} with {@code @Version}) and a transition guard that
+ * refuses a status change from an unexpected state.
+ *
  * <h2>Finished instances</h2>
  * With a snapshot store bound, a completed instance leaves a {@code COMPLETED} row and a failed
  * one a {@code FAILED_ROLLEDBACK} row; the kernel never deletes either, so retention belongs to
