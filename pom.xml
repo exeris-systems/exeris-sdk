@@ -80,6 +80,7 @@
         <module>exeris-sdk-composition-lifecycle</module>
         <module>exeris-sdk-composition-runtime</module>
         <module>exeris-sdk-tck</module>
+        <module>exeris-sdk-examples</module>
     </modules>
 
     <properties>
@@ -388,7 +389,8 @@
                         there is something to review rather than exiting green on an upload.
 
                         <excludeArtifacts> is required. exeris-sdk-annotation-catalog is a
-                        build-time generator nobody resolves and must not reach Central; it holds
+                        build-time generator and exeris-sdk-examples is teaching material; nobody
+                        resolves either and neither must reach Central; each holds
                         itself back from `deploy` with <maven.deploy.skip>true</maven.deploy.skip>
                         in its own pom, but maven.deploy.skip governs maven-deploy-plugin, and this
                         plugin REPLACES maven-deploy-plugin and does not read that property.
@@ -430,6 +432,7 @@
                             <waitUntil>validated</waitUntil>
                             <excludeArtifacts>
                                 <artifact>exeris-sdk-annotation-catalog</artifact>
+                                <artifact>exeris-sdk-examples</artifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

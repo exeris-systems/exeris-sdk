@@ -22,10 +22,11 @@ One page per SDK module. Each page states the module's contract, what runs on it
 | [07-composition-runtime.md](07-composition-runtime.md) | `exeris-sdk-composition-runtime` | Boot-time stamp assertion and the lifecycle conductor. |
 | [08-tck.md](08-tck.md) | `exeris-sdk-tck` | Abstract test suites that hold a producer, reader or mapper to the metadata contract. |
 | [09-ui-kit.md](09-ui-kit.md) | `@exeris/ui-kit` | Tailwind v4 theme, design tokens and component classes, on its own npm version line. |
+| [10-examples.md](10-examples.md) | `exeris-sdk-examples` | Compiled example sources read back through the reader; not published. |
 
 `exeris-sdk-bom` and `exeris-sdk-parent` carry build configuration only. They hold dependency management and plugin settings and no code, so they have no module page.
 
-Of the nine modules, only the composition runtime drives anything inside a deployed application. The composition spec and lifecycle jars load alongside it. No other module is part of a deployed application's boot sequence.
+Of these modules, only the composition runtime drives anything inside a deployed application. The composition spec and lifecycle jars load alongside it. No other module is part of a deployed application's boot sequence.
 
 ## Where this does not apply
 
