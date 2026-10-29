@@ -1,9 +1,11 @@
 package eu.exeris.sdk.tck.corpus;
 
+import eu.exeris.sdk.annotation.Blob;
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
 import eu.exeris.sdk.annotation.Relationship;
 import eu.exeris.sdk.annotation.Relationship.RelationshipType;
+import eu.exeris.sdk.annotation.UIGroup;
 import eu.exeris.sdk.annotation.Validation;
 
 /**
@@ -17,6 +19,18 @@ import eu.exeris.sdk.annotation.Validation;
  *
  * <p>{@code permissions} without a {@code @RouteAccess} is the entity-level case of a route that
  * declares its scopes alone: the metadata carries the list and no {@code routeAccess}.
+ *
+ * <p>The {@code @UIGroup}s are the case behind the {@code UI_GROUPS} facet. The {@code identity}
+ * group's label and order are declared on its first member; {@code displayName} restates the label,
+ * which does not change it, and is the first to declare {@code collapsed}. {@code media} declares
+ * {@code collapsible = false}, the opposite of the annotation default, and is declared second with
+ * the lower order, so a side that sorts the groups reorders them. {@code Customer} declares no
+ * {@code @UI}, so a side that hangs groups off {@code @UI} carries none.
+ *
+ * <p>The {@code @Blob}s are the case behind the {@code BLOBS} facet: {@code avatar} beside
+ * {@code @Field} with two media types, {@code contract} on a field that carries no {@code @Field},
+ * so a side that reads {@code @Blob} only beside {@code @Field} drops it. The entity is
+ * {@code TENANT}-scoped, so neither is the {@code GLOBAL} combination the platform refuses.
  */
 @ExerisDomain(
         module = "sales",
@@ -29,11 +43,21 @@ public class Customer {
 
     @Field(label = "E-mail", required = true, unique = true)
     @Validation(email = true, maxLength = 254)
+    @UIGroup(name = "identity", label = "Identity", order = 2)
     private String email;
 
     @Field(label = "Display name", required = true)
     @Validation(minLength = 1, maxLength = 120)
+    @UIGroup(name = "identity", label = "Restated", collapsed = true)
     private String displayName;
+
+    @Field(label = "Avatar")
+    @Blob(contentTypes = {"image/png", "image/jpeg"})
+    @UIGroup(name = "media", label = "Media", order = 0, collapsible = false)
+    private String avatar;
+
+    @Blob(container = "contracts")
+    private String contract;
 
     @Relationship(
             targetEntity = Order.class,

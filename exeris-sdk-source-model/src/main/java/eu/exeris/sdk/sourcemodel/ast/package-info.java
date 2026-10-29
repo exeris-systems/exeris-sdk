@@ -266,7 +266,9 @@
  * {@code AstJsonRoundTripTest}.
  *
  * <p>Both are <strong>reserved</strong>: no processor populates them and no
- * generator consumes them. The kernel holds both SPI packages at tier
+ * generator consumes them. The {@code -io} reader populates the blob facet, in the
+ * shape the ADR-042 reader-shape amendment fixes, and leaves the schedule facet
+ * {@code null}. The kernel holds both SPI packages at tier
  * {@code stable}. The blob facet is part of the 1.0.0 freeze, frozen as declared.
  * The schedule facet is not: the kernel issues no service principal, so the build
  * refuses every {@code @Schedule} (kernel ADR-057 Amendment A1), and the facet waits

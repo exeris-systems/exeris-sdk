@@ -12,10 +12,14 @@ import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +56,9 @@ class MetadataReaderTckSelfTest {
             reader.queryParamsAreTheDeclaredOnes();
             reader.navMenuIsTheDeclaredOne();
             reader.tabsAreTheDeclaredOnes();
+            reader.graphPropertiesAreTheDeclaredOnes();
+            reader.uiGroupsAreTheDeclaredOnes();
+            reader.blobsAreTheDeclaredOnes();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -396,6 +403,112 @@ class MetadataReaderTckSelfTest {
     }
 
     /** A reader binding whose output is the reference metadata put through one transformation. */
+    @Test
+    @DisplayName("graph properties dropped, typed from AUTO, or without their field are caught")
+    void graphPropertyCasesAreNotVacuous() {
+        Reader notExtracted = new Reader(m -> graphEdited(m, graph -> graph.remove("properties")));
+        assertThatThrownBy(notExtracted::graphPropertiesAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("does not extract @GraphProperty");
+
+        Reader autoTyped = new Reader(m -> graphEdited(m, graph ->
+                ((ObjectNode) graph.get("properties").get(0)).put("type", "STRING")));
+        assertThatThrownBy(autoTyped::graphPropertiesAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("AUTO is absent");
+
+        Reader fieldBlind = new Reader(m -> graphEdited(m, graph ->
+                ((ObjectNode) graph.get("properties").get(1)).remove("field")));
+        assertThatThrownBy(fieldBlind::graphPropertiesAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("nothing to read the property from");
+    }
+
+    @Test
+    @DisplayName("groups hung off @UI only, sorted, folded from the last declaration or defaulted false are caught")
+    void uiGroupCasesAreNotVacuous() {
+        Reader uiOnly = new Reader(m -> m.uiMetadata() == null || m.uiMetadata().groups().isEmpty()
+                ? m : withUi(m, null));
+        assertThatThrownBy(uiOnly::uiGroupsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no uiMetadata");
+
+        List<UIMetadata.UIGroupMetadata> reference = ReferenceBinding.customerGroups();
+        Reader sorted = new Reader(m -> withGroups(m, List.of(reference.get(1), reference.get(0))));
+        assertThatThrownBy(sorted::uiGroupsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whatever its order attribute says");
+
+        UIMetadata.UIGroupMetadata identity = reference.get(0);
+        Reader lastWins = new Reader(m -> withGroups(m, List.of(new UIMetadata.UIGroupMetadata(
+                identity.name(), "Restated", null, identity.order(), true, true, null, identity.gridSpan(),
+                identity.fields()), reference.get(1))));
+        assertThatThrownBy(lastWins::uiGroupsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("first declaration");
+
+        Reader recordDefault = new Reader(m -> withGroups(m, List.of(new UIMetadata.UIGroupMetadata(
+                identity.name(), identity.label(), null, identity.order(), false, true, null, identity.gridSpan(),
+                identity.fields()), reference.get(1))));
+        assertThatThrownBy(recordDefault::uiGroupsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("annotation default is true");
+    }
+
+    @Test
+    @DisplayName("a blob read only beside @Field, or with its media types reordered, is caught")
+    void blobCasesAreNotVacuous() {
+        Reader fieldOnly = new Reader(m -> ReferenceBinding.edited(m, node -> {
+            for (JsonNode field : node.path("fields")) {
+                if ("contract".equals(field.path("name").asString(""))) {
+                    ((ObjectNode) field).remove("blob");
+                }
+            }
+        }));
+        assertThatThrownBy(fieldOnly::blobsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whether or not the field carries @Field");
+
+        Reader reordered = new Reader(m -> ReferenceBinding.edited(m, node -> {
+            for (JsonNode field : node.path("fields")) {
+                if ("avatar".equals(field.path("name").asString(""))) {
+                    ArrayNode types = (ArrayNode) field.get("blob").get("contentTypes");
+                    JsonNode first = types.remove(0);
+                    types.add(first);
+                }
+            }
+        }));
+        assertThatThrownBy(reordered::blobsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Customer.avatar");
+    }
+
+    @Test
+    @DisplayName("an unbuilt graph-property, group or blob facet skips rather than failing")
+    void unbuiltPropertyGroupBlobFacetsSkip() {
+        Reader notBuiltYet = new Reader(m -> withUi(m, null)) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.GRAPH_PROPERTIES, Facet.UI_GROUPS, Facet.BLOBS);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::graphPropertiesAreTheDeclaredOnes).isInstanceOf(TestAbortedException.class);
+        assertThatThrownBy(notBuiltYet::uiGroupsAreTheDeclaredOnes).isInstanceOf(TestAbortedException.class);
+        assertThatThrownBy(notBuiltYet::blobsAreTheDeclaredOnes).isInstanceOf(TestAbortedException.class);
+    }
+
+    /** The metadata with its {@code graphMetadata} tree edited; an entity without one is unchanged. */
+    private static DomainMetadata graphEdited(DomainMetadata source, Consumer<ObjectNode> edit) {
+        return source.graphMetadata() == null ? source : ReferenceBinding.edited(source,
+                node -> edit.accept((ObjectNode) node.get("graphMetadata")));
+    }
+
+    /** The metadata with its UI groups replaced; an entity with none is unchanged. */
+    private static DomainMetadata withGroups(DomainMetadata source, List<UIMetadata.UIGroupMetadata> groups) {
+        return source.uiMetadata() == null || source.uiMetadata().groups().isEmpty()
+                ? source : withUi(source, UIMetadata.builder().groups(groups).build());
+    }
+
     static class Reader extends AbstractMetadataReaderTck {
 
         private final UnaryOperator<DomainMetadata> defect;
@@ -427,7 +540,8 @@ class MetadataReaderTckSelfTest {
                 .permissions(source.permissions())
                 .routeAccess(source.routeAccess())
                 .navMenu(source.navMenu())
-                .uiMetadata(source.uiMetadata());
+                .uiMetadata(source.uiMetadata())
+                .graphMetadata(source.graphMetadata());
     }
 
     private static DomainMetadata withActions(DomainMetadata source, List<ActionMetadata> actions) {

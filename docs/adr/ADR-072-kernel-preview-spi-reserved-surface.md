@@ -19,7 +19,7 @@ slug: adr/ADR-072
 | **Owning Repo** | `exeris-sdk`                                                                                              |
 | **Driven By**   | [`ROADMAP.md`](../../ROADMAP.md) §"Kernel 0.11 SPI — dispositioned, deliberately not pre-1.0" — this ADR amends that disposition |
 | **Compliance**  | AST wire-format contract; record-growth stance ([`MIGRATION-0.x-to-1.0.md`](../../MIGRATION-0.x-to-1.0.md) §3); Field/Validation canonical scoping ([ADR-054](ADR-054-field-validation-min-max-pattern-cut.md)); inert-attribute honesty rule |
-| **Amended**     | 2026-08-28 (`@RouteAccess`); 2026-09-03 (`@Channel`); 2026-10-29 (`-io` reader reads route access); 2026-10-29 (0.13.0: `@RouteAccess` and `@Blob` frozen) |
+| **Amended**     | 2026-08-28 (`@RouteAccess`); 2026-09-03 (`@Channel`); 2026-10-29 (`-io` reader reads route access); 2026-10-29 (0.13.0: `@RouteAccess` and `@Blob` frozen); 2026-10-29 (`-io` reader reads `@Blob`, ADR-042) |
 
 > **Current status (2026-10-29 amendment, obligations 29–35).** The title and the decision below record the reservation as accepted. Since kernel v0.13.0, `@RouteAccess` and `@Blob` and their carriers are part of the 1.0.0 freeze; `@Schedule` and `@Channel` remain reserved and outside it.
 
@@ -63,7 +63,7 @@ If a reservation cannot meet all three, the honest move is to ship nothing.
 
 6. **Both carriers arrive as trailing components** — `FieldMetadata.blob` and `ActionMetadata.schedule` — under the record-growth stance: positional prefixes unchanged, binding by name on the wire, and the japicmp `CONSTRUCTOR_REMOVED` downgrade that stance already configured in `exeris-sdk-source-model`. `SchemaVersion.CURRENT` moves `"0.10.0"` → `"0.11.0"`, so a 0.10.0 baseline reads as `SCHEMA_VERSION_SKEW` — the established posture of refusing a cross-shape baseline rather than assuming compatibility.
 
-7. **`-io` reader parity is deliberately NOT taken in this slice**, on the ADR-042 discipline ADR-059 obligation 4 already applied: the reader reads what the processor writes, and no processor writes these yet, so reading them would manufacture drift. The `unmodeledFacets()` completeness guard keys on annotation types, so a source using `@Blob` or `@Schedule` will correctly report an unmodeled facet — which is the honest reading of a reserved surface, not a regression.
+7. **`-io` reader parity is deliberately NOT taken in this slice**, on the ADR-042 discipline ADR-059 obligation 4 already applied: the reader reads what the processor writes, and no processor writes these yet, so reading them would manufacture drift. The `unmodeledFacets()` completeness guard keys on annotation types, so a source using `@Blob` or `@Schedule` will correctly report an unmodeled facet — which is the honest reading of a reserved surface, not a regression. *(Superseded for `@Blob` by the ADR-042 amendment "The SDK Fixes the Reader Shape for `@GraphProperty`, `@UIGroup` and `@Blob`": the `-io` reader reads `@Blob` into `FieldMetadata.blob` as written, ahead of the processor, and no longer reports it. It still holds for `@Schedule` and `@Channel`.)*
 
 8. **Neither surface enters the 1.0.0 freeze.** `MIGRATION-0.x-to-1.0.md` and the 1.0.0 GA section of `ROADMAP.md` list both as excluded, with the promotion condition stated: the kernel package leaves `preview` in `docs/stability-matrix.md`, **and** the `exeris-tooling` transcription exists. Until then a 1.x minor may still break them, and the annotations say that too. *(Superseded for `@Blob` by obligation 29; for `@Schedule` the condition is restated by obligation 31.)*
 
@@ -117,7 +117,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 ## Amendment — 2026-10-29 (0.13.0): the `-io` reader reads route access ahead of the processor
 
-**For `@RouteAccess` and the two `permissions` attributes, obligation 14's reader clause is reversed by exeris-tooling ADR-105.** ADR-105 obligation 26 makes the processor extract `permissions` and `routeAccess` only in the release whose pinned SDK reader reads them the same way, so the reader half has to ship first: the processor cannot write under ADR-042 what the reader would then misread as user drift. Obligation 7 is unchanged for `@Blob`, `@Schedule` and `@Channel`.
+**For `@RouteAccess` and the two `permissions` attributes, obligation 14's reader clause is reversed by exeris-tooling ADR-105.** ADR-105 obligation 26 makes the processor extract `permissions` and `routeAccess` only in the release whose pinned SDK reader reads them the same way, so the reader half has to ship first: the processor cannot write under ADR-042 what the reader would then misread as user drift. Obligation 7 is unchanged for `@Blob`, `@Schedule` and `@Channel`. *(For `@Blob`, amended since: see obligation 7.)*
 
 25. **The reader reads each element's own declaration.** `@RouteAccess` on the type into `DomainMetadata.routeAccess` and beside an `@Action` into `ActionMetadata.routeAccess`, `PUBLIC` included; `@ExerisDomain.permissions` and `@Action.permissions` in declaration order. An action declaring neither keeps a `null` `routeAccess` and empty `permissions`. The nearest-declaration rule of obligation 9 is applied by the generator that compiles the route policy (ADR-105 obligation 12), from these values, not resolved into the metadata.
 

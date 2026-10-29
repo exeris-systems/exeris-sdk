@@ -26,6 +26,7 @@
 #   ActionParamMetadata=11       0.12.0 (bindingSource, queryKey added in 0.13.0)
 #   DomainMetadata=41            0.12.0 (navMenu added in 0.13.0)
 #   UIMetadata=14                0.12.0 (tabs added in 0.13.0)
+#   GraphPropertyMetadata=3      0.12.0 (field added in 0.13.0)
 
 eu.exeris.sdk.sourcemodel.ast.ActionMetadata=17,18
 eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata=11,13
@@ -45,7 +46,7 @@ eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata$ProjectionConfig=6
 eu.exeris.sdk.sourcemodel.ast.FieldMetadata=31
 eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata=3,11
 eu.exeris.sdk.sourcemodel.ast.GraphMetadata=4
-eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata=3
+eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata=3,4
 eu.exeris.sdk.sourcemodel.ast.GraphQueryMetadata=3
 eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata=7
 eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata=18

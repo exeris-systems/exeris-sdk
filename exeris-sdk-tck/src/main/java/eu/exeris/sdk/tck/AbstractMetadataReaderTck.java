@@ -2,8 +2,11 @@ package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.BlobMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata;
 import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -360,6 +363,110 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
         assertThat(summary.label()).isEqualTo("Summary");
         assertThat(tabs.get(1).lazy()).isTrue();
         assertThat(tabs.get(1).fields()).containsExactly("note");
+    }
+
+    @Test
+    @DisplayName("@GraphProperty is carried as the properties the fields declare, AUTO left untyped")
+    void graphPropertiesAreTheDeclaredOnes() {
+        requireSupported(Facet.GRAPH_PROPERTIES);
+        GraphMetadata graph = read(TckCorpus.sourceOf(TckCorpus.PRODUCT)).graphMetadata();
+        assertThat(graph)
+                .withFailMessage("Product declares @Graph; the reader returned no graphMetadata.")
+                .isNotNull();
+        List<GraphPropertyMetadata> properties = graph.properties();
+        assertThat(properties)
+                .withFailMessage(
+                        "Product's fields declare two @GraphProperty and the reader returned %s. "
+                                + "Null means the reader does not extract @GraphProperty at all.",
+                        properties)
+                .isNotNull()
+                .hasSize(2);
+        GraphPropertyMetadata name = properties.get(0);
+        assertThat(name.name()).isEqualTo("name");
+        assertThat(name.indexed()).isTrue();
+        assertThat(name.type())
+                .withFailMessage(
+                        "Product.name declares no graphType and was read with type '%s'. AUTO is "
+                                + "absent: the store type follows the field's Java type, and a type "
+                                + "derived here is one no other side derives.",
+                        name.type())
+                .isNull();
+        GraphPropertyMetadata sku = properties.get(1);
+        assertThat(sku.name()).isEqualTo("skuCode");
+        assertThat(sku.type()).isEqualTo("STRING");
+        assertThat(sku.effectiveField())
+                .withFailMessage(
+                        "Product.sku is the graph property 'skuCode' and was read with field '%s'. "
+                                + "Without the field a graph-sync writer has nothing to read the "
+                                + "property from.",
+                        sku.effectiveField())
+                .isEqualTo("sku");
+    }
+
+    @Test
+    @DisplayName("@UIGroup is carried as the groups the fields declare, on an entity with no @UI")
+    void uiGroupsAreTheDeclaredOnes() {
+        requireSupported(Facet.UI_GROUPS);
+        UIMetadata ui = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER)).uiMetadata();
+        assertThat(ui)
+                .withFailMessage(
+                        "Customer declares @UIGroup on three fields and no @UI; the reader returned no "
+                                + "uiMetadata. Groups are carried whether or not the type declares @UI.")
+                .isNotNull();
+        List<UIMetadata.UIGroupMetadata> groups = ui.groups() == null ? List.of() : ui.groups();
+        assertThat(groups.stream().map(UIMetadata.UIGroupMetadata::name).toList())
+                .withFailMessage(
+                        "Customer's fields declare the groups 'identity' and 'media', in that order; "
+                                + "the reader returned %s. One group per name, in the order each name "
+                                + "is first declared, whatever its order attribute says.",
+                        groups.stream().map(UIMetadata.UIGroupMetadata::name).toList())
+                .containsExactly("identity", "media");
+        UIMetadata.UIGroupMetadata identity = groups.get(0);
+        assertThat(identity.fields()).containsExactly("email", "displayName");
+        assertThat(identity.label())
+                .withFailMessage(
+                        "Customer.email declares the 'identity' label 'Identity' and a later member "
+                                + "restates it; the group was read with label '%s'. The first "
+                                + "declaration of an attribute is the one kept.",
+                        identity.label())
+                .isEqualTo("Identity");
+        assertThat(identity.order()).isEqualTo(2);
+        assertThat(identity.collapsed()).isTrue();
+        assertThat(identity.collapsible())
+                .withFailMessage(
+                        "No 'identity' member declares collapsible and the group was read as not "
+                                + "collapsible. The annotation default is true.")
+                .isTrue();
+        assertThat(identity.gridSpan()).isEqualTo(UIMetadata.UIGroupMetadata.DEFAULT_GRID_SPAN);
+        UIMetadata.UIGroupMetadata media = groups.get(1);
+        assertThat(media.fields()).containsExactly("avatar");
+        assertThat(media.order()).isZero();
+        assertThat(media.collapsible())
+                .withFailMessage("Customer.avatar declares @UIGroup(collapsible = false); it was read as true.")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("@Blob is carried on the field as written, a field without @Field included")
+    void blobsAreTheDeclaredOnes() {
+        requireSupported(Facet.BLOBS);
+        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
+        assertThat(field(customer, "avatar").blob())
+                .withFailMessage(
+                        "Customer.avatar declares @Blob(contentTypes = {\"image/png\", \"image/jpeg\"}) "
+                                + "and was read with blob %s.",
+                        field(customer, "avatar").blob())
+                .isEqualTo(BlobMetadata.ofContentTypes(List.of("image/png", "image/jpeg")));
+        assertThat(field(customer, "contract").blob())
+                .withFailMessage(
+                        "Customer.contract declares @Blob(container = \"contracts\") and no @Field, and "
+                                + "was read with blob %s. A @Blob is read whether or not the field "
+                                + "carries @Field.",
+                        field(customer, "contract").blob())
+                .isEqualTo(new BlobMetadata("contracts", List.of()));
+        assertThat(field(customer, "email").blob())
+                .withFailMessage("Customer.email declares no @Blob and was read with one.")
+                .isNull();
     }
 
     /**

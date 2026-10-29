@@ -105,7 +105,36 @@ public enum Facet {
      *
      * @since 0.13
      */
-    TABS;
+    TABS,
+
+    /**
+     * {@code @GraphProperty} on the fields of a {@code @Graph} entity, carried as
+     * {@code GraphMetadata.properties}: one property per annotated field, in declaration order,
+     * with {@code type} absent for {@code AUTO} and {@code field} naming the declaring field of a
+     * renamed property.
+     *
+     * @since 0.13
+     */
+    GRAPH_PROPERTIES,
+
+    /**
+     * {@code @UIGroup} on an entity's fields, carried as {@code UIMetadata.groups}: one group per
+     * name, in the order each is first declared, with its member fields, the attributes the first
+     * declaring member gives it, and the annotation defaults written out for the rest — including
+     * a declared {@code collapsible = false} — on an entity that declares no {@code @UI}.
+     *
+     * @since 0.13
+     */
+    UI_GROUPS,
+
+    /**
+     * {@code @Blob} on an entity's fields, carried as {@code FieldMetadata.blob} as written —
+     * including a {@code @Blob} on a field that carries no {@code @Field}, and the media types in
+     * declaration order.
+     *
+     * @since 0.13
+     */
+    BLOBS;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);

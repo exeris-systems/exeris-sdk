@@ -62,12 +62,25 @@ for per-version upgrade steps.
   so a reattach or conflict-detection caller refuses the source (ADR-042). A constant in
   parentheses, `@RouteAccess((Level.AUTHENTICATED))`, is read as javac folds it for the processor.
 
-- **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
-  `@Channel`.** It returned nothing for them before. exeris-tooling 0.11.0 is scheduled to fill
-  `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
-  extraction rules are not fixed yet, so `read()` leaves the four carriers at their defaults and
-  the guard names the annotation. A reattach or conflict-detection caller refuses a source that
-  uses one of them. Each leaves the guard in the release that reads it as the processor does.
+- **`exeris-sdk-source-model-io` reads `@GraphProperty`, `@UIGroup` and `@Blob`**, in the shape the
+  ADR-042 reader-shape amendment fixes for exeris-tooling to match. `@GraphProperty` under a `@Graph`
+  fills `GraphMetadata.properties`, one property per annotated field in declaration order, an empty
+  list when none is declared; `type` is the declared `graphType` constant and absent for `AUTO`.
+  `@UIGroup` fills `UIMetadata.groups`, one group per name in first-declared order, each attribute
+  from its first declaring member and the annotation defaults written out for the rest, `gridSpan`
+  `12`; a type with groups and no `@UI` gets a `UIMetadata` at builder defaults. `@Blob` fills
+  `FieldMetadata.blob` as written, beside `@Field` or without it, whatever the entity's data scope.
+  For a source that uses them, `read()` returns these components where it left them at their
+  defaults, and `unmodeledFacets()` no longer names the three. `@GraphProperty`, `@UIGroup` and
+  `@Blob` are labelled PARTIAL in their javadoc and the root `package-info` index. **Tooling:** the
+  processor extracts them the same way in the release that pins SDK 0.13; until then a source
+  declaring one reads differently from a processor baseline. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **`SourceModelReader.unmodeledFacets()` reports `@Channel`.** It returned nothing for it before.
+  `DomainMetadata.channel` encodes the kernel WebSocket SPI, which stays `preview` at kernel 1.0, so
+  its shape is not fixed; `read()` leaves the carrier `null` and the guard names the annotation. A
+  reattach or conflict-detection caller refuses a source that uses it.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`SourceModelReader` writes `GraphMetadata.queries` as `null` for an `@Graph` entity.** It wrote
@@ -167,6 +180,19 @@ for per-version upgrade steps.
   declared nothing, so the annotation default applies and a producer that does not extract them
   writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
   pinned by `AstJsonRoundTripTest`. Builder setters for all six.
+
+- **`GraphPropertyMetadata` names the field a renamed property is read from.** One trailing
+  component, `field`: the declaring field, `null` when it equals the property `name`, so a property
+  that keeps its field's name writes the JSON it wrote before. `effectiveField()` returns the
+  declaring field for either shape. A blank `type` normalises to `null`, which reads as `AUTO`. The
+  record keeps its 3-component constructor. `UIMetadata.UIGroupMetadata` gains the constants
+  `DEFAULT_ORDER` (`999`) and `DEFAULT_GRID_SPAN` (`12`).
+
+- **`exeris-sdk-tck`: `Facet.GRAPH_PROPERTIES`, `UI_GROUPS` and `BLOBS`**, each with a reader,
+  producer and parity case and self-tests that plant the defect each case names. The corpus
+  `Product` declares `@Graph` with two `@GraphProperty` fields, one renamed and typed, one `AUTO`;
+  `Customer` declares two `@UIGroup` groups and two `@Blob` fields, one without `@Field`. A binding
+  whose side does not extract one of them yet declares the facet in `unsupportedFacets()`.
 
 - **`GraphEdgeMetadata` separates an edge's identity from its field, and carries direction and
   weight.** Eight trailing components: `field` (the declaring field, `null` when it equals the

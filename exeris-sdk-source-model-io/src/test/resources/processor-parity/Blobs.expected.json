@@ -1,0 +1,31 @@
+{
+  "fields": [
+    {
+      "name": "scan",
+      "blob": {
+        "container": "scans",
+        "contentTypes": [
+          "application/pdf",
+          "image/png"
+        ]
+      }
+    },
+    {
+      "name": "raw",
+      "blob": {
+        "contentTypes": []
+      }
+    },
+    {
+      "name": "photo",
+      "blob": {
+        "contentTypes": [
+          "image/jpeg"
+        ]
+      }
+    },
+    {
+      "name": "plain"
+    }
+  ]
+}

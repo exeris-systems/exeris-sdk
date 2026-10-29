@@ -56,8 +56,16 @@ import java.lang.annotation.*;
  * }
  *
  *
- * <p><strong>Status: RESERVED</strong> — {@link UI @UI} is extracted per field, this grouping
- * annotation is not. A group declared here appears in no generated template.
+ * <p><strong>Status: PARTIAL</strong> — the {@code -io} reader carries it in
+ * {@code UIMetadata.groups} ({@code UIMetadata.UIGroupMetadata}), one group per {@link #name()}
+ * with the names of its member fields, in the order each name is first declared; on a type with
+ * no {@link UI @UI} it creates the {@code UIMetadata}. Each attribute is taken from the first
+ * member field, in declaration order, that declares it, so a later field that restates one with
+ * another value does not change it, and an attribute no member declares is carried as its
+ * default here. The group's {@code gridSpan} has no attribute and is {@code 12}, the full form
+ * width. {@link #columns()}, {@link #cssClass()} and {@link #visibleWhen()} have no carrier and
+ * are read by nobody. The {@code exeris-tooling} processor does not extract it yet, and a group
+ * declared here appears in no generated template.
  * @since 0.1
  * @see Tab
  * @see UI

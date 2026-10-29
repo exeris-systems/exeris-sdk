@@ -30,6 +30,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
+import eu.exeris.sdk.sourcemodel.ast.BlobMetadata;
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
@@ -39,6 +40,7 @@ import eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata;
 import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
 import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ParamSource;
@@ -86,7 +88,8 @@ import java.util.stream.Collectors;
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention), field-level {@code @Tab} into
- * {@link UIMetadata#tabs()}, and class-level {@code @NavMenu} into
+ * {@link UIMetadata#tabs()}, field-level {@code @UIGroup} into {@link UIMetadata#groups()},
+ * field-level {@code @Blob} into {@link FieldMetadata#blob()}, and class-level {@code @NavMenu} into
  * {@link DomainMetadata#navMenu()}. The domain-level
  * {@code @ExerisDomain} string + boolean attributes the processor reads
  * (module, path, aggregate, description, the {@code *Api} flags,
@@ -101,7 +104,7 @@ import java.util.stream.Collectors;
  * into {@link DomainMetadata#events} (direct/repeated, hand-written
  * {@code @DomainEvents} container, and nested-class legacy form — mirroring the
  * processor's three sources and its trigger-based name derivation). Class-level
- * {@code @Graph} (with its fields' {@code @GraphEdge}s), {@code @EventSourced},
+ * {@code @Graph} (with its fields' {@code @GraphEdge}s and {@code @GraphProperty}s), {@code @EventSourced},
  * {@code @Saga} (with {@code @SagaStep} methods), and {@code @InternalApi} are read
  * into the matching {@link DomainMetadata} facets, each mirroring the processor's
  * extraction (including its {@code streamPrefix→aggregateType} translation and
@@ -135,9 +138,8 @@ import java.util.stream.Collectors;
  * {@code read()} drops no annotation-level facet the processor emits, and the field facet is
  * attribute-complete against {@code extractFieldMetadata}. {@link #unmodeledFacets} reports
  * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
- * is scheduled to fill, in a shape this reader does not read ({@code @GraphProperty},
- * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), the reserved {@code @Schedule} whose carrier
- * this reader leaves empty, a {@code @SagaStep.order} the reader
+ * is scheduled to fill, in a shape this reader does not read ({@code @Channel}), the reserved
+ * {@code @Schedule} whose carrier this reader leaves empty, a {@code @SagaStep.order} the reader
  * cannot resolve, a {@code permissions} element that is not a string literal, and a
  * {@code @RouteAccess} whose value is not a {@code Level} constant. A round-trip /
  * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
@@ -148,9 +150,11 @@ import java.util.stream.Collectors;
  * is verified per-slice, not by it.
  *
  * <p>The reverse divergence — a facet this reader carries and a processor does not extract
- * yet — is not reported by the guard. {@code @QueryParam}, {@code @NavMenu}, {@code @Tab} and
- * the {@code @Saga} compensation section and {@code @Saga.trigger} are read here ahead of a
- * processor that does not extract them. {@link SourceModelConflictDetector} compares whole actions, so against such a
+ * yet — is not reported by the guard. {@code @QueryParam}, {@code @NavMenu}, {@code @Tab},
+ * {@code @UIGroup}, {@code @GraphProperty}, {@code @Blob}, the {@code @Saga} compensation section
+ * and {@code @Saga.trigger} are read here ahead of a processor that does not extract them, in the
+ * shape ADR-042's reader-shape amendment fixes for {@code @UIGroup}, {@code @GraphProperty} and
+ * {@code @Blob}. {@link SourceModelConflictDetector} compares whole actions, so against such a
  * processor's baseline an action with a {@code @QueryParam} parameter reads as changed, and a
  * mutation of that action is reported as a conflict rather than applied; it compares no
  * navigation, tab or saga component.
@@ -182,21 +186,17 @@ public final class SourceModelReader {
      * processor's codegen output, so a facet the processor keeps and the reader drops
      * would be misread as a user edit.
      *
-     * <p>Each member has an AST carrier whose extraction rules the processor has not fixed:
-     * {@code @GraphProperty} ({@code GraphMetadata.properties}), {@code @UIGroup}
-     * ({@code UIMetadata.groups}), {@code @Blob} ({@code FieldMetadata.blob}),
-     * {@code @Channel} ({@code DomainMetadata.channel}) and {@code @Schedule}
-     * ({@code ActionMetadata.schedule}). Reading one before those rules are fixed would
-     * produce a value the processor may not, which is the drift this guard reports, so the
-     * reader leaves the carrier at its default and the guard names the annotation instead.
-     * {@code @Schedule} has no extraction rule at all while the kernel issues no service
-     * principal: a declared job is refused at build time (kernel ADR-057 Amendment A1), and
-     * a round-trip that dropped the declaration would hide it. A member leaves the set in
-     * the change that reads it the way the processor does. Matched by simple name (no import
-     * resolution).
+     * <p>Each member has an AST carrier whose shape or extraction rule is not fixed:
+     * {@code @Channel} ({@code DomainMetadata.channel}) encodes the kernel WebSocket SPI, which
+     * stays at tier {@code preview}, and {@code @Schedule} ({@code ActionMetadata.schedule}) has
+     * no extraction rule at all while the kernel issues no service principal: a declared job is
+     * refused at build time (kernel ADR-057 Amendment A1), and a round-trip that dropped the
+     * declaration would hide it. Reading one would produce a value the processor may not, which
+     * is the drift this guard reports, so the reader leaves the carrier at its default and the
+     * guard names the annotation instead. A member leaves the set in the change that fixes its
+     * shape and reads it. Matched by simple name (no import resolution).
      */
-    private static final Set<String> UNMODELED_FACET_ANNOTATIONS =
-            Set.of("GraphProperty", "UIGroup", "Blob", "Channel", "Schedule");
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of("Channel", "Schedule");
 
     /** Attribute names several annotations share. */
     private static final String LABEL = "label";
@@ -305,13 +305,12 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
-     * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob}, {@code @Channel} and
-     * {@code @Schedule}, whose carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
-     * side reads and no carrier is scheduled for ({@code @Projection},
+     * {@code @Channel} and {@code @Schedule}, whose carriers {@link #read} leaves at their
+     * defaults. <b>Not</b> flagged: facets neither side reads and no carrier is scheduled for ({@code @Projection},
      * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations), and
      * facets this reader reads ahead of the processor ({@code @QueryParam}, {@code @NavMenu},
-     * {@code @Tab}): the guard reports what a round-trip would drop, and the reader drops none
-     * of those.
+     * {@code @Tab}, {@code @UIGroup}, {@code @GraphProperty}, {@code @Blob}): the guard reports
+     * what a round-trip would drop, and the reader drops none of those.
      *
      * <p>Also detected, as {@code @SagaStep}: a saga step on the {@code @ExerisDomain}
      * type whose {@code order} this reader cannot resolve — a constant from another file,
@@ -628,12 +627,13 @@ public final class SourceModelReader {
     }
 
     /**
-     * Class-level standalone {@code @UI} and field-level {@code @Tab} → {@link UIMetadata}, or
-     * {@code null} when the type carries neither. A type-level {@code @UI} is read as
-     * {@code ExerisDomainProcessor.extractUIMetadata} reads it, through a directly-present
-     * annotation. Tabs are read by {@link #tabs}; a type with tabs and no {@code @UI} gets a
-     * {@link UIMetadata} whose other components are the builder defaults, which are the values
-     * an {@code @UI} that declares nothing produces.
+     * Class-level standalone {@code @UI}, field-level {@code @Tab} and field-level
+     * {@code @UIGroup} → {@link UIMetadata}, or {@code null} when the type carries none of them.
+     * A type-level {@code @UI} is read as {@code ExerisDomainProcessor.extractUIMetadata} reads
+     * it, through a directly-present annotation. Tabs are read by {@link #tabs} and groups by
+     * {@link #groups}; a type with tabs or groups and no {@code @UI} gets a {@link UIMetadata}
+     * whose other components are the builder defaults, which are the values an {@code @UI} that
+     * declares nothing produces. A type with no group keeps the builder's empty {@code groups}.
      *
      * <p>Parity note: like the processor, the view flags default to {@code true}
      * when their {@code @UI} attribute is absent (and {@code exportable} to
@@ -650,7 +650,7 @@ public final class SourceModelReader {
      *       unconsumed SDK-wide. Changing this must move processor + reader together.</li>
      *   <li>{@code icon}/{@code color}/{@code label} — present on {@code @UI} but
      *       not read by the processor.</li>
-     *   <li>{@code bulkActions}/{@code columns}/{@code defaultLayout}/{@code groups}/
+     *   <li>{@code bulkActions}/{@code columns}/{@code defaultLayout}/
      *       {@code fieldOverrides} — no {@code @UI} attribute exists for them; they
      *       stay at {@link UIMetadata} builder defaults.</li>
      * </ul>
@@ -658,7 +658,8 @@ public final class SourceModelReader {
     private UIMetadata uiMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> ui = type.getAnnotationByName("UI");
         List<UIMetadata.UITabMetadata> tabs = tabs(type);
-        if (ui.isEmpty() && tabs.isEmpty()) {
+        List<UIMetadata.UIGroupMetadata> groups = groups(type);
+        if (ui.isEmpty() && tabs.isEmpty() && groups.isEmpty()) {
             return null;
         }
         UIMetadata.Builder builder = UIMetadata.builder();
@@ -673,7 +674,75 @@ public final class SourceModelReader {
         if (!tabs.isEmpty()) {
             builder.tabs(tabs);
         }
+        builder.groups(groups);
         return builder.build();
+    }
+
+    /**
+     * Field-level {@code @UIGroup} → {@link UIMetadata.UIGroupMetadata}, one per distinct
+     * {@code name}, in the order each name is first declared — the rule {@link #tabs} applies,
+     * for the same reasons. Every field carrying the annotation is a member, a
+     * {@code @Relationship} field included, and each variable of a multi-variable declaration
+     * is one member.
+     *
+     * <p>Each attribute takes the value of the first member field, in declaration order, that
+     * declares it; a blank string counts as undeclared. An attribute no member declares takes
+     * the annotation default, written out because the record's components are primitive:
+     * {@code order} {@value UIMetadata.UIGroupMetadata#DEFAULT_ORDER}, {@code collapsible}
+     * {@code true}, {@code collapsed} {@code false}; an undeclared string is {@code null}.
+     * {@code gridSpan} has no attribute and is
+     * {@value UIMetadata.UIGroupMetadata#DEFAULT_GRID_SPAN}. {@code columns}, {@code cssClass}
+     * and {@code visibleWhen} have no component and are not read. A {@code @UIGroup} whose
+     * {@code name} is not a non-blank string literal is skipped.
+     */
+    private List<UIMetadata.UIGroupMetadata> groups(ClassOrInterfaceDeclaration type) {
+        Map<String, GroupDeclarations> byName = new LinkedHashMap<>();
+        for (FieldDeclaration field : type.getFields()) {
+            field.getAnnotationByName("UIGroup").ifPresent(group -> nonBlankStringAttr(group, "name")
+                    .ifPresent(name -> {
+                        GroupDeclarations declarations = byName.computeIfAbsent(name, GroupDeclarations::new);
+                        declarations.absorb(group);
+                        for (VariableDeclarator variable : field.getVariables()) {
+                            declarations.fields.add(variable.getNameAsString());
+                        }
+                    }));
+        }
+        return byName.values().stream().map(GroupDeclarations::build).toList();
+    }
+
+    /**
+     * The {@code @UIGroup} declarations sharing one name, folded attribute by attribute: the
+     * first declaration of each attribute is kept, and a later one is ignored.
+     */
+    private final class GroupDeclarations {
+        private final String name;
+        private final List<String> fields = new ArrayList<>();
+        private String label;
+        private String description;
+        private Integer order;
+        private Boolean collapsible;
+        private Boolean collapsed;
+        private String icon;
+
+        private GroupDeclarations(String name) {
+            this.name = name;
+        }
+
+        private void absorb(AnnotationExpr group) {
+            label = TabDeclarations.first(label, () -> nonBlankStringAttr(group, LABEL));
+            description = TabDeclarations.first(description, () -> nonBlankStringAttr(group, "description"));
+            order = TabDeclarations.first(order, () -> signedIntAttr(group, ORDER));
+            collapsible = TabDeclarations.first(collapsible, () -> boolAttr(group, "collapsible"));
+            collapsed = TabDeclarations.first(collapsed, () -> boolAttr(group, "collapsed"));
+            icon = TabDeclarations.first(icon, () -> nonBlankStringAttr(group, "icon"));
+        }
+
+        private UIMetadata.UIGroupMetadata build() {
+            return new UIMetadata.UIGroupMetadata(name, label, description,
+                    order != null ? order : UIMetadata.UIGroupMetadata.DEFAULT_ORDER,
+                    !Boolean.FALSE.equals(collapsible), Boolean.TRUE.equals(collapsed), icon,
+                    UIMetadata.UIGroupMetadata.DEFAULT_GRID_SPAN, List.copyOf(fields));
+        }
     }
 
     /**
@@ -1383,8 +1452,11 @@ public final class SourceModelReader {
      * absent. Mirrors {@code extractGraphMetadata}: the label is
      * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
      * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
-     * properties and queries stay {@code null}, which reads as "not carried" and keeps both off
-     * the wire. {@code @GraphQuery} is read by neither side; {@code @GraphProperty} is not read here and {@link #unmodeledFacets} reports it.
+     * queries {@code null}, which reads as "not carried" and keeps them off the wire.
+     * {@code @GraphQuery} is read by neither side. The properties are the fields'
+     * {@code @GraphProperty}s ({@link #graphProperties}), an empty list when none is declared; a
+     * {@code @GraphProperty} on a type without {@code @Graph} is not read, as a {@code @GraphEdge}
+     * there is not.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
@@ -1392,7 +1464,36 @@ public final class SourceModelReader {
             return null;
         }
         String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
-        return new GraphMetadata(label, null, graphEdges(type), null);
+        return new GraphMetadata(label, graphProperties(type), graphEdges(type), null);
+    }
+
+    /**
+     * The fields' {@code @GraphProperty}s → {@link GraphPropertyMetadata}, one per annotated
+     * field variable, in field declaration order. {@code name} is a non-blank
+     * {@code @GraphProperty.name}, else the field name, and {@code field} is the field name, which
+     * the record drops when it equals {@code name}. {@code type} is the {@code graphType}
+     * constant name, and {@code null} for {@code AUTO} or when undeclared: the store type then
+     * follows the field's Java type, which {@code FieldMetadata.type} carries, so no graph type
+     * is derived here. {@code indexed} is the declared value, else {@code false}. The other
+     * attributes have no component and are not read.
+     */
+    private List<GraphPropertyMetadata> graphProperties(ClassOrInterfaceDeclaration type) {
+        List<GraphPropertyMetadata> properties = new ArrayList<>();
+        for (FieldDeclaration field : type.getFields()) {
+            field.getAnnotationByName("GraphProperty").ifPresent(property -> {
+                String graphType = enumAttr(property, "graphType")
+                        .filter(constant -> !"AUTO".equals(constant))
+                        .orElse(null);
+                boolean indexed = boolAttr(property, "indexed").orElse(false);
+                Optional<String> declaredName = nonBlankStringAttr(property, "name");
+                for (VariableDeclarator variable : field.getVariables()) {
+                    String fieldName = variable.getNameAsString();
+                    properties.add(new GraphPropertyMetadata(
+                            declaredName.orElse(fieldName), graphType, indexed, fieldName));
+                }
+            });
+        }
+        return List.copyOf(properties);
     }
 
     /**
@@ -2072,7 +2173,8 @@ public final class SourceModelReader {
      * The two paths intentionally differ on the search/sort/filter defaults — that
      * asymmetry <em>is</em> the processor's behaviour, so the reader reproduces it
      * exactly to stay in lock-step. {@code @Relationship} fields are skipped (they
-     * are modelled separately).
+     * are modelled separately). On either path a {@code @Blob} adds {@link FieldMetadata#blob()}
+     * ({@link #blob}).
      */
     private List<FieldMetadata> fields(ClassOrInterfaceDeclaration type) {
         List<FieldMetadata> fields = new ArrayList<>();
@@ -2082,12 +2184,15 @@ public final class SourceModelReader {
             }
             Optional<AnnotationExpr> fieldAnn = field.getAnnotationByName("Field");
             Optional<AnnotationExpr> validationAnn = field.getAnnotationByName("Validation");
+            Optional<BlobMetadata> blob = field.getAnnotationByName("Blob").map(this::blob);
             for (VariableDeclarator var : field.getVariables()) {
                 String name = var.getNameAsString();
                 String fieldType = var.getTypeAsString();
-                fields.add(fieldAnn.isPresent()
+                FieldMetadata.Builder builder = fieldAnn.isPresent()
                         ? fieldMetadata(name, fieldType, fieldAnn.get(), validationAnn.orElse(null))
-                        : FieldMetadata.simple(name, fieldType));
+                        : FieldMetadata.builder(name, fieldType).searchable(true).sortable(true).filterable(true);
+                blob.ifPresent(builder::blob);
+                fields.add(builder.build());
             }
         }
         return fields;
@@ -2116,7 +2221,7 @@ public final class SourceModelReader {
      * {@code writeOnly}, {@code compositeUnique} — have no {@code FieldMetadata}
      * counterpart at all.)
      */
-    private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
+    private FieldMetadata.Builder fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
         FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
         stringAttr(field, LABEL).ifPresent(builder::displayName);
         stringAttr(field, "description").ifPresent(builder::description);
@@ -2135,7 +2240,21 @@ public final class SourceModelReader {
         if (validation != null) {
             applyValidation(field, validation, builder);
         }
-        return builder.build();
+        return builder;
+    }
+
+    /**
+     * {@code @Blob} → {@link BlobMetadata}, as written: {@code container} is a non-blank string
+     * literal, else {@code null}, and {@code contentTypes} the declared literals in declaration
+     * order, empty when none are declared. A {@code @Blob} declaring nothing is
+     * {@link BlobMetadata#unrestricted()}. The entity's data scope is not consulted: the
+     * {@code GLOBAL}-scoped combination is refused at build time by {@code exeris-tooling}, and
+     * the reader reads the declaration the source makes.
+     */
+    private BlobMetadata blob(AnnotationExpr blob) {
+        return new BlobMetadata(
+                nonBlankStringAttr(blob, "container").orElse(null),
+                stringArrayAttr(blob, "contentTypes").orElse(List.of()));
     }
 
     /**

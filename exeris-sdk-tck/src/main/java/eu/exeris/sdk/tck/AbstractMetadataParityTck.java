@@ -4,6 +4,7 @@ import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
@@ -369,6 +370,66 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             }
             return gaps;
         });
+    }
+
+    @Test
+    @DisplayName("producer and reader agree on every graph property, in order")
+    void graphPropertiesAgree() {
+        requireSupported(Facet.GRAPH_PROPERTIES);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            compare(gaps, "graphMetadata/properties", propertiesOf(produced), propertiesOf(wasRead));
+            return gaps;
+        });
+    }
+
+    @Test
+    @DisplayName("producer and reader agree on every UI group")
+    void uiGroupsAgree() {
+        requireSupported(Facet.UI_GROUPS);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            Map<String, UIMetadata.UIGroupMetadata> left = byKey(groupsOf(produced), UIMetadata.UIGroupMetadata::name);
+            Map<String, UIMetadata.UIGroupMetadata> right = byKey(groupsOf(wasRead), UIMetadata.UIGroupMetadata::name);
+            compareKeySets(gaps, "groups", left, right);
+            for (Map.Entry<String, UIMetadata.UIGroupMetadata> entry : left.entrySet()) {
+                UIMetadata.UIGroupMetadata r = right.get(entry.getKey());
+                if (r != null) {
+                    compare(gaps, "groups/" + entry.getKey(), entry.getValue(), r);
+                }
+            }
+            if (left.keySet().equals(right.keySet())) {
+                compare(gaps, "groups (order)", List.copyOf(left.keySet()), List.copyOf(right.keySet()));
+            }
+            return gaps;
+        });
+    }
+
+    @Test
+    @DisplayName("producer and reader agree on every field's blob")
+    void blobsAgree() {
+        requireSupported(Facet.BLOBS);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            Map<String, FieldMetadata> left = byKey(produced.fields(), FieldMetadata::name);
+            Map<String, FieldMetadata> right = byKey(wasRead.fields(), FieldMetadata::name);
+            for (Map.Entry<String, FieldMetadata> entry : left.entrySet()) {
+                FieldMetadata r = right.get(entry.getKey());
+                if (r != null) {
+                    // Presence is the FIELDS facet's comparison.
+                    compare(gaps, FIELDS + entry.getKey() + "/blob", entry.getValue().blob(), r.blob());
+                }
+            }
+            return gaps;
+        });
+    }
+
+    private static List<GraphPropertyMetadata> propertiesOf(DomainMetadata metadata) {
+        return metadata.graphMetadata() == null ? null : metadata.graphMetadata().properties();
+    }
+
+    private static List<UIMetadata.UIGroupMetadata> groupsOf(DomainMetadata metadata) {
+        return metadata.uiMetadata() == null ? null : metadata.uiMetadata().groups();
     }
 
     private static List<UIMetadata.UITabMetadata> tabsOf(DomainMetadata metadata) {
