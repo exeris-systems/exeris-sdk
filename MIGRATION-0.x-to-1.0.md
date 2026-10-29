@@ -154,6 +154,8 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
 
 ## 2. What is deliberately NOT removed (carried through 1.x)
 
+For a per-surface lookup of what the freeze covers, start from [`docs/stability-matrix.md`](docs/stability-matrix.md); this section holds the reasoning.
+
 - **`@UI`** — stays the functional field-level presentation path. The `@View`
   structural generation is live, but the ADR-047 leaf-field facet is not
   implemented yet, so the deprecation gate never opened in 0.x. Plan of
