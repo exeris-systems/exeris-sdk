@@ -23,7 +23,8 @@ import java.util.Objects;
  * @param bulkActions whether the generated list view allows acting on a selection
  * @param columns the number of columns the generated form grid is laid out on
  * @param defaultLayout the layout the generated views start in
- * @param groups the field groupings the generated forms are organised into
+ * @param groups the field groupings the generated forms are organised into, as {@code @UIGroup}
+ *        declares them, in the order each group is first declared; empty when none were declared
  * @param fieldOverrides per-field presentation overrides, keyed by field name
  * @param tabs the tabs the generated forms and detail views are split into, as {@code @Tab}
  *        declares them, in the order each tab is first declared; absent means none were
@@ -98,17 +99,30 @@ public record UIMetadata(
     }
 
     /**
-     * Metadata for UI field groups (card/section grouping).
+     * Metadata for UI field groups (card/section grouping), declared with {@code @UIGroup} on
+     * each member field. Sits beside {@link UITabMetadata}: a group is a section within a view,
+     * a tab is a panel of it.
+     *
+     * <p>Read from source, every field that names the group declares it, and the group's
+     * attributes come from those declarations: each attribute takes the value of the first member
+     * field, in declaration order, that declares it, and a later field that restates it with
+     * another value does not change it. An attribute no member declares takes the annotation
+     * default, written out, because every numeric and boolean component here is primitive:
+     * {@code order} {@code 999}, {@code collapsible} {@code true}, {@code collapsed}
+     * {@code false}. A string component no member declares, or declares blank, is {@code null}.
+     * {@code gridSpan} has no {@code @UIGroup} attribute and is {@code 12}, the full width of the
+     * form grid that {@link UIMetadata#columns()} defaults to. {@code @UIGroup.columns},
+     * {@code cssClass} and {@code visibleWhen} have no component.
      *
      * @param name the group's identity, referenced by the fields that belong to it
      * @param label the heading a generated form shows for the group
      * @param description prose shown beneath the group heading
-     * @param order the group's position among its siblings
+     * @param order the group's position among its siblings, lower first
      * @param collapsible whether a reader may collapse the group
      * @param collapsed whether the group starts collapsed
      * @param icon the icon shown beside the group heading
      * @param gridSpan how many grid columns the group occupies
-     * @param fields the names of the fields placed in this group, in order
+     * @param fields the names of the fields placed in this group, in declaration order
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -123,6 +137,12 @@ public record UIMetadata(
             int gridSpan,
             List<String> fields
     ) {
+        /** The position {@code order} takes when no member field declares it. */
+        public static final int DEFAULT_ORDER = 999;
+
+        /** The span {@code gridSpan} takes: the full width of the default form grid. */
+        public static final int DEFAULT_GRID_SPAN = 12;
+
         /**
          * Creates a minimal {@code UIGroupMetadata}, with only the essentials set.
          *

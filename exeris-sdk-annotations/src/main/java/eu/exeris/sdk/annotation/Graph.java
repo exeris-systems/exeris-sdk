@@ -55,7 +55,7 @@ import java.lang.annotation.*;
  *
  *
  * <p><strong>Status: LIVE</strong> — the type-level annotation is extracted into {@code GraphMetadata} and read by {@code KernelGraphSyncGenerator}. The detail annotations
- * around it are not: {@link GraphProperty @GraphProperty} and {@link GraphQuery @GraphQuery} are unread, so {@code properties} arrives null and {@code queries} empty.
+ * around it are not all read: {@link GraphProperty @GraphProperty} is carried in {@code properties} by the {@code -io} reader only, and {@link GraphQuery @GraphQuery} is unread.
  * @since 0.1
  */
 @Target(ElementType.TYPE)

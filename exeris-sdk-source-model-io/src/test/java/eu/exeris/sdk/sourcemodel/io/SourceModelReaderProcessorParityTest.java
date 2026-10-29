@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +36,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The {@code PrimaryKey*} fixtures pin the {@code @PrimaryKey} marker ahead of its processor
  * half: their expected JSON is what ADR-104 obligations 11 and 12 require the processor to emit
  * once it reads the marker, under the rules of the other ten system-field markers.
+ *
+ * <p>The {@code GraphProperties}, {@code GraphNoProperties}, {@code UiGroups} and {@code Blobs}
+ * fixtures pin {@code @GraphProperty}, {@code @UIGroup} and {@code @Blob} ahead of their processor
+ * half in the same way: their expected {@code graphMetadata.properties}, {@code uiMetadata} and
+ * {@code fields} are the shape ADR-042's reader-shape amendment requires the processor to emit.
  */
 @DisplayName("reader↔processor parity: systemFields and graph edges")
 class SourceModelReaderProcessorParityTest {
@@ -64,6 +71,32 @@ class SourceModelReaderProcessorParityTest {
 
         assertThat(actual.path("systemFields")).isEqualTo(expected.path("systemFields"));
         assertThat(actual.path("graphMetadata")).isEqualTo(expected.path("graphMetadata"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"GraphProperties", "GraphNoProperties", "UiGroups", "Blobs"})
+    void readerEmitsTheFixedShapeForPropertiesGroupsAndBlobs(String name) {
+        JsonNode expected = MAPPER.readTree(fixture(name + ".expected.json"));
+        JsonNode actual = MAPPER.valueToTree(read(fixture(name + ".java")));
+
+        assertThat(actual.path("graphMetadata").path("properties"))
+                .isEqualTo(expected.path("graphMetadata").path("properties"));
+        assertThat(actual.path("uiMetadata")).isEqualTo(expected.path("uiMetadata"));
+        assertThat(blobsOf(actual)).isEqualTo(blobsOf(expected));
+    }
+
+    /**
+     * The name and {@code blob} of each field carrying one, in field order — the one
+     * {@code FieldMetadata} component these fixtures pin.
+     */
+    private static List<String> blobsOf(JsonNode metadata) {
+        List<String> blobs = new ArrayList<>();
+        for (JsonNode field : metadata.path("fields")) {
+            if (field.has("blob")) {
+                blobs.add(field.path("name").asString() + " " + field.get("blob"));
+            }
+        }
+        return blobs;
     }
 
     @Nested

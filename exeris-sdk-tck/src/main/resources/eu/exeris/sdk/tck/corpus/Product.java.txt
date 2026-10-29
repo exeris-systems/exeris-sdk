@@ -3,6 +3,8 @@ package eu.exeris.sdk.tck.corpus;
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.Graph;
+import eu.exeris.sdk.annotation.GraphProperty;
 import eu.exeris.sdk.annotation.RouteAccess;
 
 /**
@@ -13,6 +15,12 @@ import eu.exeris.sdk.annotation.RouteAccess;
  * as one nobody spoke about. {@code reprice} declares {@code AUTHENTICATED} together with a
  * permission of its own, overriding the entity's level for that route. Neither declares
  * {@code PUBLIC} beside a permission, a pair the processor refuses.
+ *
+ * <p>The {@code @GraphProperty}s are the case behind the {@code GRAPH_PROPERTIES} facet. {@code name}
+ * declares no {@code graphType}, so its property carries no type: a side that derives one from the
+ * Java type writes a value no other side derives. {@code sku} is renamed on the node, so its
+ * property names the field it is read from; a side that drops the field leaves a graph-sync writer
+ * nothing to read {@code skuCode} from.
  */
 @ExerisDomain(
         module = "catalog",
@@ -20,10 +28,16 @@ import eu.exeris.sdk.annotation.RouteAccess;
         description = "An item offered for sale."
 )
 @RouteAccess(RouteAccess.Level.PUBLIC)
+@Graph
 public class Product {
 
     @Field(label = "Name", required = true)
+    @GraphProperty(indexed = true)
     private String name;
+
+    @Field(label = "SKU")
+    @GraphProperty(name = "skuCode", graphType = GraphProperty.GraphType.STRING)
+    private String sku;
 
     @Action(name = "reprice", label = "Reprice", httpMethod = "POST", permissions = {"product:reprice"})
     @RouteAccess(RouteAccess.Level.AUTHENTICATED)

@@ -816,6 +816,23 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("GraphPropertyMetadata's field round-trips, and an AUTO type and an unrenamed field stay off the wire")
+    void graphPropertyMetadataFieldRoundTrips() {
+        assertRoundTrip(
+                new GraphPropertyMetadata("amt", "DOUBLE", true, "amount"),
+                GraphPropertyMetadata.class);
+
+        String json;
+        try {
+            json = mapper.writeValueAsString(new GraphPropertyMetadata("title", null, false, "title"));
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        // A property that keeps its field's name omits field, and an AUTO type omits type.
+        assertThat(json).isEqualTo("{\"name\":\"title\",\"indexed\":false}");
+    }
+
+    @Test
     @DisplayName("GraphEdgeMetadata round-trips (graph leaf)")
     void graphEdgeMetadataRoundTrips() {
         assertRoundTrip(

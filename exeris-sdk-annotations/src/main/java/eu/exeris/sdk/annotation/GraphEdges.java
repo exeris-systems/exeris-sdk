@@ -25,11 +25,10 @@ import java.lang.annotation.Target;
  * rather than a silent loss.
  *
  * <p>{@code @GraphEdge} itself is read by the processor and consumed by the
- * graph-sync generator. Its siblings under {@code @Graph} —
- * {@code @GraphProperty} and {@code @GraphQuery} — are read by nobody, so
- * {@code GraphMetadata} carries a null property list and an empty query list.
+ * graph-sync generator. Of its siblings under {@code @Graph}, {@code @GraphQuery}
+ * is read by nobody and {@code @GraphProperty} by the {@code -io} reader only.
  * The {@code -io} reader reads {@code @GraphEdge} as the processor does, this
- * container included, and neither sibling.
+ * container included.
  *
  * <p><strong>Status: PARTIAL</strong> — both readers handle this container, and
  * both admit only one edge in it, while the compiler writes it only for two or

@@ -471,10 +471,10 @@ freeze or is explicitly re-dispositioned here.
     `@GraphProperty` / `@GraphQuery` **do** have AST twins now
     (`GraphEdgeMetadata` / `GraphPropertyMetadata` / `GraphQueryMetadata`, all
     carried by `GraphMetadata`). Both the processor and the `-io` reader read
-    `@GraphEdge` into `edges`; neither reads `@GraphProperty` or `@GraphQuery`,
-    so `GraphMetadata` arrives with `properties = null` and empty `queries` —
-    symmetrically, on both sides, which makes it an ADR-042 parity pair rather
-    than a divergence. `@QueryParam` binds an `@Action` parameter from the query
+    `@GraphEdge` into `edges`; neither reads `@GraphQuery`. The `-io` reader
+    reads `@GraphProperty` into `properties` in the shape ADR-042's reader-shape
+    amendment fixes, and the processor extracts it the same way from the
+    release that pins SDK 0.13. `@QueryParam` binds an `@Action` parameter from the query
     string and is carried on `ActionParamMetadata` (`bindingSource`, `queryKey`);
     on a `@GraphQuery` method it is read by nobody, and a twin there belongs to the
     change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same

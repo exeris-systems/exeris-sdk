@@ -8,7 +8,10 @@ import java.util.List;
  * Metadata for graph database entities.
  *
  * @param label the node label the entity is mirrored to in the graph store
- * @param properties the entity fields carried onto the node
+ * @param properties the entity fields carried onto the node, one per field carrying
+ *        {@code @GraphProperty}, in field declaration order; an empty list when the entity
+ *        declares none. {@code null} means the producer does not extract {@code @GraphProperty},
+ *        and a consumer reading this component handles both
  * @param edges the edges leaving the node
  * @param queries the traversals declared against it; {@code null} when they are not carried, which
  *     is what both the processor and the {@code -io} reader write, because neither extracts

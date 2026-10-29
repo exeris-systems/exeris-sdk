@@ -43,14 +43,16 @@ public final class TckCorpus {
     public static final String ORDER = "Order";
 
     /**
-     * Simple name of the customer entity — validation bounds, a {@code ONE_TO_MANY} edge, and
-     * entity-level permissions without a {@code @RouteAccess}.
+     * Simple name of the customer entity — validation bounds, a {@code ONE_TO_MANY} edge,
+     * entity-level permissions without a {@code @RouteAccess}, two {@code @UIGroup} groups on an
+     * entity with no {@code @UI}, and two {@code @Blob} fields, one without {@code @Field}.
      */
     public static final String CUSTOMER = "Customer";
 
     /**
      * Simple name of the product entity — a {@code PUBLIC} entity with an action that declares
-     * {@code AUTHENTICATED} and a permission of its own.
+     * {@code AUTHENTICATED} and a permission of its own, and a {@code @Graph} whose two
+     * {@code @GraphProperty} fields are one {@code AUTO} and one renamed and typed.
      *
      * @since 0.13
      */

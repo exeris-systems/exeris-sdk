@@ -44,16 +44,17 @@ import java.lang.annotation.Target;
  * what the generated upload surface accepts, the same kind of design-time statement
  * as {@code @Field.dataType}.
  *
- * <h2>Open-Core status — RESERVED, extraction pending tooling</h2>
+ * <h2>Open-Core status — PARTIAL, frozen for 1.0, extraction pending tooling</h2>
  * <p>Declared shape, not yet a live attachment. The kernel provides
- * {@code BlobStore} / {@code BlobRef} with {@code AbstractBlobStorageTck} — but
- * no {@code exeris-tooling} processor extracts {@code @Blob}, no generator emits
- * the upload/download surfaces from it, and the {@code exeris-sdk-source-model-io}
- * reader does not read it (it reports the annotation as an unmodeled facet), so
- * declaring it today has no generated effect. The kernel holds
- * {@code …spi.storage.blob} at tier {@code stable} (kernel ADR-100), so this surface
- * is part of the 1.0.0 freeze: frozen as declared, with the transcription arriving
- * additively. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
+ * {@code BlobStore} / {@code BlobRef} with {@code AbstractBlobStorageTck}, and the
+ * {@code exeris-sdk-source-model-io} reader carries the declaration as written in
+ * {@code FieldMetadata.blob} — on a field with or without {@link Field @Field}, whatever
+ * the entity's data scope, in the shape the ADR-042 reader-shape amendment fixes — but
+ * no {@code exeris-tooling} processor extracts {@code @Blob} yet and no generator emits
+ * the upload/download surfaces from it, so declaring it today has no generated effect.
+ * The kernel holds {@code …spi.storage.blob} at tier {@code stable} (kernel ADR-100), so
+ * this surface is part of the 1.0.0 freeze: frozen as declared, with the transcription
+ * arriving additively. See {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
  *
  * <p><strong>One combination the platform will refuse:</strong> a {@code @Blob} field
  * on an entity declared {@code @ExerisDomain(dataScope = GLOBAL)}. Global scope leaves

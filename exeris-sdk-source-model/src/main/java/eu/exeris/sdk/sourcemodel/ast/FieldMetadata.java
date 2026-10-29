@@ -65,9 +65,9 @@ import java.util.Objects;
  *        {@code @Derived} expression and absent for an ordinary stored field
  * @param blob the binary-object facet, present when the field carries a {@code @Blob}
  *        declaration and absent for an ordinary inline-valued field.
- *        Reserved: no processor populates it and no generator consumes it. It is part of the
- *        1.0.0 freeze, because the kernel holds {@code …spi.storage.blob} at tier
- *        {@code stable} (ADR-072)
+ *        The {@code -io} reader populates it, the processor does not yet, and no generator
+ *        consumes it. It is part of the 1.0.0 freeze, because the kernel holds
+ *        {@code …spi.storage.blob} at tier {@code stable} (ADR-072)
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -123,9 +123,9 @@ public record FieldMetadata(
         DerivedMetadata derived,
         // Binary-object facet (0.11.0): present when the field carries a @Blob
         // declaration; null for an ordinary inline-valued field. Reserved surface —
-        // no processor populates it and no generator consumes it. The kernel holds
-        // ...spi.storage.blob at tier stable, so it is part of the 1.0.0 freeze.
-        // See ADR-072.
+        // the -io reader populates it, no processor does yet and no generator consumes
+        // it. The kernel holds ...spi.storage.blob at tier stable, so it is part of the
+        // 1.0.0 freeze. See ADR-072.
         BlobMetadata blob
 ) {
 
