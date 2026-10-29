@@ -121,6 +121,12 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     private static final String KEY_DESCRIPTION = "description";
     private static final String KEY_PROPERTIES = "properties";
     private static final String DEFS = "#/$defs/";
+    private static final String KEY_REQUIRED = "required";
+    private static final String KEY_PATTERN = "pattern";
+    private static final String KEY_TYPE = "type";
+    private static final String TYPE_STRING = "string";
+    private static final String TYPE_BOOLEAN = "boolean";
+    private static final String ELEMENT_VALUE = "value";
 
     private static final JsonNodeFactory json = JsonNodeFactory.instance;
     private final Map<String, ObjectNode> defsByName = new TreeMap<>();
@@ -233,10 +239,11 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
 
     // ---- definitions -----------------------------------------------------
 
-    private String define(TypeElement type) {
+    /** Adds the definition of {@code type}, and of what it reaches, unless it is already there. */
+    private void define(TypeElement type) {
         String name = definitionName(type);
         if (defsByName.containsKey(name)) {
-            return name;
+            return;
         }
         if (type.getKind() == ElementKind.ENUM) {
             defsByName.put(name, describeEnum(type));
@@ -245,7 +252,6 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
             defsByName.put(name, node);   // placed first, so a cycle terminates
             describeRecord(type, node);
         }
-        return name;
     }
 
     private static String definitionName(TypeElement type) {
@@ -257,7 +263,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     }
 
     private void describeRecord(TypeElement type, ObjectNode node) {
-        node.put("type", "object");
+        node.put(KEY_TYPE, "object");
         putDoc(node, type);
         node.put(KEY_JAVA_TYPE, type.getQualifiedName().toString());
 
@@ -272,7 +278,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
             }
         }
         if (!required.isEmpty()) {
-            node.set("required", required);
+            node.set(KEY_REQUIRED, required);
         }
         node.put("additionalProperties", false);
 
@@ -287,7 +293,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
 
     private ObjectNode describeEnum(TypeElement type) {
         ObjectNode node = json.objectNode();
-        node.put("type", "string");
+        node.put(KEY_TYPE, TYPE_STRING);
         putDoc(node, type);
         node.put(KEY_JAVA_TYPE, type.getQualifiedName().toString());
         ArrayNode constants = node.putArray("enum");
@@ -306,11 +312,11 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         ObjectNode node;
         if (isList(type)) {
             node = json.objectNode();
-            node.put("type", "array");
+            node.put(KEY_TYPE, "array");
             node.set("items", itemsNode(component, ((DeclaredType) type).getTypeArguments().getFirst()));
             AnnotationMirror minItems = rule(component, "MinItems");
             if (minItems != null) {
-                node.put("minItems", (Integer) value(minItems, "value"));
+                node.put("minItems", (Integer) value(minItems, ELEMENT_VALUE));
             }
             node.put(KEY_JAVA_TYPE, "java.util.List");
         } else {
@@ -322,7 +328,8 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     }
 
     private ObjectNode itemsNode(RecordComponentElement component, TypeMirror element) {
-        if (rule(component, "ConcernHint") != null) {
+        // The vocabulary's definition is named after the rule annotation that requests it.
+        if (rule(component, CONCERN_HINT_DEFINITION) != null) {
             ObjectNode ref = json.objectNode();
             ref.put("$ref", DEFS + CONCERN_HINT_DEFINITION);
             return ref;
@@ -332,14 +339,14 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         AnnotationMirror kinds = rule(component, "Kinds");
         if (kinds != null) {
             // The item keeps its own definition and is narrowed beside it. The narrowing schema
-            // has no "type", so it does not restate the object and carries no
+            // has no KEY_TYPE, so it does not restate the object and carries no
             // additionalProperties of its own: the referenced definition's closure governs.
             ObjectNode narrowed = json.objectNode();
             ArrayNode allOf = narrowed.putArray("allOf");
             allOf.add(items);
             ObjectNode kindOnly = allOf.addObject();
             ArrayNode admitted = kindOnly.putObject(KEY_PROPERTIES).putObject("kind").putArray("enum");
-            strings(kinds, "value").forEach(admitted::add);
+            strings(kinds, ELEMENT_VALUE).forEach(admitted::add);
             return narrowed;
         }
         return items;
@@ -348,11 +355,11 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     private void applyStringRules(ObjectNode node, RecordComponentElement component) {
         if (rule(component, "NonBlank") != null) {
             node.put("minLength", 1);
-            node.put("pattern", "\\S");
+            node.put(KEY_PATTERN, "\\S");
         }
         AnnotationMirror pattern = rule(component, "Pattern");
         if (pattern != null) {
-            node.put("pattern", (String) value(pattern, "value"));
+            node.put(KEY_PATTERN, (String) value(pattern, ELEMENT_VALUE));
         }
     }
 
@@ -369,12 +376,12 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
             ArrayNode admitted = discriminator.putArray("enum");
             values.forEach(admitted::add);
         }
-        ifNode.putArray("required").add(property);
+        ifNode.putArray(KEY_REQUIRED).add(property);
 
         ObjectNode then = entry.putObject("then");
         List<String> require = strings(when, "require");
         if (!require.isEmpty()) {
-            ArrayNode required = then.putArray("required");
+            ArrayNode required = then.putArray(KEY_REQUIRED);
             require.forEach(required::add);
         }
         List<String> forbid = strings(when, "forbid");
@@ -383,7 +390,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
             ObjectNode properties = then.putObject(KEY_PROPERTIES);
             forbid.forEach(name -> properties.put(name, false));
             if (!patternProperty.isEmpty()) {
-                properties.putObject(patternProperty).put("pattern", (String) value(when, "pattern"));
+                properties.putObject(patternProperty).put(KEY_PATTERN, (String) value(when, KEY_PATTERN));
             }
         }
         return entry;
@@ -394,8 +401,8 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     private ObjectNode typeNode(TypeMirror type) {
         ObjectNode node = json.objectNode();
         if (type.getKind() == TypeKind.BOOLEAN) {
-            node.put("type", "boolean");
-            node.put(KEY_JAVA_TYPE, "boolean");
+            node.put(KEY_TYPE, TYPE_BOOLEAN);
+            node.put(KEY_JAVA_TYPE, TYPE_BOOLEAN);
             return node;
         }
         if (type.getKind() != TypeKind.DECLARED) {
@@ -405,12 +412,13 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         TypeElement element = (TypeElement) ((DeclaredType) type).asElement();
         String qualified = element.getQualifiedName().toString();
         if (element.getKind() == ElementKind.RECORD || element.getKind() == ElementKind.ENUM) {
-            node.put("$ref", DEFS + define(element));
+            define(element);
+            node.put("$ref", DEFS + definitionName(element));
             return node;
         }
         switch (qualified) {
-            case "java.lang.String" -> node.put("type", "string");
-            case "java.lang.Boolean" -> node.put("type", "boolean");
+            case "java.lang.String" -> node.put(KEY_TYPE, TYPE_STRING);
+            case "java.lang.Boolean" -> node.put(KEY_TYPE, TYPE_BOOLEAN);
             // Loud rather than silently typed: BriefSchemaContractTest fails on the key.
             default -> node.put("x-exeris-unmapped", qualified);
         }
@@ -444,7 +452,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         }
         AnnotationMirror container = rule(type, "WhenAll");
         if (container != null) {
-            for (AnnotationValue each : list(value(container, "value"))) {
+            for (AnnotationValue each : list(value(container, ELEMENT_VALUE))) {
                 out.add((AnnotationMirror) each.getValue());
             }
         }
@@ -534,7 +542,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         int formatNumber;
         try {
             formatNumber = Integer.parseInt(format.strip());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             error("-A" + OPT_FORMAT + " must be an integer, was '" + format + "'");
             return;
         }
@@ -557,7 +565,8 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         }
 
         TypeElement root = processingEnv.getElementUtils().getTypeElement(ROOT_TYPE);
-        String rootName = define(root);
+        define(root);
+        String rootName = definitionName(root);
         defsByName.put(CONCERN_HINT_DEFINITION, concernHintDefinition(vocabulary));
 
         ObjectNode document = json.objectNode();
@@ -589,7 +598,7 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
 
     private static ObjectNode concernHintDefinition(Set<String> vocabulary) {
         ObjectNode node = json.objectNode();
-        node.put("type", "string");
+        node.put(KEY_TYPE, TYPE_STRING);
         node.put(KEY_DESCRIPTION, "The simple name of an annotation in the SDK catalog of the same release.");
         node.put("x-exeris-notes",
                 "Top-level annotation types of exeris-sdk-annotations, less those deprecated for removal and "

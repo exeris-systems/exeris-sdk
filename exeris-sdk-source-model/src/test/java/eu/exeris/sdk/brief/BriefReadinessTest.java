@@ -193,7 +193,7 @@ class BriefReadinessTest {
     @DisplayName("lists are never null on a constructed record, and a null element is refused by name")
     void lists() {
         Brief empty = new Brief(null, null, null, null, null, null, null, null, null, null, null);
-        assertThat(Arrays.stream(Brief.class.getRecordComponents())
+        List<Object> listComponents = Arrays.stream(Brief.class.getRecordComponents())
                 .filter(c -> c.getType() == List.class)
                 .map(c -> {
                     try {
@@ -201,7 +201,9 @@ class BriefReadinessTest {
                     } catch (ReflectiveOperationException e) {
                         throw new AssertionError(e);
                     }
-                })).allMatch(List.of()::equals);
+                })
+                .toList();
+        assertThat(listComponents).isNotEmpty().allMatch(List.of()::equals);
 
         List<String> withNull = new ArrayList<>();
         withNull.add(null);

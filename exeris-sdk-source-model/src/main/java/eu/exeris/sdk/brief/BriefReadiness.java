@@ -48,6 +48,15 @@ public final class BriefReadiness {
     private static final Pattern ENTITY_REF = Pattern.compile(FulfilledBy.ENTITY_REF_PATTERN);
     private static final Pattern MEMBER_REF = Pattern.compile(FulfilledBy.MEMBER_REF_PATTERN);
 
+    private static final String NAME = "/name";
+    private static final String TRIGGER = "/trigger";
+    private static final String CONDITION = "/condition";
+    private static final String KIND = "/kind";
+    private static final String REF = "/ref";
+    private static final String OWNER = "/owner";
+    private static final String ASSUMPTION = "/assumption";
+    private static final String FULFILLED_BY = "/fulfilledBy";
+
     private BriefReadiness() {
     }
 
@@ -77,9 +86,40 @@ public final class BriefReadiness {
                     List.of(new Problem("", "no brief: an absent or empty document is not a brief")),
                     List.of(), List.of(), List.of());
         }
-        List<Problem> errors = new ArrayList<>();
-        List<FulfilledBy> references = new ArrayList<>();
+        Check check = new Check();
+        document(check.errors, brief);
+        actors(check.errors, brief.actors());
+        glossary(check, brief.glossary(), concernVocabulary);
+        workflows(check, brief.workflows());
+        nonFunctional(check.errors, brief.nonFunctional());
+        integrations(check.errors, brief.integrations());
+        for (int i = 0; i < brief.openQuestions().size(); i++) {
+            question(check, "/openQuestions/" + i, brief.openQuestions().get(i));
+        }
 
+        List<FulfilledBy> unresolved = new ArrayList<>();
+        List<FulfilledBy> unchecked = new ArrayList<>();
+        for (FulfilledBy reference : check.references) {
+            if (source == null) {
+                unchecked.add(reference);
+            } else if (!source.contains(reference)) {
+                unresolved.add(reference);
+            }
+        }
+
+        boolean valid = check.errors.isEmpty();
+        return new Report(valid, valid && !check.blockingOpen, check.errors, check.assumed, unresolved, unchecked);
+    }
+
+    /** What one evaluation accumulates as it walks the brief. */
+    private static final class Check {
+        private final List<Problem> errors = new ArrayList<>();
+        private final List<FulfilledBy> references = new ArrayList<>();
+        private final List<Assumption> assumed = new ArrayList<>();
+        private boolean blockingOpen;
+    }
+
+    private static void document(List<Problem> errors, Brief brief) {
         if (brief.briefSchema() == null) {
             errors.add(missing("/briefSchema"));
         } else if (!SDK_VERSION.matcher(brief.briefSchema()).matches()) {
@@ -92,154 +132,169 @@ public final class BriefReadiness {
         minItems(errors, "/actors", brief.actors());
         minItems(errors, "/workflows", brief.workflows());
         texts(errors, "/candidateCapabilities", brief.candidateCapabilities());
+    }
 
-        for (int i = 0; i < brief.actors().size(); i++) {
-            Actor actor = brief.actors().get(i);
+    private static void actors(List<Problem> errors, List<Actor> actors) {
+        for (int i = 0; i < actors.size(); i++) {
+            Actor actor = actors.get(i);
             String at = "/actors/" + i;
-            requiredText(errors, at + "/name", actor.name());
+            requiredText(errors, at + NAME, actor.name());
             texts(errors, at + "/roles", actor.roles());
         }
-        for (int i = 0; i < brief.glossary().size(); i++) {
-            GlossaryTerm term = brief.glossary().get(i);
+    }
+
+    private static void glossary(Check check, List<GlossaryTerm> glossary, Set<String> concernVocabulary) {
+        for (int i = 0; i < glossary.size(); i++) {
+            GlossaryTerm term = glossary.get(i);
             String at = "/glossary/" + i;
-            requiredText(errors, at + "/term", term.term());
-            requiredText(errors, at + "/meaning", term.meaning());
-            if (concernVocabulary != null) {
-                for (int h = 0; h < term.concernHints().size(); h++) {
-                    if (!concernVocabulary.contains(term.concernHints().get(h))) {
-                        errors.add(new Problem(at + "/concernHints/" + h,
-                                "names no annotation of the SDK catalog"));
-                    }
-                }
-            }
-            references(errors, references, at + "/fulfilledBy", term.fulfilledBy(),
-                    Set.of(FulfilledBy.Kind.ENTITY));
+            requiredText(check.errors, at + "/term", term.term());
+            requiredText(check.errors, at + "/meaning", term.meaning());
+            concernHints(check.errors, at, term.concernHints(), concernVocabulary);
+            references(check, at + FULFILLED_BY, term.fulfilledBy(), Set.of(FulfilledBy.Kind.ENTITY));
         }
-        for (int i = 0; i < brief.workflows().size(); i++) {
-            Workflow workflow = brief.workflows().get(i);
-            String at = "/workflows/" + i;
-            requiredText(errors, at + "/name", workflow.name());
-            texts(errors, at + "/actors", workflow.actors());
-            minItems(errors, at + "/criteria", workflow.criteria());
-            for (int c = 0; c < workflow.criteria().size(); c++) {
-                criterion(errors, at + "/criteria/" + c, workflow.criteria().get(c));
+    }
+
+    private static void concernHints(List<Problem> errors, String at, List<String> hints, Set<String> vocabulary) {
+        if (vocabulary == null) {
+            return;
+        }
+        for (int h = 0; h < hints.size(); h++) {
+            if (!vocabulary.contains(hints.get(h))) {
+                errors.add(new Problem(at + "/concernHints/" + h, "names no annotation of the SDK catalog"));
             }
-            references(errors, references, at + "/fulfilledBy", workflow.fulfilledBy(),
+        }
+    }
+
+    private static void workflows(Check check, List<Workflow> workflows) {
+        for (int i = 0; i < workflows.size(); i++) {
+            Workflow workflow = workflows.get(i);
+            String at = "/workflows/" + i;
+            requiredText(check.errors, at + NAME, workflow.name());
+            texts(check.errors, at + "/actors", workflow.actors());
+            minItems(check.errors, at + "/criteria", workflow.criteria());
+            for (int c = 0; c < workflow.criteria().size(); c++) {
+                criterion(check.errors, at + "/criteria/" + c, workflow.criteria().get(c));
+            }
+            references(check, at + FULFILLED_BY, workflow.fulfilledBy(),
                     Set.of(FulfilledBy.Kind.ACTION, FulfilledBy.Kind.RULE, FulfilledBy.Kind.SAGA));
         }
-        for (int i = 0; i < brief.nonFunctional().size(); i++) {
-            NonFunctionalRequirement nfr = brief.nonFunctional().get(i);
+    }
+
+    private static void nonFunctional(List<Problem> errors, List<NonFunctionalRequirement> requirements) {
+        for (int i = 0; i < requirements.size(); i++) {
+            NonFunctionalRequirement nfr = requirements.get(i);
             String at = "/nonFunctional/" + i;
             if (nfr.category() == null) {
                 errors.add(missing(at + "/category"));
             }
             requiredText(errors, at + "/requirement", nfr.requirement());
         }
-        for (int i = 0; i < brief.integrations().size(); i++) {
-            Integration integration = brief.integrations().get(i);
+    }
+
+    private static void integrations(List<Problem> errors, List<Integration> integrations) {
+        for (int i = 0; i < integrations.size(); i++) {
+            Integration integration = integrations.get(i);
             String at = "/integrations/" + i;
-            requiredText(errors, at + "/name", integration.name());
+            requiredText(errors, at + NAME, integration.name());
             optionalText(errors, at + "/purpose", integration.purpose());
         }
+    }
 
-        List<Assumption> assumed = new ArrayList<>();
-        boolean blockingOpen = false;
-        for (int i = 0; i < brief.openQuestions().size(); i++) {
-            OpenQuestion question = brief.openQuestions().get(i);
-            String at = "/openQuestions/" + i;
-            requiredText(errors, at + "/id", question.id());
-            requiredText(errors, at + "/question", question.question());
-            optionalText(errors, at + "/assumption", question.assumption());
-            optionalText(errors, at + "/owner", question.owner());
-            optionalText(errors, at + "/answer", question.answer());
-            if (question.blocking() == null) {
-                errors.add(missing(at + "/blocking"));
-            }
-            if (question.status() == null) {
-                errors.add(missing(at + "/status"));
-            } else if (question.status() == OpenQuestion.Status.ASSUMED) {
-                if (question.assumption() == null) {
-                    errors.add(new Problem(at + "/assumption", "an assumed question must record its assumption"));
-                }
-                if (question.owner() == null) {
-                    errors.add(new Problem(at + "/owner", "an assumed question must name its owner"));
-                }
-                assumed.add(new Assumption(question.id(), question.owner(), question.assumption()));
-            } else if (question.status() == OpenQuestion.Status.OPEN && Boolean.TRUE.equals(question.blocking())) {
-                blockingOpen = true;
-            }
+    private static void question(Check check, String at, OpenQuestion question) {
+        List<Problem> errors = check.errors;
+        requiredText(errors, at + "/id", question.id());
+        requiredText(errors, at + "/question", question.question());
+        optionalText(errors, at + ASSUMPTION, question.assumption());
+        optionalText(errors, at + OWNER, question.owner());
+        optionalText(errors, at + "/answer", question.answer());
+        if (question.blocking() == null) {
+            errors.add(missing(at + "/blocking"));
         }
-
-        List<FulfilledBy> unresolved = new ArrayList<>();
-        List<FulfilledBy> unchecked = new ArrayList<>();
-        for (FulfilledBy reference : references) {
-            if (source == null) {
-                unchecked.add(reference);
-            } else if (!source.contains(reference)) {
-                unresolved.add(reference);
+        if (question.status() == null) {
+            errors.add(missing(at + "/status"));
+        } else if (question.status() == OpenQuestion.Status.ASSUMED) {
+            if (question.assumption() == null) {
+                errors.add(new Problem(at + ASSUMPTION, "an assumed question must record its assumption"));
             }
+            if (question.owner() == null) {
+                errors.add(new Problem(at + OWNER, "an assumed question must name its owner"));
+            }
+            check.assumed.add(new Assumption(question.id(), question.owner(), question.assumption()));
+        } else if (question.status() == OpenQuestion.Status.OPEN && Boolean.TRUE.equals(question.blocking())) {
+            check.blockingOpen = true;
         }
-
-        boolean valid = errors.isEmpty();
-        return new Report(valid, valid && !blockingOpen, errors, assumed, unresolved, unchecked);
     }
 
     private static void criterion(List<Problem> errors, String at, EarsCriterion criterion) {
         requiredText(errors, at + "/response", criterion.response());
-        optionalText(errors, at + "/trigger", criterion.trigger());
-        optionalText(errors, at + "/condition", criterion.condition());
+        optionalText(errors, at + TRIGGER, criterion.trigger());
+        optionalText(errors, at + CONDITION, criterion.condition());
         if (criterion.kind() == null) {
-            errors.add(missing(at + "/kind"));
+            errors.add(missing(at + KIND));
             return;
         }
         switch (criterion.kind()) {
             case UBIQUITOUS -> {
-                forbidden(errors, at + "/trigger", criterion.trigger(), "a ubiquitous criterion has no trigger");
-                forbidden(errors, at + "/condition", criterion.condition(), "a ubiquitous criterion has no condition");
+                forbidden(errors, at + TRIGGER, criterion.trigger(), "a ubiquitous criterion has no trigger");
+                forbidden(errors, at + CONDITION, criterion.condition(), "a ubiquitous criterion has no condition");
             }
-            case WHEN, IF -> {
-                if (criterion.trigger() == null) {
-                    errors.add(new Problem(at + "/trigger", "a when or if criterion needs a trigger"));
-                }
-            }
+            case WHEN, IF -> required(errors, at + TRIGGER, criterion.trigger(),
+                    "a when or if criterion needs a trigger");
             case WHILE -> {
-                if (criterion.condition() == null) {
-                    errors.add(new Problem(at + "/condition", "a while criterion needs a condition"));
-                }
-                forbidden(errors, at + "/trigger", criterion.trigger(), "a while criterion has no trigger");
+                required(errors, at + CONDITION, criterion.condition(), "a while criterion needs a condition");
+                forbidden(errors, at + TRIGGER, criterion.trigger(), "a while criterion has no trigger");
             }
         }
     }
 
-    private static void references(List<Problem> errors, List<FulfilledBy> into, String at,
-                                   List<FulfilledBy> references, Set<FulfilledBy.Kind> admitted) {
+    private static void references(Check check, String at, List<FulfilledBy> references,
+                                   Set<FulfilledBy.Kind> admitted) {
         for (int i = 0; i < references.size(); i++) {
             FulfilledBy reference = references.get(i);
             String here = at + "/" + i;
-            boolean ok = true;
-            if (reference.kind() == null) {
-                errors.add(missing(here + "/kind"));
-                ok = false;
-            } else if (!admitted.contains(reference.kind())) {
-                errors.add(new Problem(here + "/kind", "this position does not admit the "
-                        + reference.kind().name().toLowerCase(java.util.Locale.ROOT) + " kind"));
-                ok = false;
+            boolean kindOk = admittedKind(check.errors, here, reference.kind(), admitted);
+            boolean refOk = shapedRef(check.errors, here, reference);
+            if (kindOk && refOk) {
+                check.references.add(reference);
             }
-            if (reference.ref() == null) {
-                errors.add(missing(here + "/ref"));
-                ok = false;
-            } else if (reference.kind() != null) {
-                Pattern shape = reference.kind() == FulfilledBy.Kind.ENTITY ? ENTITY_REF : MEMBER_REF;
-                if (!shape.matcher(reference.ref()).matches()) {
-                    errors.add(new Problem(here + "/ref", reference.kind() == FulfilledBy.Kind.ENTITY
-                            ? "an entity reference is a qualified class name"
-                            : "a member reference is <entity qualified name>#<member name>"));
-                    ok = false;
-                }
-            }
-            if (ok) {
-                into.add(reference);
-            }
+        }
+    }
+
+    private static boolean admittedKind(List<Problem> errors, String here, FulfilledBy.Kind kind,
+                                        Set<FulfilledBy.Kind> admitted) {
+        if (kind == null) {
+            errors.add(missing(here + KIND));
+            return false;
+        }
+        if (!admitted.contains(kind)) {
+            errors.add(new Problem(here + KIND, "this position does not admit the "
+                    + kind.name().toLowerCase(java.util.Locale.ROOT) + " kind"));
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean shapedRef(List<Problem> errors, String here, FulfilledBy reference) {
+        if (reference.ref() == null) {
+            errors.add(missing(here + REF));
+            return false;
+        }
+        if (reference.kind() == null) {
+            return true;   // the missing kind is reported already; a ref without a kind has no shape to check
+        }
+        boolean entity = reference.kind() == FulfilledBy.Kind.ENTITY;
+        if ((entity ? ENTITY_REF : MEMBER_REF).matcher(reference.ref()).matches()) {
+            return true;
+        }
+        errors.add(new Problem(here + REF, entity
+                ? "an entity reference is a qualified class name"
+                : "a member reference is <entity qualified name>#<member name>"));
+        return false;
+    }
+
+    private static void required(List<Problem> errors, String path, String value, String message) {
+        if (value == null) {
+            errors.add(new Problem(path, message));
         }
     }
 

@@ -101,7 +101,7 @@ final class BriefDocuments {
         }
         try {
             return JSON.treeToValue(document, Brief.class);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException _) {
             return null;
         }
     }
