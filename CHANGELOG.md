@@ -117,7 +117,8 @@ for per-version upgrade steps.
   two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
   `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
   name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
-  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+  / `tableName` to pin the old value. The TS copy in `exeris-codegen-ts`
+  (`dsl-mapper.ts`) follows in exeris-tooling#431.
 
 ### Fixed
 
