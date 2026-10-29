@@ -529,8 +529,9 @@ public @interface ExerisDomain {
      * foreign-key targets, the entity accessors, the OpenAPI schema and the generated
      * models. The named field must exist and be a {@code java.util.UUID}, and a
      * renamed key beside a field {@code id} is refused. The by-id route variable stays
-     * {@code {id}}. {@code @PrimaryKey} is RESERVED: this attribute is the only way to
-     * name the key.
+     * {@code {id}}. {@code @PrimaryKey} is PARTIAL: the {@code -io} reader reads the
+     * marker into the same component, the processor does not yet, so for generated
+     * output this attribute is the only way to name the key.
      *
      * @return primary key field name
      */

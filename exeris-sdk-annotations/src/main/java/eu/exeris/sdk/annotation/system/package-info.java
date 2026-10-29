@@ -47,9 +47,12 @@
  *       reports each. The {@code -io} reader resolves the markers and the
  *       override attributes into {@code SystemFieldsMetadata} the same way, so
  *       both readers produce the same record.</li>
- *   <li><strong>RESERVED</strong> — {@code @PrimaryKey}. Neither reader reads it.
- *       The primary key is named with {@code @ExerisDomain(primaryKeyField)}, which
- *       the generators honour.</li>
+ *   <li><strong>PARTIAL</strong> — {@code @PrimaryKey}. The {@code -io} reader
+ *       resolves it into {@code primaryKeyField} under the same rules, and also
+ *       does not read a {@code strategy} of {@code SEQUENCE}, {@code IDENTITY} or
+ *       {@code NONE}. The processor does not read it yet (ADR-104 wave J1), so
+ *       it changes no generated output. The primary key is named with
+ *       {@code @ExerisDomain(primaryKeyField)}, which the generators honour.</li>
  * </ul>
  *
  * <p>Where a marker's javadoc lists behaviour, it separates what the entity flag

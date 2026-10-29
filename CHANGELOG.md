@@ -43,6 +43,26 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` reads `@PrimaryKey` into `SystemFieldsMetadata.primaryKeyField`.**
+  For a source that declares the marker, `read()` returns a different `primaryKeyField` than
+  before, and a `systemFields` record where the marker was the only declaration.
+  The marker is resolved under the rules of the other ten `annotation.system` markers: on exactly
+  one field, and not contradicting a non-blank `@ExerisDomain(primaryKeyField)`, it names the key;
+  otherwise the attribute does, else `id`. A marker declaring `strategy = SEQUENCE`, `IDENTITY` or
+  `NONE`, which ADR-104 refuses, is not read. `generated`, `sequenceName` and `allowClientId` are
+  not carried. `@PrimaryKey` is labelled PARTIAL in its javadoc, the `system` package javadoc and
+  the root `package-info` index. **Tooling:** the processor reads the marker the same way from exeris-tooling 0.11.0
+  (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
+  than a 0.10.x processor baseline holds.
+
+- **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
+  `@Channel`.** It returned nothing for them before. exeris-tooling 0.11.0 is scheduled to fill
+  `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
+  extraction rules are not fixed yet, so `read()` leaves the four carriers at their defaults and
+  the guard names the annotation. A reattach or conflict-detection caller refuses a source that
+  uses one of them. Each leaves the guard in the release that reads it as the processor does.
+  See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Changed
 
 - **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
@@ -54,11 +74,11 @@ for per-version upgrade steps.
 
 ### Fixed
 
-- **`@ExerisDomain.primaryKeyField` is labelled LIVE; `@PrimaryKey` stays RESERVED.** `exeris-tooling`
+- **`@ExerisDomain.primaryKeyField` is labelled LIVE.** `exeris-tooling`
   0.10.0 (ADR-104) names the key after `primaryKeyField` in the migration, the repository, the
   foreign-key targets, the OpenAPI schema and the generated models; the key must be a `UUID` and the
   by-id route variable stays `{id}`. The attribute's javadoc and the `system` package javadoc state
-  that, and say the marker is read by neither reader.
+  that.
 
 - **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
   class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
