@@ -43,6 +43,9 @@ final class ReferenceBinding {
     /** The handler {@code Order}'s {@code @Saga} names, fully qualified as javac reports it. */
     static final String ORDER_SAGA_FAILURE_HANDLER = TckCorpus.packageName() + ".Order.CompensationEscalation";
 
+    /** The event type {@code Order}'s {@code @Saga.trigger} names, fully qualified as javac reports it. */
+    static final String ORDER_SAGA_TRIGGER_SOURCE = TckCorpus.packageName() + ".Order.Placed";
+
     /** The record {@code Order}'s {@code receipt} action returns, fully qualified as javac reports it. */
     static final String ORDER_RECEIPT = TckCorpus.packageName() + ".Order.Receipt";
 
@@ -233,10 +236,21 @@ final class ReferenceBinding {
                 .compensationDlq("sales.order-compensation.dlq")
                 .compensationFailureHandler(ORDER_SAGA_FAILURE_HANDLER)
                 .manualInterventionOnCompensationFailure(false)
+                .trigger(orderSagaTrigger())
                 .steps(List.of(SagaStepMetadata.builder("charge", 1)
                         .service("payments")
                         .command("charge")
                         .build()));
+    }
+
+    /**
+     * The trigger {@code Order}'s {@code @Saga} declares.
+     *
+     * @return the reference trigger
+     */
+    static SagaMetadata.SagaTrigger orderSagaTrigger() {
+        return new SagaMetadata.SagaTrigger(
+                SagaMetadata.TriggerType.EVENT, ORDER_SAGA_TRIGGER_SOURCE, "sales.orders", null, null);
     }
 
     private static DomainMetadata customer() {

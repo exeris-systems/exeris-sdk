@@ -404,6 +404,38 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                 .isEmpty();
     }
 
+    @Test
+    @DisplayName("the saga carries the trigger the source declares")
+    void sagaTriggerIsTheDeclaredOne() {
+        requireSupported(Facet.SAGA_TRIGGER);
+        SagaMetadata saga = read(TckCorpus.sourceOf(TckCorpus.ORDER)).sagaMetadata();
+        assertThat(saga)
+                .withFailMessage("Order declares @Saga; the reader returned no saga metadata.")
+                .isNotNull();
+        SagaMetadata.SagaTrigger trigger = saga.trigger();
+        assertThat(trigger)
+                .withFailMessage(
+                        "Order declares @Saga(trigger = ...) and the reader returned none. Null means "
+                                + "'not declared', and the saga then has no recorded start.")
+                .isNotNull();
+        assertThat(trigger.type())
+                .withFailMessage(
+                        "Order declares a trigger of type EVENT and it was read as %s. EVENT is the first "
+                                + "constant of its enum, so a dropped value reads as the default, which "
+                                + "is not what the source says.",
+                        trigger.type())
+                .isEqualTo(SagaMetadata.TriggerType.EVENT);
+        String source = TckCorpus.packageName() + ".Order.Placed";
+        assertThat(trigger.source())
+                .withFailMessage(
+                        "Order declares source = Order.Placed.class and it was read as '%s'. The component "
+                                + "carries the fully-qualified name javac reports, %s.",
+                        trigger.source(), source)
+                .isEqualTo(source);
+        assertThat(trigger.topic()).isEqualTo("sales.orders");
+        assertThat(trigger.cronExpression()).isNull();
+    }
+
     /**
      * Returns the named field, failing the test when it was not read.
      *

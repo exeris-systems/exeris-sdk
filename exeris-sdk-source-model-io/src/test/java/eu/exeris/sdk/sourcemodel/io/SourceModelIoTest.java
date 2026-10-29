@@ -1489,10 +1489,10 @@ class SourceModelIoTest {
                     """;
             assertThat(reader.read(withNodeClass).orElseThrow().graphMetadata()).satisfies(g -> {
                 assertThat(g.label()).isEqualTo("PersonNode");
-                // mirrors the processor: properties null, edges/queries empty
+                // mirrors the processor: properties and queries null, edges empty
                 assertThat(g.properties()).isNull();
                 assertThat(g.edges()).isEmpty();
-                assertThat(g.queries()).isEmpty();
+                assertThat(g.queries()).isNull();
             });
 
             String bareGraph = """
@@ -1657,6 +1657,73 @@ class SourceModelIoTest {
             assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = Versions.CURRENT)").version())
                     .isEqualTo(1);
             assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 1 + 2)").version()).isEqualTo(1);
+        }
+
+        private static String trigger(String attributes) {
+            return "@Saga(name = \"Fulfilment\", trigger = @Saga.SagaTrigger(" + attributes + "))";
+        }
+
+        @Test
+        void sagaTriggerIsAbsentUnlessTheSourceDeclaresOne() {
+            assertThat(sagaOf("@Saga(name = \"Fulfilment\")").trigger()).isNull();
+            assertThat(sagaOf("@Saga").hasTrigger()).isFalse();
+        }
+
+        @Test
+        void sagaTriggerWithoutAttributesIsTheManualDefault() {
+            assertThat(sagaOf("@Saga(trigger = @Saga.SagaTrigger)").trigger())
+                    .isEqualTo(new SagaMetadata.SagaTrigger(SagaMetadata.TriggerType.MANUAL, null, null, null, null));
+            assertThat(sagaOf(trigger("")).trigger().type()).isEqualTo(SagaMetadata.TriggerType.MANUAL);
+        }
+
+        @Test
+        void sagaTriggerTypeIsReadByConstantName() {
+            for (SagaMetadata.TriggerType kind : SagaMetadata.TriggerType.values()) {
+                assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType." + kind.name())).trigger().type())
+                        .isEqualTo(kind);
+            }
+        }
+
+        @SuppressWarnings("removal")
+        @Test
+        void deprecatedSagaTriggerTypesReadAsTheirReplacements() {
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.SCHEDULE")).trigger().type())
+                    .isEqualTo(SagaMetadata.TriggerType.SCHEDULED);
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.HTTP")).trigger().type())
+                    .isEqualTo(SagaMetadata.TriggerType.API);
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.COMMAND")).trigger().type())
+                    .isEqualTo(SagaMetadata.TriggerType.MANUAL);
+        }
+
+        @Test
+        void aSagaTriggerTypeTheAstDoesNotKnowIsNotReadAsTheDefault() {
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.FUTURE")).trigger().type()).isNull();
+        }
+
+        @Test
+        void sagaTriggerScheduleTopicAndSourceAreCarried() {
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.SCHEDULED, schedule = \"0 0 * * * *\""))
+                    .trigger())
+                    .isEqualTo(new SagaMetadata.SagaTrigger(
+                            SagaMetadata.TriggerType.SCHEDULED, null, null, "0 0 * * * *", null));
+            assertThat(sagaOf(trigger("type = Saga.SagaTrigger.TriggerType.EVENT, sourceName = \"orders.Placed\", "
+                    + "topic = \"sales.orders\"")).trigger())
+                    .isEqualTo(new SagaMetadata.SagaTrigger(
+                            SagaMetadata.TriggerType.EVENT, "orders.Placed", "sales.orders", null, null));
+        }
+
+        @Test
+        void sagaTriggerSourceClassIsQualifiedAndWinsOverSourceName() {
+            assertThat(sagaOf(trigger("source = Fulfilment.Placed.class, sourceName = \"other.Named\""))
+                    .trigger().source()).isEqualTo("x.Fulfilment.Placed");
+            assertThat(sagaOf(trigger("source = void.class, sourceName = \"other.Named\""))
+                    .trigger().source()).isEqualTo("other.Named");
+        }
+
+        @Test
+        void blankSagaTriggerStringsReadAsNull() {
+            assertThat(sagaOf(trigger("sourceName = \"\", topic = \"\", schedule = \" \"")).trigger())
+                    .isEqualTo(new SagaMetadata.SagaTrigger(SagaMetadata.TriggerType.MANUAL, null, null, null, null));
         }
 
         @Test

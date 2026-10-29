@@ -63,6 +63,11 @@ for per-version upgrade steps.
   uses one of them. Each leaves the guard in the release that reads it as the processor does.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`SourceModelReader` writes `GraphMetadata.queries` as `null` for an `@Graph` entity.** It wrote
+  `[]` before. Neither the reader nor the processor extracts `@GraphQuery`, so both now write `null`,
+  which stays off the wire and reads as "not carried"; an empty list would claim the entity declares
+  no traversal. A consumer of the reader's output that called `queries().isEmpty()` handles `null`.
+  `GraphMetadata.queries` documents the form. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 - **`SourceModelReader.unmodeledFacets()` reports `@Schedule`.** ADR-072 obligation 7 has always
   said a source using it reports an unmodeled facet, and the guard did not name it. `read()`
   leaves `ActionMetadata.schedule` `null`, and no producer fills it while kernel ADR-057
@@ -186,6 +191,25 @@ for per-version upgrade steps.
   notes. `SourceModelConflictDetector` compares no saga component, so a baseline from a processor
   that does not extract the section yet raises no conflict. **Tooling:** the processor reads the
   same seven the same way (ADR-042).
+
+- **`exeris-sdk-source-model-io` reads `@Saga.trigger` into `SagaMetadata.trigger`.** `type` is
+  read by constant name, and the deprecated `SCHEDULE`, `HTTP` and `COMMAND` read as `SCHEDULED`,
+  `API` and `MANUAL`; `schedule` is `cronExpression`, `topic` is `topic`, and `source` is the class
+  when one is named (fully qualified, `void.class` meaning none), else `sourceName`. A saga that
+  declares no `trigger` reads `null`; a `@SagaTrigger` that omits `type` reads `MANUAL`, the
+  annotation default; blank strings read `null`; a constant the AST does not know reads a `null`
+  type. `sourcePattern`, `consumerGroup`, `filter`, `startPosition`, `httpPath` and `httpMethod`
+  are not carried. `@SagaTrigger` is PARTIAL in its status note. `SourceModelConflictDetector`
+  compares no saga component. **Tooling:** exeris-tooling#432 has the processor read the same
+  mapping; until then a processor baseline holds a `null` trigger where the reader holds one.
+
+- **`exeris-sdk-tck`: `Facet.SAGA_TRIGGER`, with a case in the reader, producer and parity
+  suites.** The corpus `Order`'s `@Saga` declares an `EVENT` trigger, the first constant of its
+  enum, with `source = Order.Placed.class` (a member type whose fully-qualified name differs from
+  the written form) and a topic. Each case has self-tests against a conforming binding and a
+  binding broken in one way. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a
+  producer or parity binding whose processor does not extract the trigger declares `SAGA_TRIGGER`
+  in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
 - **`exeris-sdk-tck`: `Facet.SAGA_COMPENSATION`, with a case in the reader, producer and parity
   suites.** The corpus `Order`'s `@Saga` declares the section with the values a dropped

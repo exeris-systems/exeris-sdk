@@ -67,8 +67,8 @@ import java.lang.annotation.*;
  * the no-op holds only for the life of the engine (kernel ADR-013 A1).
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
- * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
- * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
+ * the flow starts and how it retries: {@link #trigger()} is read by the {@code -io} reader only and
+ * {@link #retryPolicy()} is unextracted, and the emitted saga runs its steps as a strict linear chain in declaration
  * order.
  * @since 0.1
  * @see DomainEvent
@@ -1070,9 +1070,15 @@ public @interface Saga {
      * {@link TriggerType#MANUAL} trigger naming no source: the saga is started by
      * application code.
      *
-     * <p><strong>Status: RESERVED</strong> — {@link Saga#trigger()} is not extracted.
-     * {@code @Saga} itself is read and drives the emitted saga, but what starts it is not
-     * carried.
+     * <p><strong>Status: PARTIAL</strong> — the {@code exeris-sdk-source-model-io} reader reads
+     * {@link Saga#trigger()} into {@code SagaMetadata.trigger()}: {@link #type()} by constant name
+     * (the deprecated {@code SCHEDULE}, {@code HTTP} and {@code COMMAND} read as
+     * {@code SCHEDULED}, {@code API} and {@code MANUAL}), {@link #schedule()} as
+     * {@code cronExpression}, {@link #source()} (else {@link #sourceName()}) as {@code source}, and
+     * {@link #topic()}. A saga that declares no {@code trigger} carries none. No
+     * {@code exeris-tooling} processor extracts it yet, and no generator reads it, so it changes no
+     * generated artifact. {@link #sourcePattern()}, {@link #consumerGroup()}, {@link #filter()},
+     * {@link #startPosition()}, {@link #httpPath()} and {@link #httpMethod()} are not carried.
      */
     @Retention(RetentionPolicy.SOURCE)
     @Target({})
