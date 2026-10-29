@@ -10,7 +10,10 @@ import java.util.List;
  * @param label the node label the entity is mirrored to in the graph store
  * @param properties the entity fields carried onto the node
  * @param edges the edges leaving the node
- * @param queries the traversals declared against it
+ * @param queries the traversals declared against it; {@code null} when they are not carried, which
+ *     is what both the processor and the {@code -io} reader write, because neither extracts
+ *     {@code @GraphQuery}. {@code null} stays off the wire and means "not carried"; an empty list
+ *     claims the entity declares none, and a consumer reading this component handles both
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

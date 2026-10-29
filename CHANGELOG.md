@@ -63,6 +63,12 @@ for per-version upgrade steps.
   uses one of them. Each leaves the guard in the release that reads it as the processor does.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`SourceModelReader` writes `GraphMetadata.queries` as `null` for an `@Graph` entity.** It wrote
+  `[]` before. Neither the reader nor the processor extracts `@GraphQuery`, so both now write `null`,
+  which stays off the wire and reads as "not carried"; an empty list would claim the entity declares
+  no traversal. A consumer of the reader's output that called `queries().isEmpty()` handles `null`.
+  `GraphMetadata.queries` documents the form. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Changed
 
 - **Javadoc states the kernel 0.13 behaviour of row-level security, graph depth and saga retention.**

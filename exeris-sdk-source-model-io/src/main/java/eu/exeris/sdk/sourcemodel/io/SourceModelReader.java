@@ -1364,8 +1364,8 @@ public final class SourceModelReader {
      * absent. Mirrors {@code extractGraphMetadata}: the label is
      * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
      * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
-     * properties stay {@code null} and queries empty. {@code @GraphQuery} is read by neither
-     * side; {@code @GraphProperty} is not read here and {@link #unmodeledFacets} reports it.
+     * properties and queries stay {@code null}, which reads as "not carried" and keeps both off
+     * the wire. {@code @GraphQuery} is read by neither side; {@code @GraphProperty} is not read here and {@link #unmodeledFacets} reports it.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
@@ -1373,7 +1373,7 @@ public final class SourceModelReader {
             return null;
         }
         String label = stringAttr(graph.get(), "nodeClass").orElse(type.getNameAsString());
-        return new GraphMetadata(label, null, graphEdges(type), List.of());
+        return new GraphMetadata(label, null, graphEdges(type), null);
     }
 
     /**

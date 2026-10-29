@@ -1465,10 +1465,10 @@ class SourceModelIoTest {
                     """;
             assertThat(reader.read(withNodeClass).orElseThrow().graphMetadata()).satisfies(g -> {
                 assertThat(g.label()).isEqualTo("PersonNode");
-                // mirrors the processor: properties null, edges/queries empty
+                // mirrors the processor: properties and queries null, edges empty
                 assertThat(g.properties()).isNull();
                 assertThat(g.edges()).isEmpty();
-                assertThat(g.queries()).isEmpty();
+                assertThat(g.queries()).isNull();
             });
 
             String bareGraph = """

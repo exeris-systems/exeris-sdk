@@ -163,6 +163,14 @@ declares four more actions, returning an entity, a `record`, a `List` of it and 
 the new cases until it adds `Facet.ACTION_RESULT_TYPE` to `unsupportedFacets()`. A
 reader binding that does not read it does the same.
 
+### `SourceModelReader` writes `GraphMetadata.queries` as `null`
+
+For an entity declaring `@Graph`, `read()` returns `queries() == null` where it returned an
+empty list. The processor already wrote `null` for it: neither side extracts `@GraphQuery`, and
+`null` is the form that reads as "not carried" and stays off the wire. A caller of the reader's
+output that dereferenced `queries()` without a null check adds one; `properties()` has always
+needed it. The `@Graph` case in `processor-parity/` no longer carries a `queries` key.
+
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
 **Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto
