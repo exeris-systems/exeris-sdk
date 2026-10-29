@@ -2,6 +2,8 @@
 
 Canonical AST/metadata describing an Exeris domain.
 
+The module page [`docs/modules/02-source-model.md`](../docs/modules/02-source-model.md) owns the Contract, Hot path, Failure modes and Owning ADRs for this module.
+
 ## What lives here
 
 `eu.exeris.sdk.sourcemodel.ast` — Java records describing the shape of a domain:
@@ -10,7 +12,7 @@ Canonical AST/metadata describing an Exeris domain.
 `SagaMetadata`, `SagaStepMetadata`, `EventSourcedMetadata`, `EnumMetadata`,
 `GraphMetadata`, `GraphPropertyMetadata`, `GraphEdgeMetadata`, `GraphQueryMetadata`,
 `UIMetadata`, `SystemFieldsMetadata`, `InternalApiMetadata`.
-(`ValidationMetadata` was removed in 0.9.0 — `FieldMetadata` is the constraint
+(There is no `ValidationMetadata` record: `FieldMetadata` is the constraint
 carrier; ADR-054.)
 
 The records are Jackson-serializable (annotated with `@JsonProperty`,
@@ -18,14 +20,11 @@ The records are Jackson-serializable (annotated with `@JsonProperty`,
 `exeris-metadata/<entity>.json` format used as the build-time hand-off
 between annotation processor and codegen.
 
-## Future shape
+## Related packages and modules
 
-These planned subpackages will be added in subsequent milestones:
-
-- `eu.exeris.sdk.sourcemodel.parser` — JavaParser-based reader: `*.java` source → `DomainMetadata`
-- `eu.exeris.sdk.sourcemodel.writer` — idempotent emitter: `DomainMetadata` → `*.java`, preserving comments/format
-- `eu.exeris.sdk.sourcemodel.mutator` — pure-functional patches over `DomainMetadata`
-- `eu.exeris.sdk.sourcemodel.diagnostics` — domain-level validation independent of `javax.lang.model`
+- `eu.exeris.sdk.sourcemodel.mutation` (this module) — `MutationOp`, `MutationResult`, `MutationPath` and the baseline-trust types, all JavaParser-free.
+- `eu.exeris.sdk.brief` (this module) — the pre-construction brief records.
+- `exeris-sdk-source-model-io` — the JavaParser-based reader (`*.java` to `DomainMetadata`), the lexical-preserving writer, and conflict-aware mutation. It is a separate module so JavaParser stays off this module's dependency tree (ADR-037).
 
 These power Studio and IDE plugins (bidirectional sync) without going through
 the Maven compile cycle.
