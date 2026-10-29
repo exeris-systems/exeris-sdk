@@ -36,3 +36,13 @@
 - Component descriptions are read from `@param` tags on the record header. Placing comments directly inside the record declaration body is prohibited and flagged by `AstComponentProseConventionTest`.
 - No `required` array: properties with default postures (`NON_NULL`, `NON_EMPTY`, `NON_DEFAULT`) are omitted when empty.
 - Guarded by `AstSchemaContractTest`.
+
+## Brief JSON Schema Emitter
+
+`exeris-sdk-source-model` embeds `META-INF/exeris/brief-schema.json` (ADR-106):
+- Emitted by `BriefSchemaProcessor` on the same javac processor path, from the records reachable from `eu.exeris.sdk.brief.Brief`.
+- Versioning: `sdkVersion` matches `${project.version}`; `briefSchemaFormat` matches `brief.schema.format` in `pom.xml`. A consumer pins to `briefSchemaFormat`; bump it when a brief valid under the previous number would stop validating.
+- Every object is `additionalProperties: false`. Constraints (`required`, `minItems`, patterns, per-kind rules) come from the package-private `SchemaRules` annotations on the records; `BriefReadiness` applies the same rules in Java.
+- The concern-hint `enum` is parsed from `exeris-sdk-annotations/src/main/java` (`-Aexeris.brief.annotationSources`), never from `annotation-catalog.json`, so neither processor depends on the other's output.
+- Component descriptions come from `@param` tags, as for the AST.
+- Guarded by `BriefSchemaContractTest`, `BriefDependencyDirectionTest` and `BriefSchemaProcessorTest`.
