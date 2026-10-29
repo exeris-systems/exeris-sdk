@@ -3,12 +3,14 @@ package eu.exeris.sdk.tck.corpus;
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Saga;
 import eu.exeris.sdk.annotation.SagaStep;
 import eu.exeris.sdk.annotation.Validation;
 
 /**
- * Corpus entity 1 of 2. Compiled as a unit with {@code Customer}, which points at it.
+ * Corpus entity 1 of 3. Compiled as a unit with {@code Customer}, which points at it, and
+ * {@code Product}.
  *
  * <p>Every annotation attribute used here is one the SDK annotation actually declares, and none is
  * scheduled for removal. Neither half is a stylistic note. A corpus that compiles only because the
@@ -32,13 +34,23 @@ import eu.exeris.sdk.annotation.Validation;
  * {@code Order.CompensationEscalation}, a member type named through its declaring class, so a side
  * that carries the written form instead of the fully-qualified name javac reports disagrees with
  * every side that does not.
+ *
+ * <p>The route-access declarations are the cases behind the {@code ROUTE_ACCESS} facet. The entity
+ * declares {@code AUTHENTICATED} together with two permissions, in an order a side must keep.
+ * {@code submit} declares nothing and inherits the entity's requirement when the route policy is
+ * generated, so its metadata carries neither component: a side that copies the entity's
+ * declaration onto it says the action declared something it did not. {@code approve} declares
+ * permissions of its own, which replace the entity's for that route. {@code track} declares
+ * {@code PUBLIC}, the constant a side that treats ordinal 0 as a default drops.
  */
 @ExerisDomain(
         module = "sales",
         path = "/orders",
         description = "A customer order.",
-        dataScope = ExerisDomain.DataScope.TENANT
+        dataScope = ExerisDomain.DataScope.TENANT,
+        permissions = {"order:read", "order:write"}
 )
+@RouteAccess(RouteAccess.Level.AUTHENTICATED)
 @Saga(
         name = "OrderFulfillmentSaga",
         version = 3,
@@ -71,6 +83,15 @@ public class Order {
 
     @Action(name = "submit", label = "Submit", httpMethod = "POST")
     public void submit() {
+    }
+
+    @Action(name = "approve", label = "Approve", httpMethod = "POST", permissions = {"order:approve"})
+    public void approve() {
+    }
+
+    @Action(name = "track", label = "Track", httpMethod = "GET")
+    @RouteAccess(RouteAccess.Level.PUBLIC)
+    public void track() {
     }
 
     @SagaStep(order = 1, name = "charge", service = "payments", command = "charge")

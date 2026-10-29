@@ -41,6 +41,7 @@ class MetadataReaderTckSelfTest {
             reader.actionIsReadUnderTheDeclaredName();
             reader.sagaVersionIsTheDeclaredOne();
             reader.sagaCompensationIsTheDeclaredOne();
+            reader.routeAccessIsTheDeclaredOne();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -195,6 +196,21 @@ class MetadataReaderTckSelfTest {
 
         // …and the facet that IS optional still skips rather than failing.
         assertThat(optingOut.unsupportedFacets()).contains(Facet.ACTIONS);
+    }
+
+    @Test
+    @DisplayName("a dropped PUBLIC, a resolved inheritance and a reordered list are each caught")
+    void routeAccessCasesAreNotVacuous() {
+        assertThatThrownBy(new Reader(ReferenceBinding::publicDropped)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product/routeAccess — declared PUBLIC, got <absent>")
+                .hasMessageContaining("Order/actions/track/routeAccess — declared PUBLIC, got <absent>");
+        assertThatThrownBy(new Reader(ReferenceBinding::inheritanceResolved)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/actions/submit/routeAccess — declared <absent>, got AUTHENTICATED");
+        assertThatThrownBy(new Reader(ReferenceBinding::permissionsReversed)::routeAccessIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/permissions");
     }
 
     /** A reader binding whose output is the reference metadata put through one transformation. */

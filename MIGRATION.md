@@ -108,6 +108,33 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `SourceModelReader` reads `@RouteAccess` and `permissions`
+
+**Impact on code: none required.** No AST component is added. What changes is what
+`SourceModelReader.read` returns for a source that declares route access:
+
+- `DomainMetadata.routeAccess` / `ActionMetadata.routeAccess` carry the element's
+  `@RouteAccess`, `PUBLIC` included, and stay `null` when the element declares none.
+- `DomainMetadata.permissions` / `ActionMetadata.permissions` carry the element's
+  `permissions`, in declaration order, where they were always empty before.
+- An action that declares neither carries neither. It inherits the entity's requirement
+  when the route policy is generated; a consumer that needs the effective requirement
+  applies the nearest-declaration rule itself (exeris-tooling ADR-105 obligation 12).
+
+Both `permissions` attributes are any-of: a caller holding one listed permission is
+admitted.
+
+**Reattach.** The `exeris-tooling` processor writes these components in the release that
+pins this reader. A baseline from a processor that does not, compared with a reader view
+of a source declaring them, differs on any action that declares `permissions` or
+`@RouteAccess`, so `SourceModelConflictDetector` returns `Conflict` for an `AddAction` or
+`RemoveAction` on that action. Field and relationship ops are unaffected.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.ROUTE_ACCESS` and a third corpus entity,
+`Product`. A binding that compiles the corpus presents all three sources. A producer or
+parity binding whose producer does not extract route access adds `Facet.ROUTE_ACCESS` to
+`unsupportedFacets()` until it does.
+
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
 **Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto

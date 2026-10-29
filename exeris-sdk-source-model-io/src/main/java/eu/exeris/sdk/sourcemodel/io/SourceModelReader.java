@@ -21,6 +21,7 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.UnaryExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.github.javaparser.ast.nodeTypes.NodeWithExtends;
 import com.github.javaparser.ast.nodeTypes.NodeWithImplements;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -41,6 +42,7 @@ import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
+import eu.exeris.sdk.sourcemodel.ast.RouteAccess;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata;
@@ -72,7 +74,7 @@ import java.util.TreeSet;
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
- * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
+ * (name, label, httpMethod, async, permissions, and {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention). The domain-level
@@ -97,6 +99,14 @@ import java.util.TreeSet;
  * from the {@code annotation.system} field markers and the {@code @ExerisDomain}
  * {@code *Field} override attributes, resolved as the processor resolves them.
  *
+ * <p>Route access (exeris-tooling ADR-105): {@code @RouteAccess} on the type is read into
+ * {@link DomainMetadata#routeAccess()}, and beside an {@code @Action} into
+ * {@link ActionMetadata#routeAccess()}, {@code PUBLIC} included; {@code @ExerisDomain.permissions}
+ * and {@code @Action.permissions} are read in declaration order. Each element carries only
+ * what it declares: an action declaring neither keeps a {@code null} {@code routeAccess} and
+ * empty {@code permissions}, because nearest-declaration resolution belongs to the generator
+ * that compiles the route policy, not to the metadata.
+ *
  * <p>Capability scope: {@link #readCapabilityModule} is the capability counterpart of {@link #read}:
  * it locates the first {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
  * (direct, repeated, or hand-written {@code @Provides.List} container) and
@@ -112,16 +122,17 @@ import java.util.TreeSet;
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
  * {@code read()} drops no annotation-level facet the processor emits:
- * {@link #unmodeledFacets} is empty for every source whose saga step orders it can
- * resolve, and the field facet is attribute-complete against {@code extractFieldMetadata}.
+ * {@link #unmodeledFacets} is empty for every source whose saga step orders and
+ * {@code permissions} elements it can resolve, and the field facet is attribute-complete against {@code extractFieldMetadata}.
  * A round-trip / reattach caller should still consult {@link #unmodeledFacets} and
  * refuse (or warn) when it is non-empty — that is how a <em>future</em> processor facet
  * (e.g. a new annotation) re-arms the guard before the reader catches up, and how a
- * {@code @SagaStep.order} the reader cannot resolve is reported. (Facets the processor
+ * {@code @SagaStep.order} or a {@code permissions} element the reader cannot resolve is
+ * reported. (Facets the processor
  * doesn't read either — {@code @Projection}, {@code @NavMenu}, {@code @EventHandler},
  * {@code @GraphProperty}/{@code @GraphQuery}, {@code @PrimaryKey}, the
  * {@code security} annotations — are not divergences.) The guard is
- * annotation-level, with that one attribute as the exception: attribute completeness
+ * annotation-level, with those attributes as the exception: attribute completeness
  * of the <em>other</em> read annotations (e.g. {@code @Relationship}, {@code @Action})
  * is verified per-slice, not by it.
  *
@@ -269,7 +280,12 @@ public final class SourceModelReader {
      * sequence of the two may differ. An order that is a literal, or a {@code final} field
      * of the same file initialised with one, is resolved and not reported.
      *
-     * <p>Apart from that attribute, this guard is <em>annotation-level</em>: it does not
+     * <p>Also detected, as {@code @ExerisDomain} or {@code @Action}: a {@code permissions}
+     * element on the entity or on one of its actions that is not a string literal — a constant
+     * reference, say. {@link #read} carries literals only, while the processor receives the
+     * folded value, so the two may disagree on what the route requires.
+     *
+     * <p>Apart from those attributes, this guard is <em>annotation-level</em>: it does not
      * report attribute-level loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
      * attribute-complete; completeness of the other read annotations
      * ({@code @Relationship}, {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is
@@ -301,8 +317,12 @@ public final class SourceModelReader {
         // cannot resolve is a position the processor may hold differently, and a misplaced
         // step is a reordered saga. read() reads the first @ExerisDomain type, so this does too.
         cu.findFirst(ClassOrInterfaceDeclaration.class, type -> type.isAnnotationPresent("ExerisDomain"))
-                .filter(this::stepOrderUnresolved)
-                .ifPresent(type -> facets.add("@SagaStep"));
+                .ifPresent(type -> {
+                    if (stepOrderUnresolved(type)) {
+                        facets.add("@SagaStep");
+                    }
+                    facets.addAll(unresolvedPermissionCarriers(type));
+                });
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
@@ -333,6 +353,7 @@ public final class SourceModelReader {
                 .events(events(type));
         type.getAnnotationByName("ExerisDomain").ifPresent(ann -> {
             applyDomainAttributes(ann, builder);
+            routeAccess(type).ifPresent(builder::routeAccess);
             SystemFieldsMetadata systemFields = systemFields(type, ann);
             if (systemFields != null) {
                 builder.systemFields(systemFields);
@@ -365,11 +386,12 @@ public final class SourceModelReader {
      * Reads the domain-level {@code @ExerisDomain} attributes the processor reads
      * (string + boolean) into the builder, present-only — an absent attribute keeps
      * the builder default, exactly matching {@code ExerisDomainProcessor}'s
-     * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
-     * ({@code tags}/{@code roles}/{@code permissions}) and the
-     * {@code validationMode}/{@code ui} attributes are not read — the processor
-     * doesn't read them either, so they constitute no reader-vs-processor divergence
-     * and {@link #unmodeledFacets} does not flag them. The {@code *Field} attributes
+     * {@code if (values.containsKey(...)) builder.set(...)} pattern. {@code permissions} is
+     * read in declaration order, the route-authorization input of exeris-tooling ADR-105,
+     * together with the entity's {@code @RouteAccess}. The other array attributes
+     * ({@code tags}/{@code roles}) and the {@code validationMode}/{@code ui} attributes are
+     * not read — the processor doesn't read them either, so they constitute no
+     * reader-vs-processor divergence and {@link #unmodeledFacets} does not flag them. The {@code *Field} attributes
      * are read by {@link #systemFields}, together with the field markers they override.
      *
      * <p>{@code tableName} is stored as written, exactly as the processor stores it: a blank
@@ -385,6 +407,7 @@ public final class SourceModelReader {
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
         stringAttr(ann, "tableName").ifPresent(builder::tableName);
+        stringArrayAttr(ann, "permissions").ifPresent(builder::permissions);
         boolAttr(ann, "restApi").ifPresent(builder::restApi);
         boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
@@ -583,6 +606,12 @@ public final class SourceModelReader {
             // realTimeUpdates until that attribute has a generator consumer.
             builder.streaming(boolAttr(action.get(), "streaming", false));
             stringAttr(action.get(), "streamEventType").ifPresent(builder::streamEventType);
+            // The action's own declaration only. An action that declares neither keeps a null
+            // routeAccess and empty permissions, and inherits the entity's at generation time:
+            // the AST carries what each element declares, and nearest-declaration resolution is
+            // the generator's (exeris-tooling ADR-105 obligation 12).
+            stringArrayAttr(action.get(), "permissions").ifPresent(builder::permissions);
+            routeAccess(method).ifPresent(builder::routeAccess);
             for (Parameter parameter : method.getParameters()) {
                 parameter.getAnnotationByName("ActionParam")
                         .ifPresent(ann -> builder.addParam(actionParam(parameter, ann)));
@@ -1415,18 +1444,78 @@ public final class SourceModelReader {
 
     /** Constant name of an enum-valued annotation attribute, e.g. {@code ONE_TO_MANY}. */
     private Optional<String> enumAttr(AnnotationExpr annotation, String attribute) {
-        return value(annotation, attribute).map(value -> {
-            if (value.isFieldAccessExpr()) {
-                return value.asFieldAccessExpr().getNameAsString();
+        return value(annotation, attribute).map(this::constantName);
+    }
+
+    /**
+     * The constant an enum-valued expression names: {@code Level.PUBLIC},
+     * {@code RouteAccess.Level.PUBLIC} and a statically imported {@code PUBLIC} all
+     * name {@code PUBLIC}.
+     */
+    private String constantName(Expression value) {
+        if (value.isFieldAccessExpr()) {
+            return value.asFieldAccessExpr().getNameAsString();
+        }
+        if (value.isNameExpr()) {
+            return value.asNameExpr().getNameAsString();
+        }
+        // Unsupported value shape (e.g. a parenthesised expression): fall back
+        // to the raw text. Callers that map this to an enum will treat an
+        // unrecognised name as "absent" rather than failing.
+        return value.toString();
+    }
+
+    /**
+     * The {@code @RouteAccess} an element declares, bridged onto the AST-owned
+     * {@link RouteAccess} by constant name. Both constants are carried, {@code PUBLIC}
+     * included: absence is the "declared nothing" state, so a {@code PUBLIC} that were
+     * skipped would read as a route nobody spoke about. Read in the single-member form
+     * {@code @RouteAccess(Level.PUBLIC)} and the named form {@code @RouteAccess(value = …)}.
+     */
+    private Optional<RouteAccess> routeAccess(NodeWithAnnotations<?> element) {
+        return element.getAnnotationByName("RouteAccess")
+                .flatMap(annotation -> annotation.isSingleMemberAnnotationExpr()
+                        ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
+                        : value(annotation, "value"))
+                .map(this::constantName)
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(RouteAccess.valueOf(name));
+                    } catch (IllegalArgumentException unknownConstant) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    /**
+     * The annotations on {@code type} whose {@code permissions} hold an element that is not a
+     * string literal: {@code @ExerisDomain} for the entity's, {@code @Action} for an action's.
+     * {@link #stringArrayAttr} reads literals only, so such an element is missing from what
+     * {@link #read} carries, while the processor receives it folded by javac. A permission
+     * dropped here widens the route it guards, or turns an action's own declaration into an
+     * inherited one.
+     */
+    private Set<String> unresolvedPermissionCarriers(ClassOrInterfaceDeclaration type) {
+        Set<String> carriers = new TreeSet<>();
+        if (type.getAnnotationByName("ExerisDomain").map(this::hasNonLiteralPermission).orElse(false)) {
+            carriers.add("@ExerisDomain");
+        }
+        for (MethodDeclaration method : type.getMethods()) {
+            if (method.getAnnotationByName("Action").map(this::hasNonLiteralPermission).orElse(false)) {
+                carriers.add("@Action");
             }
-            if (value.isNameExpr()) {
-                return value.asNameExpr().getNameAsString();
+        }
+        return carriers;
+    }
+
+    private boolean hasNonLiteralPermission(AnnotationExpr annotation) {
+        return value(annotation, "permissions").map(expression -> {
+            if (expression.isArrayInitializerExpr()) {
+                return expression.asArrayInitializerExpr().getValues().stream()
+                        .anyMatch(element -> !element.isStringLiteralExpr());
             }
-            // Unsupported value shape (e.g. a parenthesised expression): fall back
-            // to the raw text. Callers that map this to an enum will treat an
-            // unrecognised name as "absent" rather than failing.
-            return value.toString();
-        });
+            return !expression.isStringLiteralExpr();
+        }).orElse(false);
     }
 
     private Optional<String> stringAttr(AnnotationExpr annotation, String attribute) {

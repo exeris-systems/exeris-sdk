@@ -239,6 +239,39 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
         });
     }
 
+    /**
+     * Route access and permissions, on the entity and on every action both sides emit. Each
+     * element carries only what it declares, so an action that inherits the entity's requirement
+     * carries neither component on either side; the nearest-declaration rule is applied by the
+     * generator, from these values. The divergences this exists for produce well-formed output: a
+     * side that drops {@code PUBLIC} as if ordinal 0 were a default, one that copies the entity's
+     * declaration onto an action, or one that loses a permission or reorders the list.
+     */
+    @Test
+    @DisplayName("producer and reader agree on route access and permissions, entity and action")
+    void routeAccessAgrees() {
+        requireSupported(Facet.ROUTE_ACCESS);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            compare(gaps, "routeAccess", produced.routeAccess(), wasRead.routeAccess());
+            compare(gaps, "permissions", declared(produced.permissions()), declared(wasRead.permissions()));
+            Map<String, ActionMetadata> left = byKey(produced.actions(), ActionMetadata::name);
+            Map<String, ActionMetadata> right = byKey(wasRead.actions(), ActionMetadata::name);
+            for (Map.Entry<String, ActionMetadata> entry : left.entrySet()) {
+                ActionMetadata p = entry.getValue();
+                ActionMetadata r = right.get(entry.getKey());
+                if (r == null) {
+                    // Presence is the ACTIONS facet's comparison.
+                    continue;
+                }
+                String path = ACTIONS + entry.getKey();
+                compare(gaps, path + "/routeAccess", p.routeAccess(), r.routeAccess());
+                compare(gaps, path + "/permissions", declared(p.permissions()), declared(r.permissions()));
+            }
+            return gaps;
+        });
+    }
+
     /** A comparison over one entity, returning the paths on which the two sides disagreed. */
     @FunctionalInterface
     private interface EntityComparison {
@@ -306,6 +339,14 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             }
         }
         return indexed;
+    }
+
+    /**
+     * A {@code permissions} list as declared: a missing list and an empty one both mean "none
+     * declared", so a producer that omits the key and one that writes {@code []} agree.
+     */
+    private static List<String> declared(List<String> permissions) {
+        return permissions == null ? List.of() : permissions;
     }
 
     private static String edgeKey(RelationshipMetadata edge) {

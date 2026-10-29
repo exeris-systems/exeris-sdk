@@ -73,12 +73,13 @@ import java.lang.annotation.Target;
  * <h2>Open-Core status — RESERVED, validated but not compiled into a route</h2>
  * <p>Declared shape, not yet an enforced route. The kernel provides
  * {@code HttpRoutePolicy} / {@code RouteRequirement} with
- * {@code AbstractHttpRoutePolicyTck}. The {@code exeris-tooling} processor validates
- * the declaration — the refusal above — but does not extract {@code @RouteAccess}
- * into {@code DomainMetadata.routeAccess} or {@code ActionMetadata.routeAccess}, and
- * no generator emits a URL-to-policy table from it, so every generated route is
- * registered as if the annotation were absent. The
- * {@code exeris-sdk-source-model-io} reader does not read it. The kernel holds route authorization at tier
+ * {@code AbstractHttpRoutePolicyTck}. The {@code exeris-sdk-source-model-io} reader
+ * reads it into {@code DomainMetadata.routeAccess} and {@code ActionMetadata.routeAccess},
+ * {@code PUBLIC} included, each element carrying only what it declares. The
+ * {@code exeris-tooling} processor validates the declaration — the refusal above — and
+ * extracts it, compiling the URL-to-policy table, in the release that pins this reader
+ * (exeris-tooling ADR-105); until then every generated route is registered as if the
+ * annotation were absent. The kernel holds route authorization at tier
  * {@code preview} in its {@code docs/stability-matrix.md}, so this surface is
  * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
  * change it; it is promoted when the kernel moves the surface out of
@@ -126,9 +127,10 @@ public @interface RouteAccess {
          * A verified identity is required, and nothing further
          * ({@code RouteRequirement.authenticated()}).
          *
-         * <p>Worth stating explicitly even where it is also the generated default:
-         * it distinguishes a route whose author decided from one whose author was
-         * silent, and it survives a change to what the default is.
+         * <p>Worth stating explicitly: it distinguishes a route whose author decided
+         * from one whose author was silent, and it survives a change to the default. A
+         * route that declares nothing is decided by the generated application's
+         * {@code unmatchedRoutes()}, permit-all unless the application overrides it.
          */
         AUTHENTICATED
     }
