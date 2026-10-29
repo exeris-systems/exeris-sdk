@@ -27,8 +27,7 @@ import java.util.UUID;
  * <p>{@code @RouteAccess} is RESERVED: the SDK carries the declaration into the metadata, and a
  * route policy is emitted from it only by a tooling release that reads it. {@code @PrimaryKey},
  * {@code @QueryParam} and {@code inUpdate} are PARTIAL: the reader carries them and the build-time
- * processor does not read them yet. {@code @Relationship.displayField} is PARTIAL the other way
- * round: the processor reads it and the reader does not carry it.
+ * processor does not read them yet.
  */
 @ExerisDomain(
         module = "invoicing",

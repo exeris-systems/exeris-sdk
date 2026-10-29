@@ -803,7 +803,7 @@ and `Customer` declare the annotations. A binding whose side does not extract on
 
 ### `SourceModelReader` reads `@Relationship.displayField`
 
-**Impact on code: none required.** `read()` now sets `RelationshipMetadata.displayField` to the
+**Impact on code: none; the reader's output changes.** No signature changes. `read()` now sets `RelationshipMetadata.displayField` to the
 value `@Relationship(displayField)` declares; it reported `name`, the record default, for every
 relationship. The exeris-tooling processor reads the attribute the same way, so a baseline it wrote
 already carries the declared value. A consumer that compared a reader result to a baseline holding
