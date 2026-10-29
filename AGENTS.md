@@ -67,9 +67,9 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
    [ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md), [ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
    [ADR-085](docs/adr/ADR-085.link.md), [ADR-106](docs/adr/ADR-106-pre-construction-brief-contract.md)).
 2. [`MIGRATION.md`](MIGRATION.md) and [`ROADMAP.md`](ROADMAP.md) for deprecation diffs and milestone scope.
-3. Package-info files for scoping rationale: `annotations/.../package-info.java`
-   and `source-model/.../package-info.java`.
-4. Downstream references: `exeris-tooling/exeris-processor/`, `exeris-platform/exeris-platform-lsp/`,
+3. [`docs/`](docs/README.md) for guides and module pages.
+4. The `annotation` and `sourcemodel.ast` package-infos for scoping rationale.
+5. Downstream references: `exeris-tooling/exeris-processor/`, `exeris-platform/exeris-platform-lsp/`,
    `Stellar-Tactics/` ([reference](.agents/references/downstream-consumers.md)).
 
 ## `.agents/` — the canonical semantic source
@@ -82,7 +82,7 @@ Detailed rules are authored once under [`.agents/`](.agents) and nowhere else.
 | [`.agents/references/`](.agents/references) | Authoritative summaries — [build & testing](.agents/references/build-and-testing.md), downstream consumers, Maven Central distribution. |
 | [`.agents/skills/`](.agents/skills) | Bounded review capabilities, one per invariant this repository defends, plus triage and routing. |
 | [`.agents/agents/`](.agents/agents) | Role profiles: router, architect, implementer, verification, docs-adr. |
-| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences. **`sdk-pr-review`** is the routine the CI review runs; the other four are audits. |
+| [`.agents/workflows/`](.agents/workflows) | Repeatable sequences. **`sdk-pr-review`** is the routine the CI review runs; the other five are audits. |
 | [`.agents/schemas/`](.agents/schemas), [`evals/`](.agents/evals) | The decision contract: `verdict` and `triage-result` narrow the bundle's bases, and ten cases pin the two roles that emit them. |
 | [`.agents/manifest.yaml`](.agents/manifest.yaml) | Composition metadata, schema v2. Pins the `exeris-agents` bundle vendored under `.agents/vendor/`. |
 
