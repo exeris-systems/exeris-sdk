@@ -117,8 +117,8 @@ public @interface SagaStep {
      * <p>Declare the value as an {@code int} literal or as a constant declared in the same
      * source file. javac folds any constant expression for the processor, but the
      * {@code exeris-sdk-source-model-io} reader reads source syntactically: it resolves a
-     * literal, a negated literal, and a {@code final} field (or an interface field, implicitly
-     * {@code final}) initialised with one and declared in the step's own type, an enclosing
+     * literal, a negated literal, either of those in parentheses, and a {@code final} field (or an interface field, implicitly
+     * {@code final}) initialised with one (the initialiser may itself be negated or parenthesised) and declared in the step's own type, an enclosing
      * type, or a type of the same file named by its simple name ({@code Steps.RESERVE}). A field
      * of an enclosing type is used only while no type in between extends or implements another,
      * because an inherited field of the same name would take precedence for javac. Anything else

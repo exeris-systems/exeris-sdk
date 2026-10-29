@@ -55,6 +55,13 @@ for per-version upgrade steps.
   (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
   than a 0.10.x processor baseline holds.
 
+- **`SourceModelReader.unmodeledFacets()` reports `@RouteAccess`, and `read()` folds its parentheses.**
+  A `@RouteAccess` on the entity or on an `@Action` whose value is not a bare or qualified `Level`
+  constant was dropped without a report, which left an `AUTHENTICATED` declaration on the fail-open
+  fallback for routes that declare nothing. `unmodeledFacets()` now returns `@RouteAccess` for it,
+  so a reattach or conflict-detection caller refuses the source (ADR-042). A constant in
+  parentheses, `@RouteAccess((Level.AUTHENTICATED))`, is read as javac folds it for the processor.
+
 - **`exeris-sdk-source-model-io` reads `@GraphProperty`, `@UIGroup` and `@Blob`**, in the shape the
   ADR-042 reader-shape amendment fixes for exeris-tooling to match. `@GraphProperty` under a `@Graph`
   fills `GraphMetadata.properties`, one property per annotated field in declaration order, an empty
@@ -123,7 +130,8 @@ for per-version upgrade steps.
   two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
   `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
   name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
-  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+  / `tableName` to pin the old value. The TS copy in `exeris-codegen-ts`
+  (`dsl-mapper.ts`) follows in exeris-tooling#431.
 
 ### Fixed
 

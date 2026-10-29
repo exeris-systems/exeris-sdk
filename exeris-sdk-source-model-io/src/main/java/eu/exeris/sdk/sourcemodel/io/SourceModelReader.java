@@ -140,7 +140,8 @@ import java.util.stream.Collectors;
  * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
  * is scheduled to fill, in a shape this reader does not read ({@code @Channel}), the reserved
  * {@code @Schedule} whose carrier this reader leaves empty, a {@code @SagaStep.order} the reader
- * cannot resolve, and a {@code permissions} element that is not a string literal. A round-trip /
+ * cannot resolve, a {@code permissions} element that is not a string literal, and a
+ * {@code @RouteAccess} whose value is not a {@code Level} constant. A round-trip /
  * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
  * reads and no carrier is scheduled for — {@code @Projection}, {@code @EventHandler},
  * {@code @GraphQuery}, the {@code security} annotations — are not divergences.) The guard is
@@ -323,6 +324,12 @@ public final class SourceModelReader {
      * reference, say. {@link #read} carries literals only, while the processor receives the
      * folded value, so the two may disagree on what the route requires.
      *
+     * <p>Also detected, as {@code @RouteAccess}: one on the entity or on one of its actions whose
+     * value is not a bare or qualified {@code Level} constant. {@link #read} carries nothing for
+     * it, so the route would fall back to the level of a route that declares none, while the
+     * processor receives the folded constant. A constant in parentheses is folded and not
+     * reported.
+     *
      * <p>Apart from those attributes, this guard is <em>annotation-level</em>: it does not
      * report attribute-level loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
      * attribute-complete; completeness of the other read annotations
@@ -361,6 +368,9 @@ public final class SourceModelReader {
                         facets.add("@SagaStep");
                     }
                     facets.addAll(unresolvedPermissionCarriers(type));
+                    if (routeAccessUnresolved(type)) {
+                        facets.add("@RouteAccess");
+                    }
                 });
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
@@ -2051,21 +2061,56 @@ public final class SourceModelReader {
      * {@link RouteAccess} by constant name. Both constants are carried, {@code PUBLIC}
      * included: absence is the "declared nothing" state, so a {@code PUBLIC} that were
      * skipped would read as a route nobody spoke about. Read in the single-member form
-     * {@code @RouteAccess(Level.PUBLIC)} and the named form {@code @RouteAccess(value = …)}.
+     * {@code @RouteAccess(Level.PUBLIC)} and the named form {@code @RouteAccess(value = …)}, with
+     * the constant optionally in parentheses; a value that names no constant is empty and is
+     * reported by {@link #unmodeledFacets}.
      */
     private Optional<RouteAccess> routeAccess(NodeWithAnnotations<?> element) {
-        return element.getAnnotationByName("RouteAccess")
-                .flatMap(annotation -> annotation.isSingleMemberAnnotationExpr()
-                        ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
-                        : value(annotation, VALUE))
-                .map(this::constantName)
-                .flatMap(name -> {
-                    try {
-                        return Optional.of(RouteAccess.valueOf(name));
-                    } catch (IllegalArgumentException _) {
-                        return Optional.empty();
-                    }
-                });
+        return element.getAnnotationByName("RouteAccess").flatMap(this::routeAccessLevel);
+    }
+
+    /**
+     * The level one {@code @RouteAccess} annotation names. Parentheses around the constant are
+     * folded, as javac folds them for the processor; any other value that is not a bare or
+     * qualified {@code Level} constant is empty.
+     */
+    private Optional<RouteAccess> routeAccessLevel(AnnotationExpr annotation) {
+        Optional<Expression> member = annotation.isSingleMemberAnnotationExpr()
+                ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
+                : value(annotation, VALUE);
+        return member.map(expression -> {
+            Expression unwrapped = expression;
+            while (unwrapped.isEnclosedExpr()) {
+                unwrapped = unwrapped.asEnclosedExpr().getInner();
+            }
+            return unwrapped;
+        }).map(this::constantName).flatMap(name -> {
+            try {
+                return Optional.of(RouteAccess.valueOf(name));
+            } catch (IllegalArgumentException _) {
+                return Optional.empty();
+            }
+        });
+    }
+
+    /**
+     * Whether {@code type}, or one of its {@code @Action} methods, carries a
+     * {@code @RouteAccess} whose value does not resolve to a {@code Level} constant.
+     * {@link #routeAccess} carries nothing for it, while the processor receives the constant
+     * folded by javac. A dropped {@code AUTHENTICATED} leaves the route on the fail-open
+     * fallback for routes that declare nothing.
+     */
+    private boolean routeAccessUnresolved(ClassOrInterfaceDeclaration type) {
+        if (type.getAnnotationByName("RouteAccess").map(a -> routeAccessLevel(a).isEmpty()).orElse(false)) {
+            return true;
+        }
+        for (MethodDeclaration method : type.getMethods()) {
+            if (method.isAnnotationPresent("Action")
+                    && method.getAnnotationByName("RouteAccess").map(a -> routeAccessLevel(a).isEmpty()).orElse(false)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
