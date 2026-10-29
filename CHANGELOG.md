@@ -55,6 +55,13 @@ for per-version upgrade steps.
   (wave J1, ADR-104 obligations 11 and 12); until then a source declaring it reads a different key
   than a 0.10.x processor baseline holds.
 
+- **`SourceModelReader.unmodeledFacets()` reports `@RouteAccess`, and `read()` folds its parentheses.**
+  A `@RouteAccess` on the entity or on an `@Action` whose value is not a bare or qualified `Level`
+  constant was dropped without a report, which left an `AUTHENTICATED` declaration on the fail-open
+  fallback for routes that declare nothing. `unmodeledFacets()` now returns `@RouteAccess` for it,
+  so a reattach or conflict-detection caller refuses the source (ADR-042). A constant in
+  parentheses, `@RouteAccess((Level.AUTHENTICATED))`, is read as javac folds it for the processor.
+
 - **`SourceModelReader.unmodeledFacets()` reports `@GraphProperty`, `@UIGroup`, `@Blob` and
   `@Channel`.** It returned nothing for them before. exeris-tooling 0.11.0 is scheduled to fill
   `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and `DomainMetadata.channel` from them, and the
