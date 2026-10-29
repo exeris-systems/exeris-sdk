@@ -22,14 +22,16 @@ import java.util.stream.Stream;
 final class WireRecords {
 
     /**
-     * Both wire-carrying packages. The mutation surface is included because its
+     * The wire-carrying packages. The mutation surface is included because its
      * {@code MutationOp} / {@code MutationResult} variants are records under a sealed interface
      * and grow on the same terms — covering only {@code ast} would leave a guard that reads as
-     * complete and is not.
+     * complete and is not. The brief (ADR-106) sits outside {@code sourcemodel} and is named
+     * explicitly: its records are a wire contract that grows on the same terms.
      */
     static final List<String> PACKAGES = List.of(
             "eu.exeris.sdk.sourcemodel.ast",
-            "eu.exeris.sdk.sourcemodel.mutation");
+            "eu.exeris.sdk.sourcemodel.mutation",
+            "eu.exeris.sdk.brief");
 
     private WireRecords() {
     }
