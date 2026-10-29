@@ -65,13 +65,11 @@ for per-version upgrade steps.
 
 ### Changed
 
-- **Both `permissions` attributes state that they are any-of, and `AUTHENTICATED` no longer calls
-  itself the generated default.** `@ExerisDomain.permissions` and `@Action.permissions` admit a
-  caller holding at least one listed permission, and an action's non-empty list replaces the
-  entity's for its route (exeris-tooling ADR-105 obligations 10 and 12). A route that declares
-  nothing is decided by the generated application's `unmatchedRoutes()`, permit-all unless
-  overridden, and `RouteAccess.Level.AUTHENTICATED` says so. ADR-072 is amended: for route access
-  the `-io` reader reads ahead of the processor, as ADR-105 obligation 26 requires.
+- **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
+  `@Action.permissions` admit a caller holding at least one listed permission, and an action's
+  non-empty list replaces the entity's for its route (exeris-tooling ADR-105 obligations 10 and
+  12). ADR-072 is amended: for route access the `-io` reader reads ahead of the processor, as
+  ADR-105 obligation 26 requires.
 
 - **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
   `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
@@ -363,6 +361,16 @@ for per-version upgrade steps.
   uses, was never managed here and is unaffected.
 
 ### Security
+
+- **A route that declares no access is public in a generated application, and the SDK now says
+  so.** `RouteAccess.Level.AUTHENTICATED` no longer calls itself the generated default. A route
+  with no `@RouteAccess` and no `permissions` on its entity or action is decided by the generated
+  application's `unmatchedRoutes()`, which defaults to `permitAll()`: fail-open, as accepted in
+  [exeris-tooling ADR-105](https://github.com/exeris-systems/exeris-tooling/blob/main/docs/adr/ADR-105-generated-route-policy-emission.md)
+  obligations 7–9. To make undeclared routes authenticated-only, override `unmatchedRoutes()` to
+  return `RouteRequirement.authenticated()`, or declare `@RouteAccess(AUTHENTICATED)` on each
+  entity. An empty `roles` or `permissions` never declares a route public; only an explicit
+  `@RouteAccess(PUBLIC)` does.
 
 - **`jackson-databind` 3.2.2 → 3.2.3.** 3.2.0 through 3.2.2 carry two high-severity advisories:
   unbounded retention of unknown raw type ids (GHSA-wv8q-qhhj-9h54, Dependabot #22) and quadratic

@@ -130,7 +130,8 @@ public @interface RouteAccess {
          * <p>Worth stating explicitly: it distinguishes a route whose author decided
          * from one whose author was silent, and it survives a change to the default. A
          * route that declares nothing is decided by the generated application's
-         * {@code unmatchedRoutes()}, permit-all unless the application overrides it.
+         * {@code unmatchedRoutes()}, permit-all unless the application overrides it; an
+         * empty {@code permissions} never declares a route public, only {@code PUBLIC} does.
          */
         AUTHENTICATED
     }

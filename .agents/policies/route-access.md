@@ -5,8 +5,9 @@
 ## Hard Rules
 
 1. **Never overload empty roles or permissions to mean "public":**
-   - In `@ExerisDomain` and `@Action`, an empty `roles = {}` or `permissions = {}` array means "nothing explicitly declared". A route that declares nothing is decided by the generated application's `unmatchedRoutes()`, permit-all unless the application overrides it (exeris-tooling ADR-105).
+   - In `@ExerisDomain` and `@Action`, an empty `roles = {}` or `permissions = {}` array means "nothing explicitly declared". It never declares a route public: the only declaration of a public route is an explicit `@RouteAccess(PUBLIC)`. No SDK artifact, reader or document may infer public access from emptiness.
    - Using empty arrays to imply public access causes severe security regressions by accidentally opening protected endpoints.
+   - What an undeclared route gets at runtime is not an SDK declaration. It is the generated application's `unmatchedRoutes()`, which defaults to `permitAll()` and is documented as fail-open; an application that wants undeclared routes authenticated-only overrides it (exeris-tooling ADR-105 obligations 7–9, ACCEPTED). The SDK states that fallback and does not call `AUTHENTICATED` "the generated default".
 2. **Never add an `UNSPECIFIED` enum constant:**
    - In `@RouteAccess.Level` and `sourcemodel.ast.RouteAccess`, there are exactly two constants: `PUBLIC` and `AUTHENTICATED`.
    - The unstated/unspecified condition is represented structurally by the absence of the annotation (producing a `null` value in `DomainMetadata.routeAccess` and `ActionMetadata.routeAccess`).
