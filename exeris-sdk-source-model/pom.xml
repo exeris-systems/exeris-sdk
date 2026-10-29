@@ -34,6 +34,14 @@
     </properties>
 
     <dependencies>
+        <!-- Test scope: SagaMetadataTest checks the annotation enums map onto the AST enums by
+             name; no main code uses the annotations. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-annotations</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
