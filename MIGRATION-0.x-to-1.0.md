@@ -185,7 +185,9 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   promoting. `@GraphEdge` itself and the components it had at 0.12.0 (`name`, `targetLabel`,
   `relationType`), plus `field` and `description`, are frozen as declared. The reserved ones may
   change or be dropped in a 1.x minor, and are promoted when the kernel moves `…spi.graph` to
-  `stable` **and** the `exeris-tooling` graph-sync generator reads them.
+  `stable`, which kernel ADR-102 leaves to a 1.x minor. The kernel tier is the whole condition
+  (ADR-072 obligation 29); when the `exeris-tooling` graph-sync generator reads them is
+  tooling's schedule.
 
   So `@Schedule`, `@Channel`, `ScheduleMetadata`, `ChannelMetadata`,
   `ActionMetadata.schedule` and `DomainMetadata.channel` may be changed, or
