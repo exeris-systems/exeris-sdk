@@ -8,7 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -221,6 +223,69 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
         assertThat(saga.path("compensationTimeout").asString("")).isEqualTo("PT2M");
         assertThat(saga.path("compensationRetryDelay").asString("")).isEqualTo("PT30S");
         assertThat(saga.path("compensationDlq").asString("")).isEqualTo("sales.order-compensation.dlq");
+    }
+
+    /**
+     * Every route-access declaration reaches the produced metadata, and {@code PUBLIC} is written
+     * as a key. Read from the tree for that second half: a missing {@code routeAccess} means
+     * "declared nothing" to every reader, so a {@code PUBLIC} the serializer dropped as ordinal 0
+     * turns a route the author opened into one nobody spoke about.
+     */
+    @Test
+    @DisplayName("route access and permissions reach the produced JSON, PUBLIC included")
+    void routeAccessReachesTheProducedJson() {
+        requireSupported(Facet.ROUTE_ACCESS);
+        List<String> gaps = new ArrayList<>();
+        for (String name : TckCorpus.entityNames()) {
+            gaps.addAll(CorpusRouteAccess.gaps(read(name)));
+        }
+        JsonNode product = tree(TckCorpus.PRODUCT);
+        if (!"PUBLIC".equals(product.path("routeAccess").asString(""))) {
+            gaps.add(TckCorpus.PRODUCT + "/routeAccess — no PUBLIC key in the produced JSON");
+        }
+        boolean trackIsPublic = false;
+        for (JsonNode action : tree(TckCorpus.ORDER).path("actions")) {
+            if ("track".equals(action.path("name").asString(""))) {
+                trackIsPublic = "PUBLIC".equals(action.path("routeAccess").asString(""));
+            }
+        }
+        if (!trackIsPublic) {
+            gaps.add(TckCorpus.ORDER + "/actions/track/routeAccess — no PUBLIC key in the produced JSON");
+        }
+        assertThat(gaps)
+                .withFailMessage(
+                        "The produced route access disagrees with the corpus on %d path(s):%n  %s%n%n"
+                                + "Each element carries only what it declares, and PUBLIC is written: "
+                                + "absence is how the metadata says 'declared nothing'.",
+                        gaps.size(), String.join("\n  ", gaps))
+                .isEmpty();
+    }
+
+    /**
+     * Read from the tree, so a producer that writes no {@code resultType} key fails on the key
+     * rather than on a {@code null} that also stands for "not extracted".
+     */
+    @Test
+    @DisplayName("each action's return type reaches the produced JSON, fully qualified, void as \"void\"")
+    void actionResultTypeReachesTheProducedJson() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.ACTION_RESULT_TYPE);
+        JsonNode actions = tree(TckCorpus.ORDER).path("actions");
+        for (Map.Entry<String, String> expected : TckCorpus.orderResultTypes().entrySet()) {
+            JsonNode action = actions.valueStream()
+                    .filter(candidate -> expected.getKey().equals(candidate.path("name").asString("")))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Order declares @Action(name = \""
+                            + expected.getKey() + "\"); the produced JSON carries no such action."));
+            assertThat(action.path("resultType").asString(""))
+                    .withFailMessage(
+                            "Order's action '%s' was produced with resultType %s. The component "
+                                    + "carries the return type as javac reports it, %s, and \"void\" for "
+                                    + "an action that returns nothing; a missing key means the producer "
+                                    + "did not extract it.",
+                            expected.getKey(), action.path("resultType"), expected.getValue())
+                    .isEqualTo(expected.getValue());
+        }
     }
 
     /**

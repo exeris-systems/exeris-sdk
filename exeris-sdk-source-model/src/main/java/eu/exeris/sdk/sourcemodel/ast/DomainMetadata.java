@@ -58,8 +58,9 @@ import java.util.Locale;
  *        the kernel's edge decides on scopes and declares no role kind (kernel ADR-061/ADR-063),
  *        so what this would compile into is undecided
  *
- * @param permissions default permissions required to reach this entity's API — the half of the
- *        pair that maps onto a named scope, and so the one a generated route policy could carry
+ * @param permissions default permissions required to reach this entity's API, any one of which
+ *        admits the caller, in declaration order — the half of the pair that maps onto a named
+ *        scope, and so the one a generated route policy carries
  *
  * @param sensitive whether the entity holds sensitive or personal data, which tightens logging,
  *        export and at-rest handling in the generated tree
@@ -96,8 +97,9 @@ import java.util.Locale;
  *
  * @param routeAccess whether the entity's generated routes admit unauthenticated callers.
  *        Absent means the author declared nothing and the generated policy's default decides.
- *        Reserved: no processor extracts it and no generator emits a route policy from it, and
- *        it is outside the 1.0.0 freeze (ADR-072)
+ *        Reserved: the {@code exeris-sdk-source-model-io} reader reads it, the processor extracts
+ *        it in the release that pins that reader (exeris-tooling ADR-105), and it is outside the
+ *        1.0.0 freeze (ADR-072)
  *
  * @param channel the duplex channel this entity exposes, or absent if it exposes none. Present
  *        with no components set is a channel that declares nothing further — which is why this

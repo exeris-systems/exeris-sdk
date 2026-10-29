@@ -104,6 +104,16 @@ survives into 1.x unchanged.
   Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
   body moves into that method. No producer reads the attribute and no AST component carries it,
   so the removal changes no metadata and no generated output.
+- **Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and the nested
+  `@GraphEdge.ComputedProperty`** — deprecated since 0.13.0 (`forRemoval = true`). None has a
+  kernel graph binding to compile against: weight naming, expression and normalisation;
+  cardinality (`maxEdges`, `minEdges`), `unique`, `condition`; the three cascade attributes;
+  indexing; the temporal group; `sync`, `syncOnEvents`, `syncProperties`, `batch`; the traversal
+  group; the GraphQL group; `computedProperties`. Replacements where one exists: `unique` and
+  `cascadeUpdate` → `upsert`, `traversalCost` → `staticWeight`, `weightExpression` →
+  `weightField` / `staticWeight`, `sync = false` → do not declare the edge. The full table is in
+  `MIGRATION.md` (0.12.x → 0.13.x). None is extracted, so the removal changes no metadata and no
+  generated output.
 - **`@QueryParam.transform`, `.validation`, `.validationMessage`, `.type`, `.elementType` and
   `.sanitize`** — deprecated since 0.13.0 (`forRemoval = true`). `type` and `elementType` restate
   the parameter's declared type, which `ActionParamMetadata.type` carries with its type arguments:
@@ -160,6 +170,16 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   invert the ordering), which is why `@Channel` is on this list; it does not bar
   shaping a design-time carrier against a settled contract, which is why the
   surface exists at all.
+
+  **The graph edge's kernel-model attributes are in the same position (0.13.0).**
+  `@GraphEdge.direction`, `.bidirectional`, `.inverseType`, `.weighted`, `.weightField` and
+  `.staticWeight`, the `GraphEdgeMetadata` components that carry them, and the not-yet-carried
+  `.properties`, `.propertyMappings`, `.staticProperties` and `.upsert` encode the kernel graph
+  SPI, which kernel ADR-100 keeps at `preview` at 1.0 and kernel ADR-102 anchors without
+  promoting. `@GraphEdge` itself and the components it had at 0.12.0 (`name`, `targetLabel`,
+  `relationType`), plus `field` and `description`, are frozen as declared. The reserved ones may
+  change or be dropped in a 1.x minor, and are promoted when the kernel moves `…spi.graph` to
+  `stable` **and** the `exeris-tooling` graph-sync generator reads them.
 
   So `@Blob`, `@Schedule`, `@RouteAccess`, `@Channel`, `FieldMetadata.blob`,
   `ActionMetadata.schedule`, `DomainMetadata.routeAccess`,
@@ -383,25 +403,25 @@ freeze or is explicitly re-dispositioned here.
     of the wire:
     - `DomainMetadata` — 8 of 41: `tags`, `roles`, `permissions`,
       `projections`, `eventHandlers`, `rules`, `routeAccess`, `channel`.
-    - `ActionMetadata` — 9 of 18: `resultType`, `idempotent`, `dangerous`,
+    - `ActionMetadata` — 8 of 18: `idempotent`, `dangerous`,
       `requiresConfirmation`, `permissions`, `producesEvents`,
       `realTimeUpdates`, `schedule`, `routeAccess`.
     - `FieldMetadata` — 10 of 31: `columnName`, `audited`, `hidden`,
       `defaultValue`, `format`, `enumType`, `displayNameKey`, `descriptionKey`,
       `derived`, `blob`.
     - `SystemFieldsMetadata` — 0 of 11. (`primaryKeyField` is populated and
-      read by no generator, which is a different gap.)
+      read by the generators, so it is not part of this count.)
 
-    That is 27. Five are the ADR-072 exception §2 already excludes from the
+    That is 26. Five are the ADR-072 exception §2 already excludes from the
     freeze (`FieldMetadata.blob`, `ActionMetadata.schedule`, both `routeAccess`,
-    `DomainMetadata.channel`); the other 22 are frozen as declared under §3's
+    `DomainMetadata.channel`); the other 21 are frozen as declared under §3's
     rule that everything public is contract. Whole records no producer
     populates — `EventHandlerMetadata`, `ProjectionMetadata`, `DerivedMetadata`,
     `RuleMetadata`, `SagaMetadata.SagaTransition`, `GraphPropertyMetadata`,
     `GraphQueryMetadata`, `BlobMetadata`, `ScheduleMetadata`, `ChannelMetadata`
     — are counted as records rather than components and follow the same two
     rules. Not counted: components one producer sets and the other does not
-    (`ActionMetadata.displayName`). That is an ADR-042 parity question, not a
+    (`ActionMetadata.displayName`, `ActionMetadata.resultType`). That is an ADR-042 parity question, not a
     population one.
   - **`@InternalApi`'s five attributes are inert — and the name is a collision,
     not a drift.** `@InternalApi` declares a service-to-service *call policy*

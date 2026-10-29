@@ -63,10 +63,12 @@ import java.util.Objects;
  *
  *        <p><strong>Open-Core status — reserved, extraction pending
  *        tooling:</strong> the kernel side exists ({@code HttpRoutePolicy} /
- *        {@code RouteRequirement}, kernel ADR-061), but no {@code exeris-tooling}
- *        processor extracts {@code @RouteAccess} and no generator emits a
- *        URL-to-policy table from this component, so on the build-time path it is
- *        always {@code null}. The kernel holds route authorization at tier
+ *        {@code RouteRequirement}, kernel ADR-061), and the
+ *        {@code exeris-sdk-source-model-io} reader reads {@code @RouteAccess} into
+ *        this component. The {@code exeris-tooling} processor extracts it, and a
+ *        generator emits the URL-to-policy table from it, in the release that pins
+ *        that reader (exeris-tooling ADR-105); until then the build-time path leaves
+ *        it {@code null}. The kernel holds route authorization at tier
  *        {@code preview}, so the component is excluded from the 1.0.0 freeze and a
  *        1.x minor may still change it (ADR-072).
  *
@@ -76,13 +78,27 @@ import java.util.Objects;
  * @param displayName the label a generated UI shows for the action
  * @param description human-readable prose for generated documentation
  * @param httpMethod the HTTP method the generated route is bound to
- * @param resultType the action's return type, as written in source
+ * @param resultType the declared return type of the action method, in the form javac's
+ *        {@code TypeMirror.toString()} gives it, without type-use annotations: fully
+ *        qualified, a nested type joined to its enclosing type by {@code .}, type arguments
+ *        kept and separated by {@code ,} with no space, a type variable by its simple name,
+ *        and a primitive by its keyword — {@code java.util.List<com.acme.Order.Receipt>},
+ *        {@code long}. An action that returns nothing carries {@code "void"}, so a present
+ *        {@code "void"} and an absent value say different things: {@code null} means the
+ *        producer did not extract the component.
+ *
+ *        <p>The {@code exeris-sdk-source-model-io} reader fills it, resolving names
+ *        syntactically from the source file alone. The {@code exeris-tooling} processor
+ *        does not extract it yet, so on the build-time path it is {@code null} until it
+ *        does (ADR-042).
  * @param async whether the action returns before its work completes
  * @param idempotent whether repeating the call is safe
  * @param dangerous whether the action is destructive enough to warrant a warning
  * @param requiresConfirmation whether a generated UI asks before invoking it
  * @param params the action's parameters, in declaration order
- * @param permissions the permissions required to invoke the action
+ * @param permissions the permissions required to invoke the action, any one of which admits the
+ *        caller, in declaration order. Empty means the action declared none; a non-empty list
+ *        replaces the entity's {@link DomainMetadata#permissions()} for this action's route
  * @param producesEvents the events the action publishes on success
  * @since 0.1
  */

@@ -21,10 +21,13 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.UnaryExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.github.javaparser.ast.nodeTypes.NodeWithExtends;
 import com.github.javaparser.ast.nodeTypes.NodeWithImplements;
+import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.WildcardType;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
@@ -43,6 +46,7 @@ import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
+import eu.exeris.sdk.sourcemodel.ast.RouteAccess;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SystemFieldsMetadata;
@@ -57,6 +61,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
@@ -75,8 +80,9 @@ import java.util.function.Supplier;
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
- * (name, label, httpMethod, async, and the parameters carrying {@code @ActionParam},
- * {@code @QueryParam} or both, a {@code @QueryParam} one bound from the query string);
+ * (name, label, httpMethod, async, permissions, the return type as {@code resultType}, and
+ * the parameters carrying {@code @ActionParam}, {@code @QueryParam} or both, a
+ * {@code @QueryParam} one bound from the query string);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention), field-level {@code @Tab} into
@@ -100,8 +106,17 @@ import java.util.function.Supplier;
  * into the matching {@link DomainMetadata} facets, each mirroring the processor's
  * extraction (including its {@code streamPrefix→aggregateType} translation and
  * presence-only {@code @InternalApi}). {@link DomainMetadata#systemFields} is read
- * from the {@code annotation.system} field markers and the {@code @ExerisDomain}
- * {@code *Field} override attributes, resolved as the processor resolves them.
+ * from the {@code annotation.system} field markers, {@code @PrimaryKey} included, and the
+ * {@code @ExerisDomain} {@code *Field} override attributes, resolved as the processor
+ * resolves them.
+ *
+ * <p>Route access (exeris-tooling ADR-105): {@code @RouteAccess} on the type is read into
+ * {@link DomainMetadata#routeAccess()}, and beside an {@code @Action} into
+ * {@link ActionMetadata#routeAccess()}, {@code PUBLIC} included; {@code @ExerisDomain.permissions}
+ * and {@code @Action.permissions} are read in declaration order. Each element carries only
+ * what it declares: an action declaring neither keeps a {@code null} {@code routeAccess} and
+ * empty {@code permissions}, because nearest-declaration resolution belongs to the generator
+ * that compiles the route policy, not to the metadata.
  *
  * <p>Capability scope: {@link #readCapabilityModule} is the capability counterpart of {@link #read}:
  * it locates the first {@code @CapabilityModule}-annotated class and extracts its {@code @Provides}
@@ -117,17 +132,16 @@ import java.util.function.Supplier;
  * build-time tooling to link (the processor sees the whole round).
  *
  * <p><b>Round-trip safety.</b> Relative to the processor (the codegen baseline),
- * {@code read()} drops no annotation-level facet the processor emits:
- * {@link #unmodeledFacets} is empty for every source whose saga step orders it can
- * resolve, and the field facet is attribute-complete against {@code extractFieldMetadata}.
- * A round-trip / reattach caller should still consult {@link #unmodeledFacets} and
- * refuse (or warn) when it is non-empty — that is how a <em>future</em> processor facet
- * (e.g. a new annotation) re-arms the guard before the reader catches up, and how a
- * {@code @SagaStep.order} the reader cannot resolve is reported. (Facets the processor
- * doesn't read either — {@code @Projection}, {@code @EventHandler},
- * {@code @GraphProperty}/{@code @GraphQuery}, {@code @PrimaryKey}, the
- * {@code security} annotations — are not divergences.) The guard is
- * annotation-level, with that one attribute as the exception: attribute completeness
+ * {@code read()} drops no annotation-level facet the processor emits, and the field facet is
+ * attribute-complete against {@code extractFieldMetadata}. {@link #unmodeledFacets} reports
+ * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
+ * is scheduled to fill, in a shape this reader does not read ({@code @GraphProperty},
+ * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), a {@code @SagaStep.order} the reader
+ * cannot resolve, and a {@code permissions} element that is not a string literal. A round-trip /
+ * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
+ * reads and no carrier is scheduled for — {@code @Projection}, {@code @EventHandler},
+ * {@code @GraphQuery}, the {@code security} annotations — are not divergences.) The guard is
+ * annotation-level, with those attributes as the exception: attribute completeness
  * of the <em>other</em> read annotations (e.g. {@code @Relationship}, {@code @Action})
  * is verified per-slice, not by it.
  *
@@ -159,21 +173,24 @@ import java.util.function.Supplier;
 public final class SourceModelReader {
 
     /**
-     * Annotation simple names where {@link #read} <em>diverges from the annotation
-     * processor</em>: the processor populates a distinct {@link DomainMetadata}
-     * facet from them, but the reader does not yet. These are the dangerous ones
-     * for reattach — the conflict-detection baseline is the processor's codegen
-     * output, so a facet the processor keeps and the reader drops would be
-     * misread as a user edit.
+     * Annotation simple names where {@link #read} <em>may diverge from the annotation
+     * processor</em>: the processor populates, or is scheduled to populate, a
+     * {@link DomainMetadata} component from them, and this reader does not read them.
+     * These are the dangerous ones for reattach — the conflict-detection baseline is the
+     * processor's codegen output, so a facet the processor keeps and the reader drops
+     * would be misread as a user edit.
      *
-     * <p><b>Empty</b>: every facet the processor emits is read — domain attributes,
-     * events, graph (with its edges)/saga/event-sourcing/internal-API, system fields,
-     * and the field {@code @Field}/{@code @Validation} surface. The set is retained as the
-     * guard's contract: a future processor facet (a new annotation the reader does
-     * not yet read) is added here, which re-arms {@link #unmodeledFacets} until the
-     * reader catches up. Matched by simple name (no import resolution).
+     * <p>Each member has an AST carrier whose extraction rules the processor has not fixed:
+     * {@code @GraphProperty} ({@code GraphMetadata.properties}), {@code @UIGroup}
+     * ({@code UIMetadata.groups}), {@code @Blob} ({@code FieldMetadata.blob}) and
+     * {@code @Channel} ({@code DomainMetadata.channel}). Reading one before those rules are
+     * fixed would produce a value the processor may not, which is the drift this guard
+     * reports, so the reader leaves the carrier at its default and the guard names the
+     * annotation instead. A member leaves the set in the change that reads it the way the
+     * processor does. Matched by simple name (no import resolution).
      */
-    private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
+    private static final Set<String> UNMODELED_FACET_ANNOTATIONS =
+            Set.of("GraphProperty", "UIGroup", "Blob", "Channel");
 
     /** Attribute names several annotations share. */
     private static final String LABEL = "label";
@@ -185,6 +202,9 @@ public final class SourceModelReader {
      * so a cyclic initialiser, which javac rejects, cannot loop the reader.
      */
     private static final int MAX_CONSTANT_DEPTH = 16;
+
+    /** The route-authorization scope attribute on both {@code @ExerisDomain} and {@code @Action}. */
+    private static final String PERMISSIONS = "permissions";
 
     private final JavaParser javaParser;
 
@@ -273,15 +293,14 @@ public final class SourceModelReader {
      * <b>empty</b> result means {@code read()} produces the same {@code DomainMetadata}
      * facets the processor would for this source.
      *
-     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS},
-     * which is <b>empty</b> — every processor facet is read, the capability surface
-     * included. That part re-arms only when a future processor facet is registered in
-     * that set ahead of the reader. <b>Not</b> flagged: facets neither side reads
-     * ({@code @Projection}, {@code @EventHandler},
-     * {@code @GraphProperty}/{@code @GraphQuery}, {@code @UIGroup},
-     * {@code @PrimaryKey}, the {@code security} annotations), and facets this reader reads
-     * ahead of the processor ({@code @QueryParam}, {@code @NavMenu}, {@code @Tab}): the guard
-     * reports what a round-trip would drop, and the reader drops none of those.
+     * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
+     * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob} and {@code @Channel}, whose
+     * carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
+     * side reads and no carrier is scheduled for ({@code @Projection},
+     * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations), and
+     * facets this reader reads ahead of the processor ({@code @QueryParam}, {@code @NavMenu},
+     * {@code @Tab}): the guard reports what a round-trip would drop, and the reader drops none
+     * of those.
      *
      * <p>Also detected, as {@code @SagaStep}: a saga step on the {@code @ExerisDomain}
      * type whose {@code order} this reader cannot resolve — a constant from another file,
@@ -290,7 +309,12 @@ public final class SourceModelReader {
      * sequence of the two may differ. An order that is a literal, or a {@code final} field
      * of the same file initialised with one, is resolved and not reported.
      *
-     * <p>Apart from that attribute, this guard is <em>annotation-level</em>: it does not
+     * <p>Also detected, as {@code @ExerisDomain} or {@code @Action}: a {@code permissions}
+     * element on the entity or on one of its actions that is not a string literal — a constant
+     * reference, say. {@link #read} carries literals only, while the processor receives the
+     * folded value, so the two may disagree on what the route requires.
+     *
+     * <p>Apart from those attributes, this guard is <em>annotation-level</em>: it does not
      * report attribute-level loss <em>within</em> a read annotation. {@code @Field}/{@code @Validation} are read
      * attribute-complete; completeness of the other read annotations
      * ({@code @Relationship}, {@code @Action}, {@code @UI}, {@code @ExerisDomain}) is
@@ -318,12 +342,17 @@ public final class SourceModelReader {
                 facets.add("@" + simpleName);
             }
         }
-        // Attribute-level, the one exception to the annotation-level rule: a step order read()
+        // Attribute-level, the exceptions to the annotation-level rule: a step order read()
         // cannot resolve is a position the processor may hold differently, and a misplaced
-        // step is a reordered saga. read() reads the first @ExerisDomain type, so this does too.
+        // step is a reordered saga; a permission it cannot fold changes what a route requires.
+        // read() reads the first @ExerisDomain type, so this does too.
         cu.findFirst(ClassOrInterfaceDeclaration.class, type -> type.isAnnotationPresent("ExerisDomain"))
-                .filter(this::stepOrderUnresolved)
-                .ifPresent(type -> facets.add("@SagaStep"));
+                .ifPresent(type -> {
+                    if (stepOrderUnresolved(type)) {
+                        facets.add("@SagaStep");
+                    }
+                    facets.addAll(unresolvedPermissionCarriers(type));
+                });
         return Set.copyOf(facets); // immutable, consistent with the empty-path Set.of()
     }
 
@@ -354,6 +383,7 @@ public final class SourceModelReader {
                 .events(events(type));
         type.getAnnotationByName("ExerisDomain").ifPresent(ann -> {
             applyDomainAttributes(ann, builder);
+            routeAccess(type).ifPresent(builder::routeAccess);
             SystemFieldsMetadata systemFields = systemFields(type, ann);
             if (systemFields != null) {
                 builder.systemFields(systemFields);
@@ -390,11 +420,12 @@ public final class SourceModelReader {
      * Reads the domain-level {@code @ExerisDomain} attributes the processor reads
      * (string + boolean) into the builder, present-only — an absent attribute keeps
      * the builder default, exactly matching {@code ExerisDomainProcessor}'s
-     * {@code if (values.containsKey(...)) builder.set(...)} pattern. Array attributes
-     * ({@code tags}/{@code roles}/{@code permissions}) and the
-     * {@code validationMode}/{@code ui} attributes are not read — the processor
-     * doesn't read them either, so they constitute no reader-vs-processor divergence
-     * and {@link #unmodeledFacets} does not flag them. The {@code *Field} attributes
+     * {@code if (values.containsKey(...)) builder.set(...)} pattern. {@code permissions} is
+     * read in declaration order, the route-authorization input of exeris-tooling ADR-105,
+     * together with the entity's {@code @RouteAccess}. The other array attributes
+     * ({@code tags}/{@code roles}) and the {@code validationMode}/{@code ui} attributes are
+     * not read — the processor doesn't read them either, so they constitute no
+     * reader-vs-processor divergence and {@link #unmodeledFacets} does not flag them. The {@code *Field} attributes
      * are read by {@link #systemFields}, together with the field markers they override.
      *
      * <p>{@code tableName} is stored as written, exactly as the processor stores it: a blank
@@ -410,6 +441,7 @@ public final class SourceModelReader {
         stringAttr(ann, "cacheRegion").ifPresent(builder::cacheRegion);
         stringAttr(ann, "searchConfig").ifPresent(builder::searchConfig);
         stringAttr(ann, "tableName").ifPresent(builder::tableName);
+        stringArrayAttr(ann, PERMISSIONS).ifPresent(builder::permissions);
         boolAttr(ann, "restApi").ifPresent(builder::restApi);
         boolAttr(ann, "graphqlApi").ifPresent(builder::graphqlApi);
         boolAttr(ann, "realTimeApi").ifPresent(builder::realTimeApi);
@@ -440,12 +472,23 @@ public final class SourceModelReader {
     private record SystemFieldRole(String annotation, String overrideAttribute) {
     }
 
+    /** The {@code @ExerisDomain} attribute, and {@link SystemFieldsMetadata} component, naming the key. */
+    private static final String PRIMARY_KEY_FIELD = "primaryKeyField";
+
     /**
-     * The roles {@link #systemFields} reads, in the processor's order ({@code SYSTEM_FIELD_ROLES}).
-     * {@code @PrimaryKey} is absent on both sides: {@code primaryKeyField} comes from the override
-     * attribute only.
+     * The {@code @PrimaryKey.strategy} values the processor refuses (ADR-104): {@code SEQUENCE} and
+     * {@code IDENTITY} need a key that is not a {@code UUID}, and {@code NONE} a create path that
+     * never assigns one. A marker declaring one of them is not read.
+     */
+    private static final Set<String> REFUSED_PRIMARY_KEY_STRATEGIES = Set.of("SEQUENCE", "IDENTITY", "NONE");
+
+    /**
+     * The roles {@link #systemFields} reads: the processor's ten ({@code SYSTEM_FIELD_ROLES}), in its
+     * order, and {@code @PrimaryKey}, which fills {@code primaryKeyField} under the same rules
+     * (ADR-104).
      */
     private static final List<SystemFieldRole> SYSTEM_FIELD_ROLES = List.of(
+            new SystemFieldRole("PrimaryKey", PRIMARY_KEY_FIELD),
             new SystemFieldRole("TenantId", "tenantIdField"),
             new SystemFieldRole("Version", "versionField"),
             new SystemFieldRole("SoftDelete", "softDeleteField"),
@@ -467,8 +510,13 @@ public final class SourceModelReader {
      * nothing reads with no record, as it is emitted.
      *
      * <p>A role the processor refuses is left to the override here, as the refusal leaves it
-     * there: a marker on more than one field, and a marker whose field differs from a non-blank
-     * override. {@code sharedScopeField} is recorded under an explicit
+     * there: a marker on more than one field, a marker whose field differs from a non-blank
+     * override, and a {@code @PrimaryKey} whose {@code strategy} is one the processor refuses.
+     * The refusals ADR-104 places on the key itself — a key that is not a {@code UUID}, a missing
+     * key field, a renamed key beside a field {@code id} — are not mirrored, for the marker as for
+     * the override: the processor emits nothing for such an entity. An explicit
+     * {@code primaryKeyField = "id"} declares nothing on its own, since {@code "id"} is the
+     * attribute's default. {@code sharedScopeField} is recorded under an explicit
      * {@code dataScope = UNIVERSE} only; on any other tier the processor drops the marker with a
      * warning. Markers are matched by simple name, as every annotation here is, so another
      * library's {@code @Version} on an entity field reads as the system marker.
@@ -481,6 +529,9 @@ public final class SourceModelReader {
                 continue;
             }
             String annotated = carriers.getFirst();
+            if (PRIMARY_KEY_FIELD.equals(role.overrideAttribute()) && refusedPrimaryKeyStrategy(type)) {
+                continue;
+            }
             Optional<String> override = nonBlankStringAttr(domain, role.overrideAttribute());
             if (override.isPresent() && !override.get().equals(annotated)) {
                 continue;
@@ -492,15 +543,16 @@ public final class SourceModelReader {
         }
 
         boolean anyOverride = SYSTEM_FIELD_ROLES.stream()
+                .filter(role -> !PRIMARY_KEY_FIELD.equals(role.overrideAttribute()))
                 .anyMatch(role -> nonBlankStringAttr(domain, role.overrideAttribute()).isPresent())
-                || nonBlankStringAttr(domain, "primaryKeyField").filter(name -> !"id".equals(name)).isPresent();
+                || nonBlankStringAttr(domain, PRIMARY_KEY_FIELD).filter(name -> !"id".equals(name)).isPresent();
         if (!anyOverride && declared.isEmpty()) {
             return null;
         }
 
         SystemFieldsMetadata d = SystemFieldsMetadata.defaults();
         return new SystemFieldsMetadata(
-                nonBlankStringAttr(domain, "primaryKeyField").orElse(d.primaryKeyField()),
+                resolvedSystemField(declared, domain, PRIMARY_KEY_FIELD, d.primaryKeyField()),
                 resolvedSystemField(declared, domain, "createdAtField", d.createdAtField()),
                 resolvedSystemField(declared, domain, "createdByField", d.createdByField()),
                 resolvedSystemField(declared, domain, "updatedAtField", d.updatedAtField()),
@@ -511,6 +563,19 @@ public final class SourceModelReader {
                 resolvedSystemField(declared, domain, "softDeleteTimestampField", d.softDeleteTimestampField()),
                 resolvedSystemField(declared, domain, "softDeletedByField", d.softDeletedByField()),
                 declared.get("sharedScopeField"));
+    }
+
+    /**
+     * Whether the {@code @PrimaryKey} on {@code type}'s fields declares a {@code strategy} the
+     * processor refuses. Called with exactly one carrier, so at most one marker is inspected.
+     */
+    private boolean refusedPrimaryKeyStrategy(ClassOrInterfaceDeclaration type) {
+        return type.getFields().stream()
+                .flatMap(field -> field.getAnnotations().stream())
+                .filter(annotation -> "PrimaryKey".equals(simpleName(annotation.getNameAsString())))
+                .anyMatch(marker -> enumAttr(marker, "strategy")
+                        .filter(REFUSED_PRIMARY_KEY_STRATEGIES::contains)
+                        .isPresent());
     }
 
     /** One role's field: the marker's, else the override, else {@code fallback}. */
@@ -690,7 +755,7 @@ public final class SourceModelReader {
         stringAttr(nav, "groupIcon").ifPresent(builder::groupIcon);
         builder.hidden(boolAttr(nav, "hidden", false));
         stringArrayAttr(nav, "roles").ifPresent(builder::roles);
-        stringArrayAttr(nav, "permissions").ifPresent(builder::permissions);
+        stringArrayAttr(nav, PERMISSIONS).ifPresent(builder::permissions);
         stringAttr(nav, "badge").ifPresent(builder::badge);
         stringAttr(nav, "badgeColor").ifPresent(builder::badgeColor);
         stringAttr(nav, "tooltip").ifPresent(builder::tooltip);
@@ -724,6 +789,7 @@ public final class SourceModelReader {
                     .orElse(method.getNameAsString());
             ActionMetadata.Builder builder = ActionMetadata.builder(name)
                     .methodName(method.getNameAsString())
+                    .resultType(typeName(method.getType(), method, type))
                     .async(boolAttr(action.get(), "async", false));
             stringAttr(action.get(), LABEL).ifPresent(builder::displayName);
             stringAttr(action.get(), "description")
@@ -736,6 +802,12 @@ public final class SourceModelReader {
             // realTimeUpdates until that attribute has a generator consumer.
             builder.streaming(boolAttr(action.get(), "streaming", false));
             stringAttr(action.get(), "streamEventType").ifPresent(builder::streamEventType);
+            // The action's own declaration only. An action that declares neither keeps a null
+            // routeAccess and empty permissions, and inherits the entity's at generation time:
+            // the AST carries what each element declares, and nearest-declaration resolution is
+            // the generator's (exeris-tooling ADR-105 obligation 12).
+            stringArrayAttr(action.get(), PERMISSIONS).ifPresent(builder::permissions);
+            routeAccess(method).ifPresent(builder::routeAccess);
             for (Parameter parameter : method.getParameters()) {
                 AnnotationExpr actionParam = parameter.getAnnotationByName("ActionParam").orElse(null);
                 AnnotationExpr queryParam = parameter.getAnnotationByName("QueryParam").orElse(null);
@@ -746,6 +818,139 @@ public final class SourceModelReader {
             actions.add(builder.build());
         }
         return actions;
+    }
+
+    /**
+     * {@code type} in the form {@code TypeMirror.toString()} gives it, without type-use
+     * annotations: {@code void} and primitives as keywords, a class or interface type
+     * fully qualified with {@code .} between a nested type and its enclosing one, type
+     * arguments kept and joined by {@code ,} with no space, wildcards as {@code ?},
+     * {@code ? extends …} and {@code ? super …}, arrays with {@code []} per dimension, and a
+     * type variable by its simple name. Names are resolved syntactically from inside
+     * {@code method}'s body — see {@link #qualifyInBody}.
+     *
+     * @param type the type as written
+     * @param method the method whose signature carries it
+     * @param declaring the type declaring {@code method}
+     * @return the rendered type
+     */
+    private String typeName(Type type, MethodDeclaration method, ClassOrInterfaceDeclaration declaring) {
+        if (type.isVoidType()) {
+            return "void";
+        }
+        if (type.isPrimitiveType()) {
+            return type.asPrimitiveType().getType().asString();
+        }
+        if (type.isArrayType()) {
+            return typeName(type.asArrayType().getComponentType(), method, declaring) + "[]";
+        }
+        if (type.isWildcardType()) {
+            WildcardType wildcard = type.asWildcardType();
+            return wildcard.getExtendedType()
+                    .map(bound -> "? extends " + typeName(bound, method, declaring))
+                    .or(() -> wildcard.getSuperType().map(bound -> "? super " + typeName(bound, method, declaring)))
+                    .orElse("?");
+        }
+        if (type.isClassOrInterfaceType()) {
+            return classTypeName(type.asClassOrInterfaceType(), method, declaring);
+        }
+        // Union, intersection and var types cannot be a method's return type.
+        return type.asString();
+    }
+
+    /** A class or interface type per {@link #typeName}: its first segment resolved, the rest kept. */
+    private String classTypeName(ClassOrInterfaceType type, MethodDeclaration method,
+                                 ClassOrInterfaceDeclaration declaring) {
+        List<ClassOrInterfaceType> segments = new ArrayList<>();
+        for (ClassOrInterfaceType segment = type; segment != null; segment = segment.getScope().orElse(null)) {
+            segments.add(0, segment);
+        }
+        StringBuilder name = new StringBuilder();
+        for (int i = 0; i < segments.size(); i++) {
+            ClassOrInterfaceType segment = segments.get(i);
+            if (i == 0) {
+                name.append(qualifyInBody(segment.getNameAsString(), segments.size() > 1, method, declaring));
+            } else {
+                name.append('.').append(segment.getNameAsString());
+            }
+            segment.getTypeArguments().ifPresent(arguments -> name.append(arguments.stream()
+                    .map(argument -> typeName(argument, method, declaring))
+                    .collect(Collectors.joining(",", "<", ">"))));
+        }
+        return name.toString();
+    }
+
+    /**
+     * The first segment of a type named in {@code method}'s signature, resolved syntactically in
+     * the order javac's scoping gives it: a type variable of {@code method} or of a type
+     * enclosing it, kept as written; then a member type of {@code declaring} or {@code declaring}
+     * itself, then a type enclosing it or a member type of one, innermost first; then a
+     * top-level type of the compilation unit; then a single-type import; then a public
+     * top-level type of {@code java.lang} the running JDK declares. A first segment of a
+     * qualified name that matches none of those is a package and is kept as written. A simple
+     * name that matches none of them is taken to be in the unit's package, unless the unit has
+     * an on-demand import, in which case it is kept as written.
+     *
+     * <p>A type declared in another file of the same package under a {@code java.lang} name, and
+     * a member type inherited from a supertype, are not visible to a single-file reader; both
+     * resolve differently than javac resolves them.
+     *
+     * @param head the segment's simple name
+     * @param qualified whether further segments follow it
+     * @param method the method whose signature names it
+     * @param declaring the type declaring {@code method}
+     * @return the resolved prefix
+     */
+    private String qualifyInBody(String head, boolean qualified, MethodDeclaration method,
+                                 ClassOrInterfaceDeclaration declaring) {
+        if (!qualified && isTypeVariable(head, method)) {
+            return head;
+        }
+        Optional<CompilationUnit> unit = declaring.findCompilationUnit();
+        Optional<String> resolved = memberType(head, declaring)
+                .or(() -> typeInScope(head, declaring))
+                .or(() -> unit.flatMap(cu -> topLevelType(head, cu)))
+                .or(() -> unit.flatMap(cu -> singleTypeImport(head, cu)));
+        if (resolved.isPresent()) {
+            return resolved.get();
+        }
+        if (isJavaLangType(head)) {
+            return "java.lang." + head;
+        }
+        if (qualified || unit.isEmpty() || hasOnDemandImport(unit.get())) {
+            return head;
+        }
+        String pkg = unit.get().getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
+        return pkg.isEmpty() ? head : pkg + "." + head;
+    }
+
+    /** Whether {@code name} is a type parameter of {@code method} or of a type enclosing it. */
+    private boolean isTypeVariable(String name, Node method) {
+        for (Node node = method; node != null; node = node.getParentNode().orElse(null)) {
+            if (node instanceof NodeWithTypeParameters<?> generic
+                    && generic.getTypeParameters().stream().anyMatch(p -> p.getNameAsString().equals(name))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A member type of {@code type} named {@code name}, fully qualified. */
+    private Optional<String> memberType(String name, TypeDeclaration<?> type) {
+        return type.getMembers().stream()
+                .filter(BodyDeclaration::isTypeDeclaration)
+                .map(BodyDeclaration::asTypeDeclaration)
+                .filter(nested -> nested.getNameAsString().equals(name))
+                .findFirst()
+                .flatMap(TypeDeclaration::getFullyQualifiedName);
+    }
+
+    /** Whether the running JDK's {@code java.base} declares a public top-level {@code java.lang.name}. */
+    private static boolean isJavaLangType(String name) {
+        Class<?> candidate = Class.forName(Object.class.getModule(), "java.lang." + name);
+        return candidate != null
+                && candidate.getEnclosingClass() == null
+                && java.lang.reflect.Modifier.isPublic(candidate.getModifiers());
     }
 
     /**
@@ -1099,12 +1304,7 @@ public final class SourceModelReader {
             if (type.getNameAsString().equals(name)) {
                 return type.getFullyQualifiedName();
             }
-            Optional<String> member = type.getMembers().stream()
-                    .filter(BodyDeclaration::isTypeDeclaration)
-                    .map(BodyDeclaration::asTypeDeclaration)
-                    .filter(nested -> nested.getNameAsString().equals(name))
-                    .findFirst()
-                    .flatMap(TypeDeclaration::getFullyQualifiedName);
+            Optional<String> member = memberType(name, type);
             if (member.isPresent()) {
                 return member;
             }
@@ -1163,8 +1363,8 @@ public final class SourceModelReader {
      * absent. Mirrors {@code extractGraphMetadata}: the label is
      * {@code @Graph(nodeClass)} falling back to the class simple name, the edges are
      * the fields' {@code @GraphEdge}s ({@link #graphEdges}), and — as in the processor —
-     * properties stay {@code null} and queries empty. The {@code @GraphProperty} /
-     * {@code @GraphQuery} member annotations are read by neither side.
+     * properties stay {@code null} and queries empty. {@code @GraphQuery} is read by neither
+     * side; {@code @GraphProperty} is not read here and {@link #unmodeledFacets} reports it.
      */
     private GraphMetadata graphMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> graph = type.getAnnotationByName("Graph");
@@ -1180,8 +1380,9 @@ public final class SourceModelReader {
      * mirroring the processor's {@code graphEdges}. A field carries at most one edge, counted
      * across the direct annotation and a {@code @GraphEdges} container together, whether javac
      * wrote the container or the author did. A field declaring more than one is dropped, as the
-     * processor refuses it: {@code GraphEdgeMetadata} identifies an edge by its field, so it
-     * cannot hold two.
+     * processor refuses it. {@code GraphEdgeMetadata} can carry such a field, with one identity
+     * per edge and a shared {@code field}; this reader reads it when the processor does, so the
+     * two keep writing the same edges for the same source (ADR-042).
      */
     private List<GraphEdgeMetadata> graphEdges(ClassOrInterfaceDeclaration type) {
         List<GraphEdgeMetadata> edges = new ArrayList<>();
@@ -1210,6 +1411,14 @@ public final class SourceModelReader {
      * {@code graphEdge}: the identity is the field name, the relation type is {@code type}, and
      * the target label is the first of a non-blank {@code targetLabel}, the simple name of
      * {@code target} (not {@code void.class}), and a non-blank {@code targetName}.
+     *
+     * <p>The field is the identity, so {@code field} stays {@code null}. The other carried
+     * attributes are read present-only: an attribute the source does not write is
+     * {@code null}, so the annotation default applies, and a declared {@code false} or
+     * {@code 0.0} is carried. {@code direction} maps onto the AST's
+     * {@link GraphEdgeMetadata.Direction} by constant name, an unrecognised name reading as
+     * absent. {@code staticWeight} is read from a numeric literal, signed; a value written as a
+     * constant reference is not resolved and reads as absent.
      */
     private GraphEdgeMetadata graphEdge(AnnotationExpr annotation, String fieldName) {
         String label = nonBlankStringAttr(annotation, "targetLabel")
@@ -1218,7 +1427,55 @@ public final class SourceModelReader {
                         .map(this::simpleName))
                 .or(() -> nonBlankStringAttr(annotation, "targetName"))
                 .orElse(null);
-        return new GraphEdgeMetadata(fieldName, label, nonBlankStringAttr(annotation, "type").orElse(null));
+        return new GraphEdgeMetadata(
+                fieldName,
+                label,
+                nonBlankStringAttr(annotation, "type").orElse(null),
+                null,
+                edgeDirection(annotation).orElse(null),
+                boolAttr(annotation, "bidirectional").orElse(null),
+                nonBlankStringAttr(annotation, "inverseType").orElse(null),
+                nonBlankStringAttr(annotation, "description").orElse(null),
+                boolAttr(annotation, "weighted").orElse(null),
+                nonBlankStringAttr(annotation, "weightField").orElse(null),
+                doubleAttr(annotation, "staticWeight").orElse(null));
+    }
+
+    /**
+     * {@code @GraphEdge.direction} → the AST-owned {@link GraphEdgeMetadata.Direction}, bridged
+     * by constant-name identity like {@link #dataScope}. An unrecognised constant reads as absent.
+     */
+    private Optional<GraphEdgeMetadata.Direction> edgeDirection(AnnotationExpr annotation) {
+        return enumAttr(annotation, "direction")
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(GraphEdgeMetadata.Direction.valueOf(name));
+                    } catch (IllegalArgumentException unknownConstant) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    /**
+     * Present-only {@code double} attribute from a numeric literal ({@code 2}, {@code 0.5},
+     * {@code 1.5d}), unwrapping a leading unary minus. Any other expression reads as absent.
+     */
+    private Optional<Double> doubleAttr(AnnotationExpr annotation, String attribute) {
+        return value(annotation, attribute).flatMap(this::asDouble);
+    }
+
+    private Optional<Double> asDouble(Expression expression) {
+        if (expression.isUnaryExpr()) {
+            UnaryExpr unary = expression.asUnaryExpr();
+            if (unary.getOperator() == UnaryExpr.Operator.MINUS) {
+                return asDouble(unary.getExpression()).map(value -> -value);
+            }
+            return Optional.empty();
+        }
+        if (expression.isDoubleLiteralExpr()) {
+            return Optional.of(expression.asDoubleLiteralExpr().asDouble());
+        }
+        return asLong(expression).map(Long::doubleValue);
     }
 
     /**
@@ -1609,18 +1866,78 @@ public final class SourceModelReader {
 
     /** Constant name of an enum-valued annotation attribute, e.g. {@code ONE_TO_MANY}. */
     private Optional<String> enumAttr(AnnotationExpr annotation, String attribute) {
-        return value(annotation, attribute).map(value -> {
-            if (value.isFieldAccessExpr()) {
-                return value.asFieldAccessExpr().getNameAsString();
+        return value(annotation, attribute).map(this::constantName);
+    }
+
+    /**
+     * The constant an enum-valued expression names: {@code Level.PUBLIC},
+     * {@code RouteAccess.Level.PUBLIC} and a statically imported {@code PUBLIC} all
+     * name {@code PUBLIC}.
+     */
+    private String constantName(Expression value) {
+        if (value.isFieldAccessExpr()) {
+            return value.asFieldAccessExpr().getNameAsString();
+        }
+        if (value.isNameExpr()) {
+            return value.asNameExpr().getNameAsString();
+        }
+        // Unsupported value shape (e.g. a parenthesised expression): fall back
+        // to the raw text. Callers that map this to an enum will treat an
+        // unrecognised name as "absent" rather than failing.
+        return value.toString();
+    }
+
+    /**
+     * The {@code @RouteAccess} an element declares, bridged onto the AST-owned
+     * {@link RouteAccess} by constant name. Both constants are carried, {@code PUBLIC}
+     * included: absence is the "declared nothing" state, so a {@code PUBLIC} that were
+     * skipped would read as a route nobody spoke about. Read in the single-member form
+     * {@code @RouteAccess(Level.PUBLIC)} and the named form {@code @RouteAccess(value = …)}.
+     */
+    private Optional<RouteAccess> routeAccess(NodeWithAnnotations<?> element) {
+        return element.getAnnotationByName("RouteAccess")
+                .flatMap(annotation -> annotation.isSingleMemberAnnotationExpr()
+                        ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
+                        : value(annotation, "value"))
+                .map(this::constantName)
+                .flatMap(name -> {
+                    try {
+                        return Optional.of(RouteAccess.valueOf(name));
+                    } catch (IllegalArgumentException _) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    /**
+     * The annotations on {@code type} whose {@code permissions} hold an element that is not a
+     * string literal: {@code @ExerisDomain} for the entity's, {@code @Action} for an action's.
+     * {@link #stringArrayAttr} reads literals only, so such an element is missing from what
+     * {@link #read} carries, while the processor receives it folded by javac. A permission
+     * dropped here widens the route it guards, or turns an action's own declaration into an
+     * inherited one.
+     */
+    private Set<String> unresolvedPermissionCarriers(ClassOrInterfaceDeclaration type) {
+        Set<String> carriers = new TreeSet<>();
+        if (type.getAnnotationByName("ExerisDomain").map(this::hasNonLiteralPermission).orElse(false)) {
+            carriers.add("@ExerisDomain");
+        }
+        for (MethodDeclaration method : type.getMethods()) {
+            if (method.getAnnotationByName("Action").map(this::hasNonLiteralPermission).orElse(false)) {
+                carriers.add("@Action");
             }
-            if (value.isNameExpr()) {
-                return value.asNameExpr().getNameAsString();
+        }
+        return carriers;
+    }
+
+    private boolean hasNonLiteralPermission(AnnotationExpr annotation) {
+        return value(annotation, PERMISSIONS).map(expression -> {
+            if (expression.isArrayInitializerExpr()) {
+                return expression.asArrayInitializerExpr().getValues().stream()
+                        .anyMatch(element -> !element.isStringLiteralExpr());
             }
-            // Unsupported value shape (e.g. a parenthesised expression): fall back
-            // to the raw text. Callers that map this to an enum will treat an
-            // unrecognised name as "absent" rather than failing.
-            return value.toString();
-        });
+            return !expression.isStringLiteralExpr();
+        }).orElse(false);
     }
 
     private Optional<String> stringAttr(AnnotationExpr annotation, String attribute) {

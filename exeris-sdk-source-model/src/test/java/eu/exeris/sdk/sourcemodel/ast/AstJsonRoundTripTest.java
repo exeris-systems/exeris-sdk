@@ -824,6 +824,28 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("GraphEdgeMetadata's 0.13 components round-trip, and stay off the wire undeclared")
+    void graphEdgeMetadataDeclaredComponentsRoundTrip() {
+        GraphEdgeMetadata declared = new GraphEdgeMetadata("friendsBlocked", "User", "BLOCKED",
+                "friends", GraphEdgeMetadata.Direction.OUTGOING, false, "BLOCKED_BY",
+                "Users this user has blocked", false, "blockedSince", 0.0);
+        assertRoundTrip(declared, GraphEdgeMetadata.class);
+        JsonNode declaredJson = mapper.valueToTree(declared);
+        assertThat(declaredJson.get("field").asString()).isEqualTo("friends");
+        // OUTGOING is ordinal 0, false and 0.0 are declarable values: all three are written.
+        assertThat(declaredJson.get("direction").asString()).isEqualTo("OUTGOING");
+        assertThat(declaredJson.get("bidirectional").asBoolean()).isFalse();
+        assertThat(declaredJson.get("weighted").asBoolean()).isFalse();
+        assertThat(declaredJson.get("staticWeight").asDouble()).isZero();
+
+        // Undeclared, and with the field equal to the identity, the record writes exactly the
+        // three keys it wrote before it grew.
+        JsonNode undeclared = mapper.valueToTree(new GraphEdgeMetadata("owner", "User", "OWNED_BY",
+                "owner", null, null, null, null, null, null, null));
+        assertThat(undeclared.propertyNames()).containsExactlyInAnyOrder("name", "targetLabel", "relationType");
+    }
+
+    @Test
     @DisplayName("GraphQueryMetadata round-trips (graph leaf)")
     void graphQueryMetadataRoundTrips() {
         assertRoundTrip(

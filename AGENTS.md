@@ -65,7 +65,7 @@ Coordinates: groupId `eu.exeris`, packages `eu.exeris.sdk.*`.
    [ADR-024](docs/adr/ADR-024.link.md), [ADR-037](docs/adr/ADR-037-source-model-io-module.md),
    [ADR-054](docs/adr/ADR-054-field-validation-min-max-pattern-cut.md),
    [ADR-069](docs/adr/ADR-069-jdk-baseline-lts.md), [ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md),
-   [ADR-085](docs/adr/ADR-085.link.md)).
+   [ADR-085](docs/adr/ADR-085.link.md), [ADR-106](docs/adr/ADR-106-pre-construction-brief-contract.md)).
 2. [`MIGRATION.md`](MIGRATION.md) and [`ROADMAP.md`](ROADMAP.md) for deprecation diffs and milestone scope.
 3. Package-info files for scoping rationale: `annotations/.../package-info.java`
    and `source-model/.../package-info.java`.

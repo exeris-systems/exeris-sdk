@@ -230,6 +230,10 @@
  *       side. {@link eu.exeris.sdk.annotation.EventSourced @EventSourced} lands
  *       in {@code EventSourcedMetadata}; event-sourcing emission is a tooling
  *       gap, not a kernel one — the kernel ships both halves with a TCK.
+ *       {@code @PrimaryKey} from the {@code system} subpackage is read into
+ *       {@code SystemFieldsMetadata.primaryKeyField} by the {@code -io} reader
+ *       only; the processor does not read it yet, so generated output does not
+ *       change.
  *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam},
  *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu} and
  *       {@link eu.exeris.sdk.annotation.Tab @Tab} are carried by the {@code -io}
@@ -254,10 +258,9 @@
  *       {@link eu.exeris.sdk.annotation.Schedule @Schedule},
  *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess},
  *       {@link eu.exeris.sdk.annotation.Channel @Channel};
- *       the layout annotation
- *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup};
- *       and {@code @PrimaryKey} from the {@code system}
- *       subpackage. See the note below on system fields.</dd>
+ *       and the layout annotation
+ *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup}.
+ *       See the note below on system fields.</dd>
  *
  *   <dt><strong>DEPRECATED</strong> — read by nobody, removed at 1.0.0</dt>
  *   <dd>The whole {@code security} subpackage — {@code @Encrypted},
@@ -296,7 +299,7 @@
  *
  * <p>A {@code system} marker says <em>which field</em> holds a role the flag
  * switched on. The processor and the {@code -io} reader read every marker except
- * {@code @PrimaryKey}, and
+ * {@code @PrimaryKey}, which only the {@code -io} reader reads, and
  * the generators use the marked field's name for the column in place of the
  * canonical one; {@code @SharedScope} has no canonical name and names the
  * read-widening column of a {@code UNIVERSE} entity. The {@code @ExerisDomain} field-name

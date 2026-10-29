@@ -112,6 +112,17 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 24. **Not frozen at 1.0.0.** Promotion condition as before: the kernel moves `…spi.websocket` out of `preview` **and** the `exeris-tooling` transcription exists. The reservation count is now four surfaces, and the accounting in *Consequences* applies unchanged — it is going up, not down.
 
+## Amendment — 2026-10-29 (0.13.0): the `-io` reader reads route access ahead of the processor
+
+**For `@RouteAccess` and the two `permissions` attributes, obligation 14's reader clause is reversed by exeris-tooling ADR-105.** ADR-105 obligation 26 makes the processor extract `permissions` and `routeAccess` only in the release whose pinned SDK reader reads them the same way, so the reader half has to ship first: the processor cannot write under ADR-042 what the reader would then misread as user drift. Obligation 7 is unchanged for `@Blob`, `@Schedule` and `@Channel`.
+
+25. **The reader reads each element's own declaration.** `@RouteAccess` on the type into `DomainMetadata.routeAccess` and beside an `@Action` into `ActionMetadata.routeAccess`, `PUBLIC` included; `@ExerisDomain.permissions` and `@Action.permissions` in declaration order. An action declaring neither keeps a `null` `routeAccess` and empty `permissions`. The nearest-declaration rule of obligation 9 is applied by the generator that compiles the route policy (ADR-105 obligation 12), from these values, not resolved into the metadata.
+
+26. **Parity is held by the TCK, not by fixtures.** The `ROUTE_ACCESS` facet of `exeris-sdk-tck` carries the corpus cases — type, action and inherited; `routeAccess` alone, `permissions` alone, `AUTHENTICATED` with `permissions`, an action's own permissions over the entity's — in the reader, producer and parity suites. The SDK reader's binding runs them on every build. A producer binding declares the facet unsupported until it extracts, so its build skips the facet's cases instead of failing them; `exeris-tooling` does not bind the kit yet, and binding it with the facet supported is asked of its extraction slice (ADR-105 J3-3). The corpus agrees with tooling's own route contract: each element's declaration is metadata, and the row an inheriting action gets is the generator's (`contract/route-policy.example.json`, `source: entity`).
+
+27. **A permission the reader cannot fold is reported.** The reader reads string literals; a `permissions` element written as a constant reference reaches the processor folded by javac and the reader not at all. `unmodeledFacets()` reports such a source as `@ExerisDomain` or `@Action`, the way it reports an unresolvable `@SagaStep.order`, because a dropped permission widens the route it guards.
+
+28. **No schema or freeze change.** No AST component is added, so `SchemaVersion.CURRENT` and the record arities stay; obligation 15's exclusion from the 1.0.0 freeze stands.
 
 ## Consequences
 

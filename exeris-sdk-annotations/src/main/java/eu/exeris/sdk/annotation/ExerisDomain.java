@@ -382,9 +382,9 @@ public @interface ExerisDomain {
      * is written against the kernel by hand. Kernel ADR-061 changes that by
      * making route authorization a declarable, path-shaped policy behind an
      * {@code Optional} slot on {@code HttpKernelProviders} — the first surface
-     * {@link #permissions()} could actually generate into. Wiring it is a
-     * {@code exeris-tooling} slice against a preview-tier SPI, so it is a 1.x
-     * item, not a pre-1.0 one; see {@code ROADMAP.md}.
+     * {@link #permissions()} could actually generate into. Wiring
+     * {@link #permissions()} is exeris-tooling ADR-105; this attribute stays
+     * without a destination.
      *
      * <p><strong>Roles specifically have no destination even after ADR-061.</strong>
      * {@code RouteRequirement} declares no role kind — it decides through
@@ -404,14 +404,20 @@ public @interface ExerisDomain {
     String[] roles() default {};
 
     /**
-     * Default permissions required to access this entity's API.
+     * Default permissions required to access this entity's API. The caller must hold at
+     * least one of them (any-of). They cover every route generated for the entity, and
+     * every action that declares neither its own {@link Action#permissions()} nor its own
+     * {@link RouteAccess}.
      *
-     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> declared but
-     * not extracted, on the same terms as {@link #roles()} — see that attribute
-     * for why. Of the two, this is the half with a destination: the kernel's
-     * {@code RouteRequirement} decides on named scopes, so a permission is what
-     * a generated URL-to-policy table could carry. That table is
-     * {@code exeris-tooling}'s to emit and is not built.
+     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> of this and
+     * {@link #roles()}, this is the half with a destination: the kernel's
+     * {@code RouteRequirement} decides on named scopes, so a permission is what a
+     * generated URL-to-policy table carries, as {@code requiringAnyScope(...)}. The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code DomainMetadata.permissions}, in declaration order. The {@code exeris-tooling}
+     * processor extracts it, and emits the table, in the release that pins this reader
+     * (exeris-tooling ADR-105); until then the processor leaves the component empty and
+     * nothing enforces it.
      *
      * @return array of permission names
      */
@@ -522,13 +528,16 @@ public @interface ExerisDomain {
      * Name of the primary key field, for an entity whose key is not named
      * {@code id}.
      *
-     * <p><strong>Status: PARTIAL.</strong> The {@code exeris-tooling} processor
-     * extracts the value into {@code SystemFieldsMetadata.primaryKeyField}, but no
-     * generator reads it: the emitted schema declares {@code id} as the primary key
-     * unconditionally, the repository identifies rows by {@code id}, and every
-     * by-id route binds {@code {id}} — so setting a different name changes no
-     * emitted output. The {@code -io} reader reads it the same way, and
-     * {@code @PrimaryKey} is RESERVED for the same reason.
+     * <p><strong>Status: LIVE.</strong> The {@code exeris-tooling} processor and the
+     * {@code -io} reader both extract the value into
+     * {@code SystemFieldsMetadata.primaryKeyField}, and the generators name the key
+     * after it: the migration's key column, the repository's identity clause, the
+     * foreign-key targets, the entity accessors, the OpenAPI schema and the generated
+     * models. The named field must exist and be a {@code java.util.UUID}, and a
+     * renamed key beside a field {@code id} is refused. The by-id route variable stays
+     * {@code {id}}. {@code @PrimaryKey} is PARTIAL: the {@code -io} reader reads the
+     * marker into the same component, the processor does not yet, so for generated
+     * output this attribute is the only way to name the key.
      *
      * @return primary key field name
      */

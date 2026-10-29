@@ -147,8 +147,9 @@ import java.lang.annotation.*;
  * <p><strong>Status: LIVE</strong> — extracted into {@code ActionMetadata} and read by the
  * kernel handler, stream-handler, application and OpenAPI generators, and on the TypeScript
  * side by the guard and action-stream client emitters. Not every attribute is live with it:
- * {@link #path()}, {@link #roles()} and {@link #permissions()} are extracted by nobody and
- * carry their own notes below.
+ * {@link #path()} and {@link #roles()} are extracted by nobody, {@link #permissions()} is read
+ * by the {@code exeris-sdk-source-model-io} reader ahead of the processor, and each carries its
+ * own note below.
  * @since 0.1
  * @see Field
  * @see UI
@@ -250,7 +251,10 @@ public @interface Action {
     String[] roles() default {};
 
     /**
-     * Permissions required to execute this action.
+     * Permissions required to execute this action. The caller must hold at least one of them
+     * (any-of), and a non-empty list replaces the entity's {@link ExerisDomain#permissions()}
+     * for this action's route: nearest declaration wins, and an action declaring neither this
+     * nor its own {@link RouteAccess} inherits the entity's requirement.
      * <p>More fine-grained than roles, supports permission-based access control.
      *
      * <p><strong>Examples:</strong>
@@ -259,6 +263,12 @@ public @interface Action {
      *   <li>{@code {"order:delete"}}</li>
      *   <li>{@code {"invoice:send"}}</li>
      * </ul>
+     *
+     * <p><strong>Status:</strong> the {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code ActionMetadata.permissions}, in declaration order. The {@code exeris-tooling}
+     * processor extracts it, and compiles it into the route policy as
+     * {@code RouteRequirement.requiringAnyScope(...)}, in the release that pins this reader
+     * (exeris-tooling ADR-105); until then the processor leaves the component empty.
      *
      * @return required permission names
      */

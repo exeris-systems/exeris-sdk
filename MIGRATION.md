@@ -108,6 +108,61 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `SourceModelReader` reads `@RouteAccess` and `permissions`
+
+**Impact on code: none required.** No AST component is added. What changes is what
+`SourceModelReader.read` returns for a source that declares route access:
+
+- `DomainMetadata.routeAccess` / `ActionMetadata.routeAccess` carry the element's
+  `@RouteAccess`, `PUBLIC` included, and stay `null` when the element declares none.
+- `DomainMetadata.permissions` / `ActionMetadata.permissions` carry the element's
+  `permissions`, in declaration order, where they were always empty before.
+- An action that declares neither carries neither. It inherits the entity's requirement
+  when the route policy is generated; a consumer that needs the effective requirement
+  applies the nearest-declaration rule itself (exeris-tooling ADR-105 obligation 12).
+
+Both `permissions` attributes are any-of: a caller holding one listed permission is
+admitted.
+
+**Reattach.** The `exeris-tooling` processor writes these components in the release that
+pins this reader. A baseline from a processor that does not, compared with a reader view
+of a source declaring them, differs on any action that declares `permissions` or
+`@RouteAccess`, so `SourceModelConflictDetector` returns `Conflict` for an `AddAction` or
+`RemoveAction` on that action. Field and relationship ops are unaffected.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.ROUTE_ACCESS` and a third corpus entity,
+`Product`. A binding that compiles the corpus presents all three sources. A producer or
+parity binding whose producer does not extract route access adds `Facet.ROUTE_ACCESS` to
+`unsupportedFacets()` until it does.
+
+### `SourceModelReader` fills `ActionMetadata.resultType`
+
+**Impact on code: none required.** The `-io` reader writes each `@Action` method's
+declared return type into `ActionMetadata.resultType`, in the form javac's
+`TypeMirror.toString()` gives it without type-use annotations: fully qualified, type
+arguments kept and joined by `,` with no space, a nested type joined by `.`, a type
+variable by its simple name, a primitive by its keyword. An action that returns nothing
+carries `"void"`; `null` means the producer did not extract the component. The record
+does not change shape.
+
+Names are resolved from the one source file: a type the file declares or imports by
+name, a public `java.lang` type, and otherwise the file's package. Under an on-demand
+import (`import java.util.*;`) a simple name the file does not declare is kept as
+written. A member type inherited from a supertype, and a same-package type named like a
+`java.lang` type, resolve differently than javac resolves them.
+
+The `exeris-tooling` processor does not extract the component yet, so its JSON is the
+same as on 0.12.0. `SourceModelConflictDetector` compares an action as a whole, so
+against a processor baseline every action read from source differs in `resultType`, as
+it already differs in `displayName`, which the reader fills from `@Action.label` and the
+processor does not.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.ACTION_RESULT_TYPE`, and the corpus `Order`
+declares four more actions, returning an entity, a `record`, a `List` of it and an
+`int`. A producer or parity binding whose producer does not extract `resultType` fails
+the new cases until it adds `Facet.ACTION_RESULT_TYPE` to `unsupportedFacets()`. A
+reader binding that does not read it does the same.
+
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
 **Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto
@@ -269,6 +324,79 @@ that sets it compiles with a `[removal]` warning from javac.
 - **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
 - **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
 - **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
+
+### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
+
+**Impact on code: none required to keep building.** `GraphEdgeMetadata` gained eight trailing,
+nullable components and keeps its 0.12.0 constructor:
+
+| Record | Components 0.12.0 → 0.13.0 | Added | Kept constructor |
+|---|---|---|---|
+| `GraphEdgeMetadata` | 3 → 11 | `field`, `direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField`, `staticWeight` | 3 arguments |
+
+**Identity and field.** `name` is the edge's identity, unique within its entity. `field` names the
+entity field that declares the edge, and is `null` when it equals `name`, which is the case for
+every field carrying one edge; the record drops a `field` equal to `name`, so both spellings are one
+value and the JSON is the 0.12.0 JSON. A consumer that derived the entity getter from `name` reads
+`effectiveField()` instead: it returns `field` when set and `name` otherwise, so it is correct for
+metadata written by either version. Two `@GraphEdge`s on one field are now representable, as two
+edges with distinct `name`s and the same `field`; the `exeris-tooling` processor still refuses them
+at the declaration, and the `-io` reader drops them, until the processor extracts them.
+
+**Direction.** `direction` is the AST-owned `GraphEdgeMetadata.Direction` (`OUTGOING`, `INCOMING`,
+`BOTH`), with the meaning of the kernel's `GraphEdgeDescriptor.Direction`. `bidirectional` keeps the
+kernel's meaning too: the edge is stored once and traversed both ways. `effectiveDirection()` applies
+the kernel's rule, `bidirectional ? BOTH : direction`, with `OUTGOING` when neither is declared.
+`@GraphEdge.bidirectional` used to describe two stored edges; the reverse edge is stored only when
+`inverseType` names its type.
+
+**Present-only.** Every new component is `null` when the author declared nothing, so the annotation
+default applies. A declared `false`, `OUTGOING` or `0.0` is written. The `-io` reader populates
+`direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField` and
+`staticWeight`; the `exeris-tooling` processor does not extract them yet, and until it does a
+processor's JSON is the same as it was on 0.12.0. No generator reads them yet.
+
+**Outside the 1.0.0 freeze.** `direction`, `bidirectional`, `inverseType`, `weighted`,
+`weightField` and `staticWeight`, on the annotation and on the record, encode the kernel graph SPI,
+which kernel ADR-100 keeps at tier `preview` at 1.0. Under ADR-072 they are reserved and not frozen;
+so are the not-yet-carried `properties`, `propertyMappings`, `staticProperties` and `upsert`. See
+[`MIGRATION-0.x-to-1.0.md` §2](MIGRATION-0.x-to-1.0.md).
+
+**Deprecated.** Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and the
+nested `@GraphEdge.ComputedProperty` are deprecated for removal. None is extracted, and none has a
+kernel graph binding to compile against. A source that sets one compiles with a `[removal]` warning
+from javac.
+
+| Attributes | Replacement |
+|---|---|
+| `unique`, `cascadeUpdate` | `upsert` |
+| `traversalCost` | `staticWeight`, which the kernel's shortest path reads as the cost |
+| `weightExpression` | `weightField` or `staticWeight` |
+| `sync` (`false`) | do not declare the edge |
+| `weightProperty`, `normalizeWeight` | none: the kernel stores one weight per edge under a fixed name, as given |
+| `maxEdges`, `minEdges` | none: the graph session enforces no cardinality |
+| `condition`, `traversalCostExpression`, `computedProperties`, `PropertyMapping.transform` | none: nothing evaluates SpEL |
+| `cascadeDelete`, `cascadeDeleteOrphanTarget` | none: deleting a node always deletes its edges, and nothing else |
+| `indexed`, `indexedProperties`, `compositeIndex` | none: edge tables take no index parameter |
+| `temporal`, `createdAtProperty`, `updatedAtProperty`, `validFrom`, `validTo` | none: edges carry no timestamps, and per-hop property filters are outside kernel ADR-102's scope |
+| `syncOnEvents`, `syncProperties`, `batch` | none: the generated sync writes every edge each time it syncs the entity |
+| `traversable` | none: every kernel traversal names the edge it follows |
+| `graphqlExpose`, `graphqlFieldName`, `graphqlDescription` | none: nothing emits GraphQL |
+
+```java
+// before
+@GraphEdge(type = "ROUTE", target = City.class, traversalCost = 4.5, unique = true, indexed = true)
+private City next;
+
+// after
+@GraphEdge(type = "ROUTE", target = City.class, staticWeight = 4.5)
+private City next;
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
 
 ### `@QueryParam`, `@NavMenu` and `@Tab` have AST carriers; six `@QueryParam` attributes are deprecated — removal in 1.0.0
@@ -689,6 +817,22 @@ TCK binders: `Facet.SAGA` is new, and the corpus `Order` now declares `@Saga(ver
 reader, producer and parity suites each gain a case under it. A binding whose side does not extract
 sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
 `Facet` needs a new arm.
+
+### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports four more annotations
+
+`read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
+as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
+unless a non-blank `@ExerisDomain(primaryKeyField)` names a different field, which then wins. A
+marker with `strategy = SEQUENCE`, `IDENTITY` or `NONE` is not read (ADR-104 refuses those). An
+entity whose only system-field declaration is the marker now reads with a `systemFields` record
+where it read `null` before. exeris-tooling reads the marker the same way from 0.11.0; a baseline
+written by an earlier processor carries `id` for such an entity, so regenerate it.
+
+`unmodeledFacets()` now returns `@GraphProperty`, `@UIGroup`, `@Blob` and `@Channel` when the
+source uses them. It returned nothing for them before. A round-trip, reattach or conflict-detection
+caller that refuses on a non-empty result now refuses those sources; `read()` itself is unchanged
+for them and leaves `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and
+`DomainMetadata.channel` at their defaults.
 
 ---
 

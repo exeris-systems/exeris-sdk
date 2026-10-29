@@ -5,13 +5,16 @@ import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
 import eu.exeris.sdk.annotation.NavMenu;
 import eu.exeris.sdk.annotation.QueryParam;
+import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Saga;
 import eu.exeris.sdk.annotation.SagaStep;
 import eu.exeris.sdk.annotation.Tab;
 import eu.exeris.sdk.annotation.Validation;
+import java.util.List;
 
 /**
- * Corpus entity 1 of 2. Compiled as a unit with {@code Customer}, which points at it.
+ * Corpus entity 1 of 3. Compiled as a unit with {@code Customer}, which points at it, and
+ * {@code Product}.
  *
  * <p>Every annotation attribute used here is one the SDK annotation actually declares, and none is
  * scheduled for removal. Neither half is a stylistic note. A corpus that compiles only because the
@@ -45,12 +48,27 @@ import eu.exeris.sdk.annotation.Validation;
  * none. On {@code search}, {@code term} is read under a query key that differs from its name, and
  * {@code limit} declares {@code required = false}, the opposite of the default; neither carries
  * {@code @ActionParam}, so a side that admits only {@code @ActionParam} parameters reads none.
+ *
+ * <p>The actions are the case behind the {@code ACTION_RESULT_TYPE} facet: one returns nothing,
+ * one an entity, one a {@code record}, one a {@code List} of it, and one a primitive. The entity
+ * is declared in another file, and the record is a member type named by its simple name, so a
+ * side that carries the return type as written disagrees with one carrying the fully-qualified
+ * name javac reports.
+ *
+ * <p>The route-access declarations are the cases behind the {@code ROUTE_ACCESS} facet. The entity
+ * declares {@code AUTHENTICATED} together with two permissions, in an order a side must keep.
+ * {@code submit} declares nothing and inherits the entity's requirement when the route policy is
+ * generated, so its metadata carries neither component: a side that copies the entity's
+ * declaration onto it says the action declared something it did not. {@code approve} declares
+ * permissions of its own, which replace the entity's for that route. {@code track} declares
+ * {@code PUBLIC}, the constant a side that treats ordinal 0 as a default drops.
  */
 @ExerisDomain(
         module = "sales",
         path = "/orders",
         description = "A customer order.",
-        dataScope = ExerisDomain.DataScope.TENANT
+        dataScope = ExerisDomain.DataScope.TENANT,
+        permissions = {"order:read", "order:write"}
 )
 @NavMenu(
         group = "Sales",
@@ -59,6 +77,7 @@ import eu.exeris.sdk.annotation.Validation;
         roles = {"SALES"},
         divider = NavMenu.Divider.AFTER
 )
+@RouteAccess(RouteAccess.Level.AUTHENTICATED)
 @Saga(
         name = "OrderFulfillmentSaga",
         version = 3,
@@ -96,6 +115,35 @@ public class Order {
     public void submit() {
     }
 
+    @Action(name = "customer", label = "Customer", httpMethod = "GET")
+    public Customer customer() {
+        return null;
+    }
+
+    @Action(name = "receipt", label = "Receipt", httpMethod = "GET")
+    public Receipt receipt() {
+        return new Receipt(reference, totalCents == null ? 0L : totalCents);
+    }
+
+    @Action(name = "receipts", label = "Receipts", httpMethod = "GET")
+    public List<Receipt> receipts() {
+        return List.of(receipt());
+    }
+
+    @Action(name = "lineCount", label = "Line count", httpMethod = "GET")
+    public int lineCount() {
+        return 0;
+    }
+
+    @Action(name = "approve", label = "Approve", httpMethod = "POST", permissions = {"order:approve"})
+    public void approve() {
+    }
+
+    @Action(name = "track", label = "Track", httpMethod = "GET")
+    @RouteAccess(RouteAccess.Level.PUBLIC)
+    public void track() {
+    }
+
     @Action(name = "search", label = "Search", httpMethod = "GET")
     public void search(@QueryParam("q") String term,
                        @QueryParam(value = "limit", required = false) int limit) {
@@ -103,6 +151,10 @@ public class Order {
 
     @SagaStep(order = 1, name = "charge", service = "payments", command = "charge")
     public void charge() {
+    }
+
+    /** What the {@code receipt} action returns. */
+    public record Receipt(String reference, long totalCents) {
     }
 
     /** The handler the saga names for a compensation that fails. */

@@ -19,9 +19,10 @@ import java.lang.annotation.Target;
  * <p><strong>What public access does and does not buy.</strong> It makes repeating
  * {@code @GraphEdge} <em>compile</em> outside this package. It does not make a
  * repetition <em>readable</em>: the processor unwraps this container, and then
- * refuses two edges on one field at the declaration, because
- * {@code GraphEdgeMetadata} cannot express the shape. One edge is extracted;
- * two are a build error rather than a silent loss.
+ * refuses two edges on one field at the declaration. {@code GraphEdgeMetadata}
+ * can carry the shape, one identity per edge and a shared {@code field}, but the
+ * processor does not extract it yet. One edge is extracted; two are a build error
+ * rather than a silent loss.
  *
  * <p>{@code @GraphEdge} itself is read by the processor and consumed by the
  * graph-sync generator. Its siblings under {@code @Graph} —
