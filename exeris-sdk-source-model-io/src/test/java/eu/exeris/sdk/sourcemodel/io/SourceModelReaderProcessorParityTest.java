@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -117,48 +118,29 @@ class SourceModelReaderProcessorParityTest {
             });
         }
 
-        @Test
-        void aPrimaryKeyMarkerContradictingItsOverrideLeavesTheKeyToTheOverride() {
+        /**
+         * A refused {@code @PrimaryKey} leaves the key to the override, else {@code id}; an
+         * {@code expected} of {@code null} means no {@code systemFields} record at all.
+         */
+        @ParameterizedTest(name = "{0}")
+        @CsvSource(delimiter = '|', value = {
+                "contradicting its override | (primaryKeyField = \"named\") | @PrimaryKey private java.util.UUID marked; private java.util.UUID named; | named",
+                "contradicting an explicit default | (primaryKeyField = \"id\") | @PrimaryKey private java.util.UUID marked; |",
+                "on two fields | | @PrimaryKey private java.util.UUID one; @PrimaryKey private java.util.UUID two; |"})
+        void aRefusedPrimaryKeyMarkerIsNotRead(String refusal, String domainAttributes, String members,
+                                               String expected) {
             DomainMetadata domain = read("""
                     package x;
                     import eu.exeris.sdk.annotation.ExerisDomain;
                     import eu.exeris.sdk.annotation.system.PrimaryKey;
-                    @ExerisDomain(primaryKeyField = "named")
-                    public class A {
-                        @PrimaryKey private java.util.UUID marked;
-                        private java.util.UUID named;
-                    }
-                    """);
-            assertThat(domain.systemFields().primaryKeyField()).isEqualTo("named");
-        }
-
-        @Test
-        void aPrimaryKeyMarkerContradictingAnExplicitDefaultDeclaresNothing() {
-            DomainMetadata domain = read("""
-                    package x;
-                    import eu.exeris.sdk.annotation.ExerisDomain;
-                    import eu.exeris.sdk.annotation.system.PrimaryKey;
-                    @ExerisDomain(primaryKeyField = "id")
-                    public class A {
-                        @PrimaryKey private java.util.UUID marked;
-                    }
-                    """);
-            assertThat(domain.systemFields()).isNull();
-        }
-
-        @Test
-        void aPrimaryKeyMarkerOnTwoFieldsIsNotRead() {
-            DomainMetadata domain = read("""
-                    package x;
-                    import eu.exeris.sdk.annotation.ExerisDomain;
-                    import eu.exeris.sdk.annotation.system.PrimaryKey;
-                    @ExerisDomain
-                    public class A {
-                        @PrimaryKey private java.util.UUID one;
-                        @PrimaryKey private java.util.UUID two;
-                    }
-                    """);
-            assertThat(domain.systemFields()).isNull();
+                    @ExerisDomain%s
+                    public class A { %s }
+                    """.formatted(domainAttributes == null ? "" : domainAttributes, members));
+            if (expected == null) {
+                assertThat(domain.systemFields()).as(refusal).isNull();
+            } else {
+                assertThat(domain.systemFields().primaryKeyField()).as(refusal).isEqualTo(expected);
+            }
         }
 
         @ParameterizedTest(name = "{0}")
