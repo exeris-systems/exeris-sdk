@@ -20,8 +20,16 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.13.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
+
+## [Unreleased]
+
+### Changed
+
+- **The semver gate compares with `0.13.0`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.0`,
+  the last release on Maven Central, so `-Psemver` in `build.yml` and `release.yml` checks the 1.0.0
+  line against it.
 
 ## [0.13.0] — 2026-10-29
 
@@ -2284,6 +2292,7 @@ None — the first milestone.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.13.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.0
 [0.12.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.12.0
 [0.11.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.11.0
 [0.10.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.10.0

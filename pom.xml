@@ -5,7 +5,7 @@
 
     <groupId>eu.exeris</groupId>
     <artifactId>exeris-sdk-root</artifactId>
-    <version>0.13.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Exeris SDK :: Root</name>
@@ -45,7 +45,7 @@
         <connection>scm:git:git://github.com/exeris-systems/exeris-sdk.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/exeris-systems/exeris-sdk.git</developerConnection>
         <url>https://github.com/exeris-systems/exeris-sdk</url>
-        <tag>v0.13.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
@@ -146,7 +146,7 @@
              dropping a dependency from its published set, is recorded as a CHANGELOG Breaking
              entry with a MIGRATION.md section. -->
         <japicmp.version>0.23.1</japicmp.version>
-        <japicmp.baseline.version>0.12.0</japicmp.baseline.version>
+        <japicmp.baseline.version>0.13.0</japicmp.baseline.version>
         <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the
              gate reactor-wide, and a module outside it sets this to true in its own pom
              (exeris-sdk-annotations, which is @Retention(SOURCE) and gated by
