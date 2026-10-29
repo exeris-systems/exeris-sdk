@@ -552,6 +552,14 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   keeps `…spi.websocket` at `preview` at 1.0, gated on ADR-084 §10's benchmark evidence.
   Promoted when the kernel moves it to `stable`. The javadoc was checked against v0.13.0:
   the SPI, the codec, the Community binding and the four non-declarations still hold
+- [x] **`@ExerisDomain.roles` and `@Action.roles` are deprecated for removal at 1.0.0** —
+  neither is extracted or enforced, and kernel v0.13.0 gives them no destination:
+  `RouteRequirement` decides on scopes only, and a role is enforced only through the kernel's
+  `@RequiresRole` against a build-time method id no SDK declaration generates. Route
+  authorization is `permissions` plus `@RouteAccess`; role-based access has no SDK declaration
+  at 1.0. `@Action.roles`' javadoc promised enforcement it did not have, which the CHANGELOG
+  records under Security. **Tooling:** the two `-Aexeris.strict` inert-attribute entries go with
+  the SDK 1.0 bump
 - [ ] **ADR-077 `LONG_RUNNING` — deferred, additive in 1.x** (obligation 34). The kernel
   `Execution` facet is `stable` now, so the stability-ordering reason of the 0.12.0
   deferral is gone. Two reasons remain. exeris-tooling ADR-105 obligation 18 leaves

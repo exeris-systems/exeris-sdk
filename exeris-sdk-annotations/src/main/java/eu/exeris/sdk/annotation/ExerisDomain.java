@@ -371,36 +371,31 @@ public @interface ExerisDomain {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Default roles required to access this entity's API.
+     * Role names for this entity's API. Nothing enforces them.
      *
-     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> declared but
-     * not extracted. No processor reads this attribute into the AST and no
-     * generator consumes it, so today it documents intent and nothing enforces
-     * it — do not treat it as access control. The gap was that the kernel had
-     * no contract to compile it down to: edge authorization was a hardcoded
-     * {@code /secure} path convention, and method-level {@code @RequiresRole}
-     * is written against the kernel by hand. Kernel ADR-061 changes that by
-     * making route authorization a declarable, path-shaped policy behind an
-     * {@code Optional} slot on {@code HttpKernelProviders} — the first surface
-     * {@link #permissions()} could actually generate into. Wiring
-     * {@link #permissions()} is exeris-tooling ADR-105; this attribute stays
-     * without a destination.
+     * <p>No processor or reader extracts this attribute, and no generator consumes it, so a
+     * declared role reaches no generated route and no generated check. It has no route-level
+     * destination: {@code RouteRequirement} declares no role kind and decides through
+     * {@code PrincipalContext.hasScope} alone, and mapping {@code ROLE_x} onto a scope would
+     * put a second, silently-diverging authority model at the edge (kernel ADR-061, ADR-063).
+     * The kernel enforces a role only at the method level, through its own
+     * {@code @RequiresRole}, against a build-time {@code methodId} the kernel cannot derive
+     * from a URL and no SDK declaration generates. An empty array declares nothing, and does
+     * not make the entity's routes public.
      *
-     * <p><strong>Roles specifically have no destination even after ADR-061.</strong>
-     * {@code RouteRequirement} declares no role kind — it decides through
-     * {@code PrincipalContext.hasScope} and nothing else — and ADR-063
-     * (owned by {@code exeris-spring-runtime}) deliberately keeps
-     * {@code hasRole(...)} out of the edge DSL rather than inventing a
-     * {@code ROLE_x}-to-scope convention, because that would put a second,
-     * silently-diverging authority model at the edge. Roles resolve at the
-     * <em>method</em> level, through {@code @RequiresRole} against a build-time
-     * {@code methodId} the kernel cannot derive from a URL. So a path-shaped
-     * route policy is a destination for {@code permissions} and not for this
-     * attribute; what {@code roles} would compile into, if anything, is
-     * undecided.
-     *
-     * @return array of role names
+     * @return role names; carried into no metadata and enforced by nothing
+     * @deprecated since 0.13.0, for removal in 1.0.0. It was never enforced, so a source that
+     *         sets it has had no protection from it: migrating to the replacement adds the
+     *         protection rather than keeping it. Declare route authorization with
+     *         {@link #permissions()}, which the generated route policy compiles into a scope
+     *         requirement for every route of the entity, and {@link RouteAccess} for routes
+     *         that admit unauthenticated callers or require only a verified identity. A route
+     *         that declares neither falls to the generated application's
+     *         {@code unmatchedRoutes()}, which admits any caller unless the application
+     *         overrides it. Role-based access has no SDK declaration at 1.0. See
+     *         {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] roles() default {};
 
     /**
@@ -409,8 +404,8 @@ public @interface ExerisDomain {
      * every action that declares neither its own {@link Action#permissions()} nor its own
      * {@link RouteAccess}.
      *
-     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> of this and
-     * {@link #roles()}, this is the half with a destination: the kernel's
+     * <p><strong>Open-Core status (kernel v0.11, ADR-061):</strong> unlike the deprecated
+     * {@link #roles()}, this attribute has a destination: the kernel's
      * {@code RouteRequirement} decides on named scopes, so a permission is what a
      * generated URL-to-policy table carries, as {@code requiringAnyScope(...)}. The
      * {@code exeris-sdk-source-model-io} reader reads it into

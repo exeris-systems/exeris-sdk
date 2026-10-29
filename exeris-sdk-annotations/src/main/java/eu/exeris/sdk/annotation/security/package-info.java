@@ -20,9 +20,9 @@
  *       belongs to the application. Tenant isolation, the one policy the published keys support,
  *       is {@code @ExerisDomain(dataScope = DataScope.TENANT)}, which emits the tenant column,
  *       the RLS policy and the query filter, with {@code @TenantId}, the {@code tenantIdField}
- *       override or the canonical accessor name saying which field holds the tenant. Route roles
- *       and permissions are {@code @ExerisDomain.roles} / {@code permissions},
- *       {@code @Action.roles} / {@code permissions} and {@code @RouteAccess}.</li>
+ *       override or the canonical accessor name saying which field holds the tenant. Route
+ *       authorization is {@code @ExerisDomain.permissions}, {@code @Action.permissions} and
+ *       {@code @RouteAccess}; role-based access has no SDK declaration at 1.0.</li>
  *   <li><strong>{@code @Encrypted}.</strong> Field-level encryption at rest is outside kernel
  *       scope at 1.0, in every tier, and tooling must not invent a scheme, so the annotation has
  *       no kernel target. {@code @Field.encrypted} is deprecated by the same ruling.</li>

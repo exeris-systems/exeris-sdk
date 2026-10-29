@@ -54,9 +54,10 @@ import java.util.Locale;
  * @param softDelete whether deletion marks a row rather than removing it
  * @param audited whether created/updated timestamp and user columns are maintained
  * @param versioned whether optimistic locking is enabled through a version column
- * @param roles default roles required to reach this entity's API. Declared but not extracted:
- *        the kernel's edge decides on scopes and declares no role kind (kernel ADR-061/ADR-063),
- *        so what this would compile into is undecided
+ * @param roles role names from {@code @ExerisDomain.roles}. No producer fills it and nothing
+ *        enforces it: the kernel's edge decides on scopes and declares no role kind (kernel
+ *        ADR-061/ADR-063). Its source attribute is deprecated for removal in 1.0.0; route
+ *        authorization is {@code permissions} and {@code routeAccess}
  *
  * @param permissions default permissions required to reach this entity's API, any one of which
  *        admits the caller, in declaration order — the half of the pair that maps onto a named

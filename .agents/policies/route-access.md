@@ -6,6 +6,7 @@
 
 1. **Never overload empty roles or permissions to mean "public":**
    - In `@ExerisDomain` and `@Action`, an empty `roles = {}` or `permissions = {}` array means "nothing explicitly declared". It never declares a route public: the only declaration of a public route is an explicit `@RouteAccess(PUBLIC)`. No SDK artifact, reader or document may infer public access from emptiness.
+   - `roles` is not route authorization in either direction. Nothing extracts or enforces it, empty or not, and it is deprecated for removal in 1.0.0. Route authorization is `permissions` plus `@RouteAccess`; no SDK artifact or document may present `roles` as a protection or as a replacement for another attribute.
    - Using empty arrays to imply public access causes severe security regressions by accidentally opening protected endpoints.
    - What an undeclared route gets at runtime is not an SDK declaration. It is the generated application's `unmatchedRoutes()`, which defaults to `permitAll()` and is documented as fail-open; an application that wants undeclared routes authenticated-only overrides it (exeris-tooling ADR-105 obligations 7–9, ACCEPTED). The SDK states that fallback and does not call `AUTHENTICATED` "the generated default".
 2. **Never add an `UNSPECIFIED` enum constant:**

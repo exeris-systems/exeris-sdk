@@ -19,7 +19,7 @@ import java.lang.annotation.*;
  *         label = "Approve Order",
  *         httpMethod = "POST",
  *         path = "/{id}/approve",
- *         roles = {"ROLE_MANAGER", "ROLE_ADMIN"}
+ *         permissions = {"order:approve"}
  *     )
  *     public void approve() {
  *         if (this.status != OrderStatus.PENDING) {
@@ -38,7 +38,7 @@ import java.lang.annotation.*;
  *     label = "Reject Order",
  *     httpMethod = "POST",
  *     path = "/{id}/reject",
- *     roles = {"ROLE_MANAGER", "ROLE_ADMIN"},
+ *     permissions = {"order:reject"},
  *     confirm = "Are you sure you want to reject this order?"
  * )
  * public void reject(
@@ -79,7 +79,7 @@ import java.lang.annotation.*;
  *     httpMethod = "POST",
  *     path = "/bulk-approve",
  *     bulk = true,
- *     roles = {"ROLE_MANAGER"},
+ *     permissions = {"order:approve"},
  *     confirm = "Approve {count} selected orders?",
  *     ui = @UI(                       // RESERVED — reaches no AST component
  *         icon = "check_circle",
@@ -102,7 +102,7 @@ import java.lang.annotation.*;
  *     httpMethod = "POST",
  *     path = "/{id}/cancel",
  *     visibleWhen = "status == 'PENDING' || status == 'APPROVED'",
- *     roles = {"ROLE_USER"},
+ *     permissions = {"order:cancel"},
  *     ui = @UI(                       // RESERVED — reaches no AST component
  *         icon = "cancel",
  *         cssClass = "btn-danger"
@@ -121,7 +121,6 @@ import java.lang.annotation.*;
  * <p><strong>REST Controller Endpoint:</strong>
  * {@snippet lang="java" :
  * @PostMapping("/{id}/approve")
- * @PreAuthorize("hasAnyRole('ROLE_MANAGER', 'ROLE_ADMIN')")
  * public ResponseEntity<OrderResponse> approve(@PathVariable UUID id) {
  *     Order order = orderService.findById(id)
  *         .orElseThrow(() -> new NotFoundException("Order not found"));
@@ -136,8 +135,7 @@ import java.lang.annotation.*;
  * <button
  *   mat-raised-button
  *   color="primary"
- *   (click)="approve(order.id)"
- *   *ngIf="hasRole(['ROLE_MANAGER', 'ROLE_ADMIN'])">
+ *   (click)="approve(order.id)">
  *   <mat-icon>check_circle</mat-icon>
  *   Approve Order
  * </button>
@@ -147,9 +145,9 @@ import java.lang.annotation.*;
  * <p><strong>Status: LIVE</strong> — extracted into {@code ActionMetadata} and read by the
  * kernel handler, stream-handler, application and OpenAPI generators, and on the TypeScript
  * side by the guard and action-stream client emitters. Not every attribute is live with it:
- * {@link #path()} and {@link #roles()} are extracted by nobody, {@link #permissions()} is read
- * by the {@code exeris-sdk-source-model-io} reader ahead of the processor, and each carries its
- * own note below.
+ * {@link #path()} and the deprecated {@link #roles()} are extracted by nobody,
+ * {@link #permissions()} is read by the {@code exeris-sdk-source-model-io} reader ahead of the
+ * processor, and each carries its own note below.
  * @since 0.1
  * @see Field
  * @see UI
@@ -234,20 +232,28 @@ public @interface Action {
     String path() default "";
 
     /**
-     * Required roles to execute this action.
-     * <p>User must have at least one of these roles.
+     * Role names for this action. Nothing enforces them.
      *
-     * <p><strong>Examples:</strong>
-     * <ul>
-     *   <li>{@code {"ROLE_ADMIN"}}</li>
-     *   <li>{@code {"ROLE_MANAGER", "ROLE_ADMIN"}}</li>
-     *   <li>{@code {"ROLE_USER"}}</li>
-     * </ul>
+     * <p>No processor or reader extracts this attribute and no AST component carries it, so
+     * a declared role reaches no generated route and no generated check. The kernel decides a
+     * route on scopes and never on roles ({@code RouteRequirement}); it enforces a role only
+     * through its own {@code @RequiresRole}, against a build-time method id that no SDK
+     * declaration generates. An empty array declares nothing: it does not restrict the action
+     * to authenticated callers, and it does not make it public. What protects the action's
+     * route is {@link #permissions()} and {@link RouteAccess}, on the action or inherited from
+     * the entity; a route that declares neither falls to the generated application's
+     * {@code unmatchedRoutes()}, which admits any caller unless the application overrides it.
      *
-     * <p>If empty, action is accessible to all authenticated users.
-     *
-     * @return required role names
+     * @return role names; carried into no metadata and enforced by nothing
+     * @deprecated since 0.13.0, for removal in 1.0.0. It was never enforced, so a source that
+     *         sets it has had no protection from it: migrating to the replacement adds the
+     *         protection rather than keeping it. Declare route authorization with
+     *         {@link #permissions()}, which the generated route policy compiles into a scope
+     *         requirement, and {@link RouteAccess} for a route that admits unauthenticated
+     *         callers or requires only a verified identity. Role-based access has no SDK
+     *         declaration at 1.0. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String[] roles() default {};
 
     /**
@@ -255,7 +261,6 @@ public @interface Action {
      * (any-of), and a non-empty list replaces the entity's {@link ExerisDomain#permissions()}
      * for this action's route: nearest declaration wins, and an action declaring neither this
      * nor its own {@link RouteAccess} inherits the entity's requirement.
-     * <p>More fine-grained than roles, supports permission-based access control.
      *
      * <p><strong>Examples:</strong>
      * <ul>
