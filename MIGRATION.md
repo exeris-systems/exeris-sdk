@@ -108,6 +108,34 @@ baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until co
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
 
+### `SourceModelReader` fills `ActionMetadata.resultType`
+
+**Impact on code: none required.** The `-io` reader writes each `@Action` method's
+declared return type into `ActionMetadata.resultType`, in the form javac's
+`TypeMirror.toString()` gives it without type-use annotations: fully qualified, type
+arguments kept and joined by `,` with no space, a nested type joined by `.`, a type
+variable by its simple name, a primitive by its keyword. An action that returns nothing
+carries `"void"`; `null` means the producer did not extract the component. The record
+does not change shape.
+
+Names are resolved from the one source file: a type the file declares or imports by
+name, a public `java.lang` type, and otherwise the file's package. Under an on-demand
+import (`import java.util.*;`) a simple name the file does not declare is kept as
+written. A member type inherited from a supertype, and a same-package type named like a
+`java.lang` type, resolve differently than javac resolves them.
+
+The `exeris-tooling` processor does not extract the component yet, so its JSON is the
+same as on 0.12.0. `SourceModelConflictDetector` compares an action as a whole, so
+against a processor baseline every action read from source differs in `resultType`, as
+it already differs in `displayName`, which the reader fills from `@Action.label` and the
+processor does not.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.ACTION_RESULT_TYPE`, and the corpus `Order`
+declares four more actions, returning an entity, a `record`, a `List` of it and an
+`int`. A producer or parity binding whose producer does not extract `resultType` fails
+the new cases until it adds `Facet.ACTION_RESULT_TYPE` to `unsupportedFacets()`. A
+reader binding that does not read it does the same.
+
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
 **Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto

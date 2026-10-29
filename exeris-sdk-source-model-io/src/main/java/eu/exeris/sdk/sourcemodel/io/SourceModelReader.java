@@ -23,8 +23,10 @@ import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithExtends;
 import com.github.javaparser.ast.nodeTypes.NodeWithImplements;
+import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.WildcardType;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Reads Java source into a {@link DomainMetadata} without invoking {@code javac}
@@ -72,7 +75,8 @@ import java.util.TreeSet;
  * For relationships, {@code targetEntity} (collection element type unwrapped),
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
- * (name, label, httpMethod, async, and {@code @ActionParam} parameters);
+ * (name, label, httpMethod, async, the return type as {@code resultType}, and
+ * {@code @ActionParam} parameters);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
  * matching the processor's default-true convention). The domain-level
@@ -571,6 +575,7 @@ public final class SourceModelReader {
                     .orElse(method.getNameAsString());
             ActionMetadata.Builder builder = ActionMetadata.builder(name)
                     .methodName(method.getNameAsString())
+                    .resultType(typeName(method.getType(), method, type))
                     .async(boolAttr(action.get(), "async", false));
             stringAttr(action.get(), "label").ifPresent(builder::displayName);
             stringAttr(action.get(), "description")
@@ -590,6 +595,139 @@ public final class SourceModelReader {
             actions.add(builder.build());
         }
         return actions;
+    }
+
+    /**
+     * {@code type} in the form {@code TypeMirror.toString()} gives it, without type-use
+     * annotations: {@code void} and primitives as keywords, a class or interface type
+     * fully qualified with {@code .} between a nested type and its enclosing one, type
+     * arguments kept and joined by {@code ,} with no space, wildcards as {@code ?},
+     * {@code ? extends …} and {@code ? super …}, arrays with {@code []} per dimension, and a
+     * type variable by its simple name. Names are resolved syntactically from inside
+     * {@code method}'s body — see {@link #qualifyInBody}.
+     *
+     * @param type the type as written
+     * @param method the method whose signature carries it
+     * @param declaring the type declaring {@code method}
+     * @return the rendered type
+     */
+    private String typeName(Type type, MethodDeclaration method, ClassOrInterfaceDeclaration declaring) {
+        if (type.isVoidType()) {
+            return "void";
+        }
+        if (type.isPrimitiveType()) {
+            return type.asPrimitiveType().getType().asString();
+        }
+        if (type.isArrayType()) {
+            return typeName(type.asArrayType().getComponentType(), method, declaring) + "[]";
+        }
+        if (type.isWildcardType()) {
+            WildcardType wildcard = type.asWildcardType();
+            return wildcard.getExtendedType()
+                    .map(bound -> "? extends " + typeName(bound, method, declaring))
+                    .or(() -> wildcard.getSuperType().map(bound -> "? super " + typeName(bound, method, declaring)))
+                    .orElse("?");
+        }
+        if (type.isClassOrInterfaceType()) {
+            return classTypeName(type.asClassOrInterfaceType(), method, declaring);
+        }
+        // Union, intersection and var types cannot be a method's return type.
+        return type.asString();
+    }
+
+    /** A class or interface type per {@link #typeName}: its first segment resolved, the rest kept. */
+    private String classTypeName(ClassOrInterfaceType type, MethodDeclaration method,
+                                 ClassOrInterfaceDeclaration declaring) {
+        List<ClassOrInterfaceType> segments = new ArrayList<>();
+        for (ClassOrInterfaceType segment = type; segment != null; segment = segment.getScope().orElse(null)) {
+            segments.add(0, segment);
+        }
+        StringBuilder name = new StringBuilder();
+        for (int i = 0; i < segments.size(); i++) {
+            ClassOrInterfaceType segment = segments.get(i);
+            if (i == 0) {
+                name.append(qualifyInBody(segment.getNameAsString(), segments.size() > 1, method, declaring));
+            } else {
+                name.append('.').append(segment.getNameAsString());
+            }
+            segment.getTypeArguments().ifPresent(arguments -> name.append(arguments.stream()
+                    .map(argument -> typeName(argument, method, declaring))
+                    .collect(Collectors.joining(",", "<", ">"))));
+        }
+        return name.toString();
+    }
+
+    /**
+     * The first segment of a type named in {@code method}'s signature, resolved syntactically in
+     * the order javac's scoping gives it: a type variable of {@code method} or of a type
+     * enclosing it, kept as written; then a member type of {@code declaring} or {@code declaring}
+     * itself, then a type enclosing it or a member type of one, innermost first; then a
+     * top-level type of the compilation unit; then a single-type import; then a public
+     * top-level type of {@code java.lang} the running JDK declares. A first segment of a
+     * qualified name that matches none of those is a package and is kept as written. A simple
+     * name that matches none of them is taken to be in the unit's package, unless the unit has
+     * an on-demand import, in which case it is kept as written.
+     *
+     * <p>A type declared in another file of the same package under a {@code java.lang} name, and
+     * a member type inherited from a supertype, are not visible to a single-file reader; both
+     * resolve differently than javac resolves them.
+     *
+     * @param head the segment's simple name
+     * @param qualified whether further segments follow it
+     * @param method the method whose signature names it
+     * @param declaring the type declaring {@code method}
+     * @return the resolved prefix
+     */
+    private String qualifyInBody(String head, boolean qualified, MethodDeclaration method,
+                                 ClassOrInterfaceDeclaration declaring) {
+        if (!qualified && isTypeVariable(head, method)) {
+            return head;
+        }
+        Optional<CompilationUnit> unit = declaring.findCompilationUnit();
+        Optional<String> resolved = memberType(head, declaring)
+                .or(() -> typeInScope(head, declaring))
+                .or(() -> unit.flatMap(cu -> topLevelType(head, cu)))
+                .or(() -> unit.flatMap(cu -> singleTypeImport(head, cu)));
+        if (resolved.isPresent()) {
+            return resolved.get();
+        }
+        if (isJavaLangType(head)) {
+            return "java.lang." + head;
+        }
+        if (qualified || unit.isEmpty() || hasOnDemandImport(unit.get())) {
+            return head;
+        }
+        String pkg = unit.get().getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
+        return pkg.isEmpty() ? head : pkg + "." + head;
+    }
+
+    /** Whether {@code name} is a type parameter of {@code method} or of a type enclosing it. */
+    private boolean isTypeVariable(String name, Node method) {
+        for (Node node = method; node != null; node = node.getParentNode().orElse(null)) {
+            if (node instanceof NodeWithTypeParameters<?> generic
+                    && generic.getTypeParameters().stream().anyMatch(p -> p.getNameAsString().equals(name))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A member type of {@code type} named {@code name}, fully qualified. */
+    private Optional<String> memberType(String name, TypeDeclaration<?> type) {
+        return type.getMembers().stream()
+                .filter(BodyDeclaration::isTypeDeclaration)
+                .map(BodyDeclaration::asTypeDeclaration)
+                .filter(nested -> nested.getNameAsString().equals(name))
+                .findFirst()
+                .flatMap(TypeDeclaration::getFullyQualifiedName);
+    }
+
+    /** Whether the running JDK's {@code java.base} declares a public top-level {@code java.lang.name}. */
+    private static boolean isJavaLangType(String name) {
+        Class<?> candidate = Class.forName(Object.class.getModule(), "java.lang." + name);
+        return candidate != null
+                && candidate.getEnclosingClass() == null
+                && java.lang.reflect.Modifier.isPublic(candidate.getModifiers());
     }
 
     private ActionParamMetadata actionParam(Parameter parameter, AnnotationExpr annotation) {
@@ -905,12 +1043,7 @@ public final class SourceModelReader {
             if (type.getNameAsString().equals(name)) {
                 return type.getFullyQualifiedName();
             }
-            Optional<String> member = type.getMembers().stream()
-                    .filter(BodyDeclaration::isTypeDeclaration)
-                    .map(BodyDeclaration::asTypeDeclaration)
-                    .filter(nested -> nested.getNameAsString().equals(name))
-                    .findFirst()
-                    .flatMap(TypeDeclaration::getFullyQualifiedName);
+            Optional<String> member = memberType(name, type);
             if (member.isPresent()) {
                 return member;
             }

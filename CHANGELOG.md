@@ -100,6 +100,25 @@ for per-version upgrade steps.
   producer or parity binding whose processor does not extract the section declares
   `SAGA_COMPENSATION` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
+- **`exeris-sdk-source-model-io` fills `ActionMetadata.resultType`.** Each `@Action` method's
+  declared return type, in the form `TypeMirror.toString()` gives it without type-use
+  annotations: fully qualified, type arguments kept and joined by `,`, a nested type joined by
+  `.`, a type variable by its simple name, a primitive by its keyword, and `"void"` for an action
+  that returns nothing. Names resolve syntactically: a member or enclosing type, a top-level type
+  of the file, a single-type import, a public `java.lang` type, then the file's package; under an
+  on-demand import an unresolved simple name is kept as written. `SourceModelReaderResultTypeParityTest`
+  runs javac over a fixture and compares the reader with `getReturnType().toString()` for
+  eighteen return types. **Tooling:** the processor writes the same form (ADR-042); the streaming
+  generators type an action's result frame from it.
+
+- **`exeris-sdk-tck`: `Facet.ACTION_RESULT_TYPE`, with a case in the reader, producer and parity
+  suites.** The corpus `Order` declares four more actions, returning `Customer`, a member
+  `record`, a `List` of that record and an `int`, beside the `void` `submit`. The producer case
+  reads the JSON tree, so a missing `resultType` key fails it. Each case has self-tests against a
+  conforming binding and a broken one. `exeris-sdk-source-model-io` passes the reader case.
+  **Tooling:** a producer or parity binding whose processor does not extract `resultType` declares
+  `ACTION_RESULT_TYPE` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
+
 - **`@exeris/ui-kit` 0.5.0: `.exeris-hero` in `@exeris/ui-kit/styles`.** The view generator renders
   a `HERO` block as `<section class="exeris-hero">`, and the kit now declares the class: an
   `--exeris-primary` fill, white text, an `--exeris-radius-md` radius and `--exeris-spacing-xl`

@@ -49,7 +49,17 @@ public enum Facet {
      *
      * @since 0.13
      */
-    SAGA_COMPENSATION;
+    SAGA_COMPENSATION,
+
+    /**
+     * {@code ActionMetadata.resultType} — each {@code @Action} method's return type, fully
+     * qualified with its type arguments, and {@code "void"} for an action that returns nothing.
+     * The streaming generators type an action's result frame from it, and emit none for
+     * {@code "void"}.
+     *
+     * @since 0.13
+     */
+    ACTION_RESULT_TYPE;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);
