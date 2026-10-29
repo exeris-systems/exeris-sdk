@@ -7,19 +7,23 @@ import eu.exeris.sdk.annotation.Relationship.RelationshipType;
 import eu.exeris.sdk.annotation.Validation;
 
 /**
- * Corpus entity 2 of 2. Compiled as a unit with {@code Order}.
+ * Corpus entity 2 of 3. Compiled as a unit with {@code Order} and {@code Product}.
  *
  * <p>The {@code @Relationship} here is not decoration. Its cardinality attribute is named
  * {@code relationshipType}, and a producer that reads it under a different key silently hands back
  * the builder default — which is how a {@code ONE_TO_MANY} side came to emit the foreign key,
  * index, constraint and finder that belong on the other side. The defect was invisible because
  * both sides still produced a well-formed baseline.
+ *
+ * <p>{@code permissions} without a {@code @RouteAccess} is the entity-level case of a route that
+ * declares its scopes alone: the metadata carries the list and no {@code routeAccess}.
  */
 @ExerisDomain(
         module = "sales",
         path = "/customers",
         description = "A person or organisation that places orders.",
-        dataScope = ExerisDomain.DataScope.TENANT
+        dataScope = ExerisDomain.DataScope.TENANT,
+        permissions = {"customer:read"}
 )
 public class Customer {
 

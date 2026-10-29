@@ -32,6 +32,7 @@ class MetadataProducerTckSelfTest {
             producer.sagaVersionReachesTheProducedMetadata();
             producer.sagaCompensationReachesTheProducedJson();
             producer.actionResultTypeReachesTheProducedJson();
+            producer.routeAccessReachesTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -180,6 +181,25 @@ class MetadataProducerTckSelfTest {
     }
 
     /** A producer binding whose output is the reference baseline put through one transformation. */
+    @Test
+    @DisplayName("a PUBLIC missing from the produced JSON is caught")
+    void routeAccessPublicCaseIsNotVacuous() {
+        Producer publicBlind = new Producer(json -> json.replace("\"routeAccess\":\"PUBLIC\"", "\"x\":0"));
+        assertThatThrownBy(publicBlind::routeAccessReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product/routeAccess — no PUBLIC key in the produced JSON")
+                .hasMessageContaining("Order/actions/track/routeAccess — no PUBLIC key in the produced JSON");
+    }
+
+    @Test
+    @DisplayName("an action permission the producer never wrote is caught")
+    void routeAccessPermissionCaseIsNotVacuous() {
+        Producer permissionBlind = new Producer(json -> json.replace("\"order:approve\"", ""));
+        assertThatThrownBy(permissionBlind::routeAccessReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order/actions/approve/permissions — declared [order:approve], got []");
+    }
+
     static class Producer extends AbstractMetadataProducerTck {
 
         private final UnaryOperator<String> defect;

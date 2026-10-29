@@ -16,11 +16,11 @@ import java.util.Map;
  * class-level {@code NON_DEFAULT} drops, a relationship whose cardinality attribute has been read
  * under the wrong key, a saga version that one side reads and the other skips, a declared
  * {@code false} that a boxed component drops, a return type carried as written rather than fully
- * qualified — so a binding
+ * qualified, a {@code PUBLIC} route access that ordinal 0 invites a side to drop — so a binding
  * that regresses one of them fails on the case rather than on a fixture nobody thought to write.
  *
- * <p>The two entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship
- * to {@code Order}. A binder driving javac must present both sources together.
+ * <p>The entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship
+ * to {@code Order}. A binder driving javac must present the sources together.
  *
  * <p>Because a producer binding <em>compiles</em> these, they may use no attribute that is
  * deprecated for removal — a fixture declaring its tier through {@code @ExerisDomain.tenantScoped}
@@ -36,15 +36,28 @@ public final class TckCorpus {
      * Simple name of the order entity — fields, validation bounds (including a zero), five actions
      * returning nothing, an entity, a {@code record}, a {@code List} and a primitive, and
      * a {@code @Saga} declaring a non-default {@code version} and a compensation section whose
-     * values include a {@code 0}, two {@code false}s and a member-type failure handler.
+     * values include a {@code 0}, two {@code false}s and a member-type failure handler. Its route
+     * access is {@code AUTHENTICATED} with two permissions, over an action that inherits it, one
+     * that declares permissions of its own and one that is {@code PUBLIC}.
      */
     public static final String ORDER = "Order";
 
-    /** Simple name of the customer entity — validation bounds and a {@code ONE_TO_MANY} edge. */
+    /**
+     * Simple name of the customer entity — validation bounds, a {@code ONE_TO_MANY} edge, and
+     * entity-level permissions without a {@code @RouteAccess}.
+     */
     public static final String CUSTOMER = "Customer";
 
+    /**
+     * Simple name of the product entity — a {@code PUBLIC} entity with an action that declares
+     * {@code AUTHENTICATED} and a permission of its own.
+     *
+     * @since 0.13
+     */
+    public static final String PRODUCT = "Product";
+
     private static final String PACKAGE = "eu.exeris.sdk.tck.corpus";
-    private static final List<String> NAMES = List.of(ORDER, CUSTOMER);
+    private static final List<String> NAMES = List.of(ORDER, CUSTOMER, PRODUCT);
 
     private TckCorpus() {
         // Intentionally empty: static holder — the corpus is classpath data, not state.
@@ -103,6 +116,8 @@ public final class TckCorpus {
         types.put("receipt", PACKAGE + ".Order.Receipt");
         types.put("receipts", "java.util.List<" + PACKAGE + ".Order.Receipt>");
         types.put("lineCount", "int");
+        types.put("approve", "void");
+        types.put("track", "void");
         return types;
     }
 

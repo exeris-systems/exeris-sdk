@@ -8,6 +8,7 @@ import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -259,6 +260,29 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
         assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
         assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
         assertThat(saga.compensationDlq()).isEqualTo("sales.order-compensation.dlq");
+    }
+
+    /**
+     * Every route-access declaration in the corpus, read as declared. A {@code PUBLIC} skipped as
+     * if ordinal 0 were a default reads as "declared nothing"; an entity's declaration copied onto
+     * an inheriting action reads as a declaration the author never wrote.
+     */
+    @Test
+    @DisplayName("route access and permissions are carried as each element declares them")
+    void routeAccessIsTheDeclaredOne() {
+        requireSupported(Facet.ROUTE_ACCESS);
+        List<String> gaps = new ArrayList<>();
+        for (String name : TckCorpus.entityNames()) {
+            gaps.addAll(CorpusRouteAccess.gaps(read(TckCorpus.sourceOf(name))));
+        }
+        assertThat(gaps)
+                .withFailMessage(
+                        "The reader's route access disagrees with the corpus on %d path(s):%n  %s%n%n"
+                                + "Each element carries only what it declares: an action without a "
+                                + "declaration of its own carries no routeAccess and no permissions, "
+                                + "and PUBLIC is a declaration, not a default.",
+                        gaps.size(), String.join("\n  ", gaps))
+                .isEmpty();
     }
 
     /**

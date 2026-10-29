@@ -65,6 +65,12 @@ for per-version upgrade steps.
 
 ### Changed
 
+- **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
+  `@Action.permissions` admit a caller holding at least one listed permission, and an action's
+  non-empty list replaces the entity's for its route (exeris-tooling ADR-105 obligations 10 and
+  12). ADR-072 is amended: for route access the `-io` reader reads ahead of the processor, as
+  ADR-105 obligation 26 requires.
+
 - **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
   `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
   two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
@@ -145,6 +151,32 @@ for per-version upgrade steps.
   broken in that one way. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a
   producer or parity binding whose processor does not extract the section declares
   `SAGA_COMPENSATION` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
+
+- **`exeris-sdk-source-model-io` reads `@RouteAccess` and `permissions`.** `@RouteAccess` on the
+  type lands on `DomainMetadata.routeAccess` and beside an `@Action` on `ActionMetadata.routeAccess`,
+  `PUBLIC` included; `@ExerisDomain.permissions` and `@Action.permissions` land on the two
+  `permissions` components in declaration order. Each element carries only what it declares: an
+  action declaring neither keeps a `null` `routeAccess` and empty `permissions`, and the
+  nearest-declaration rule is applied by the route-policy generator (exeris-tooling ADR-105
+  obligation 12). The level is read in the single-member and `value =` forms, qualified, through
+  `Level` or statically imported; an unknown constant reads as absent. A `permissions` element that
+  is not a string literal is not carried, and `unmodeledFacets()` reports the source as
+  `@ExerisDomain` or `@Action`. No AST component is added. **Tooling:** the processor extracts the
+  same four components in the release that pins this reader (ADR-105 obligation 26); until then
+  `SourceModelConflictDetector` reads an `AddAction` / `RemoveAction` over an action that declares
+  either as drift. See `MIGRATION.md` (0.12.x → 0.13.x).
+
+- **`exeris-sdk-tck`: `Facet.ROUTE_ACCESS`, with a case in the reader, producer and parity
+  suites.** The corpus gains a third entity, `Product`, and route-access declarations on all three:
+  `Order` is `AUTHENTICATED` with two permissions over an action that inherits, one with its own
+  permissions and one that is `PUBLIC`; `Customer` declares permissions alone; `Product` is
+  `PUBLIC` with an action that is `AUTHENTICATED` with its own permission. No element pairs `PUBLIC`
+  with a permission, which the processor refuses. The producer case reads the JSON tree, so a
+  `PUBLIC` dropped as ordinal 0 fails it. Each case has self-tests against a conforming binding and
+  bindings that drop `PUBLIC`, copy the entity's declaration onto an inheriting action, or reorder a
+  list. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a producer or parity
+  binding whose processor does not extract route access declares `ROUTE_ACCESS` in
+  `unsupportedFacets()` until it does.
 
 - **`exeris-sdk-source-model-io` fills `ActionMetadata.resultType`.** Each `@Action` method's
   declared return type, in the form `TypeMirror.toString()` gives it without type-use
@@ -329,6 +361,16 @@ for per-version upgrade steps.
   uses, was never managed here and is unaffected.
 
 ### Security
+
+- **A route that declares no access is public in a generated application, and the SDK now says
+  so.** `RouteAccess.Level.AUTHENTICATED` no longer calls itself the generated default. A route
+  with no `@RouteAccess` and no `permissions` on its entity or action is decided by the generated
+  application's `unmatchedRoutes()`, which defaults to `permitAll()`: fail-open, as accepted in
+  [exeris-tooling ADR-105](https://github.com/exeris-systems/exeris-tooling/blob/main/docs/adr/ADR-105-generated-route-policy-emission.md)
+  obligations 7–9. To make undeclared routes authenticated-only, override `unmatchedRoutes()` to
+  return `RouteRequirement.authenticated()`, or declare `@RouteAccess(AUTHENTICATED)` on each
+  entity. An empty `roles` or `permissions` never declares a route public; only an explicit
+  `@RouteAccess(PUBLIC)` does.
 
 - **`jackson-databind` 3.2.2 → 3.2.3.** 3.2.0 through 3.2.2 carry two high-severity advisories:
   unbounded retention of unknown raw type ids (GHSA-wv8q-qhhj-9h54, Dependabot #22) and quadratic

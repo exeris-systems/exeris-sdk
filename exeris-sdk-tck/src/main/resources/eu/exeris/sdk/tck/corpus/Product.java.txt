@@ -1,0 +1,32 @@
+package eu.exeris.sdk.tck.corpus;
+
+import eu.exeris.sdk.annotation.Action;
+import eu.exeris.sdk.annotation.ExerisDomain;
+import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.RouteAccess;
+
+/**
+ * Corpus entity 3 of 3. Compiled as a unit with {@code Order} and {@code Customer}.
+ *
+ * <p>The route-access cases {@code Order} cannot carry. The entity is {@code PUBLIC}: the constant
+ * is ordinal 0, and a side that treats it as a default drops it, so a route the author opened reads
+ * as one nobody spoke about. {@code reprice} declares {@code AUTHENTICATED} together with a
+ * permission of its own, overriding the entity's level for that route. Neither declares
+ * {@code PUBLIC} beside a permission, a pair the processor refuses.
+ */
+@ExerisDomain(
+        module = "catalog",
+        path = "/products",
+        description = "An item offered for sale."
+)
+@RouteAccess(RouteAccess.Level.PUBLIC)
+public class Product {
+
+    @Field(label = "Name", required = true)
+    private String name;
+
+    @Action(name = "reprice", label = "Reprice", httpMethod = "POST", permissions = {"product:reprice"})
+    @RouteAccess(RouteAccess.Level.AUTHENTICATED)
+    public void reprice() {
+    }
+}

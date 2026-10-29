@@ -39,6 +39,7 @@ class MetadataParityTckSelfTest {
             parity.actionResultTypesAgree();
             parity.sagaIdentityAgrees();
             parity.sagaCompensationAgrees();
+            parity.routeAccessAgrees();
         }).doesNotThrowAnyException();
     }
 
@@ -203,6 +204,35 @@ class MetadataParityTckSelfTest {
         assertThatThrownBy(parity::sagaCompensationAgrees)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("saga/compensationFailureHandler");
+    }
+
+    @Test
+    @DisplayName("a PUBLIC one side drops is caught, on the entity and on an action")
+    void droppedPublicIsCaught() {
+        Parity parity = new Parity(UnaryOperator.identity(), ReferenceBinding::publicDropped);
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Product: routeAccess — producer: 'PUBLIC', reader: <absent>")
+                .hasMessageContaining("Order: actions/track/routeAccess — producer: 'PUBLIC', reader: <absent>");
+    }
+
+    @Test
+    @DisplayName("an entity declaration one side copies onto an inheriting action is caught")
+    void resolvedInheritanceIsCaught() {
+        Parity parity = new Parity(ReferenceBinding::inheritanceResolved, UnaryOperator.identity());
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order: actions/submit/routeAccess — producer: 'AUTHENTICATED', reader: <absent>")
+                .hasMessageContaining("Order: actions/submit/permissions");
+    }
+
+    @Test
+    @DisplayName("permissions one side reorders are caught")
+    void reorderedPermissionsAreCaught() {
+        Parity parity = new Parity(UnaryOperator.identity(), ReferenceBinding::permissionsReversed);
+        assertThatThrownBy(parity::routeAccessAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order: permissions — producer: '[order:read, order:write]'");
     }
 
     @Test
