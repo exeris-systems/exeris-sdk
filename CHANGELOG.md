@@ -42,6 +42,27 @@ for per-version upgrade steps.
   components are by-name and nullable, and the record keeps its 16-component constructor. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+### Changed
+
+- **`DomainMetadata.pluralName()` treats an uppercase vowel before a trailing `y` as a vowel.**
+  `Ay` now pluralises to `Ays` (was `Aies`), matching the lowercase case. Only a name whose last
+  two characters are an uppercase vowel `A E I O U` followed by `y` changes, such as `OrderAy`;
+  `effectivePath()` and `effectiveTableName()` follow, so the derived route and table for such a
+  name change (`order-aies` to `order-ays`, `order_aies` to `order_ays`). Set `@ExerisDomain.path`
+  / `tableName` to pin the old value. `exeris-codegen-ts` applies the same rule.
+
+### Fixed
+
+- **`FieldMetadata` writes `inCreate` and `inUpdate` whether they are `true` or `false`.** Under the
+  class-level `@JsonInclude(NON_DEFAULT)` a primitive `false` was dropped from the wire form, so a
+  reader that treats an absent key as the annotation default (`true`) read an `inCreate = false` or
+  `inUpdate = false` field as offered. Both components now carry `@JsonInclude(ALWAYS)`. A metadata
+  file written by an earlier SDK still lacks the key for a `false`; read it as `false`.
+
+- **`-javadoc.jar` artifacts no longer bundle fonts.** `maven-javadoc-plugin` moves 3.11.2 → 3.12.0,
+  which passes `--no-fonts` to the JDK javadoc tool. Each javadoc jar drops the ~4.1 MB of
+  `resource-files/fonts/*.woff` it carried; the pages render in the browser's default fonts.
+
 ### Added
 
 - **`SagaMetadata` carries the whole `@Saga` compensation section.** Six trailing components,
@@ -50,10 +71,33 @@ for per-version upgrade steps.
   name) and `manualInterventionOnCompensationFailure`. Each is boxed and `null` when the author
   declared nothing, so the annotation default applies and a producer that does not extract them
   writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
-  pinned by `AstJsonRoundTripTest`. Builder setters for all six. No producer populates them yet:
-  the `exeris-tooling` processor and the `-io` reader extract them together (ADR-042). `@Saga`'s
-  seven compensation attributes without an extractor, `compensationTimeout` included, say so in
-  their status notes (RESERVED, carried but not extracted).
+  pinned by `AstJsonRoundTripTest`. Builder setters for all six.
+
+- **`exeris-sdk-source-model-io` reads `@Saga`'s compensation section.** `compensationTimeout` and
+  the six components above are read present-only: undeclared leaves `compensationTimeout` at its
+  builder default and the six `null`, and a declared `0` or `false` is carried.
+  `compensationMaxRetries` is read signed, as javac folds it. A blank `compensationDlq` and
+  `void.class` read as `null`. `compensationFailureHandler` is the fully-qualified name javac
+  reports, resolved syntactically: the declaring type and the types enclosing it, then the
+  unit's top-level types, then a single-type import, then the unit's package. Under an on-demand
+  import a simple name the unit does not declare is kept as written, because the reader cannot
+  tell which package it comes from. `compensationStrategy` and `compensationOrder` are not read:
+  `Saga.CompensationStrategy` declares `STOP_ON_FAILURE` and `MANUAL`, `SagaMetadata`'s declares
+  `CUSTOM`, and `Saga.CompensationOrder.CUSTOM` has no AST counterpart, so a read by constant
+  name would carry a wrong value. The seven read attributes are PARTIAL in `@Saga`'s status
+  notes. `SourceModelConflictDetector` compares no saga component, so a baseline from a processor
+  that does not extract the section yet raises no conflict. **Tooling:** the processor reads the
+  same seven the same way (ADR-042).
+
+- **`exeris-sdk-tck`: `Facet.SAGA_COMPENSATION`, with a case in the reader, producer and parity
+  suites.** The corpus `Order`'s `@Saga` declares the section with the values a dropped
+  attribute would contradict: `compensationMaxRetries = 0`, both booleans `false`, and
+  `compensationFailureHandler = Order.CompensationEscalation.class`, a member type whose
+  fully-qualified name differs from the written form. The producer case reads the JSON tree, so a
+  missing key fails it. Each case has self-tests against a conforming binding and a binding
+  broken in that one way. `exeris-sdk-source-model-io` passes the reader case. **Tooling:** a
+  producer or parity binding whose processor does not extract the section declares
+  `SAGA_COMPENSATION` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
 - **`@exeris/ui-kit` 0.5.0: `.exeris-hero` in `@exeris/ui-kit/styles`.** The view generator renders
   a `HERO` block as `<section class="exeris-hero">`, and the kit now declares the class: an
@@ -84,6 +128,18 @@ for per-version upgrade steps.
   under the default light, default dark and brand themes.
 
 ### Changed
+
+- **`@SagaStep.order` states its contract, and the `-io` reader no longer reads an unresolvable
+  order as `1` without saying so.** The Javadoc states that the steps of a saga number `1..N`, that
+  a value is shared only by steps that all declare `parallel = true`, and that the ordering defines
+  the sequence; `@Saga` states that a type hosts one saga. `SourceModelReader` folds a step order
+  given as a `final` field of the same source file (own type, enclosing type, or `Type.NAME` for a
+  type of that file), as javac folds it for the processor, and accepts a negated literal. An
+  enclosing type's field is used only while no type in between extends or implements another,
+  since an inherited field of the same name would take precedence for javac. An order
+  it still cannot resolve is carried as `1` and reported by `unmodeledFacets()` as `@SagaStep`,
+  which a reattach caller treats as unsafe. Duplicates, gaps and a sequence not starting at `1` are
+  carried as written; the diagnostic for them belongs to the `exeris-tooling` processor.
 
 - **CI runs the semver gate.** `build.yml` and `release.yml` pass `-Psemver`, so japicmp compares
   every build with `0.12.0`, the last release, which Maven Central serves. A binary-incompatible
@@ -158,6 +214,36 @@ for per-version upgrade steps.
   See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 ### Deprecated
+
+- **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
+  `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and
+  `SagaMetadata.TriggerType` now correspond one-to-one by name, as `@SagaTransition.on()` does onto
+  `TransitionOutcome`: `EVENT`, `SCHEDULED`, `API` and `MANUAL` on both sides. `SCHEDULED` and
+  `API` are new annotation constants; `SCHEDULE` is read as `SCHEDULED` and `HTTP` as `API`.
+  `COMMAND` has no counterpart because the kernel has no command-started flow: a flow is scheduled
+  by application code (`MANUAL`, which `COMMAND` is read as) or started from an event by a
+  choreography mapper (`EVENT`). `@SagaTrigger.type()` defaults to `MANUAL` instead of `COMMAND`.
+  The AST enum, its JSON values and `SchemaVersion` are unchanged. Neither the `-io` reader nor the
+  `exeris-tooling` processor reads `@Saga.trigger` yet, so no build output changes; a source using a
+  deprecated constant compiles with a `[removal]` warning. `SagaMetadataTest` asserts the mapping
+  is total in both directions. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **`@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted`** — `@Deprecated(since = "0.13.0",
+  forRemoval = true)`, removal at 1.0.0, together with the nested `RowLevelSecurity.Policy`,
+  `RowLevelSecurity.AuditLevel` and `Encrypted.Algorithm`. Kernel ADR-012 §4c.1 rules out, at 1.0,
+  the contract each would compile against: the kernel publishes no principal session key, and
+  field-level encryption at rest is outside kernel scope in every tier. Replacements:
+  `TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`; `readRoles` / `writeRoles` /
+  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain` / `@Action` `roles` and `permissions`,
+  `@RouteAccess`; the masking flags → `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed
+  policies and the encryption scheme have no replacement: they belong to the application.
+  Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
+  other option, was not taken, and neither annotation is kept as a reserved surface outside the
+  freeze (ADR-072), because the kernel ruled the binding out rather than shipping it in preview.
+  No reader extracts any of them and no AST record carries them, so metadata and generated output
+  do not change; a source using them compiles with a `[removal]` warning. The `security` and root
+  package javadoc carry the DEPRECATED status, and `@ExerisDomain.sensitive` states that it enables
+  no encryption at rest. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`@SagaStep.compensationBuilder`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal
   at 1.0.0. Replacement: `@SagaStep.compensation`, whose compensation method builds the command

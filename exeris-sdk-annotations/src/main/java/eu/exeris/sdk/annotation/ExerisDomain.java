@@ -422,9 +422,11 @@ public @interface ExerisDomain {
      * <p>When true:
      * <ul>
      *   <li>Additional logging restrictions apply</li>
-     *   <li>Encryption at rest may be enforced</li>
      *   <li>Export restrictions apply</li>
      * </ul>
+     *
+     * <p>It enables no encryption at rest: kernel ADR-012 §4c.1 rules field-level encryption
+     * at rest outside kernel scope at 1.0, in every tier.
      *
      * @return true if contains sensitive data
      */

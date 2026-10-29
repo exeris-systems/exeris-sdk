@@ -253,10 +253,16 @@
  *       {@link eu.exeris.sdk.annotation.Tab @Tab},
  *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
  *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu};
- *       {@code @PrimaryKey} from the {@code system}
- *       subpackage; and <strong>the whole {@code security} subpackage</strong> —
- *       {@code @Encrypted}, {@code @RowLevelSecurity}. See the note below on
- *       system fields.</dd>
+ *       and {@code @PrimaryKey} from the {@code system}
+ *       subpackage. See the note below on system fields.</dd>
+ *
+ *   <dt><strong>DEPRECATED</strong> — read by nobody, removed at 1.0.0</dt>
+ *   <dd>The whole {@code security} subpackage — {@code @Encrypted},
+ *       {@code @RowLevelSecurity}. Kernel ADR-012 §4c.1 rules out, at 1.0, the
+ *       contract each would compile against: no principal session key, and no
+ *       field-level encryption at rest in any tier. Tenant isolation is
+ *       {@code @ExerisDomain(dataScope = DataScope.TENANT)}; the {@code security}
+ *       package javadoc maps the rest.</dd>
  * </dl>
  *
  * <p>Two rules extend the index to the types it does not name. A

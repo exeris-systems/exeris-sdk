@@ -25,16 +25,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Sonar needs full history to attribute new code and blame; a shallow clone turns the
+          # new-code period into the whole tree.
+          fetch-depth: 0
 
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
 
       - name: Set up Node 24 (for ui-kit tests)
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: npm
@@ -48,15 +52,62 @@ jobs:
       - name: mvn -B verify (Java tests, JaCoCo 85% gate, semver gate)
         run: mvn -B -ntp -Psemver verify
 
+      # Runs on the JDK 25 row only, the release-bearing toolchain: one analysis per commit, and it
+      # reads the classes and the JaCoCo XML the step above just produced.
+      #
+      # `verify` is in the SAME command as the goal: invoked alone, `sonar:sonar` starts a session
+      # in which no module is packaged, Maven cannot resolve a reactor sibling to a jar, and the
+      # analysis reports unresolved types in every module that depends on one. Tests are skipped
+      # because the step above ran them on the same tree; `-DskipTests` also skips JaCoCo
+      # (`jacoco.skip` follows `skipTests` in the root pom), which leaves the reports in place.
+      #
+      # continue-on-error: static analysis is not a correctness gate, and a scanner or sonarcloud.io
+      # failure must not fail the build gate. The step after this one makes such a failure visible.
+      #
+      # The token is scoped to this step alone. The steps above run the pull request's own build
+      # and test code and npm install scripts, none of which may see a secret. `secrets` is not
+      # readable in a step-level `if`, so the absent-token case (forked and Dependabot pull
+      # requests) is decided inside `run` and skips rather than fails.
+      - name: SonarQube Cloud analysis
+        id: sonar
+        if: ${{ matrix.java == '25' }}
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is not available to this run; analysis skipped."
+            exit 0
+          fi
+          mvn -B -ntp -e -DskipTests -Dcheckstyle.skip=true \
+            verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+      - name: Say so when the Sonar analysis failed
+        # continue-on-error reports the step as success whatever the goal did; without this, a dead
+        # scanner shows only as the `SonarCloud Code Analysis` status never arriving.
+        if: ${{ always() && steps.sonar.outcome == 'failure' }}
+        run: |
+          {
+            echo "### SonarQube Cloud analysis FAILED"
+            echo
+            echo "The scanner did not complete, so no analysis was submitted and the"
+            echo "\`SonarCloud Code Analysis\` status will not appear on this commit."
+            echo "The build itself is unaffected. Read the \`SonarQube Cloud analysis\` step's log in"
+            echo "[this run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: ui-kit npm test (Vitest + 85% coverage gate)
         working-directory: exeris-sdk-ui-kit
         run: |
-          npm ci
+          # --ignore-scripts: no dependency's install hook runs on the runner. None is needed:
+          # the native binaries tailwindcss and the test toolchain use arrive as optional
+          # platform packages, and this package's own scripts run as explicit steps.
+          npm ci --ignore-scripts
           npm run test:coverage
 
       - name: Upload JaCoCo report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: jacoco-source-model-jdk${{ matrix.java }}
           path: exeris-sdk-source-model/target/site/jacoco/
@@ -64,7 +115,7 @@ jobs:
 
       - name: Upload ui-kit coverage
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-kit-coverage-jdk${{ matrix.java }}
           path: exeris-sdk-ui-kit/coverage/

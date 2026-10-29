@@ -102,6 +102,29 @@ public @interface SagaStep {
      * resuming into the wrong step. Reordering steps is therefore a drain-before-deploy operation,
      * not a refactor — the same procedure a rename requires.
      *
+     * <p><strong>The contract: the steps of a saga number {@code 1..N}.</strong> With {@code N}
+     * distinct positions, the values are exactly {@code 1, 2, …, N} — starting at {@code 1},
+     * without gaps. A value is unique to one step, with one exception: several steps may share a
+     * value when every step sharing it declares {@link #parallel()} {@code = true}, which records
+     * that they occupy the same position. The ordering is what defines the sequence; it is not a
+     * sort hint over a sequence defined elsewhere, which is why changing it is breaking (below).
+     * A duplicate among non-parallel steps, a gap, or a sequence that does not start at
+     * {@code 1} breaks the contract. <strong>Not yet checked:</strong> neither producer rejects
+     * such a sequence, so a contract break compiles and the stable sort decides; the diagnostic
+     * belongs to the build-time processor, and the source-model reader, which has no diagnostic
+     * channel, carries the values as written.
+     *
+     * <p>Declare the value as an {@code int} literal or as a constant declared in the same
+     * source file. javac folds any constant expression for the processor, but the
+     * {@code exeris-sdk-source-model-io} reader reads source syntactically: it resolves a
+     * literal, a negated literal, and a {@code final} field (or an interface field, implicitly
+     * {@code final}) initialised with one and declared in the step's own type, an enclosing
+     * type, or a type of the same file named by its simple name ({@code Steps.RESERVE}). A field
+     * of an enclosing type is used only while no type in between extends or implements another,
+     * because an inherited field of the same name would take precedence for javac. Anything else
+     * it cannot read, and it reports the step's annotation from
+     * {@code SourceModelReader.unmodeledFacets} rather than inventing a position for it.
+     *
      * <p><strong>No default, deliberately.</strong> Giving one would let every step share it, and
      * a stable sort would then quietly hand the sequence to declaration position — turning an
      * innocuous method move into the breaking change described above, with nothing in the source

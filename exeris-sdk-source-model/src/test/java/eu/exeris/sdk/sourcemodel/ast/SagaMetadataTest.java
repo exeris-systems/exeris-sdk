@@ -1,10 +1,16 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
+import eu.exeris.sdk.annotation.Saga;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,6 +62,55 @@ class SagaMetadataTest {
                         SagaMetadata.TriggerType.SCHEDULED,
                         SagaMetadata.TriggerType.MANUAL,
                         SagaMetadata.TriggerType.API);
+    }
+
+    /**
+     * Annotation constants read as another constant, because they are deprecated for removal.
+     * Every other annotation constant maps onto the AST constant of its own name.
+     */
+    private static final Map<String, String> DEPRECATED_TRIGGER_TYPES = Map.of(
+            "COMMAND", "MANUAL",
+            "SCHEDULE", "SCHEDULED",
+            "HTTP", "API");
+
+    @Test
+    @DisplayName("Saga.SagaTrigger.TriggerType maps onto SagaMetadata.TriggerType by name, in both directions")
+    void triggerTypeNameMappingIsTotalInBothDirections() throws NoSuchFieldException {
+        Set<String> ast = Arrays.stream(SagaMetadata.TriggerType.values())
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+        Set<String> live = new HashSet<>();
+        Set<String> deprecatedForRemoval = new HashSet<>();
+        for (Saga.SagaTrigger.TriggerType constant : Saga.SagaTrigger.TriggerType.values()) {
+            Deprecated deprecated = Saga.SagaTrigger.TriggerType.class
+                    .getField(constant.name())
+                    .getAnnotation(Deprecated.class);
+            if (deprecated != null && deprecated.forRemoval()) {
+                deprecatedForRemoval.add(constant.name());
+            } else {
+                live.add(constant.name());
+            }
+        }
+
+        // annotation -> AST and AST -> annotation: the live constants are the AST constants.
+        assertThat(live).as("live annotation constants").isEqualTo(ast);
+
+        // A deprecated constant has no AST constant of its own name, so a by-name lookup misses
+        // it, and the constant it is read as is live on both sides.
+        assertThat(deprecatedForRemoval).isEqualTo(DEPRECATED_TRIGGER_TYPES.keySet());
+        DEPRECATED_TRIGGER_TYPES.forEach((deprecated, replacement) -> {
+            assertThat(ast).doesNotContain(deprecated);
+            assertThat(live).contains(replacement);
+        });
+    }
+
+    @Test
+    void sagaTriggerTypeDefaultsToManual() throws NoSuchMethodException {
+        // An undeclared trigger is started by application code, which every side can carry.
+        Object defaultType = Saga.SagaTrigger.class.getMethod("type").getDefaultValue();
+        assertThat(defaultType).isEqualTo(Saga.SagaTrigger.TriggerType.MANUAL);
+        assertThat(SagaMetadata.TriggerType.valueOf(((Enum<?>) defaultType).name()))
+                .isEqualTo(SagaMetadata.TriggerType.MANUAL);
     }
 
     @Test

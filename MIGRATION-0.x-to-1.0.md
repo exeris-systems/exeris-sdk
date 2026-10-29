@@ -68,6 +68,38 @@ survives into 1.x unchanged.
   No producer reads the attribute in 0.12.x: neither the `-io` reader nor the
   `exeris-tooling` processor. A 0.x baseline that carries `"apiVersion"` still reads, because the records
   ignore unknown properties.
+- **`@RowLevelSecurity`** (with its nested `Policy` and `AuditLevel`) — deprecated
+  since 0.13.0 (`forRemoval = true`). Kernel ADR-012 §4c.1 publishes no principal
+  session key at 1.0, so nothing in the annotation compiles against a kernel contract
+  that `dataScope` does not already use. Replacements, per part:
+  - `policy = TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`;
+  - `readRoles` / `writeRoles` / `bypassRoles` → route authorization:
+    `@ExerisDomain.roles` / `permissions`, `@Action.roles` / `permissions`,
+    `@RouteAccess`;
+  - `OWNER`, `TEAM`, `HIERARCHY`, `DEPARTMENT`, `TENANT_AND_OWNER`, a
+    principal-reading `CUSTOM` predicate, and the policy-shape attributes
+    (`policyName`, `restrictive`, `applyOn*`, `auditLevel`) → **no replacement**;
+    a principal-keyed policy is the application's, published through its own
+    `ConnectionInterceptor`.
+  No producer reads it in 0.x and it has no AST carrier, so the removal changes no
+  metadata and no emitted output.
+- **`@Encrypted`** (with its nested `Algorithm`) — deprecated since 0.13.0
+  (`forRemoval = true`). **No replacement:** kernel ADR-012 §4c.1 rules field-level
+  encryption at rest outside kernel scope at 1.0 in every tier, and tooling may not
+  invent a scheme. Encrypt in the application or in the database. The masking and PII
+  flags are declared on `@Field.sensitive` / `@Field.maskPattern`; `viewRoles` is
+  route authorization. No producer reads it and it has no AST carrier.
+- **`@Field.encrypted`** — deprecated since 0.13.0 (`forRemoval = true`), by the same
+  ruling. **No replacement.** It is not extracted, so no `FieldMetadata` component goes
+  with it.
+
+- **`@SagaTrigger.TriggerType.COMMAND`, `.SCHEDULE` and `.HTTP`** — deprecated
+  since 0.13.0 (`forRemoval = true`). Replacements: `SCHEDULE → SCHEDULED`,
+  `HTTP → API`, `COMMAND → MANUAL` (or `EVENT` for a command delivered on the
+  event bus); the kernel has no command-started flow. After the removal the
+  annotation enum and `SagaMetadata.TriggerType` hold the same four names and map
+  by name. The processor's read-as-replacement fallback ends at 1.0.0. The AST
+  enum loses nothing: it never declared the three.
 - **`@SagaStep.compensationBuilder`** — deprecated since 0.13.0 (`forRemoval = true`).
   Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
   body moves into that method. No producer reads the attribute and no AST component carries it,
@@ -94,8 +126,9 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   1.x line. That sequencing constraint is why 0.10.0 exists as a milestone.
 - **Reserved surfaces** (`@Derived` / `@Rule` / `@SagaTransition` /
   `@EventHandler` / `@Projection` operational attrs, `@Action.realTimeUpdates`,
-  system/security field markers, `@ExerisDomain.validationMode`) — frozen as
-  declared; extraction/generation lands additively in 1.x.
+  `system` field markers, `@ExerisDomain.validationMode`) — frozen as
+  declared; extraction/generation lands additively in 1.x. The `security`
+  annotations are not among them: they are in §1.
 - **`@Blob` / `@Schedule` / `@RouteAccess` / `@Channel` and their AST carriers are
   the one exception: NOT frozen**
   ([ADR-072](docs/adr/ADR-072-kernel-preview-spi-reserved-surface.md), as
@@ -457,11 +490,11 @@ freeze or is explicitly re-dispositioned here.
 
 ## 5. TBD at the 1.0.0 release PR
 
-- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the four §1
-  removals only — `@Validation.required`, `@Validation.validateOn`,
+- Final attribute-by-attribute diff 0.9.x → 1.0.0 (expected: the §1 removals
+  only — `@Validation.required`, `@Validation.validateOn`,
   `@ExerisDomain.tenantScoped` and `@ExerisDomain.apiVersion`, with the
   `DomainMetadata.tenantScoped` and `DomainMetadata.apiVersion` components that
-  go with the last two).
+  go with the last two, and the three `@SagaTrigger.TriggerType` constants).
 - Consumer validation pass results (`exeris-tooling`, `exeris-platform-lsp`),
   and one dated line for the Stellar Tactics author-side pass, recorded to the
   definition in the status note at the top.
