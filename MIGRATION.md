@@ -278,6 +278,47 @@ policy DDL itself.
   its `-Aexeris.strict` audit reports both annotations as unread and `@Field.encrypted`
   as inert.
 
+### Encryption attributes on saga state, snapshots, events, graph properties and action parameters are deprecated — removal in 1.0.0
+
+**Why:** the ruling that deprecates `@Encrypted` and `@Field.encrypted` covers every other
+attribute that promises encryption of stored data. Kernel ADR-012 §4c.1 rules encryption at rest
+"outside kernel scope at 1.0, in every tier", and "Tooling must not invent a scheme either". Each
+store these attributes name has a kernel contract, and none of those contracts names an encryption
+scheme:
+
+| Attribute | Store | Kernel contract (v0.13.0) |
+|---|---|---|
+| `@Saga.encryptState`, `.stateEncryptionKeyAlias` | saga state | `FlowSnapshotStore` (`spi.flow`, stable) stores the snapshot it is given |
+| `@EventSourced.encryptSnapshots`, `.snapshotEncryptionKeyAlias` | aggregate snapshots | none: the kernel's event sourcing is the event log (`EventStreamAppender` / `EventStreamReader`); it has no snapshot store |
+| `@DomainEvent.encryptFields` | event payload | the outbox (`EventStore.OutboxEvent`) stores serialised bytes; `EventPayloadCodec` produces them |
+| `@GraphProperty.encrypted` | graph store | `spi.graph` (preview at 1.0) writes the values it is given |
+| `@ActionParam.encrypted` | the request, then storage | the transport's TLS encrypts the whole connection; storage falls under §4c.1 |
+
+**Impact:** a source that sets any of them now compiles with a `[removal]` warning from javac.
+Nothing else changes: no processor and no `-io` reader reads them, no AST record carries them,
+and the generated output and metadata JSON are the same as on 0.12.x.
+
+```java
+// before
+@Saga(name = "order-fulfilment", encryptState = true, stateEncryptionKeyAlias = "saga-key")
+@DomainEvent(name = "CustomerRegistered", encryptFields = {"ssn"})
+
+// after — encryption belongs to the application or the database
+@Saga(name = "order-fulfilment")
+@DomainEvent(name = "CustomerRegistered")
+```
+
+Where encryption is required, the application owns it: it binds a `FlowSnapshotStore` that
+encrypts what it writes, registers an `EventPayloadCodec` that encrypts the payload it encodes,
+encrypts a value before it is stored or projected into the graph, or lets the database encrypt its
+storage. An action parameter needs no attribute for transit: serve the route over TLS.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on all seven).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal. Its `-Aexeris.strict` audit lists
+  `@DomainEvent.encryptFields` as not extracted.
+
 ### `@SagaStep.compensation` names a method; `@SagaStep.compensationBuilder` is deprecated — removal in 1.0.0
 
 **What the value names.** `@SagaStep.compensation` is the name of the step's compensation
@@ -325,6 +366,45 @@ that sets it compiles with a `[removal]` warning from javac.
 - **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
 - **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
+
+### `@SagaStep.compensationClass`, `compensationPayloadExpression` and `compensationService` are deprecated — removal in 1.0.0
+
+**Why:** the three describe a compensating *command*: its class, its payload as an expression,
+and the service it is sent to. `@SagaStep.compensation` names the compensation method instead,
+and that method decides what undoing the step takes — which command, built from which state,
+sent where, or no command at all. The kernel's saga contract has nothing for the three to bind
+to: `FlowDefinitionBuilder.step` registers a compensation as one `FlowStepAction`, a function
+from the flow context to an outcome, with no command type, payload or target. A generator could
+only check the attributes against the method body, which it cannot read, so a value written there
+would either repeat the method or contradict it unnoticed.
+
+**Impact:** a source that sets any of them now compiles with a `[removal]` warning from javac.
+No processor and no `-io` reader reads them and no AST record carries them, so the metadata and
+generated output are the same as on 0.12.x.
+
+```java
+// before
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment",
+          compensationClass = RefundCommand.class,
+          compensationPayloadExpression = "#state.paymentId",
+          compensationService = "refund-service")
+public SagaAction chargePayment() { … }
+
+// after — the compensation method says all three
+@SagaStep(order = 2, name = "chargePayment", service = "payment-service",
+          command = "ChargeCommand", compensation = "refundPayment")
+public SagaAction chargePayment() { … }
+
+public SagaAction refundPayment() {
+    return new SagaAction.ExecuteCommand(new RefundCommand(state.getPaymentId()));
+}
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of the three, so there is no fallback to keep;
+  javac's `[removal]` warning is the build-time signal.
 
 ### `GraphEdgeMetadata` separates the edge from its field and carries direction and weight; 29 `@GraphEdge` attributes are deprecated — removal in 1.0.0
 

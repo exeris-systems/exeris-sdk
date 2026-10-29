@@ -433,10 +433,21 @@ public @interface ActionParam {
     boolean masked() default false;
 
     /**
-     * Whether to encrypt value in transit/storage.
+     * Deprecated, no effect: the parameter is not encrypted on its own, in transit or in
+     * storage.
+     * <p>Setting it to {@code true} changes nothing. It is not carried by
+     * {@code ActionParamMetadata}, and no generator reads it. In transit, the kernel encrypts the
+     * whole connection with TLS on its transport, configured for the server rather than per
+     * parameter; a parameter reaches the handler as the request carried it. In storage, kernel
+     * ADR-012 §4c.1 rules field-level encryption at rest outside kernel scope at 1.0, in every
+     * tier, and rules that tooling must not invent a scheme, so no generator will honour it.
      *
      * @return true to encrypt
+     * @deprecated since 0.13.0, for removal in 1.0.0, with no replacement. Serve the route over
+     *         TLS for transit, and encrypt the value in the application before it is stored. To
+     *         mask it in the UI, use {@link #masked()}. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     boolean encrypted() default false;
 
     /**
