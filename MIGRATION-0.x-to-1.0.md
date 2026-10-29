@@ -104,6 +104,16 @@ survives into 1.x unchanged.
   Replacement: `@SagaStep.compensation`, which names the compensation method; the builder's
   body moves into that method. No producer reads the attribute and no AST component carries it,
   so the removal changes no metadata and no generated output.
+- **Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and the nested
+  `@GraphEdge.ComputedProperty`** — deprecated since 0.13.0 (`forRemoval = true`). None has a
+  kernel graph binding to compile against: weight naming, expression and normalisation;
+  cardinality (`maxEdges`, `minEdges`), `unique`, `condition`; the three cascade attributes;
+  indexing; the temporal group; `sync`, `syncOnEvents`, `syncProperties`, `batch`; the traversal
+  group; the GraphQL group; `computedProperties`. Replacements where one exists: `unique` and
+  `cascadeUpdate` → `upsert`, `traversalCost` → `staticWeight`, `weightExpression` →
+  `weightField` / `staticWeight`, `sync = false` → do not declare the edge. The full table is in
+  `MIGRATION.md` (0.12.x → 0.13.x). None is extracted, so the removal changes no metadata and no
+  generated output.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -150,6 +160,16 @@ was removed outright in 0.9.0, ADR-054, and is not a 1.0.0 item.)*
   invert the ordering), which is why `@Channel` is on this list; it does not bar
   shaping a design-time carrier against a settled contract, which is why the
   surface exists at all.
+
+  **The graph edge's kernel-model attributes are in the same position (0.13.0).**
+  `@GraphEdge.direction`, `.bidirectional`, `.inverseType`, `.weighted`, `.weightField` and
+  `.staticWeight`, the `GraphEdgeMetadata` components that carry them, and the not-yet-carried
+  `.properties`, `.propertyMappings`, `.staticProperties` and `.upsert` encode the kernel graph
+  SPI, which kernel ADR-100 keeps at `preview` at 1.0 and kernel ADR-102 anchors without
+  promoting. `@GraphEdge` itself and the components it had at 0.12.0 (`name`, `targetLabel`,
+  `relationType`), plus `field` and `description`, are frozen as declared. The reserved ones may
+  change or be dropped in a 1.x minor, and are promoted when the kernel moves `…spi.graph` to
+  `stable` **and** the `exeris-tooling` graph-sync generator reads them.
 
   So `@Blob`, `@Schedule`, `@RouteAccess`, `@Channel`, `FieldMetadata.blob`,
   `ActionMetadata.schedule`, `DomainMetadata.routeAccess`,

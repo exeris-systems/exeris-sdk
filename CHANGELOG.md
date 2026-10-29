@@ -126,6 +126,22 @@ for per-version upgrade steps.
   writes the JSON it wrote before. A declared `0` or `false` survives the `NON_NULL` record and is
   pinned by `AstJsonRoundTripTest`. Builder setters for all six.
 
+- **`GraphEdgeMetadata` separates an edge's identity from its field, and carries direction and
+  weight.** Eight trailing components: `field` (the declaring field, `null` when it equals the
+  identity `name`, so a single-edge field writes the JSON it wrote before), `direction` (the
+  AST-owned `GraphEdgeMetadata.Direction`), `bidirectional`, `inverseType`, `description`,
+  `weighted`, `weightField` and `staticWeight`, each `null` when undeclared. `effectiveField()`
+  returns the declaring field for either shape; `effectiveDirection()` applies the kernel graph
+  model's rule, `bidirectional ? BOTH : direction`. Two edges on one field are now representable.
+  The record keeps its 3-component constructor. The six kernel-model components are reserved and
+  outside the 1.0.0 freeze (ADR-072; the graph SPI stays `preview` at 1.0, kernel ADR-100).
+
+- **`exeris-sdk-source-model-io` reads `@GraphEdge`'s direction, weight and description.**
+  `direction`, `bidirectional`, `inverseType`, `description`, `weighted`, `weightField` and
+  `staticWeight` are read present-only; a declared `false`, `OUTGOING` or `0.0` is carried. The
+  `exeris-tooling` processor does not extract them yet. A field with two edges is still dropped,
+  as the processor still refuses it.
+
 - **`exeris-sdk-source-model-io` reads `@Saga`'s compensation section.** `compensationTimeout` and
   the six components above are read present-only: undeclared leaves `compensationTimeout` at its
   builder default and the six `null`, and a declared `0` or `false` is carried.
@@ -342,6 +358,14 @@ for per-version upgrade steps.
   do not change; a source using them compiles with a `[removal]` warning. The `security` and root
   package javadoc carry the DEPRECATED status, and `@ExerisDomain.sensitive` states that it enables
   no encryption at rest. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **Twenty-nine `@GraphEdge` attributes, `@GraphEdge.PropertyMapping.transform` and
+  `@GraphEdge.ComputedProperty`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal in
+  1.0.0. None has a kernel graph binding: weight naming, SpEL and normalisation, cardinality,
+  `unique`, `condition`, cascade, indexing, the temporal group, sync tuning, the traversal group and
+  the GraphQL group. `properties`, `propertyMappings`, `staticProperties` and `upsert` stay,
+  reserved outside the 1.0.0 freeze. `@GraphEdge.bidirectional` now states the kernel's meaning:
+  one stored edge, traversed both ways. See `MIGRATION.md` (0.12.x → 0.13.x).
 
 - **`@SagaStep.compensationBuilder`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal
   at 1.0.0. Replacement: `@SagaStep.compensation`, whose compensation method builds the command

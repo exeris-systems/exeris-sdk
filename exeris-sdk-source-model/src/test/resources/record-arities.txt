@@ -21,6 +21,7 @@
 #   DomainMetadata=39            0.11.0 (routeAccess, channel added in 0.12.0)
 #   SystemFieldsMetadata=10      0.11.0 (sharedScopeField added in 0.12.0)
 #   SagaMetadata=16              0.12.0 (six compensation components added in 0.13.0)
+#   GraphEdgeMetadata=3          0.12.0 (field, direction and six more added in 0.13.0)
 #   DomainEventMetadata=4,6      pre-EV1 and pre-EV2 (payload lists, then the trigger triple)
 
 eu.exeris.sdk.sourcemodel.ast.ActionMetadata=17,18
@@ -39,7 +40,7 @@ eu.exeris.sdk.sourcemodel.ast.EventHandlerMetadata=16
 eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata=12
 eu.exeris.sdk.sourcemodel.ast.EventSourcedMetadata$ProjectionConfig=6
 eu.exeris.sdk.sourcemodel.ast.FieldMetadata=31
-eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata=3
+eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata=3,11
 eu.exeris.sdk.sourcemodel.ast.GraphMetadata=4
 eu.exeris.sdk.sourcemodel.ast.GraphPropertyMetadata=3
 eu.exeris.sdk.sourcemodel.ast.GraphQueryMetadata=3
