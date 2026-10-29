@@ -448,8 +448,8 @@ for per-version upgrade steps.
   emits changes; a source that sets one compiles with a `[removal]` warning. The javadoc of both
   attributes, `@RowLevelSecurity`, `@Encrypted`, `@RouteAccess`, `@Schedule`, both package-infos
   and `DomainMetadata.roles` no longer present `roles` as enforced or as a replacement. ADR-072
-  obligation 31 carries a note that kernel ADR-057 A1's quoted premise about `@Action.roles` does
-  not hold. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+  gains obligation 36: kernel ADR-057 A1's premise about `@Action.roles`, quoted in obligation 31,
+  does not hold, and A1's conclusion does not depend on it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 - **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
   `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and

@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * {@code RouteRequirement}). It is a separate annotation because the other
  * security-shaped attributes cannot say that a route is public:
  * {@link ExerisDomain#permissions()} and {@link Action#permissions()}, like the
- * deprecated, never-enforced {@code roles} beside them, read an empty value as
+ * deprecated, unenforced {@code roles} beside them, read an empty value as
  * "nothing declared". The empty case cannot also mean "public" without colliding
  * with that meaning.
  *

@@ -384,8 +384,8 @@ public @interface ExerisDomain {
      * not make the entity's routes public.
      *
      * @return role names; carried into no metadata and enforced by nothing
-     * @deprecated since 0.13.0, for removal in 1.0.0. It was never enforced, so a source that
-     *         sets it has had no protection from it: migrating to the replacement adds the
+     * @deprecated since 0.13.0, for removal in 1.0.0. Nothing enforces it, so a source that
+     *         sets it gets no protection from it: migrating to the replacement adds the
      *         protection rather than keeping it. Declare route authorization with
      *         {@link #permissions()}, which the generated route policy compiles into a scope
      *         requirement for every route of the entity, and {@link RouteAccess} for routes

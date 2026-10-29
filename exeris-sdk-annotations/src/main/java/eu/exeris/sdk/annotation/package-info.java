@@ -437,8 +437,8 @@
  * itself: an empty {@code permissions} already means "nothing declared", so it cannot
  * also mean "public" without colliding with that meaning. No amount of extraction
  * produces a statement the surface cannot make. The {@code roles} attributes beside
- * it were never enforced and are deprecated for removal in 1.0.0; role-based access
- * has no SDK declaration at 1.0.
+ * it are enforced by nothing and are deprecated for removal in 1.0.0; role-based
+ * access has no SDK declaration at 1.0.
  *
  * <p><strong>No {@code UNSPECIFIED} constant, on either side.</strong> An element
  * with no {@code @RouteAccess} has declared nothing; one that carries it has
