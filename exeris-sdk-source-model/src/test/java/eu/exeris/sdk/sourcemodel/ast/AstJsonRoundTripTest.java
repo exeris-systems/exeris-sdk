@@ -828,7 +828,7 @@ class AstJsonRoundTripTest {
         } catch (Exception e) {
             throw new AssertionError("serialization failed: " + e.getMessage(), e);
         }
-        // A property that keeps its field's name, with graphType AUTO, writes the 0.12.0 JSON.
+        // A property that keeps its field's name omits field, and an AUTO type omits type.
         assertThat(json).isEqualTo("{\"name\":\"title\",\"indexed\":false}");
     }
 

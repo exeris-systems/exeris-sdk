@@ -4,7 +4,7 @@ type: adr
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-10-29
+last-verified: 2026-06-26
 slug: adr/ADR-042
 ---
 

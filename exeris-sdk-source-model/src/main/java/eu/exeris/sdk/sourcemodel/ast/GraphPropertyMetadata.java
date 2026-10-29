@@ -10,8 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * graph node; {@code field} names the entity field whose value the property holds, the field a
  * graph-sync writer reads it from. A property that keeps its field's name leaves {@code field}
  * {@code null}: the compact constructor drops a {@code field} equal to {@code name}, so the two
- * spellings of that case are one value and the wire form is the one written before the component
- * existed. Read the declaring field through {@link #effectiveField()}. The rule is the one
+ * spellings of that case are one value, and its JSON carries no {@code field} key. Read the declaring field through {@link #effectiveField()}. The rule is the one
  * {@link GraphEdgeMetadata} applies to its own {@code field}.
  *
  * <p><strong>{@code type} is the declared graph type, or {@code null}.</strong> It holds the
