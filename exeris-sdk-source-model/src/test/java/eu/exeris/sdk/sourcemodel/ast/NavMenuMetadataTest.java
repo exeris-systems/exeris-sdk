@@ -53,7 +53,8 @@ class NavMenuMetadataTest {
 
     @Test
     void aNullRoleIsRefusedByName() {
-        assertThatThrownBy(() -> NavMenuMetadata.builder().roles(java.util.Arrays.asList("A", null)).build())
+        NavMenuMetadata.Builder withNullRole = NavMenuMetadata.builder().roles(java.util.Arrays.asList("A", null));
+        assertThatThrownBy(withNullRole::build)
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("roles[1]");
     }

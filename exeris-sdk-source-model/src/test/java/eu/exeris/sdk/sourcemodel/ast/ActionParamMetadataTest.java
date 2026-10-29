@@ -58,9 +58,11 @@ class ActionParamMetadataTest {
 
     @Test
     void nameAndTypeAreRequired() {
-        assertThatThrownBy(() -> ActionParamMetadata.builder(null, "String").build())
+        ActionParamMetadata.Builder nameless = ActionParamMetadata.builder(null, "String");
+        assertThatThrownBy(nameless::build)
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("name");
-        assertThatThrownBy(() -> ActionParamMetadata.builder("x", null).build())
+        ActionParamMetadata.Builder typeless = ActionParamMetadata.builder("x", null);
+        assertThatThrownBy(typeless::build)
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 }

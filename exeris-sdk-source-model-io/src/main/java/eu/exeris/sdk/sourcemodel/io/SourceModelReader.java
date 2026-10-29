@@ -175,6 +175,11 @@ public final class SourceModelReader {
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS = Set.of();
 
+    /** Attribute names several annotations share. */
+    private static final String LABEL = "label";
+    private static final String ORDER = "order";
+    private static final String REQUIRED = "required";
+
     /**
      * How many constant references and wrappers {@link #intConstant} follows before giving up,
      * so a cyclic initialiser, which javac rejects, cannot loop the reader.
@@ -602,19 +607,14 @@ public final class SourceModelReader {
     private List<UIMetadata.UITabMetadata> tabs(ClassOrInterfaceDeclaration type) {
         Map<String, TabDeclarations> byName = new LinkedHashMap<>();
         for (FieldDeclaration field : type.getFields()) {
-            Optional<AnnotationExpr> tab = field.getAnnotationByName("Tab");
-            if (tab.isEmpty()) {
-                continue;
-            }
-            Optional<String> name = nonBlankStringAttr(tab.get(), "name");
-            if (name.isEmpty()) {
-                continue;
-            }
-            TabDeclarations declarations = byName.computeIfAbsent(name.get(), TabDeclarations::new);
-            declarations.absorb(tab.get());
-            for (VariableDeclarator variable : field.getVariables()) {
-                declarations.fields.add(variable.getNameAsString());
-            }
+            field.getAnnotationByName("Tab").ifPresent(tab -> nonBlankStringAttr(tab, "name")
+                    .ifPresent(name -> {
+                        TabDeclarations declarations = byName.computeIfAbsent(name, TabDeclarations::new);
+                        declarations.absorb(tab);
+                        for (VariableDeclarator variable : field.getVariables()) {
+                            declarations.fields.add(variable.getNameAsString());
+                        }
+                    }));
         }
         return byName.values().stream().map(TabDeclarations::build).toList();
     }
@@ -642,8 +642,8 @@ public final class SourceModelReader {
         }
 
         private void absorb(AnnotationExpr tab) {
-            label = first(label, () -> nonBlankStringAttr(tab, "label"));
-            order = first(order, () -> signedIntAttr(tab, "order"));
+            label = first(label, () -> nonBlankStringAttr(tab, LABEL));
+            order = first(order, () -> signedIntAttr(tab, ORDER));
             icon = first(icon, () -> nonBlankStringAttr(tab, "icon"));
             lazy = first(lazy, () -> boolAttr(tab, "lazy"));
             badgeField = first(badgeField, () -> nonBlankStringAttr(tab, "badgeField"));
@@ -683,9 +683,9 @@ public final class SourceModelReader {
         NavMenuMetadata.Builder builder = NavMenuMetadata.builder();
         stringAttr(nav, "group").ifPresent(builder::group);
         stringAttr(nav, "parent").ifPresent(builder::parent);
-        stringAttr(nav, "label").ifPresent(builder::label);
+        stringAttr(nav, LABEL).ifPresent(builder::label);
         stringAttr(nav, "icon").ifPresent(builder::icon);
-        signedIntAttr(nav, "order").ifPresent(builder::order);
+        signedIntAttr(nav, ORDER).ifPresent(builder::order);
         signedIntAttr(nav, "groupOrder").ifPresent(builder::groupOrder);
         stringAttr(nav, "groupIcon").ifPresent(builder::groupIcon);
         builder.hidden(boolAttr(nav, "hidden", false));
@@ -725,7 +725,7 @@ public final class SourceModelReader {
             ActionMetadata.Builder builder = ActionMetadata.builder(name)
                     .methodName(method.getNameAsString())
                     .async(boolAttr(action.get(), "async", false));
-            stringAttr(action.get(), "label").ifPresent(builder::displayName);
+            stringAttr(action.get(), LABEL).ifPresent(builder::displayName);
             stringAttr(action.get(), "description")
                     .filter(s -> !s.isBlank())
                     .ifPresent(builder::description);
@@ -771,10 +771,10 @@ public final class SourceModelReader {
                 .orElse(parameter.getNameAsString());
         // required defaults to true on both annotations.
         ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, parameter.getTypeAsString())
-                .required(nearer.flatMap(ann -> boolAttr(ann, "required"))
-                        .or(() -> farther.flatMap(ann -> boolAttr(ann, "required")))
+                .required(nearer.flatMap(ann -> boolAttr(ann, REQUIRED))
+                        .or(() -> farther.flatMap(ann -> boolAttr(ann, REQUIRED)))
                         .orElse(true));
-        nearer.flatMap(ann -> stringAttr(ann, "label")).ifPresent(builder::displayName);
+        nearer.flatMap(ann -> stringAttr(ann, LABEL)).ifPresent(builder::displayName);
         nearer.flatMap(ann -> nonBlankStringAttr(ann, "description"))
                 .or(() -> farther.flatMap(ann -> nonBlankStringAttr(ann, "description")))
                 .ifPresent(builder::description);
@@ -1343,7 +1343,7 @@ public final class SourceModelReader {
      * two apart.
      */
     private Optional<Integer> stepOrder(MethodDeclaration method, AnnotationExpr step) {
-        return value(step, "order").flatMap(expression -> intConstant(expression, method));
+        return value(step, ORDER).flatMap(expression -> intConstant(expression, method));
     }
 
     /**
@@ -1357,7 +1357,7 @@ public final class SourceModelReader {
         }
         for (MethodDeclaration method : type.getMethods()) {
             Optional<AnnotationExpr> step = method.getAnnotationByName("SagaStep");
-            if (step.isPresent() && value(step.get(), "order").isPresent()
+            if (step.isPresent() && value(step.get(), ORDER).isPresent()
                     && stepOrder(method, step.get()).isEmpty()) {
                 return true;
             }
@@ -1698,9 +1698,9 @@ public final class SourceModelReader {
      */
     private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
         FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
-        stringAttr(field, "label").ifPresent(builder::displayName);
+        stringAttr(field, LABEL).ifPresent(builder::displayName);
         stringAttr(field, "description").ifPresent(builder::description);
-        boolAttr(field, "required").ifPresent(builder::required);
+        boolAttr(field, REQUIRED).ifPresent(builder::required);
         boolAttr(field, "unique").ifPresent(builder::unique);
         boolAttr(field, "indexed").ifPresent(builder::indexed);
         boolAttr(field, "searchable").ifPresent(builder::searchable);
@@ -1749,7 +1749,7 @@ public final class SourceModelReader {
         intAttr(validation, "maxLength").ifPresent(builder::maxLength);
         stringAttr(validation, "pattern").ifPresent(builder::pattern);
 
-        if (boolAttr(validation, "required").orElse(false) && boolAttr(field, "required").isEmpty()) {
+        if (boolAttr(validation, REQUIRED).orElse(false) && boolAttr(field, REQUIRED).isEmpty()) {
             builder.required(true);
         }
         stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {
