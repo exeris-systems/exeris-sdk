@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.exeris</groupId>
+        <artifactId>exeris-sdk-parent</artifactId>
+        <version>0.13.0-SNAPSHOT</version>
+        <relativePath>../exeris-sdk-parent</relativePath>
+    </parent>
+
+    <artifactId>exeris-sdk-examples</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Exeris SDK :: Examples (teaching material)</name>
+    <description>
+        Annotated example sources that docs/guides and docs/examples quote. javac compiles
+        them against exeris-sdk-annotations, so every annotation target and attribute is
+        checked, and the tests read the same .java files through SourceModelReader and
+        assert the metadata they declare, so an API change breaks this build instead of a
+        page. Not published: nothing resolves this coordinate.
+    </description>
+
+    <properties>
+        <!-- Not published, so there is no released baseline to compare against. -->
+        <japicmp.skip>true</japicmp.skip>
+
+        <!-- Teaching material, not a coordinate anyone resolves. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-source-model</artifactId>
+        </dependency>
+
+        <!-- Compile scope: the capability example implements CapabilityLifecycleHooks. -->
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-composition-lifecycle</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-source-model-io</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-composition-spec</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-composition-runtime</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>eu.exeris</groupId>
+            <artifactId>exeris-sdk-tck</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

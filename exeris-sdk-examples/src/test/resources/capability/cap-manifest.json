@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "stamp": {
+    "validated": true,
+    "compositionVersion": "1.0.0",
+    "contentBinding": "sha256:e84dea19af0613eea8059d891fcf9716a1a146c0abe13304b173f08e93f5e3e1"
+  },
+  "modules": [
+    {
+      "qualifiedName": "eu.exeris.sdk.examples.capability.LedgerCap",
+      "module": {
+        "provides": [
+          { "service": "eu.exeris.sdk.examples.capability.LedgerService", "version": "1.0.0" }
+        ],
+        "lifecycleOwner": "eu.exeris.sdk.examples.capability.LedgerCapLifecycle"
+      }
+    }
+  ],
+  "initOrder": ["eu.exeris.sdk.examples.capability.LedgerCap"]
+}
