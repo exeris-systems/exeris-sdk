@@ -27,8 +27,8 @@ import java.lang.annotation.*;
  *       {@link eu.exeris.sdk.annotation.Field#maskPattern() @Field.maskPattern}, which no
  *       processor extracts either.</li>
  *   <li>{@link #viewRoles()} is authorization: who may read the entity is
- *       {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
- *       {@code permissions} and {@code @RouteAccess}.</li>
+ *       {@code @ExerisDomain.permissions}, {@code @Action.permissions} and
+ *       {@code @RouteAccess}. Role-based access has no SDK declaration at 1.0.</li>
  * </ul>
  *
  * @since 0.1

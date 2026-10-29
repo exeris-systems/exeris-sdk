@@ -446,6 +446,19 @@ for per-version upgrade steps.
 
 ### Deprecated
 
+- **`@ExerisDomain.roles` and `@Action.roles`** — `@Deprecated(since = "0.13.0", forRemoval =
+  true)`, removal at 1.0.0. Neither is extracted or enforced, and neither has a destination: the
+  kernel's `RouteRequirement` decides on scopes and declares no role kind, and the kernel enforces
+  a role only through its own `@RequiresRole` (kernel ADR-014), against a build-time method id no
+  SDK declaration generates. Replacement: `@ExerisDomain.permissions` / `@Action.permissions`,
+  compiled into the generated route policy (exeris-tooling ADR-105), and `@RouteAccess`. Role-based
+  access has no SDK declaration at 1.0. No producer reads either attribute, so nothing a build
+  emits changes; a source that sets one compiles with a `[removal]` warning. The javadoc of both
+  attributes, `@RowLevelSecurity`, `@Encrypted`, `@RouteAccess`, `@Schedule`, both package-infos
+  and `DomainMetadata.roles` no longer present `roles` as enforced or as a replacement. ADR-072
+  gains obligation 36: kernel ADR-057 A1's premise about `@Action.roles`, quoted in obligation 31,
+  does not hold, and A1's conclusion does not depend on it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 - **`@Saga.SagaTrigger.TriggerType` takes the AST's constant names; `COMMAND`, `SCHEDULE` and
   `HTTP` are deprecated for removal at 1.0.0.** The annotation enum and
   `SagaMetadata.TriggerType` now correspond one-to-one by name, as `@SagaTransition.on()` does onto
@@ -465,10 +478,10 @@ for per-version upgrade steps.
   the contract each would compile against: the kernel publishes no principal session key, and
   field-level encryption at rest is outside kernel scope in every tier. Replacements:
   `TENANT_ISOLATION` → `@ExerisDomain(dataScope = DataScope.TENANT)`; `readRoles` / `writeRoles` /
-  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain` / `@Action` `roles` and `permissions`,
-  `@RouteAccess`; the masking flags → `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed
-  policies and the encryption scheme have no replacement: they belong to the application.
-  Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
+  `bypassRoles` and `@Encrypted.viewRoles` → `@ExerisDomain.permissions`, `@Action.permissions`,
+  `@RouteAccess`, with no SDK declaration for role-based access; the masking flags →
+  `@Field.sensitive` / `@Field.maskPattern`. The principal-keyed policies and the encryption
+  scheme have no replacement: they belong to the application. Documenting the principal-keyed values as compiled against an application-owned key, the ADR's
   other option, was not taken, and neither annotation is kept as a reserved surface outside the
   freeze (ADR-072), because the kernel ruled the binding out rather than shipping it in preview.
   No reader extracts any of them and no AST record carries them, so metadata and generated output
@@ -534,6 +547,15 @@ for per-version upgrade steps.
   uses, was never managed here and is unaffected.
 
 ### Security
+
+- **`@Action.roles` did not protect an action, and its javadoc no longer says it does.** The
+  javadoc said "User must have at least one of these roles" and that an empty array made the
+  action "accessible to all authenticated users". Neither held: no producer extracts the attribute
+  and nothing enforces it, and the same is true of `@ExerisDomain.roles`. An action or entity
+  that declares only `roles` admits whatever its `permissions` and `@RouteAccess` admit, and with
+  neither declared it falls to the generated application's `unmatchedRoutes()`, which defaults to
+  `permitAll()`. Declare `permissions` or `@RouteAccess(AUTHENTICATED)` on every route that
+  `roles` was meant to restrict. Both attributes are deprecated (see Deprecated).
 
 - **A route that declares no access is public in a generated application, and the SDK now says
   so.** `RouteAccess.Level.AUTHENTICATED` no longer calls itself the generated default. A route

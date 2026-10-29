@@ -29,11 +29,10 @@ import java.lang.annotation.*;
  *   <li><strong>{@link #readRoles()}, {@link #writeRoles()}, {@link #bypassRoles()}</strong>
  *       cannot be evaluated by a policy, because no role reaches the database session. Which
  *       callers may reach an entity is route authorization:
- *       {@link eu.exeris.sdk.annotation.ExerisDomain#roles() @ExerisDomain.roles} /
- *       {@link eu.exeris.sdk.annotation.ExerisDomain#permissions() permissions},
- *       {@link eu.exeris.sdk.annotation.Action#roles() @Action.roles} /
- *       {@link eu.exeris.sdk.annotation.Action#permissions() permissions}, and
- *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess}.</li>
+ *       {@link eu.exeris.sdk.annotation.ExerisDomain#permissions() @ExerisDomain.permissions},
+ *       {@link eu.exeris.sdk.annotation.Action#permissions() @Action.permissions} and
+ *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess}. Role-based access has no
+ *       SDK declaration at 1.0.</li>
  *   <li><strong>{@link #policyName()}, {@link #restrictive()}, {@link #applyOnInsert()},
  *       {@link #applyOnUpdate()}, {@link #applyOnDelete()}, {@link #auditLevel()}</strong> shape a
  *       policy that, for tenant isolation, {@code dataScope} emits and the kernel's reference
@@ -61,7 +60,7 @@ import java.lang.annotation.*;
  *
  * // after
  * @ExerisDomain(module = "sales", path = "/orders",
- *               dataScope = ExerisDomain.DataScope.TENANT, roles = "SALES")
+ *               dataScope = ExerisDomain.DataScope.TENANT, permissions = "orders:read")
  * public class Order { }
  * }
  *
@@ -73,11 +72,12 @@ import java.lang.annotation.*;
  *
  * @since 0.1
  * @deprecated since 0.13.0, for removal in 1.0.0. Tenant isolation is
- *         {@code @ExerisDomain(dataScope = DataScope.TENANT)}; route roles and permissions are
- *         {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
- *         {@code permissions} and {@code @RouteAccess}. Principal-keyed policies have no
- *         replacement: the kernel publishes no principal session key at 1.0 (kernel ADR-012
- *         §4c.1), so they belong to the application. See {@code MIGRATION.md}.
+ *         {@code @ExerisDomain(dataScope = DataScope.TENANT)}; route authorization is
+ *         {@code @ExerisDomain.permissions}, {@code @Action.permissions} and
+ *         {@code @RouteAccess}, and role-based access has no SDK declaration at 1.0.
+ *         Principal-keyed policies have no replacement: the kernel publishes no principal
+ *         session key at 1.0 (kernel ADR-012 §4c.1), so they belong to the application. See
+ *         {@code MIGRATION.md}.
  * @see Encrypted
  */
 @Deprecated(since = "0.13.0", forRemoval = true)
@@ -217,8 +217,8 @@ public @interface RowLevelSecurity {
      * <p>Example: "SUPERADMIN", "DATA_EXPORT"
      *
      * <p>No application role can bypass a policy: no role reaches the database session. Which
-     * callers may reach the entity is route authorization ({@code @ExerisDomain.roles} /
-     * {@code permissions}, {@code @Action.roles} / {@code permissions}, {@code @RouteAccess}).
+     * callers may reach the entity is route authorization ({@code @ExerisDomain.permissions},
+     * {@code @Action.permissions}, {@code @RouteAccess}).
      * The bypass PostgreSQL itself knows is a database-role attribute, {@code SUPERUSER} or
      * {@code BYPASSRLS}, and the kernel refuses to boot a pool whose role carries one unless
      * {@code persistence.rlsAllowBypassRole} is set (kernel ADR-012 §4c.4).
@@ -232,8 +232,8 @@ public @interface RowLevelSecurity {
      * <p>Empty array means all authenticated users.
      *
      * <p>A policy cannot evaluate it, because no role reaches the database session. Use route
-     * authorization: {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
-     * {@code permissions}, {@code @RouteAccess}.
+     * authorization: {@code @ExerisDomain.permissions}, {@code @Action.permissions},
+     * {@code @RouteAccess}. Role-based access has no SDK declaration at 1.0.
      *
      * @return required roles for reading
      */
@@ -244,8 +244,8 @@ public @interface RowLevelSecurity {
      * <p>Empty array means all authenticated users with read access.
      *
      * <p>A policy cannot evaluate it, because no role reaches the database session. Use route
-     * authorization: {@code @ExerisDomain.roles} / {@code permissions}, {@code @Action.roles} /
-     * {@code permissions}, {@code @RouteAccess}.
+     * authorization: {@code @ExerisDomain.permissions}, {@code @Action.permissions},
+     * {@code @RouteAccess}. Role-based access has no SDK declaration at 1.0.
      *
      * @return required roles for writing
      */
