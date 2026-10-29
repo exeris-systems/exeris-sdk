@@ -20,7 +20,11 @@ import java.util.List;
  *        (kernel ADR-062), not a refactor
  * @param service the service the step invokes
  * @param command the command the step sends to that service
- * @param compensation the command that undoes this step when a later one fails
+ * @param compensation the name of this step's compensation method — a method of the saga's host
+ *        type that undoes the step when the saga rolls back — or {@code null} when the step has
+ *        none. A method name, not a command or class name. The Java kernel generator reads only
+ *        whether it is set and registers a generated {@code compensate<StepName>} stub, so the
+ *        named method is not yet the one called
  * @param timeout how long the step may run before it is treated as failed, as an ISO-8601
  *        duration
  *
@@ -114,7 +118,7 @@ public record SagaStepMetadata(
     /**
      * The step's effective {@link StepKind}: the explicit {@link #kind()} if one
      * was declared, otherwise inferred from which command/compensation facet is
-     * set — {@code COMPENSATE} when only a compensation command is present,
+     * set — {@code COMPENSATE} when only a compensation method is named,
      * {@code INVOKE} when a forward command or target service is present.
      *
      * <p>{@code AWAIT_EVENT} / {@code AWAIT_TIMER} are <strong>not</strong>
@@ -152,7 +156,7 @@ public record SagaStepMetadata(
     public enum StepKind {
         /** Dispatch a forward command to a service. */
         INVOKE,
-        /** Run a compensation (rollback) command. */
+        /** Run a compensation (rollback). */
         COMPENSATE,
         /** Block until an expected domain event arrives. */
         AWAIT_EVENT,

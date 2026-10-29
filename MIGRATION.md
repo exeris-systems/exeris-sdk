@@ -91,14 +91,185 @@ Each component is named after its `@Saga` attribute. They are boxed (`Integer`,
 `Boolean`, `String`) and `null` when the author declared nothing, in which case the
 annotation default is the value. A declared `0` or `false` is written, because the
 record is `NON_NULL`. `compensationFailureHandler` holds a fully-qualified class
-name, with `void.class` read as `null`. No producer populates them yet. The
-`exeris-tooling` processor and the `-io` reader extract them together, as ADR-042
-requires, and until then a producer's JSON is the same as it was on 0.12.0.
+name, with `void.class` read as `null`. The `-io` reader populates them and
+`compensationTimeout`; the `exeris-tooling` processor does not extract them yet, and
+until it does a processor's JSON is the same as it was on 0.12.0.
+`SourceModelConflictDetector` compares no saga component, so the difference raises no
+conflict on reattach.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.SAGA_COMPENSATION`, and the corpus `Order`
+declares the compensation section. A producer or parity binding whose producer does not
+extract it fails the new cases until it adds `Facet.SAGA_COMPENSATION` to
+`unsupportedFacets()`. A reader binding that reads `@Saga` without the section does the
+same.
 
 **Baselines.** `SchemaVersion.CURRENT` moves `"0.12.0"` → `"0.13.0"`, so a
 baseline stamped `"0.12.0"` reads as `NO_BASELINE(SCHEMA_VERSION_SKEW)` until codegen
 re-stamps it. This is the deliberate posture, the same one the 0.11.0 and 0.12.0
 bumps took: refuse a cross-shape baseline rather than assume compatibility.
+
+### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
+
+**Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto
+`SagaMetadata.TriggerType` by constant name, and the two enums disagreed: the
+annotation declared `COMMAND`, `EVENT`, `SCHEDULE`, `HTTP`, `MANUAL`; the AST
+declares `EVENT`, `SCHEDULED`, `MANUAL`, `API`. The annotation side moves, because
+its constants are source-only while the AST's are JSON values.
+
+| Annotation constant | Status | AST constant |
+|---|---|---|
+| `EVENT` | unchanged | `EVENT` |
+| `MANUAL` | unchanged, now the default | `MANUAL` |
+| `SCHEDULED` | new | `SCHEDULED` |
+| `API` | new | `API` |
+| `SCHEDULE` | deprecated for removal | read as `SCHEDULED` |
+| `HTTP` | deprecated for removal | read as `API` |
+| `COMMAND` | deprecated for removal | read as `MANUAL` |
+
+`COMMAND` goes because the kernel has no command-started flow. A flow is either
+scheduled by application code, which is `MANUAL`, or started from an event by a
+choreography mapper, which is `EVENT`. A command handled in-process is the first;
+a command delivered as a message on the event bus is the second.
+
+```java
+// before
+@Saga(name = "NightlySettlementSaga",
+      trigger = @SagaTrigger(type = TriggerType.SCHEDULE, schedule = "0 0 2 * * *"))
+
+// after
+@Saga(name = "NightlySettlementSaga",
+      trigger = @SagaTrigger(type = TriggerType.SCHEDULED, schedule = "0 0 2 * * *"))
+```
+
+**Impact:** a source using a deprecated constant compiles with a `[removal]`
+warning; replace it as in the table. `@SagaTrigger.type()` now defaults to
+`MANUAL` rather than `COMMAND`. Nothing a build emits changes: neither the `-io`
+reader nor the `exeris-tooling` processor reads `@Saga.trigger` yet, so
+`SagaMetadata.trigger` is `null` on both paths. The AST enum, its JSON values and
+`SchemaVersion` are unchanged, so every existing document reads back as before.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** when `exeris-tooling` starts extracting the trigger, it maps by
+  name and reads the three deprecated constants as their replacements, with a
+  warning, until 1.0.0.
+
+### `@RowLevelSecurity`, `@Encrypted` and `@Field.encrypted` are deprecated — removal in 1.0.0
+
+**Why:** kernel ADR-012 §4c.1 rules out, at 1.0, the contract each would compile
+against.
+
+- **No principal session key.** The kernel publishes exactly two keys to the database
+  session, `exeris.tenant_id` and `exeris.shared_scope`. A policy keyed on a principal
+  (`OWNER`, `TEAM`, `HIERARCHY`, `DEPARTMENT`, a `CUSTOM` predicate that needs one)
+  "belong[s] to the application or its generated binding". `TEAM`, `HIERARCHY` and
+  `DEPARTMENT` need more than one identifier per request, which the kernel declines to
+  encode.
+- **No field-level encryption at rest**, in any tier: "Tooling must not invent a
+  scheme either, so `@Encrypted` has no kernel target at 1.0." An Enterprise-tier
+  capability may return after 1.0, only through its own ADR.
+
+What survives of `@RowLevelSecurity` already has a live declaration site.
+`TENANT_ISOLATION` is `@ExerisDomain(dataScope = DataScope.TENANT)`, whose generated
+policy reads `exeris.tenant_id`; the ADR's "`TENANT_ISOLATION` remains expressible"
+is met there, and a second spelling of the tier could only agree with `dataScope` or
+contradict it. The three role attributes are route authorization, because no role
+reaches the database session. The policy-shape attributes (`policyName`,
+`restrictive`, `applyOnInsert`/`Update`/`Delete`, `auditLevel`) only shape the tenant
+policy the kernel's reference text fixes, and two of them would break it.
+
+The ADR offered a third option for the principal-keyed values: document them as
+compiled against an application-owned key. It is not taken. That key is not a kernel
+contract, its name is the application's, and `TEAM` / `HIERARCHY` / `DEPARTMENT` would
+need the SDK to define the multi-identifier encoding the kernel declined to define.
+Neither annotation is kept as a reserved surface outside the 1.0.0 freeze either: the
+ADR-072 test requires the enforcing platform binding to exist, and here the kernel has
+ruled the binding out rather than shipped it in preview.
+
+**Impact:** a source that uses either annotation, or sets `@Field.encrypted`, now
+compiles with a `[removal]` warning from javac. Nothing else changes: no processor and
+no `-io` reader reads them, no AST record carries them, and the generated output and
+metadata JSON are the same as on 0.12.x.
+
+```java
+// before
+@ExerisDomain(module = "sales", path = "/orders")
+@RowLevelSecurity(policy = Policy.TENANT_ISOLATION, readRoles = "SALES")
+public class Order {
+    @Encrypted(keyId = "pii-key") @Field(label = "SSN", encrypted = true)
+    private String ssn;
+}
+
+// after — the tier on dataScope, the role on the route surface,
+// encryption in the application or the database
+@ExerisDomain(module = "sales", path = "/orders",
+              dataScope = ExerisDomain.DataScope.TENANT, roles = "SALES")
+public class Order {
+    @Field(label = "SSN", sensitive = true)
+    private String ssn;
+}
+```
+
+A principal-keyed policy (`OWNER`, `TEAM`, …) has no SDK replacement. The application
+publishes its own session key with a `ConnectionInterceptor` registered through
+`PersistenceEngine.registerInterceptor`, publishes it on every acquisition (absence
+included, since a session-scoped setting survives connection reuse), and writes the
+policy DDL itself.
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)` on both
+  annotation types, their nested enums, and `@Field.encrypted`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep;
+  its `-Aexeris.strict` audit reports both annotations as unread and `@Field.encrypted`
+  as inert.
+
+### `@SagaStep.compensation` names a method; `@SagaStep.compensationBuilder` is deprecated — removal in 1.0.0
+
+**What the value names.** `@SagaStep.compensation` is the name of the step's compensation
+method: a method of the type carrying `@Saga` that undoes the step on rollback. It is not a
+command name. The value has always been extracted as a plain string, and no producer or
+generator read it as a command, so nothing changes in the metadata. A source that wrote a
+command name there should write the method's name instead:
+
+```java
+// before — a command name; nothing dispatched it
+@SagaStep(order = 1, name = "reserveInventory", service = "inventory-service",
+          command = "ReserveInventoryCommand", compensation = "ReleaseInventoryCommand")
+public SagaAction reserveInventory() { … }
+
+// after — the compensation method, declared on the same type
+@SagaStep(order = 1, name = "reserveInventory", service = "inventory-service",
+          command = "ReserveInventoryCommand", compensation = "releaseInventory")
+public SagaAction reserveInventory() { … }
+
+public SagaAction releaseInventory() {
+    return new SagaAction.ExecuteCommand(new ReleaseInventoryCommand(…));
+}
+```
+
+The `exeris-tooling` Java kernel generator still registers a generated
+`compensate<StepName>` stub as the compensator and does not call the named method yet.
+Registering the named method, and refusing a name the host type does not declare, are its
+side of this change.
+
+**`compensationBuilder` is deprecated.** It named a method that builds the compensating
+command. With `compensation` naming the compensation method, that method builds the command
+itself, and a second method name has no role left. No producer read the attribute and no AST
+component carries it, so removing it changes no metadata and no generated output. A source
+that sets it compiles with a `[removal]` warning from javac.
+
+```java
+// before
+@SagaStep(…, compensation = "ReleaseInventoryCommand", compensationBuilder = "buildRelease")
+
+// after — the builder's body moves into the compensation method
+@SagaStep(…, compensation = "releaseInventory")
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` does not read it, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
 
 ---
 

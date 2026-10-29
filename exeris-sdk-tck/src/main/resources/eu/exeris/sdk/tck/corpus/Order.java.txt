@@ -23,6 +23,15 @@ import eu.exeris.sdk.annotation.Validation;
  * still emits well-formed metadata: the same source is version 3 to one side and version 1 — the
  * default an unread attribute leaves — to the other. It is not {@code 1} on purpose, because
  * {@code 1} is what a producer or reader that never looks at the attribute reports anyway.
+ *
+ * <p>The compensation attributes are the case behind the {@code SAGA_COMPENSATION} facet, and each
+ * value is chosen so that a side which skips it, or drops it, says something else.
+ * {@code compensationMaxRetries = 0} and the two {@code false}s are the values a boxed component
+ * exists to carry: dropped, they read as "not declared", and the annotation defaults ({@code 5},
+ * {@code true}) then apply. {@code compensationFailureHandler} is written as
+ * {@code Order.CompensationEscalation}, a member type named through its declaring class, so a side
+ * that carries the written form instead of the fully-qualified name javac reports disagrees with
+ * every side that does not.
  */
 @ExerisDomain(
         module = "sales",
@@ -30,7 +39,17 @@ import eu.exeris.sdk.annotation.Validation;
         description = "A customer order.",
         dataScope = ExerisDomain.DataScope.TENANT
 )
-@Saga(name = "OrderFulfillmentSaga", version = 3)
+@Saga(
+        name = "OrderFulfillmentSaga",
+        version = 3,
+        compensationTimeout = "PT2M",
+        compensationMaxRetries = 0,
+        compensationRetryDelay = "PT30S",
+        continueCompensationOnFailure = false,
+        compensationDlq = "sales.order-compensation.dlq",
+        compensationFailureHandler = Order.CompensationEscalation.class,
+        manualInterventionOnCompensationFailure = false
+)
 public class Order {
 
     @Field(label = "Reference", required = true)
@@ -56,5 +75,9 @@ public class Order {
 
     @SagaStep(order = 1, name = "charge", service = "payments", command = "charge")
     public void charge() {
+    }
+
+    /** The handler the saga names for a compensation that fails. */
+    public static final class CompensationEscalation {
     }
 }

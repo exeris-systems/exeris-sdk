@@ -6,7 +6,7 @@ import java.lang.annotation.*;
  * Defines a step within a saga orchestration.
  *
  * <p>Each step represents an action to be executed as part of the saga,
- * with optional compensation for rollback on failure.
+ * with an optional compensation method that undoes it on rollback.
  *
  * <h2>Basic Usage:</h2>
  * {@snippet lang="java" :
@@ -15,11 +15,18 @@ import java.lang.annotation.*;
  *     name = "reserveInventory",
  *     service = "inventory-service",
  *     command = "ReserveInventoryCommand",
- *     compensation = "ReleaseInventoryCommand"
+ *     compensation = "releaseInventory"
  * )
  * public SagaAction reserveInventory() {
  *     return new SagaAction.ExecuteCommand(
  *         new ReserveInventoryCommand(state.getProductId(), state.getQuantity())
+ *     );
+ * }
+ *
+ * // The compensation method named above, on the same type.
+ * public SagaAction releaseInventory() {
+ *     return new SagaAction.ExecuteCommand(
+ *         new ReleaseInventoryCommand(state.getProductId(), state.getQuantity())
  *     );
  * }
  * }
@@ -94,6 +101,29 @@ public @interface SagaStep {
      * it stopped, and a wake whose plan carries a different name there fails closed rather than
      * resuming into the wrong step. Reordering steps is therefore a drain-before-deploy operation,
      * not a refactor — the same procedure a rename requires.
+     *
+     * <p><strong>The contract: the steps of a saga number {@code 1..N}.</strong> With {@code N}
+     * distinct positions, the values are exactly {@code 1, 2, …, N} — starting at {@code 1},
+     * without gaps. A value is unique to one step, with one exception: several steps may share a
+     * value when every step sharing it declares {@link #parallel()} {@code = true}, which records
+     * that they occupy the same position. The ordering is what defines the sequence; it is not a
+     * sort hint over a sequence defined elsewhere, which is why changing it is breaking (below).
+     * A duplicate among non-parallel steps, a gap, or a sequence that does not start at
+     * {@code 1} breaks the contract. <strong>Not yet checked:</strong> neither producer rejects
+     * such a sequence, so a contract break compiles and the stable sort decides; the diagnostic
+     * belongs to the build-time processor, and the source-model reader, which has no diagnostic
+     * channel, carries the values as written.
+     *
+     * <p>Declare the value as an {@code int} literal or as a constant declared in the same
+     * source file. javac folds any constant expression for the processor, but the
+     * {@code exeris-sdk-source-model-io} reader reads source syntactically: it resolves a
+     * literal, a negated literal, and a {@code final} field (or an interface field, implicitly
+     * {@code final}) initialised with one and declared in the step's own type, an enclosing
+     * type, or a type of the same file named by its simple name ({@code Steps.RESERVE}). A field
+     * of an enclosing type is used only while no type in between extends or implements another,
+     * because an inherited field of the same name would take precedence for javac. Anything else
+     * it cannot read, and it reports the step's annotation from
+     * {@code SourceModelReader.unmodeledFacets} rather than inventing a position for it.
      *
      * <p><strong>No default, deliberately.</strong> Giving one would let every step share it, and
      * a stable sort would then quietly hand the sequence to declaration position — turning an
@@ -291,10 +321,27 @@ public @interface SagaStep {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Compensation command name.
-     * <p>Command to execute on rollback. Empty = no compensation.
+     * The name of this step's compensation method: a method of the saga's host type — the type
+     * carrying {@link Saga}, where this step's method is declared — that undoes the step when the
+     * saga rolls back. The value is a method name ({@code "releaseInventory"}), not a command
+     * name and not a class name. Empty means the step has no compensation.
      *
-     * @return compensation command
+     * <p>The compensation method decides what undoing the step takes: it may dispatch a
+     * compensating command, publish an event, or start another saga. When it runs is decided by
+     * the kernel flow, not by this attribute: a step failure runs the compensations registered
+     * for the steps already completed, and a timeout-driven path is declared with
+     * {@link SagaTransition}.
+     *
+     * <p><strong>Status: PARTIAL.</strong> The value is extracted on both build paths into
+     * {@code SagaStepMetadata.compensation}. The TypeScript saga emitter writes it as the step's
+     * {@code compensatingAction} label. The Java kernel generator reads only whether it is set:
+     * for a step that declares one it emits a stub named {@code compensate<StepName>} and
+     * registers that stub as the step's compensator, so the method named here is not yet called.
+     * Registering the named method and refusing a name the host type does not declare are the
+     * {@code exeris-tooling} half of this contract. Until it lands, write the method under the
+     * name given here and expect the generated stub to be the one registered.
+     *
+     * @return the compensation method's name, or empty for a step with no compensation
      */
     String compensation() default "";
 
@@ -306,10 +353,19 @@ public @interface SagaStep {
     Class<?> compensationClass() default void.class;
 
     /**
-     * Method that builds compensation command.
+     * Method that builds the compensating command.
+     *
+     * <p>Read by neither producer: no processor, reader or AST component carries it, so writing
+     * it has no effect.
      *
      * @return builder method name
+     * @deprecated since 0.13.0, for removal in 1.0.0. {@link #compensation()} names the
+     *         compensation method itself, and that method builds whatever command undoing the
+     *         step needs, so a second method name whose only job is to build that command has
+     *         nothing left to do. Move the builder's body into the compensation method and name
+     *         that method in {@link #compensation()}. See {@code MIGRATION.md}.
      */
+    @Deprecated(since = "0.13.0", forRemoval = true)
     String compensationBuilder() default "";
 
     /**

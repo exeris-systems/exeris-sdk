@@ -9,6 +9,7 @@ import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Test suite for {@code exeris-sdk-source-model-io} (ADR-037): the
@@ -1584,6 +1586,166 @@ class SourceModelIoTest {
             assertThat(sagaOf("@Saga(name = \"Fulfilment\", version = 1 + 2)").version()).isEqualTo(1);
         }
 
+        @Test
+        void sagaCompensationSectionIsReadAsDeclared() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationTimeout = "PT2M",
+                            compensationMaxRetries = 7, compensationRetryDelay = "PT30S",
+                            continueCompensationOnFailure = true, compensationDlq = "orders.dlq",
+                            compensationFailureHandler = com.acme.Escalation.class,
+                            manualInterventionOnCompensationFailure = true)""");
+            assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
+            assertThat(saga.compensationMaxRetries()).isEqualTo(7);
+            assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
+            assertThat(saga.continueCompensationOnFailure()).isTrue();
+            assertThat(saga.compensationDlq()).isEqualTo("orders.dlq");
+            assertThat(saga.compensationFailureHandler()).isEqualTo("com.acme.Escalation");
+            assertThat(saga.manualInterventionOnCompensationFailure()).isTrue();
+        }
+
+        @Test
+        void sagaCompensationLeftUndeclaredIsAbsentNotDefaulted() {
+            // null means "not declared, the annotation default applies": writing the default
+            // here would put keys on every saga that the processor, which does not extract the
+            // section, leaves off.
+            SagaMetadata saga = sagaOf("@Saga(name = \"Fulfilment\")");
+            assertThat(saga.compensationTimeout()).isEqualTo("PT10M"); // builder default
+            assertThat(saga.compensationMaxRetries()).isNull();
+            assertThat(saga.compensationRetryDelay()).isNull();
+            assertThat(saga.continueCompensationOnFailure()).isNull();
+            assertThat(saga.compensationDlq()).isNull();
+            assertThat(saga.compensationFailureHandler()).isNull();
+            assertThat(saga.manualInterventionOnCompensationFailure()).isNull();
+        }
+
+        @Test
+        void sagaCompensationZeroAndFalseAreCarriedNotDropped() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationMaxRetries = 0,
+                            continueCompensationOnFailure = false,
+                            manualInterventionOnCompensationFailure = false)""");
+            assertThat(saga.compensationMaxRetries()).isZero();
+            assertThat(saga.continueCompensationOnFailure()).isFalse();
+            assertThat(saga.manualInterventionOnCompensationFailure()).isFalse();
+            // Signed, as javac folds it: carried, not repaired.
+            assertThat(sagaOf("@Saga(compensationMaxRetries = -1)").compensationMaxRetries()).isEqualTo(-1);
+        }
+
+        @Test
+        void sagaCompensationNoneValuesReadAsNull() {
+            SagaMetadata saga = sagaOf("""
+                    @Saga(name = "Fulfilment", compensationDlq = "  ",
+                            compensationFailureHandler = void.class)""");
+            assertThat(saga.compensationDlq()).isNull();
+            assertThat(saga.compensationFailureHandler()).isNull();
+        }
+
+        @Test
+        void sagaCompensationStrategyAndOrderAreNotRead() {
+            // The annotation enums declare constants the AST enums lack (STOP_ON_FAILURE,
+            // MANUAL, CUSTOM order), so a read by name would carry a wrong value. Pinned so that
+            // reading them is a deliberate change made with the enum reconciliation.
+            SagaMetadata saga = sagaOf("""
+                    @Saga(compensationStrategy = Saga.CompensationStrategy.BEST_EFFORT,
+                            compensationOrder = Saga.CompensationOrder.FORWARD)""");
+            assertThat(saga.compensationStrategy()).isEqualTo(SagaMetadata.CompensationStrategy.ALL_OR_NOTHING);
+            assertThat(saga.compensationOrder()).isEqualTo(SagaMetadata.CompensationOrder.REVERSE);
+        }
+
+        @Test
+        void sagaFailureHandlerResolvesTheWayJavacScopesIt() {
+            // The declaring class itself, and a member reached through it.
+            assertThat(handlerOf("", "Fulfilment.class", "")).isEqualTo("x.Fulfilment");
+            assertThat(handlerOf("", "Fulfilment.Escalation.class", "public static class Escalation {}"))
+                    .isEqualTo("x.Fulfilment.Escalation");
+            // A single-type import, and a member of an imported type.
+            assertThat(handlerOf("import com.acme.Escalation;", "Escalation.class", ""))
+                    .isEqualTo("com.acme.Escalation");
+            assertThat(handlerOf("import com.acme.Handlers;", "Handlers.Escalation.class", ""))
+                    .isEqualTo("com.acme.Handlers.Escalation");
+            // Already qualified: its first segment is a package, so it is kept.
+            assertThat(handlerOf("", "com.acme.Escalation.class", "")).isEqualTo("com.acme.Escalation");
+            // Neither declared nor imported, and no on-demand import: the unit's package.
+            assertThat(handlerOf("", "Escalation.class", "")).isEqualTo("x.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerUnderAnOnDemandImportIsKeptAsWritten() {
+            // Same package or com.acme.*: javac knows, a syntactic reader does not, so it keeps
+            // what the source says instead of guessing.
+            assertThat(handlerOf("import com.acme.*;", "Escalation.class", "")).isEqualTo("Escalation");
+            // A static on-demand import cannot bring in a top-level type, so it does not block.
+            assertThat(handlerOf("import static com.acme.Util.*;", "Escalation.class", ""))
+                    .isEqualTo("x.Escalation");
+            // A name qualified through the declaring class still resolves under one.
+            assertThat(handlerOf("import com.acme.*;", "Fulfilment.Escalation.class",
+                    "public static class Escalation {}"))
+                    .isEqualTo("x.Fulfilment.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerResolvesThroughTheEnclosingType() {
+            // An entity nested in a holder sees the holder's member types by simple name, and
+            // they shadow an on-demand import. Its own member types are not in scope for an
+            // annotation on it: javac rejects Escalation.class there.
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import com.acme.*;
+                    public class Holder {
+                        public static class Escalation {}
+                        @ExerisDomain
+                        @Saga(compensationFailureHandler = Escalation.class)
+                        public static class Fulfilment {}
+                    }
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("x.Holder.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerInAnotherTopLevelTypeOfTheUnitResolves() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import com.acme.*;
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = Escalation.class)
+                    public class Fulfilment {}
+                    class Escalation {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("x.Escalation");
+        }
+
+        @Test
+        void sagaFailureHandlerInTheDefaultPackageIsTheSimpleName() {
+            String src = """
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = Escalation.class)
+                    public class Fulfilment {}
+                    """;
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler())
+                    .isEqualTo("Escalation");
+        }
+
+        private String handlerOf(String imports, String classLiteral, String body) {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    %s
+                    @ExerisDomain
+                    @Saga(compensationFailureHandler = %s)
+                    public class Fulfilment { %s }
+                    """.formatted(imports, classLiteral, body);
+            return reader.read(src).orElseThrow().sagaMetadata().compensationFailureHandler();
+        }
+
         private SagaMetadata sagaOf(String sagaAnnotation) {
             String src = """
                     package x;
@@ -1594,6 +1756,165 @@ class SourceModelIoTest {
                     public class Fulfilment {}
                     """.formatted(sagaAnnotation);
             return reader.read(src).orElseThrow().sagaMetadata();
+        }
+
+        /**
+         * The step order decides the saga's sequence, so a constant declared in the same file
+         * is folded here as javac folds it for the processor: in the step's own type, in an
+         * enclosing type, or qualified by a type of the same file.
+         */
+        @Test
+        void sagaStepOrderResolvesConstantsDeclaredInTheSameFile() {
+            String src = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    @Saga
+                    public class Fulfilment {
+                        static final int SHIP = 3;
+                        private static final int PAY = (2);
+
+                        @SagaStep(order = SHIP, service = "s", command = "c")
+                        public void ship() {}
+
+                        @SagaStep(order = Steps.RESERVE, service = "s", command = "c")
+                        public void reserve() {}
+
+                        @SagaStep(order = PAY, service = "s", command = "c")
+                        public void pay() {}
+
+                        @SagaStep(order = Steps.Nested.NOTIFY, service = "s", command = "c")
+                        public void notifyCustomer() {}
+
+                        interface Steps {
+                            int RESERVE = Fulfilment.ONE;
+                        }
+                        static final int ONE = 1;
+                    }
+                    """;
+            // Steps.Nested.NOTIFY has a qualifier that is not a simple type name: unresolved,
+            // carried at 1 and reported, which the next test pins on its own.
+            assertThat(reader.read(src).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name, SagaStepMetadata::order)
+                    .containsExactly(tuple("reserve", 1), tuple("notifyCustomer", 1),
+                            tuple("pay", 2), tuple("ship", 3));
+        }
+
+        @Test
+        void sagaStepOrderThatCannotBeResolvedIsReportedNotTrusted() {
+            String unresolved = sagaWithStepOrders("Orders.RESERVE", "2");
+            assertThat(reader.unmodeledFacets(unresolved)).containsExactly("@SagaStep");
+            // The unresolved step is still read, carried at order 1, beside the resolved one.
+            assertThat(reader.read(unresolved).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1, 2);
+
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("1 + 1", "3"))).containsExactly("@SagaStep");
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("INHERITED", "3"))).containsExactly("@SagaStep");
+            // A non-final field is not a constant to javac either.
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("MUTABLE", "3"))).containsExactly("@SagaStep");
+            // Resolved and absent orders are not reported.
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("FIRST", "2"))).isEmpty();
+            assertThat(reader.unmodeledFacets(sagaWithStepOrders("1", "2"))).isEmpty();
+        }
+
+        /**
+         * javac resolves a simple name against a type's inherited members before its enclosing
+         * scope, so an enclosing constant is used only when the step host extends nothing.
+         */
+        @Test
+        void sagaStepOrderFromAnEnclosingTypeIsUnresolvedBehindASupertype() {
+            String behindSupertype = nestedSagaHost("extends Base");
+            assertThat(reader.unmodeledFacets(behindSupertype)).containsExactly("@SagaStep");
+            assertThat(reader.read(behindSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1);
+            assertThat(reader.unmodeledFacets(nestedSagaHost("implements Marker"))).containsExactly("@SagaStep");
+
+            String noSupertype = nestedSagaHost("");
+            assertThat(reader.unmodeledFacets(noSupertype)).isEmpty();
+            assertThat(reader.read(noSupertype).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(4);
+        }
+
+        private String nestedSagaHost(String supertypes) {
+            return """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    public class Holder {
+                        static final int STEP = 4;
+                        @ExerisDomain
+                        @Saga
+                        public static class Fulfilment %s {
+                            @SagaStep(order = STEP, service = "s", command = "c")
+                            public void reserve() {}
+                        }
+                    }
+                    """.formatted(supertypes);
+        }
+
+        @Test
+        void sagaStepOrderIsOnlyCheckedOnASagaOfTheDomainType() {
+            // No @Saga: read() reads no steps, so there is nothing to diverge on.
+            String noSaga = """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    public class Fulfilment {
+                        @SagaStep(order = Orders.RESERVE, service = "s", command = "c")
+                        public void reserve() {}
+                    }
+                    """;
+            assertThat(reader.unmodeledFacets(noSaga)).isEmpty();
+        }
+
+        /**
+         * Duplicates among non-parallel steps, gaps and a sequence not starting at 1 break the
+         * {@code @SagaStep.order} contract, and the processor is where they are diagnosed. The
+         * reader has no diagnostic channel: it carries them as written, stable-sorted, which is
+         * what the processor's own sort produces — so the two agree and the guard stays quiet.
+         */
+        @Test
+        void sagaStepOrderContractBreaksAreCarriedAsWritten() {
+            String duplicate = sagaWithStepOrders("1", "1");
+            assertThat(reader.read(duplicate).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name).containsExactly("first", "second");
+            assertThat(reader.unmodeledFacets(duplicate)).isEmpty();
+
+            String gap = sagaWithStepOrders("1", "3");
+            assertThat(reader.read(gap).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::order).containsExactly(1, 3);
+            assertThat(reader.unmodeledFacets(gap)).isEmpty();
+
+            String notFromOne = sagaWithStepOrders("5", "-1");
+            assertThat(reader.read(notFromOne).orElseThrow().sagaMetadata().steps())
+                    .extracting(SagaStepMetadata::name, SagaStepMetadata::order)
+                    .containsExactly(tuple("second", -1), tuple("first", 5));
+            assertThat(reader.unmodeledFacets(notFromOne)).isEmpty();
+        }
+
+        private String sagaWithStepOrders(String first, String second) {
+            return """
+                    package x;
+                    import eu.exeris.sdk.annotation.ExerisDomain;
+                    import eu.exeris.sdk.annotation.Saga;
+                    import eu.exeris.sdk.annotation.SagaStep;
+                    @ExerisDomain
+                    @Saga
+                    public class Fulfilment extends Base {
+                        static final int FIRST = 1;
+                        static int MUTABLE = 1;
+
+                        @SagaStep(order = %s, service = "s", command = "c")
+                        public void first() {}
+
+                        @SagaStep(order = %s, service = "s", command = "c")
+                        public void second() {}
+                    }
+                    """.formatted(first, second);
         }
 
         @Test

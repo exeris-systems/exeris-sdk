@@ -51,6 +51,12 @@ import java.lang.annotation.*;
  * public class TransferMoneySaga implements Saga<TransferState> {}
  * }
  *
+ * <h2>One saga per type</h2>
+ * A type hosts at most one saga. This annotation is not {@link Repeatable}, and the metadata
+ * both producers build for a type ({@code DomainMetadata.sagaMetadata}) holds a single saga, so
+ * there is no place for a second one to land. A second flow over the same entity — a renewal
+ * next to a fulfilment, say — is a second type carrying its own {@code @Saga}, with its own
+ * {@link #name()} and its own {@link SagaStep} methods.
  *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
  * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
@@ -309,7 +315,9 @@ public @interface Saga {
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationOrder()} holds its builder default on every
-     * build path and setting it here changes no generated artifact. The attribute is
+     * build path and setting it here changes no generated artifact. The reader leaves it
+     * unread because {@link CompensationOrder#CUSTOM} has no counterpart in
+     * {@code SagaMetadata.CompensationOrder}, so a read by constant name would carry a wrong value. The attribute is
      * kept rather than removed because the compensation semantics it names are real —
      * what is missing is the extraction and a generator that acts on it.
      *
@@ -324,7 +332,10 @@ public @interface Saga {
      * {@code exeris-tooling} processor reads this attribute and the
      * {@code exeris-sdk-source-model-io} reader does not read it either, so
      * {@code SagaMetadata.compensationStrategy()} holds its builder default on every
-     * build path and setting it here changes no generated artifact. The attribute is
+     * build path and setting it here changes no generated artifact. The reader leaves it
+     * unread because {@link CompensationStrategy#STOP_ON_FAILURE} and
+     * {@link CompensationStrategy#MANUAL} have no counterpart in
+     * {@code SagaMetadata.CompensationStrategy}, so a read by constant name would carry a wrong value. The attribute is
      * kept rather than removed because the compensation semantics it names are real —
      * what is missing is the extraction and a generator that acts on it.
      *
@@ -335,11 +346,11 @@ public @interface Saga {
     /**
      * Timeout for entire compensation phase (ISO-8601 duration).
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationTimeout()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact. The component
-     * holds its builder default, {@code "PT10M"}, on every build path.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationTimeout()}; no {@code exeris-tooling} processor extracts it
+     * yet, so a build-time baseline holds the builder default, {@code "PT10M"}, and no generator
+     * reads it, so setting it here changes no generated artifact.
      *
      * @return compensation timeout
      */
@@ -348,10 +359,10 @@ public @interface Saga {
     /**
      * Max retries for individual compensation steps.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationMaxRetries()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationMaxRetries()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return compensation max retries
      */
@@ -360,10 +371,10 @@ public @interface Saga {
     /**
      * Delay between compensation retries.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationRetryDelay()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationRetryDelay()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return compensation retry delay
      */
@@ -373,10 +384,10 @@ public @interface Saga {
      * Continue compensation on individual step failure.
      * <p>When true, continues to next compensation even if one fails.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.continueCompensationOnFailure()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.continueCompensationOnFailure()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return continue on failure
      */
@@ -386,10 +397,10 @@ public @interface Saga {
      * Dead letter queue for failed compensations.
      * <p>Unrecoverable compensation failures are sent here.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationDlq()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationDlq()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return DLQ topic name
      */
@@ -399,10 +410,10 @@ public @interface Saga {
      * Custom compensation handler class.
      * <p>Called when automatic compensation fails.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.compensationFailureHandler()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact. The component
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.compensationFailureHandler()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact. The component
      * carries the class's fully-qualified name.
      *
      * @return handler class
@@ -412,10 +423,10 @@ public @interface Saga {
     /**
      * Trigger manual intervention on compensation failure.
      *
-     * <p><strong>Open-Core status — RESERVED; carried but not extracted.</strong>
-     * {@code SagaMetadata.manualInterventionOnCompensationFailure()} carries it, but no {@code exeris-tooling} processor
-     * reads this attribute and the {@code exeris-sdk-source-model-io} reader does not
-     * read it either, so setting it here changes no generated artifact.
+     * <p><strong>Open-Core status — PARTIAL.</strong> The
+     * {@code exeris-sdk-source-model-io} reader reads it into
+     * {@code SagaMetadata.manualInterventionOnCompensationFailure()}; no {@code exeris-tooling} processor extracts it yet,
+     * and no generator reads it, so setting it here changes no generated artifact.
      *
      * @return true to trigger intervention
      */
@@ -1033,10 +1044,11 @@ public @interface Saga {
     /**
      * What starts a saga instance.
      *
-     * <p>Names the command or event that begins the flow — by class when the type is on the
+     * <p>Names the event that begins the flow — by class when the type is on the
      * classpath, by name or pattern when it is not. {@link Saga#trigger()} defaults to
      * {@code @SagaTrigger} with every attribute at its own default, i.e. a
-     * {@link TriggerType#COMMAND} trigger naming no source.
+     * {@link TriggerType#MANUAL} trigger naming no source: the saga is started by
+     * application code.
      *
      * <p><strong>Status: RESERVED</strong> — {@link Saga#trigger()} is not extracted.
      * {@code @Saga} itself is read and drives the emitted saga, but what starts it is not
@@ -1050,10 +1062,10 @@ public @interface Saga {
          *
          * @return the trigger kind
          */
-        TriggerType type() default TriggerType.COMMAND;
+        TriggerType type() default TriggerType.MANUAL;
 
         /**
-         * The command or event type that starts the saga, when it is on the classpath.
+         * The event type that starts the saga, when it is on the classpath.
          *
          * @return the source type, or {@code void.class} when named instead
          */
@@ -1103,21 +1115,22 @@ public @interface Saga {
         StartPosition startPosition() default StartPosition.LATEST;
 
         /**
-         * The schedule that starts the saga, when {@link #type()} is the scheduled kind.
+         * The schedule that starts the saga, when {@link #type()} is {@link TriggerType#SCHEDULED}.
          *
          * @return the schedule expression, empty otherwise
          */
         String schedule() default "";
 
         /**
-         * The path a request must hit to start the saga, when {@link #type()} is the HTTP kind.
+         * The path a request must hit to start the saga, when {@link #type()} is
+         * {@link TriggerType#API}.
          *
          * @return the path, empty otherwise
          */
         String httpPath() default "";
 
         /**
-         * The HTTP method that request must use, when {@link #type()} is the HTTP kind.
+         * The HTTP method that request must use, when {@link #type()} is {@link TriggerType#API}.
          *
          * @return the method name
          */
@@ -1125,21 +1138,72 @@ public @interface Saga {
 
         /**
          * What kind of occurrence starts the saga.
+         *
+         * <p>A mirror of the AST-owned {@code SagaMetadata.TriggerType}: two separate types
+         * with the same constant names, mapped by name at extraction time, never an import of
+         * the AST type, which preserves the annotation module's zero-dependency contract. Every
+         * constant not deprecated for removal has exactly one AST counterpart of the same name,
+         * and every AST constant has one here. A constant deprecated for removal has no AST
+         * counterpart; its deprecation note names the constant it is read as.
          */
         enum TriggerType {
-            /** Started by command. */
+            /**
+             * Started by a command.
+             *
+             * @deprecated since 0.13.0, for removal in 1.0.0. The kernel starts a flow in two
+             *         ways only: application code schedules it, or a choreography mapper starts
+             *         it from an event. A command handled in-process is the first, so write
+             *         {@link #MANUAL}, which this constant is read as; a command delivered as a
+             *         message on the event bus is the second, so write {@link #EVENT}.
+             */
+            @Deprecated(since = "0.13.0", forRemoval = true)
             COMMAND,
 
-            /** Started by domain event. */
+            /**
+             * Started by a domain event, through a choreography mapper keyed on the event type.
+             * Maps onto {@code SagaMetadata.TriggerType.EVENT}.
+             */
             EVENT,
 
-            /** Started on schedule (cron). */
+            /**
+             * Started on a schedule (cron), given by {@link SagaTrigger#schedule()}.
+             * Maps onto {@code SagaMetadata.TriggerType.SCHEDULED}.
+             *
+             * @since 0.13
+             */
+            SCHEDULED,
+
+            /**
+             * Started on schedule (cron).
+             *
+             * @deprecated since 0.13.0, for removal in 1.0.0. Renamed to {@link #SCHEDULED},
+             *         the spelling of the AST constant and of {@code DomainEvent.Trigger},
+             *         and read as it.
+             */
+            @Deprecated(since = "0.13.0", forRemoval = true)
             SCHEDULE,
 
-            /** Started via HTTP API. */
+            /**
+             * Started by an API call, bound by {@link SagaTrigger#httpPath()} and
+             * {@link SagaTrigger#httpMethod()}. Maps onto {@code SagaMetadata.TriggerType.API}.
+             *
+             * @since 0.13
+             */
+            API,
+
+            /**
+             * Started via HTTP API.
+             *
+             * @deprecated since 0.13.0, for removal in 1.0.0. Renamed to {@link #API}, the
+             *         spelling of the AST constant, and read as it.
+             */
+            @Deprecated(since = "0.13.0", forRemoval = true)
             HTTP,
 
-            /** Started programmatically. */
+            /**
+             * Started programmatically, by application code scheduling the flow. The default.
+             * Maps onto {@code SagaMetadata.TriggerType.MANUAL}.
+             */
             MANUAL
         }
 

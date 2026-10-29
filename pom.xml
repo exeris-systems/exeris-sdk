@@ -147,6 +147,37 @@
              AnnotationSurfaceContractTest instead; exeris-sdk-annotation-catalog, which is not
              published and has no baseline). Nobody needs to pass it on the command line. -->
         <japicmp.skip>false</japicmp.skip>
+
+        <!--
+            SonarQube Cloud analysis, run from build.yml after `verify` rather than by Automatic
+            Analysis. Automatic Analysis never builds the reactor, so it reports no coverage and does
+            not apply the issue exclusions below; the Maven scanner reads both from the build. These
+            are only the values the reactor cannot derive: the scanner takes the version, encoding,
+            Java release, source and test roots, compiled output and analysis classpath from the
+            build itself. sonar.projectName is not set: a property here is inherited by every module,
+            and the scanner would then label each of them with the same name.
+        -->
+        <sonar.organization>exeris-systems</sonar.organization>
+        <sonar.projectKey>exeris-systems_exeris-sdk</sonar.projectKey>
+        <sonar.newCode.referenceBranch>main</sonar.newCode.referenceBranch>
+        <!--
+            Per module, not a `**/` glob: the path resolves against each module's base directory, and
+            a glob at the reactor root would import every module's report into the root module.
+        -->
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <!--
+            java:S1133 "Do not forget to remove this deprecated code someday", suppressed on main
+            sources. Every pre-1.0 removal in this repository goes through the deprecation pipeline:
+            `@Deprecated(forRemoval = true)` with the replacement named, and an entry in
+            MIGRATION-0.x-to-1.0.md §1, which is the removal list the 1.0 cut works from. The rule
+            restates that list as one open issue per deprecated element, and on a small diff those
+            issues alone push the new-code maintainability rating below the gate. S1123 (annotation
+            and Javadoc tag must agree) stays on: it checks the half of the pipeline the list
+            cannot.
+        -->
+        <sonar.issue.ignore.multicriteria>deprecationPipeline</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.deprecationPipeline.ruleKey>java:S1133</sonar.issue.ignore.multicriteria.deprecationPipeline.ruleKey>
+        <sonar.issue.ignore.multicriteria.deprecationPipeline.resourceKey>**/src/main/java/**/*.java</sonar.issue.ignore.multicriteria.deprecationPipeline.resourceKey>
     </properties>
 
     <build>
@@ -168,7 +199,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.11.2</version>
+                    <version>3.12.0</version>
                     <configuration>
                         <!--
                             The three OpenJDK contract tags (JDK-8008632), registered here so that
@@ -264,6 +295,13 @@
                     <groupId>com.github.siom79.japicmp</groupId>
                     <artifactId>japicmp-maven-plugin</artifactId>
                     <version>${japicmp.version}</version>
+                </plugin>
+                <!-- Invoked by full coordinates from build.yml, so this pin is what resolves rather
+                     than a prefix lookup of the newest release. -->
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>5.8.0.7211</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -361,11 +399,25 @@
                         plugins, and neither implies the other. Because that is exactly the kind of
                         pair that drifts, the release-readiness step in release.yml asserts the two
                         lists agree rather than trusting them to.
+
+                        Staging installs each module into a local repository under
+                        target/central-staging, and before bundling the plugin deletes the
+                        bookkeeping that install leaves: maven-metadata files at the artifact and
+                        group level, which have no pom beside them, and Central refuses a bundle
+                        holding one. Their names depend on the resolver of the Maven running the
+                        build: maven-metadata-central-staging.xml on Maven 3.9, and
+                        maven-metadata-local.xml and _remote.repositories on Maven 3.10, which
+                        0.11.0 does not delete. Keep this at 0.12.0 or later: the runner image picks
+                        the Maven version. The release-readiness step in release.yml fails a bundle
+                        holding anything outside a published coordinate's version directory.
+
+                        skipUpload builds the bundle without uploading it; release.yml's dry run
+                        sets it.
                     -->
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.11.0</version>
+                        <version>0.12.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
