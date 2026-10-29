@@ -813,6 +813,23 @@ TCK binders: `AbstractMetadataReaderTck` asserts the declared `displayField` on 
 `Customer.orders` (`"reference"`), and `AbstractMetadataParityTck.relationshipsAgree` compares it.
 A side that does not read the attribute fails both.
 
+### `SourceModelReader` reads `@Relationship.targetEntity` and `cascadeDelete`/`cascadeUpdate`
+
+**Impact on code: none required.** Two relationship components now match the exeris-tooling
+processor:
+
+- **`targetEntity`** is the declared `targetEntity = Foo.class` (its simple name) when present and
+  not `void.class`; otherwise the field type, a collection's element type unwrapped, as before. Only
+  a field whose type differs from the declared class reads differently, such as the explicit-key
+  `@Relationship(targetEntity = Owner.class) UUID ownerId`, which read `UUID` and reads `Owner`.
+- **`cascade`** is `ALL` when both booleans are `true`, `REMOVE` for `cascadeDelete` alone and
+  `MERGE` for `cascadeUpdate` alone. A relationship declaring either read `NONE` before.
+
+TCK binders: the corpus `Customer` gains `lastOrderId` (`UUID`, `targetEntity = Order.class`) and
+`orders` declares `cascadeDelete = true`. `AbstractMetadataReaderTck` asserts `Order` and `REMOVE`,
+and `relationshipsAgree` compares `cascade`. A producer that adds a `@Relationship` field to
+`DomainMetadata.fields` lists `lastOrderId` there as it lists `orders`.
+
 ---
 
 ## 0.11.x → 0.12.x

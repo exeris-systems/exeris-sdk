@@ -290,7 +290,10 @@ final class ReferenceBinding {
                         RelationshipMetadata.builder("orders", TckCorpus.ORDER)
                                 .type(RelationshipMetadata.RelationType.ONE_TO_MANY)
                                 .mappedBy("customer")
-                                .cascade(RelationshipMetadata.CascadeType.ALL)
+                                .cascade(RelationshipMetadata.CascadeType.REMOVE)
+                                .displayField("reference")
+                                .build(),
+                        RelationshipMetadata.builder("lastOrderId", TckCorpus.ORDER)
                                 .displayField("reference")
                                 .build()))
                 .uiMetadata(UIMetadata.builder().groups(customerGroups()).build())

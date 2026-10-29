@@ -48,6 +48,8 @@ class MetadataReaderTckSelfTest {
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
             reader.relationshipDisplayFieldIsTheDeclaredOne();
+            reader.relationshipCascadeIsTheDeclaredOne();
+            reader.relationshipTargetIsTheDeclaredEntity();
             reader.actionIsReadUnderTheDeclaredName();
             reader.actionResultTypeIsTheDeclaredOne();
             reader.sagaVersionIsTheDeclaredOne();
@@ -127,6 +129,50 @@ class MetadataReaderTckSelfTest {
         assertThatThrownBy(defaulting::relationshipDisplayFieldIsTheDeclaredOne)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("read as 'name'");
+    }
+
+    @Test
+    @DisplayName("a cascade pair left unread is caught")
+    void cascadeCaseIsNotVacuous() {
+        Reader unread = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : m.relationships().stream()
+                        .map(r -> "orders".equals(r.name())
+                                ? RelationshipMetadata.builder(r.name(), r.targetEntity())
+                                        .type(r.type()).mappedBy(r.mappedBy()).displayField(r.displayField())
+                                        .build()
+                                : r)
+                        .toList()));
+        assertThatThrownBy(unread::relationshipCascadeIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("read as NONE");
+    }
+
+    @Test
+    @DisplayName("a target taken from the field type is caught")
+    void targetEntityCaseIsNotVacuous() {
+        Reader fromFieldType = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : m.relationships().stream()
+                        .map(r -> "lastOrderId".equals(r.name())
+                                ? RelationshipMetadata.builder(r.name(), "UUID")
+                                        .displayField(r.displayField())
+                                        .build()
+                                : r)
+                        .toList()));
+        assertThatThrownBy(fromFieldType::relationshipTargetIsTheDeclaredEntity)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("target 'UUID'");
+    }
+
+    private static DomainMetadata withRelationships(DomainMetadata m, List<RelationshipMetadata> edges) {
+        return edges == null
+                ? m
+                : DomainMetadata.builder(m.entityName(), m.packageName())
+                        .fields(m.fields())
+                        .actions(m.actions())
+                        .relationships(edges)
+                        .build();
     }
 
     @Test

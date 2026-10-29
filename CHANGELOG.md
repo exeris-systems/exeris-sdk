@@ -116,6 +116,15 @@ for per-version upgrade steps.
   reader returns a different `displayField` than before. The parity TCK compares the component
   and the reader TCK asserts it. See [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` reads `@Relationship.targetEntity` and the cascade pair as the
+  processor does.** A declared `targetEntity = Foo.class` now names the target; the reader took the
+  field type, so `@Relationship(targetEntity = Owner.class) UUID ownerId` read as targeting `UUID`.
+  `cascadeDelete`/`cascadeUpdate` now set `RelationshipMetadata.cascade` (`ALL` for both, `REMOVE`
+  for delete, `MERGE` for update); the reader left `NONE`. The corpus `Customer` gains
+  `lastOrderId`, an explicit-key relationship, and `orders` declares `cascadeDelete`; the reader
+  TCK asserts both and the parity TCK compares `cascade`. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
 ### Added
 
 - **The pre-construction brief contract (ADR-106).** `exeris-sdk-source-model` gains
