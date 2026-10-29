@@ -135,6 +135,34 @@ of a source declaring them, differs on any action that declares `permissions` or
 parity binding whose producer does not extract route access adds `Facet.ROUTE_ACCESS` to
 `unsupportedFacets()` until it does.
 
+### `SourceModelReader` fills `ActionMetadata.resultType`
+
+**Impact on code: none required.** The `-io` reader writes each `@Action` method's
+declared return type into `ActionMetadata.resultType`, in the form javac's
+`TypeMirror.toString()` gives it without type-use annotations: fully qualified, type
+arguments kept and joined by `,` with no space, a nested type joined by `.`, a type
+variable by its simple name, a primitive by its keyword. An action that returns nothing
+carries `"void"`; `null` means the producer did not extract the component. The record
+does not change shape.
+
+Names are resolved from the one source file: a type the file declares or imports by
+name, a public `java.lang` type, and otherwise the file's package. Under an on-demand
+import (`import java.util.*;`) a simple name the file does not declare is kept as
+written. A member type inherited from a supertype, and a same-package type named like a
+`java.lang` type, resolve differently than javac resolves them.
+
+The `exeris-tooling` processor does not extract the component yet, so its JSON is the
+same as on 0.12.0. `SourceModelConflictDetector` compares an action as a whole, so
+against a processor baseline every action read from source differs in `resultType`, as
+it already differs in `displayName`, which the reader fills from `@Action.label` and the
+processor does not.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.ACTION_RESULT_TYPE`, and the corpus `Order`
+declares four more actions, returning an entity, a `record`, a `List` of it and an
+`int`. A producer or parity binding whose producer does not extract `resultType` fails
+the new cases until it adds `Facet.ACTION_RESULT_TYPE` to `unsupportedFacets()`. A
+reader binding that does not read it does the same.
+
 ### `@SagaTrigger.type` uses the AST's names — `COMMAND`, `SCHEDULE`, `HTTP` deprecated, removal in 1.0.0
 
 **Why:** a producer maps `@Saga(trigger = @SagaTrigger(type = …))` onto
@@ -640,6 +668,22 @@ TCK binders: `Facet.SAGA` is new, and the corpus `Order` now declares `@Saga(ver
 reader, producer and parity suites each gain a case under it. A binding whose side does not extract
 sagas yet declares `Facet.SAGA` in `unsupportedFacets()`. A binding that switches exhaustively over
 `Facet` needs a new arm.
+
+### `SourceModelReader` reads `@PrimaryKey`; `unmodeledFacets()` reports four more annotations
+
+`read()` now fills `SystemFieldsMetadata.primaryKeyField` from the `@PrimaryKey` marker, resolved
+as the other ten `annotation.system` markers are: the marker on exactly one field names the key,
+unless a non-blank `@ExerisDomain(primaryKeyField)` names a different field, which then wins. A
+marker with `strategy = SEQUENCE`, `IDENTITY` or `NONE` is not read (ADR-104 refuses those). An
+entity whose only system-field declaration is the marker now reads with a `systemFields` record
+where it read `null` before. exeris-tooling reads the marker the same way from 0.11.0; a baseline
+written by an earlier processor carries `id` for such an entity, so regenerate it.
+
+`unmodeledFacets()` now returns `@GraphProperty`, `@UIGroup`, `@Blob` and `@Channel` when the
+source uses them. It returned nothing for them before. A round-trip, reattach or conflict-detection
+caller that refuses on a non-empty result now refuses those sources; `read()` itself is unchanged
+for them and leaves `GraphMetadata.properties`, `UIMetadata.groups`, `FieldMetadata.blob` and
+`DomainMetadata.channel` at their defaults.
 
 ---
 

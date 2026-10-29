@@ -180,6 +180,31 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
     }
 
     /**
+     * The return type each action carries. The divergence this exists for is one side carrying
+     * the type as written — {@code Receipt}, {@code List<Receipt>} — and the other the
+     * fully-qualified name javac reports, or one side writing {@code "void"} where the other
+     * writes nothing.
+     */
+    @Test
+    @DisplayName("producer and reader agree on every action's return type")
+    void actionResultTypesAgree() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.ACTION_RESULT_TYPE);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            Map<String, ActionMetadata> right = byKey(wasRead.actions(), ActionMetadata::name);
+            for (Map.Entry<String, ActionMetadata> entry : byKey(produced.actions(), ActionMetadata::name).entrySet()) {
+                ActionMetadata r = right.get(entry.getKey());
+                if (r != null) {
+                    compare(gaps, ACTIONS + entry.getKey() + "/resultType",
+                            entry.getValue().resultType(), r.resultType());
+                }
+            }
+            return gaps;
+        });
+    }
+
+    /**
      * The saga's identity is the pair kernel ADR-064 addresses a plan by, so both halves are
      * compared. The version is the half a side can skip without emitting anything malformed: it
      * reports the default {@code 1}, the same source names two different plans, and — as with

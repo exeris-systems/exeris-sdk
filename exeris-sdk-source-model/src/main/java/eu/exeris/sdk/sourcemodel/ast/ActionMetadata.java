@@ -78,7 +78,19 @@ import java.util.Objects;
  * @param displayName the label a generated UI shows for the action
  * @param description human-readable prose for generated documentation
  * @param httpMethod the HTTP method the generated route is bound to
- * @param resultType the action's return type, as written in source
+ * @param resultType the declared return type of the action method, in the form javac's
+ *        {@code TypeMirror.toString()} gives it, without type-use annotations: fully
+ *        qualified, a nested type joined to its enclosing type by {@code .}, type arguments
+ *        kept and separated by {@code ,} with no space, a type variable by its simple name,
+ *        and a primitive by its keyword — {@code java.util.List<com.acme.Order.Receipt>},
+ *        {@code long}. An action that returns nothing carries {@code "void"}, so a present
+ *        {@code "void"} and an absent value say different things: {@code null} means the
+ *        producer did not extract the component.
+ *
+ *        <p>The {@code exeris-sdk-source-model-io} reader fills it, resolving names
+ *        syntactically from the source file alone. The {@code exeris-tooling} processor
+ *        does not extract it yet, so on the build-time path it is {@code null} until it
+ *        does (ADR-042).
  * @param async whether the action returns before its work completes
  * @param idempotent whether repeating the call is safe
  * @param dangerous whether the action is destructive enough to warrant a warning

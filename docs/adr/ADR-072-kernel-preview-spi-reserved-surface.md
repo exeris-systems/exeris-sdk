@@ -114,7 +114,7 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 
 ## Amendment — 2026-10-29 (0.13.0): the `-io` reader reads route access ahead of the processor
 
-**For `@RouteAccess` and the two `permissions` attributes, obligation 14's reader clause is reversed by exeris-tooling ADR-105.** ADR-105 obligation 26 makes the processor extract `permissions` and `routeAccess` only in the release whose pinned SDK reader reads them the same way, so the reader half has to ship first: the processor cannot write under ADR-042 what the reader would then misread as user drift. Obligation 7's reasoning still holds for `@Blob`, `@Schedule` and `@Channel`, which no processor plans to extract yet.
+**For `@RouteAccess` and the two `permissions` attributes, obligation 14's reader clause is reversed by exeris-tooling ADR-105.** ADR-105 obligation 26 makes the processor extract `permissions` and `routeAccess` only in the release whose pinned SDK reader reads them the same way, so the reader half has to ship first: the processor cannot write under ADR-042 what the reader would then misread as user drift. Obligation 7 is unchanged for `@Blob`, `@Schedule` and `@Channel`.
 
 25. **The reader reads each element's own declaration.** `@RouteAccess` on the type into `DomainMetadata.routeAccess` and beside an `@Action` into `ActionMetadata.routeAccess`, `PUBLIC` included; `@ExerisDomain.permissions` and `@Action.permissions` in declaration order. An action declaring neither keeps a `null` `routeAccess` and empty `permissions`. The nearest-declaration rule of obligation 9 is applied by the generator that compiles the route policy (ADR-105 obligation 12), from these values, not resolved into the metadata.
 

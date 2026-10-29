@@ -7,6 +7,7 @@ import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Saga;
 import eu.exeris.sdk.annotation.SagaStep;
 import eu.exeris.sdk.annotation.Validation;
+import java.util.List;
 
 /**
  * Corpus entity 1 of 3. Compiled as a unit with {@code Customer}, which points at it, and
@@ -34,6 +35,12 @@ import eu.exeris.sdk.annotation.Validation;
  * {@code Order.CompensationEscalation}, a member type named through its declaring class, so a side
  * that carries the written form instead of the fully-qualified name javac reports disagrees with
  * every side that does not.
+ *
+ * <p>The actions are the case behind the {@code ACTION_RESULT_TYPE} facet: one returns nothing,
+ * one an entity, one a {@code record}, one a {@code List} of it, and one a primitive. The entity
+ * is declared in another file, and the record is a member type named by its simple name, so a
+ * side that carries the return type as written disagrees with one carrying the fully-qualified
+ * name javac reports.
  *
  * <p>The route-access declarations are the cases behind the {@code ROUTE_ACCESS} facet. The entity
  * declares {@code AUTHENTICATED} together with two permissions, in an order a side must keep.
@@ -85,6 +92,26 @@ public class Order {
     public void submit() {
     }
 
+    @Action(name = "customer", label = "Customer", httpMethod = "GET")
+    public Customer customer() {
+        return null;
+    }
+
+    @Action(name = "receipt", label = "Receipt", httpMethod = "GET")
+    public Receipt receipt() {
+        return new Receipt(reference, totalCents == null ? 0L : totalCents);
+    }
+
+    @Action(name = "receipts", label = "Receipts", httpMethod = "GET")
+    public List<Receipt> receipts() {
+        return List.of(receipt());
+    }
+
+    @Action(name = "lineCount", label = "Line count", httpMethod = "GET")
+    public int lineCount() {
+        return 0;
+    }
+
     @Action(name = "approve", label = "Approve", httpMethod = "POST", permissions = {"order:approve"})
     public void approve() {
     }
@@ -96,6 +123,10 @@ public class Order {
 
     @SagaStep(order = 1, name = "charge", service = "payments", command = "charge")
     public void charge() {
+    }
+
+    /** What the {@code receipt} action returns. */
+    public record Receipt(String reference, long totalCents) {
     }
 
     /** The handler the saga names for a compensation that fails. */

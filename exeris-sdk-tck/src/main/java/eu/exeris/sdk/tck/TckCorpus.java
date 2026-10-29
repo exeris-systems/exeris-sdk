@@ -15,8 +15,8 @@ import java.util.Map;
  * imagination. Each entity here carries a case with a defect behind it — a zero-valued bound that a
  * class-level {@code NON_DEFAULT} drops, a relationship whose cardinality attribute has been read
  * under the wrong key, a saga version that one side reads and the other skips, a declared
- * {@code false} that a boxed component drops, a {@code PUBLIC} route access that ordinal 0 invites a
- * side to drop — so a binding
+ * {@code false} that a boxed component drops, a return type carried as written rather than fully
+ * qualified, a {@code PUBLIC} route access that ordinal 0 invites a side to drop — so a binding
  * that regresses one of them fails on the case rather than on a fixture nobody thought to write.
  *
  * <p>The entities compile as a <strong>unit</strong>: {@code Customer} declares a relationship
@@ -33,7 +33,8 @@ import java.util.Map;
 public final class TckCorpus {
 
     /**
-     * Simple name of the order entity — fields, validation bounds (including a zero), one action, and
+     * Simple name of the order entity — fields, validation bounds (including a zero), five actions
+     * returning nothing, an entity, a {@code record}, a {@code List} and a primitive, and
      * a {@code @Saga} declaring a non-default {@code version} and a compensation section whose
      * values include a {@code 0}, two {@code false}s and a member-type failure handler. Its route
      * access is {@code AUTHENTICATED} with two permissions, over an action that inherits it, one
@@ -101,6 +102,23 @@ public final class TckCorpus {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read corpus resource " + resource, e);
         }
+    }
+
+    /**
+     * The return type of each of {@code Order}'s actions, in the form javac reports it.
+     *
+     * @return action name → {@code ActionMetadata.resultType}, in declaration order
+     */
+    static Map<String, String> orderResultTypes() {
+        Map<String, String> types = new LinkedHashMap<>();
+        types.put("submit", "void");
+        types.put("customer", PACKAGE + "." + CUSTOMER);
+        types.put("receipt", PACKAGE + ".Order.Receipt");
+        types.put("receipts", "java.util.List<" + PACKAGE + ".Order.Receipt>");
+        types.put("lineCount", "int");
+        types.put("approve", "void");
+        types.put("track", "void");
+        return types;
     }
 
     /**

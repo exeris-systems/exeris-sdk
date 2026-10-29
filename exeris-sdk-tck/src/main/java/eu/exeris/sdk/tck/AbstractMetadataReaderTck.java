@@ -1,5 +1,6 @@
 package eu.exeris.sdk.tck;
 
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -171,6 +173,31 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                                 + "@Action(name) is the action identity and may differ from the Java "
                                 + "method name by design.")
                 .contains("submit");
+    }
+
+    @Test
+    @DisplayName("each action carries its return type, fully qualified, and void as \"void\"")
+    void actionResultTypeIsTheDeclaredOne() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.ACTION_RESULT_TYPE);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        for (Map.Entry<String, String> expected : TckCorpus.orderResultTypes().entrySet()) {
+            ActionMetadata action = order.actions().stream()
+                    .filter(a -> expected.getKey().equals(a.name()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(
+                            "Order declares @Action(name = \"" + expected.getKey() + "\"); the reader "
+                                    + "did not return it."));
+            assertThat(action.resultType())
+                    .withFailMessage(
+                            "Order's action '%s' was read with resultType '%s'. The component carries "
+                                    + "the return type as javac reports it, %s: fully qualified, type "
+                                    + "arguments kept, and \"void\" for an action that returns nothing. "
+                                    + "The streaming generators type the action's result frame from it, "
+                                    + "and emit none for \"void\".",
+                            expected.getKey(), action.resultType(), expected.getValue())
+                    .isEqualTo(expected.getValue());
+        }
     }
 
     @Test

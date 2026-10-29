@@ -39,6 +39,9 @@ final class ReferenceBinding {
     /** The handler {@code Order}'s {@code @Saga} names, fully qualified as javac reports it. */
     static final String ORDER_SAGA_FAILURE_HANDLER = TckCorpus.packageName() + ".Order.CompensationEscalation";
 
+    /** The record {@code Order}'s {@code receipt} action returns, fully qualified as javac reports it. */
+    static final String ORDER_RECEIPT = TckCorpus.packageName() + ".Order.Receipt";
+
     private ReferenceBinding() {
     }
 
@@ -110,11 +113,49 @@ final class ReferenceBinding {
                         FieldMetadata.builder("note", "String")
                                 .displayName("Note")
                                 .build()))
-                .actions(List.of(
-                        ActionMetadata.simple("submit"),
-                        ActionMetadata.builder("approve").permissions(List.of("order:approve")).build(),
-                        ActionMetadata.builder("track").httpMethod("GET").routeAccess(RouteAccess.PUBLIC).build()))
+                .actions(orderActions())
                 .sagaMetadata(orderSaga().build())
+                .build();
+    }
+
+    /**
+     * The actions {@code Order} declares, with each return type in the form javac reports it.
+     *
+     * @return the reference actions, in declaration order
+     */
+    static List<ActionMetadata> orderActions() {
+        return List.of(
+                action("submit", "POST", "void"),
+                action("customer", "GET", TckCorpus.packageName() + "." + TckCorpus.CUSTOMER),
+                action("receipt", "GET", ORDER_RECEIPT),
+                action("receipts", "GET", "java.util.List<" + ORDER_RECEIPT + ">"),
+                action("lineCount", "GET", "int"),
+                ActionMetadata.builder("approve")
+                        .methodName("approve")
+                        .resultType("void")
+                        .permissions(List.of("order:approve"))
+                        .build(),
+                ActionMetadata.builder("track")
+                        .methodName("track")
+                        .httpMethod("GET")
+                        .resultType("void")
+                        .routeAccess(RouteAccess.PUBLIC)
+                        .build());
+    }
+
+    /**
+     * One reference action, so a self-test can rebuild it with a single component changed.
+     *
+     * @param name the action and method name
+     * @param httpMethod the declared HTTP method
+     * @param resultType the return type as javac reports it
+     * @return the action
+     */
+    static ActionMetadata action(String name, String httpMethod, String resultType) {
+        return ActionMetadata.builder(name)
+                .methodName(name)
+                .httpMethod(httpMethod)
+                .resultType(resultType)
                 .build();
     }
 
@@ -238,6 +279,8 @@ final class ReferenceBinding {
                                 .required(true)
                                 .build()))
                 .actions(List.of(ActionMetadata.builder("reprice")
+                        .methodName("reprice")
+                        .resultType("void")
                         .permissions(List.of("product:reprice"))
                         .routeAccess(RouteAccess.AUTHENTICATED)
                         .build()))

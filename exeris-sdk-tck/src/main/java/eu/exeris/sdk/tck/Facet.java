@@ -52,6 +52,16 @@ public enum Facet {
     SAGA_COMPENSATION,
 
     /**
+     * {@code ActionMetadata.resultType} — each {@code @Action} method's return type, fully
+     * qualified with its type arguments, and {@code "void"} for an action that returns nothing.
+     * The streaming generators type an action's result frame from it, and emit none for
+     * {@code "void"}.
+     *
+     * @since 0.13
+     */
+    ACTION_RESULT_TYPE,
+
+    /**
      * {@code @RouteAccess} and {@code permissions}, on the entity and on each action, carried as
      * {@code routeAccess} and {@code permissions} on {@code DomainMetadata} and
      * {@code ActionMetadata} (exeris-tooling ADR-105) — {@code PUBLIC} included, each element

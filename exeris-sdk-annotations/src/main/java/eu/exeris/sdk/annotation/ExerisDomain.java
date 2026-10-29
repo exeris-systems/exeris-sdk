@@ -528,13 +528,16 @@ public @interface ExerisDomain {
      * Name of the primary key field, for an entity whose key is not named
      * {@code id}.
      *
-     * <p><strong>Status: PARTIAL.</strong> The {@code exeris-tooling} processor
-     * extracts the value into {@code SystemFieldsMetadata.primaryKeyField}, but no
-     * generator reads it: the emitted schema declares {@code id} as the primary key
-     * unconditionally, the repository identifies rows by {@code id}, and every
-     * by-id route binds {@code {id}} — so setting a different name changes no
-     * emitted output. The {@code -io} reader reads it the same way, and
-     * {@code @PrimaryKey} is RESERVED for the same reason.
+     * <p><strong>Status: LIVE.</strong> The {@code exeris-tooling} processor and the
+     * {@code -io} reader both extract the value into
+     * {@code SystemFieldsMetadata.primaryKeyField}, and the generators name the key
+     * after it: the migration's key column, the repository's identity clause, the
+     * foreign-key targets, the entity accessors, the OpenAPI schema and the generated
+     * models. The named field must exist and be a {@code java.util.UUID}, and a
+     * renamed key beside a field {@code id} is refused. The by-id route variable stays
+     * {@code {id}}. {@code @PrimaryKey} is PARTIAL: the {@code -io} reader reads the
+     * marker into the same component, the processor does not yet, so for generated
+     * output this attribute is the only way to name the key.
      *
      * @return primary key field name
      */

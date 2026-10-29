@@ -31,6 +31,7 @@ class MetadataProducerTckSelfTest {
             producer.aZeroValuedBoundSurvivesSerialization();
             producer.sagaVersionReachesTheProducedMetadata();
             producer.sagaCompensationReachesTheProducedJson();
+            producer.actionResultTypeReachesTheProducedJson();
             producer.routeAccessReachesTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
@@ -139,6 +140,38 @@ class MetadataProducerTckSelfTest {
         assertThatThrownBy(writtenForm::sagaCompensationReachesTheProducedJson)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("fully-qualified");
+    }
+
+    @Test
+    @DisplayName("a producer that writes no resultType is caught")
+    void actionResultTypeKeyCaseIsNotVacuous() {
+        Producer typeBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            root.path("actions").forEach(action -> ((ObjectNode) action).remove("resultType"));
+            return root.toString();
+        });
+        assertThatThrownBy(typeBlind::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("did not extract it");
+    }
+
+    @Test
+    @DisplayName("a return type written as declared instead of fully qualified is caught")
+    void actionResultTypeWrittenFormIsCaught() {
+        Producer writtenForm = new Producer(json -> json.replace(
+                "\"" + ReferenceBinding.ORDER_RECEIPT + "\"", "\"Receipt\""));
+        assertThatThrownBy(writtenForm::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("'receipt'");
+    }
+
+    @Test
+    @DisplayName("an action missing from the produced JSON is caught")
+    void actionResultTypeMissingActionIsCaught() {
+        Producer dropping = new Producer(json -> json.replace("\"name\":\"lineCount\"", "\"name\":\"count\""));
+        assertThatThrownBy(dropping::actionResultTypeReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no such action");
     }
 
     private static String withoutSagaKey(String json, String key) {
