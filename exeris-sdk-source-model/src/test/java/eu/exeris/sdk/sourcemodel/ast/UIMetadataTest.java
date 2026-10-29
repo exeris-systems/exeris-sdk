@@ -164,4 +164,52 @@ class UIMetadataTest {
         assertThat(o.group()).isNull();
         assertThat(o.disabled()).isFalse();
     }
+
+    @Test
+    void tabsAreAbsentUnlessDeclared() {
+        assertThat(UIMetadata.defaults().tabs()).isNull();
+        assertThat(UIMetadata.builder().build().tabs()).isNull();
+        UIMetadata.UITabMetadata tab = UIMetadata.UITabMetadata.of("basic", List.of("name"));
+        assertThat(UIMetadata.builder().tabs(List.of(tab)).build().tabs()).containsExactly(tab);
+    }
+
+    @Test
+    void theFourteenComponentConstructorBuildsNoTabs() {
+        UIMetadata old = new UIMetadata(null, null, true, true, true, true, true, true, false, false,
+                12, "grid", List.of(), List.of());
+        assertThat(old).isEqualTo(UIMetadata.defaults());
+        assertThat(old.tabs()).isNull();
+    }
+
+    @Test
+    void aTabWithNothingDeclaredAppliesTheAnnotationDefaults() {
+        UIMetadata.UITabMetadata tab = UIMetadata.UITabMetadata.of("basic", null);
+        assertThat(tab.fields()).isEmpty();
+        assertThat(tab.order()).isNull();
+        assertThat(tab.effectiveOrder()).isEqualTo(UIMetadata.UITabMetadata.DEFAULT_ORDER).isEqualTo(999);
+        assertThat(tab.effectiveBadgeColor()).isEqualTo("primary");
+        assertThat(tab.lazy()).isFalse();
+        assertThat(tab.disabled()).isFalse();
+    }
+
+    @Test
+    void aTabNormalisesBlankStringsAndKeepsADeclaredZeroOrder() {
+        UIMetadata.UITabMetadata tab = new UIMetadata.UITabMetadata("notes", " ", 0, "", true, "",
+                "warn", true, "", " ", "", List.of("notes"));
+        assertThat(tab.label()).isNull();
+        assertThat(tab.icon()).isNull();
+        assertThat(tab.badgeField()).isNull();
+        assertThat(tab.disabledWhen()).isNull();
+        assertThat(tab.visibleWhen()).isNull();
+        assertThat(tab.cssClass()).isNull();
+        assertThat(tab.effectiveOrder()).isZero();
+        assertThat(tab.effectiveBadgeColor()).isEqualTo("warn");
+    }
+
+    @Test
+    void aTabRequiresItsName() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> UIMetadata.UITabMetadata.of(null, List.of()))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("name");
+    }
 }

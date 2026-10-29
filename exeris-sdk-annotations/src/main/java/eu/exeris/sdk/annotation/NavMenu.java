@@ -80,9 +80,12 @@ import java.lang.annotation.*;
  * </pre>
  *
  *
- * <p><strong>Status: RESERVED</strong> — no navigation artefact is emitted from this
- * annotation on either side. The generated TypeScript app shell builds its sidebar from the
- * entity list and the {@link View @View} routes, never from a menu declared here.
+ * <p><strong>Status: PARTIAL</strong> — the {@code -io} reader carries every attribute in
+ * {@code DomainMetadata.navMenu} ({@code NavMenuMetadata}); an undeclared attribute is carried
+ * as absent and the record's {@code effective*} accessors apply the defaults declared here. The
+ * {@code exeris-tooling} processor does not extract it yet, and no navigation artefact is emitted
+ * from it: the generated TypeScript app shell builds its sidebar from the entity list and the
+ * {@link View @View} routes.
  * @since 0.1
  * @see ExerisDomain
  */

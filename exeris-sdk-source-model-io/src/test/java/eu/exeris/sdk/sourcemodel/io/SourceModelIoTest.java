@@ -1040,8 +1040,9 @@ class SourceModelIoTest {
         @Test
         void fullyAnnotatedEntityHasNoDivergences() {
             // every processor facet is read: the guard is empty even
-            // for an entity touching all of them. @Projection/@NavMenu/@PrimaryKey are
-            // processor-gaps (never divergences); @Validation is read into FieldMetadata.
+            // for an entity touching all of them. @Projection/@PrimaryKey are processor-gaps
+            // (never divergences); @NavMenu is read into DomainMetadata.navMenu, and
+            // @Validation into FieldMetadata.
             String src = """
                     package app.budgethq.order;
                     import eu.exeris.sdk.annotation.ExerisDomain;

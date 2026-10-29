@@ -100,6 +100,36 @@ for per-version upgrade steps.
   producer or parity binding whose processor does not extract the section declares
   `SAGA_COMPENSATION` in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
 
+- **AST carriers for `@QueryParam`, `@NavMenu` and `@Tab`.** `ActionParamMetadata` gains
+  `bindingSource` (`ParamSource`: `BODY`, `QUERY`; absent is `BODY`) and `queryKey` (absent is the
+  parameter name; a key equal to the name or blank is stored as absent). `DomainMetadata` gains
+  `navMenu` (`NavMenuMetadata`, all eighteen `@NavMenu` attributes, with the nested `Divider`
+  enum). `UIMetadata` gains `tabs` (`UIMetadata.UITabMetadata`, all eleven `@Tab` attributes plus
+  the member field names). Every new component is trailing and nullable, undeclared is `null` with
+  `effective*` accessors applying the annotation defaults, and a declared `0` order survives the
+  `NON_NULL` records. Each grown record keeps its previous constructor. A producer that sets none of
+  them writes the JSON it wrote before.
+
+- **`exeris-sdk-source-model-io` reads `@QueryParam`, `@NavMenu` and `@Tab`.** Either
+  `@ActionParam` or `@QueryParam` makes an `@Action` parameter an action parameter;
+  `@QueryParam` sets `bindingSource = QUERY` and its `value` as the `queryKey`, and when both are
+  present `@ActionParam` is the nearer declaration for `required`, `description` and
+  `defaultValue`. `@NavMenu` is read present-only into `navMenu`. `@Tab` is read into one tab per
+  name, in the order each name is first declared, each attribute taken from the first member
+  field that declares it; a type with tabs and no `@UI` gets a `UIMetadata` at its builder
+  defaults. **Tooling:** the processor does not extract the three yet. Until it does,
+  `SourceModelConflictDetector` reports a mutation of an action with a `@QueryParam` parameter as a
+  conflict against a processor baseline, because it compares whole actions.
+
+- **`exeris-sdk-tck`: `Facet.QUERY_PARAMS`, `Facet.NAV_MENU` and `Facet.TABS`, each with a case in
+  the reader, producer and parity suites.** The corpus `Order` declares `@NavMenu(order = 0)`, two
+  `@Tab`s (one with `order = 0`, its attributes on the first member only) and no `@UI`, and a
+  `search` action whose two parameters carry `@QueryParam` alone: `term` under the key `q`, and
+  `limit` with `required = false`. Each case has self-tests against a conforming binding and
+  bindings broken in one way. `exeris-sdk-source-model-io` passes the reader cases. **Tooling:** a
+  producer or parity binding whose processor does not extract one of the three declares its facet
+  in `unsupportedFacets()` until it does; otherwise the 0.13.0 kit fails it.
+
 - **`@exeris/ui-kit` 0.5.0: `.exeris-hero` in `@exeris/ui-kit/styles`.** The view generator renders
   a `HERO` block as `<section class="exeris-hero">`, and the kit now declares the class: an
   `--exeris-primary` fill, white text, an `--exeris-radius-md` radius and `--exeris-spacing-xl`
@@ -250,6 +280,16 @@ for per-version upgrade steps.
   at 1.0.0. Replacement: `@SagaStep.compensation`, whose compensation method builds the command
   itself. No producer read the attribute and no AST component carries it, so nothing a build emits
   changes; a source that sets it compiles with a `[removal]` warning. See
+  [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
+
+- **`@QueryParam.transform`, `validation`, `validationMessage`, `type`, `elementType` and
+  `sanitize`** — `@Deprecated(since = "0.13.0", forRemoval = true)`, removal at 1.0.0. `type` and
+  `elementType` restate the declared parameter type, which `ActionParamMetadata.type` carries. The
+  three SpEL attributes cannot be honoured on the kernel tier, which evaluates no SpEL; bounds are
+  declared with `@ActionParam(validation = @Validation(...))`. `sanitize` switches nothing, because
+  the value is bound as a typed parameter. No producer reads any of them and no AST component
+  carries them. `@QueryParam` itself moves from RESERVED to PARTIAL: `value`, `required`,
+  `description` and `defaultValue` are carried. `@NavMenu` and `@Tab` move to PARTIAL too. See
   [`MIGRATION.md` §0.12.x → 0.13.x](MIGRATION.md).
 
 ### Removed

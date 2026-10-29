@@ -1,12 +1,16 @@
 package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaStepMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import eu.exeris.sdk.sourcemodel.mutation.BaselineTrust;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -103,9 +107,61 @@ final class ReferenceBinding {
                         FieldMetadata.builder("note", "String")
                                 .displayName("Note")
                                 .build()))
-                .actions(List.of(ActionMetadata.simple("submit")))
+                .actions(List.of(ActionMetadata.simple("submit"), orderSearch()))
                 .sagaMetadata(orderSaga().build())
+                .navMenu(orderNavMenu().build())
+                .uiMetadata(UIMetadata.builder().tabs(orderTabs()).build())
                 .build();
+    }
+
+    /**
+     * The {@code search} action {@code Order} declares: two parameters bound from the query string.
+     *
+     * @return the reference action
+     */
+    static ActionMetadata orderSearch() {
+        return ActionMetadata.builder("search")
+                .displayName("Search")
+                .httpMethod("GET")
+                .methodName("search")
+                .addParam(ActionParamMetadata.builder("term", "String")
+                        .required(true)
+                        .bindingSource(ParamSource.QUERY)
+                        .queryKey("q")
+                        .build())
+                .addParam(ActionParamMetadata.builder("limit", "int")
+                        .required(false)
+                        .bindingSource(ParamSource.QUERY)
+                        .build())
+                .build();
+    }
+
+    /**
+     * The navigation entry {@code Order} declares, as a builder, so a self-test can change exactly
+     * one component.
+     *
+     * @return a builder holding the reference entry
+     */
+    static NavMenuMetadata.Builder orderNavMenu() {
+        return NavMenuMetadata.builder()
+                .group("Sales")
+                .label("Orders")
+                .order(0)
+                .roles(List.of("SALES"))
+                .divider(NavMenuMetadata.Divider.AFTER);
+    }
+
+    /**
+     * The tabs {@code Order}'s fields declare.
+     *
+     * @return the reference tabs, in first-declared order
+     */
+    static List<UIMetadata.UITabMetadata> orderTabs() {
+        return List.of(
+                new UIMetadata.UITabMetadata("summary", "Summary", 0, null, false, null, null, false,
+                        null, null, null, List.of("reference", "totalCents")),
+                new UIMetadata.UITabMetadata("notes", "Notes", null, null, true, null, null, false,
+                        null, null, null, List.of("note")));
     }
 
     /**

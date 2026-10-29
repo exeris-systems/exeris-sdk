@@ -74,8 +74,13 @@ import java.lang.annotation.*;
  * }
  *
  *
- * <p><strong>Status: RESERVED</strong> — presentation grouping is emitted from {@link View @View} — its regions and blocks — and, at the leaf level, from {@link UI @UI}. This
- * annotation feeds neither, so a tab declared here appears in no generated template.
+ * <p><strong>Status: PARTIAL</strong> — the {@code -io} reader carries every attribute in
+ * {@code UIMetadata.tabs} ({@code UIMetadata.UITabMetadata}), one tab per {@link #name()} with
+ * the names of its member fields. Each attribute is taken from the first member field, in
+ * declaration order, that declares it, so a later field that restates one does not change it.
+ * The {@code exeris-tooling} processor does not extract it yet, and no generated form or detail
+ * view is split into tabs: presentation grouping is emitted from {@link View @View} — its regions
+ * and blocks — and, at the leaf level, from {@link UI @UI}.
  * @since 0.1
  * @see UIGroup
  * @see UI

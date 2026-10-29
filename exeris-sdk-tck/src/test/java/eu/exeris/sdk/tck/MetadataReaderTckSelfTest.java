@@ -1,9 +1,14 @@
 package eu.exeris.sdk.tck;
 
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
@@ -41,6 +46,9 @@ class MetadataReaderTckSelfTest {
             reader.actionIsReadUnderTheDeclaredName();
             reader.sagaVersionIsTheDeclaredOne();
             reader.sagaCompensationIsTheDeclaredOne();
+            reader.queryParamsAreTheDeclaredOnes();
+            reader.navMenuIsTheDeclaredOne();
+            reader.tabsAreTheDeclaredOnes();
             reader.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -181,6 +189,95 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("a query parameter read as a body parameter, under its name, or not at all is caught")
+    void queryParamCasesAreNotVacuous() {
+        Reader bodyBound = new Reader(m -> withSearch(m, p -> ActionParamMetadata.builder(p.name(), p.type())
+                .required(p.required()).build()));
+        assertThatThrownBy(bodyBound::queryParamsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("binding source BODY");
+
+        Reader nameKeyed = new Reader(m -> withSearch(m, p -> ActionParamMetadata.builder(p.name(), p.type())
+                .required(p.required()).bindingSource(ParamSource.QUERY).build()));
+        assertThatThrownBy(nameKeyed::queryParamsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("query key 'q'");
+
+        Reader requiredBlind = new Reader(m -> withSearch(m, p -> ActionParamMetadata.builder(p.name(), p.type())
+                .required(true).bindingSource(p.bindingSource()).queryKey(p.queryKey()).build()));
+        assertThatThrownBy(requiredBlind::queryParamsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("required = false");
+
+        Reader actionParamOnly = new Reader(m -> withActions(m, m.actions().stream()
+                .map(a -> "search".equals(a.name())
+                        ? ActionMetadata.builder("search").httpMethod("GET").build()
+                        : a)
+                .toList()));
+        assertThatThrownBy(actionParamOnly::queryParamsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("@QueryParam alone");
+    }
+
+    @Test
+    @DisplayName("a dropped zero order, or a missing navigation entry, is caught")
+    void navMenuCasesAreNotVacuous() {
+        Reader zeroBlind = new Reader(m -> withNavMenu(m, m.navMenu() == null
+                ? null : ReferenceBinding.orderNavMenu().order(null).build()));
+        assertThatThrownBy(zeroBlind::navMenuIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("order = 0");
+
+        Reader navBlind = new Reader(m -> withNavMenu(m, null));
+        assertThatThrownBy(navBlind::navMenuIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("returned no navMenu");
+    }
+
+    @Test
+    @DisplayName("tabs hung off @UI only, or with a dropped zero order, are caught")
+    void tabCasesAreNotVacuous() {
+        Reader uiOnly = new Reader(m -> withUi(m, null));
+        assertThatThrownBy(uiOnly::tabsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("no uiMetadata");
+
+        Reader zeroBlind = new Reader(m -> withUi(m, m.uiMetadata() == null ? null : UIMetadata.builder()
+                .tabs(List.of(
+                        new UIMetadata.UITabMetadata("summary", "Summary", null, null, false, null, null,
+                                false, null, null, null, List.of("reference", "totalCents")),
+                        ReferenceBinding.orderTabs().get(1)))
+                .build()));
+        assertThatThrownBy(zeroBlind::tabsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("@Tab(order = 0)");
+
+        Reader firstMemberOnly = new Reader(m -> withUi(m, m.uiMetadata() == null ? null : UIMetadata.builder()
+                .tabs(List.of(
+                        new UIMetadata.UITabMetadata("summary", "Summary", 0, null, false, null, null,
+                                false, null, null, null, List.of("reference")),
+                        ReferenceBinding.orderTabs().get(1)))
+                .build()));
+        assertThatThrownBy(firstMemberOnly::tabsAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Order.totalCents");
+    }
+
+    @Test
+    @DisplayName("an unbuilt navigation, tab or query-parameter facet skips rather than failing")
+    void unbuiltPresentationFacetsSkip() {
+        Reader notBuiltYet = new Reader(m -> withNavMenu(withUi(m, null), null)) {
+            @Override
+            protected Set<Facet> unsupportedFacets() {
+                return Set.of(Facet.NAV_MENU, Facet.TABS, Facet.QUERY_PARAMS);
+            }
+        };
+        assertThatThrownBy(notBuiltYet::navMenuIsTheDeclaredOne).isInstanceOf(TestAbortedException.class);
+        assertThatThrownBy(notBuiltYet::tabsAreTheDeclaredOnes).isInstanceOf(TestAbortedException.class);
+        assertThatThrownBy(notBuiltYet::queryParamsAreTheDeclaredOnes).isInstanceOf(TestAbortedException.class);
+    }
+
+    @Test
     @DisplayName("declaring a mandatory facet unsupported is caught")
     void theSkipTrapdoorIsClosed() {
         Reader optingOut = new Reader(UnaryOperator.identity()) {
@@ -218,6 +315,42 @@ class MetadataReaderTckSelfTest {
                 .actions(source.actions())
                 .relationships(source.relationships())
                 .build();
+    }
+
+    private static DomainMetadata.Builder copyOf(DomainMetadata source) {
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields())
+                .actions(source.actions())
+                .relationships(source.relationships())
+                .sagaMetadata(source.sagaMetadata())
+                .navMenu(source.navMenu())
+                .uiMetadata(source.uiMetadata());
+    }
+
+    private static DomainMetadata withActions(DomainMetadata source, List<ActionMetadata> actions) {
+        return copyOf(source).actions(actions).build();
+    }
+
+    private static DomainMetadata withSearch(DomainMetadata source,
+                                             UnaryOperator<ActionParamMetadata> perParam) {
+        return withActions(source, source.actions().stream()
+                .map(a -> {
+                    if (!"search".equals(a.name())) {
+                        return a;
+                    }
+                    ActionMetadata.Builder search = ActionMetadata.builder(a.name()).httpMethod(a.httpMethod());
+                    a.params().forEach(p -> search.addParam(perParam.apply(p)));
+                    return search.build();
+                })
+                .toList());
+    }
+
+    private static DomainMetadata withNavMenu(DomainMetadata source, NavMenuMetadata navMenu) {
+        return copyOf(source).navMenu(navMenu).build();
+    }
+
+    private static DomainMetadata withUi(DomainMetadata source, UIMetadata ui) {
+        return copyOf(source).uiMetadata(ui).build();
     }
 
     private static DomainMetadata withSaga(DomainMetadata source, SagaMetadata saga) {

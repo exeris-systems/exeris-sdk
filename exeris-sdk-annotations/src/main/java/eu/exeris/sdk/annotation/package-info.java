@@ -229,7 +229,13 @@
  *       {@code InternalApiMetadata} and is named by no generator on either
  *       side. {@link eu.exeris.sdk.annotation.EventSourced @EventSourced} lands
  *       in {@code EventSourcedMetadata}; event-sourcing emission is a tooling
- *       gap, not a kernel one — the kernel ships both halves with a TCK.</dd>
+ *       gap, not a kernel one — the kernel ships both halves with a TCK.
+ *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam},
+ *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu} and
+ *       {@link eu.exeris.sdk.annotation.Tab @Tab} are carried by the {@code -io}
+ *       reader only — in {@code ActionParamMetadata}, {@code NavMenuMetadata} and
+ *       {@code UIMetadata.UITabMetadata} — and the processor does not extract them
+ *       yet.</dd>
  *
  *   <dt><strong>RESERVED</strong> — declared, extracted by nobody, no effect</dt>
  *   <dd>The declarative-behaviour pair
@@ -242,17 +248,14 @@
  *       the saga state-machine half
  *       {@link eu.exeris.sdk.annotation.SagaTransition @SagaTransition};
  *       {@link eu.exeris.sdk.annotation.EventHandler @EventHandler},
- *       {@link eu.exeris.sdk.annotation.Projection @Projection},
- *       {@link eu.exeris.sdk.annotation.QueryParam @QueryParam};
+ *       {@link eu.exeris.sdk.annotation.Projection @Projection};
  *       the kernel-preview facets
  *       {@link eu.exeris.sdk.annotation.Blob @Blob},
  *       {@link eu.exeris.sdk.annotation.Schedule @Schedule},
  *       {@link eu.exeris.sdk.annotation.RouteAccess @RouteAccess},
  *       {@link eu.exeris.sdk.annotation.Channel @Channel};
- *       the layout annotations
- *       {@link eu.exeris.sdk.annotation.Tab @Tab},
- *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup},
- *       {@link eu.exeris.sdk.annotation.NavMenu @NavMenu};
+ *       the layout annotation
+ *       {@link eu.exeris.sdk.annotation.UIGroup @UIGroup};
  *       and {@code @PrimaryKey} from the {@code system}
  *       subpackage. See the note below on system fields.</dd>
  *

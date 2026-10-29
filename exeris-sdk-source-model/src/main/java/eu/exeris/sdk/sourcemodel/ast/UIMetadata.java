@@ -1,9 +1,11 @@
 package eu.exeris.sdk.sourcemodel.ast;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Metadata for UI rendering including Grid Layout, component types, and groups.
@@ -23,6 +25,9 @@ import java.util.List;
  * @param defaultLayout the layout the generated views start in
  * @param groups the field groupings the generated forms are organised into
  * @param fieldOverrides per-field presentation overrides, keyed by field name
+ * @param tabs the tabs the generated forms and detail views are split into, as {@code @Tab}
+ *        declares them, in the order each tab is first declared; absent means none were
+ *        declared
  * @since 0.1
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,15 +46,46 @@ public record UIMetadata(
         int columns,
         String defaultLayout,
         List<UIGroupMetadata> groups,
-        List<UIFieldMetadata> fieldOverrides
+        List<UIFieldMetadata> fieldOverrides,
+        List<UITabMetadata> tabs
 ) {
+    /**
+     * A delegating constructor for backward compatibility with code compiled against a previous
+     * version of this record. Omits {@code tabs}, which defaults to {@code null}: no tab declared.
+     *
+     * <p>Prefer {@link #builder()}, which sets any component by name and does not change shape
+     * when the record grows.
+     *
+     * @param icon the {@code icon} the result carries
+     * @param color the {@code color} the result carries
+     * @param listView the {@code listView} the result carries
+     * @param detailView the {@code detailView} the result carries
+     * @param createForm the {@code createForm} the result carries
+     * @param editForm the {@code editForm} the result carries
+     * @param searchable the {@code searchable} the result carries
+     * @param filterable the {@code filterable} the result carries
+     * @param exportable the {@code exportable} the result carries
+     * @param bulkActions the {@code bulkActions} the result carries
+     * @param columns the {@code columns} the result carries
+     * @param defaultLayout the {@code defaultLayout} the result carries
+     * @param groups the {@code groups} the result carries
+     * @param fieldOverrides the {@code fieldOverrides} the result carries
+     */
+    public UIMetadata(String icon, String color, boolean listView, boolean detailView,
+                      boolean createForm, boolean editForm, boolean searchable, boolean filterable,
+                      boolean exportable, boolean bulkActions, int columns, String defaultLayout,
+                      List<UIGroupMetadata> groups, List<UIFieldMetadata> fieldOverrides) {
+        this(icon, color, listView, detailView, createForm, editForm, searchable, filterable,
+                exportable, bulkActions, columns, defaultLayout, groups, fieldOverrides, null);
+    }
+
     /**
      * The default {@code UIMetadata}.
      *
      * @return the {@code UIMetadata}
      */
     public static UIMetadata defaults() {
-        return new UIMetadata(null, null, true, true, true, true, true, true, false, false, 12, "grid", List.of(), List.of());
+        return new UIMetadata(null, null, true, true, true, true, true, true, false, false, 12, "grid", List.of(), List.of(), null);
     }
 
     /**
@@ -97,6 +133,112 @@ public record UIMetadata(
          */
         public static UIGroupMetadata simple(String name, String label, List<String> fields) {
             return new UIGroupMetadata(name, label, null, 1, false, false, null, 12, fields);
+        }
+    }
+
+    /**
+     * One tab of the generated forms and detail views, declared with {@code @Tab} on each member
+     * field. Sits beside {@link UIGroupMetadata}: a group is a section within a view, a tab is a
+     * panel of it.
+     *
+     * <p>Every field that names the tab declares it, and the tab's attributes come from those
+     * declarations: each attribute takes the value of the first member field, in declaration
+     * order, that declares it. A string or number component is {@code null} when no member
+     * field declares its attribute, and the {@code effective*} accessors apply the annotation's
+     * default. A blank string is stored as {@code null}. The two booleans are primitive because
+     * both default to {@code false} on the annotation, so {@code false} and undeclared mean the
+     * same.
+     *
+     * @param name the tab's identity, shared by every field that belongs to it
+     * @param label the text of the tab header
+     * @param order the tab's position among the tabs, lower first; absent means {@code 999}, read
+     *        through {@link #effectiveOrder()}
+     * @param icon the icon shown in the tab header
+     * @param lazy whether the tab's content is loaded only when the tab is selected
+     * @param badgeField the field whose value is shown as a count badge on the tab header
+     * @param badgeColor the badge's colour name; absent means {@code "primary"}, read through
+     *        {@link #effectiveBadgeColor()}
+     * @param disabled whether the tab is shown but cannot be selected
+     * @param disabledWhen the condition under which the tab cannot be selected, as written in source
+     * @param visibleWhen the condition under which the tab is shown, as written in source
+     * @param cssClass extra CSS classes applied to the tab's panel
+     * @param fields the names of the fields placed in this tab, in declaration order
+     * @since 0.13
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record UITabMetadata(
+            String name,
+            String label,
+            Integer order,
+            String icon,
+            boolean lazy,
+            String badgeField,
+            String badgeColor,
+            boolean disabled,
+            String disabledWhen,
+            String visibleWhen,
+            String cssClass,
+            List<String> fields
+    ) {
+        /** The position {@code order} takes when undeclared. */
+        public static final int DEFAULT_ORDER = 999;
+
+        /** The badge colour {@code badgeColor} takes when undeclared. */
+        public static final String DEFAULT_BADGE_COLOR = "primary";
+
+        /**
+         * Compact constructor; applies this record's normalization rules.
+         *
+         * <p>{@code name} is required. Every other string component is stored as {@code null}
+         * when blank, and {@code fields} is copied immutable, absent becoming empty and a
+         * {@code null} element refused by name.
+         */
+        public UITabMetadata {
+            Objects.requireNonNull(name, "name is required");
+            label = blankToNull(label);
+            icon = blankToNull(icon);
+            badgeField = blankToNull(badgeField);
+            badgeColor = blankToNull(badgeColor);
+            disabledWhen = blankToNull(disabledWhen);
+            visibleWhen = blankToNull(visibleWhen);
+            cssClass = blankToNull(cssClass);
+            fields = AstLists.copyOfNoNulls(fields, "fields");
+        }
+
+        private static String blankToNull(String s) {
+            return s == null || s.isBlank() ? null : s;
+        }
+
+        /**
+         * Creates a tab with only its name and members set.
+         *
+         * @param name the {@code name} the result carries
+         * @param fields the {@code fields} the result carries
+         * @return the {@code UITabMetadata}
+         */
+        public static UITabMetadata of(String name, List<String> fields) {
+            return new UITabMetadata(name, null, null, null, false, null, null, false, null, null, null, fields);
+        }
+
+        /**
+         * The tab's position: the declared {@code order}, or {@value #DEFAULT_ORDER}.
+         *
+         * @return the effective order
+         */
+        @JsonIgnore
+        public int effectiveOrder() {
+            return order != null ? order : DEFAULT_ORDER;
+        }
+
+        /**
+         * The badge colour: the declared {@code badgeColor}, or {@value #DEFAULT_BADGE_COLOR}.
+         *
+         * @return the effective badge colour
+         */
+        @JsonIgnore
+        public String effectiveBadgeColor() {
+            return badgeColor != null ? badgeColor : DEFAULT_BADGE_COLOR;
         }
     }
 
@@ -405,6 +547,7 @@ public record UIMetadata(
         private String defaultLayout = "grid";
         private List<UIGroupMetadata> groups = List.of();
         private List<UIFieldMetadata> fieldOverrides = List.of();
+        private List<UITabMetadata> tabs = null;
 
         public Builder icon(String v) { this.icon = v; return this; }
         public Builder color(String v) { this.color = v; return this; }
@@ -420,6 +563,7 @@ public record UIMetadata(
         public Builder defaultLayout(String v) { this.defaultLayout = v; return this; }
         public Builder groups(List<UIGroupMetadata> v) { this.groups = v; return this; }
         public Builder fieldOverrides(List<UIFieldMetadata> v) { this.fieldOverrides = v; return this; }
+        public Builder tabs(List<UITabMetadata> v) { this.tabs = v; return this; }
 
         /**
          * Builds the {@code UIMetadata} from this builder's current state.
@@ -428,7 +572,7 @@ public record UIMetadata(
          */
         public UIMetadata build() {
             return new UIMetadata(icon, color, listView, detailView, createForm, editForm,
-                    searchable, filterable, exportable, bulkActions, columns, defaultLayout, groups, fieldOverrides);
+                    searchable, filterable, exportable, bulkActions, columns, defaultLayout, groups, fieldOverrides, tabs);
         }
     }
 }

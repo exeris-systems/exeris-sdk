@@ -475,6 +475,38 @@ class DomainMetadataTest {
             assertThat(old).isEqualTo(built);
             assertThat(old.routeAccess()).isNull();
             assertThat(old.channel()).isNull();
+            assertThat(old.navMenu()).isNull();
+        }
+
+        @Test
+        void fortyOneArgumentsBuildTheSameRecordWithNoNavMenu() {
+            // The 0.12.0 shape, kept on the same terms as the 39-component one.
+            DomainMetadata old = new DomainMetadata(
+                    "Order", "com.acme.domain", "", "", "", "", null, List.of(),
+                    true, false, false, false, false, false, false, false,
+                    List.of(), List.of(), false, false, "PT5M", "", false, "english", "",
+                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                    null, null, null, null, null, null, List.of(), null,
+                    RouteAccess.PUBLIC, ChannelMetadata.declared());
+            DomainMetadata built = base()
+                    .routeAccess(RouteAccess.PUBLIC)
+                    .channel(ChannelMetadata.declared())
+                    .build();
+
+            assertThat(old).isEqualTo(built);
+            assertThat(old.navMenu()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("navMenu carries the @NavMenu entry")
+    class NavMenu {
+
+        @Test
+        void absentByDefaultAndCarriedWhenSet() {
+            assertThat(base().build().navMenu()).isNull();
+            NavMenuMetadata entry = NavMenuMetadata.builder().group("Sales").order(1).build();
+            assertThat(base().navMenu(entry).build().navMenu()).isEqualTo(entry);
         }
     }
 

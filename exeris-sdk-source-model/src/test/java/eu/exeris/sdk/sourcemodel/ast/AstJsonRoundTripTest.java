@@ -544,6 +544,66 @@ class AstJsonRoundTripTest {
     }
 
     @Test
+    @DisplayName("a query-bound ActionParamMetadata round-trips, and a body parameter writes no binding")
+    void queryBoundActionParamRoundTrips() {
+        assertRoundTrip(ActionParamMetadata.builder("term", "String")
+                .bindingSource(ParamSource.QUERY)
+                .queryKey("q")
+                .build(), ActionParamMetadata.class);
+        assertRoundTrip(ActionParamMetadata.builder("term", "String")
+                .bindingSource(ParamSource.QUERY)
+                .build(), ActionParamMetadata.class);
+        assertRoundTrip(ActionParamMetadata.builder("term", "String")
+                .bindingSource(ParamSource.BODY)
+                .build(), ActionParamMetadata.class);
+
+        String bodyJson;
+        String queryJson;
+        try {
+            bodyJson = mapper.writeValueAsString(ActionParamMetadata.required("term", "String"));
+            queryJson = mapper.writeValueAsString(ActionParamMetadata.builder("term", "String")
+                    .bindingSource(ParamSource.QUERY).queryKey("q").build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        // A producer that never sets the binding writes the JSON it wrote before the component existed.
+        assertThat(bodyJson).doesNotContain("bindingSource").doesNotContain("queryKey");
+        assertThat(queryJson).contains("\"bindingSource\":\"QUERY\"").contains("\"queryKey\":\"q\"");
+    }
+
+    @Test
+    @DisplayName("NavMenuMetadata round-trips on DomainMetadata, full, declared-only and with a zero order")
+    void navMenuRoundTrips() {
+        NavMenuMetadata full = NavMenuMetadata.builder()
+                .group("Sales").parent("Orders").label("Open orders").icon("shopping_cart")
+                .order(0).groupOrder(2).groupIcon("store").hidden(true)
+                .roles(List.of("SALES")).permissions(List.of("orders:read"))
+                .badge("NEW").badgeColor("warn").tooltip("Orders awaiting shipment")
+                .openInNewTab(true).routePath("/orders/open").queryParams("status=OPEN")
+                .expanded(true).divider(NavMenuMetadata.Divider.AFTER)
+                .build();
+        assertRoundTrip(full, NavMenuMetadata.class);
+        assertRoundTrip(NavMenuMetadata.declared(), NavMenuMetadata.class);
+        assertRoundTrip(DomainMetadata.builder("Order", "com.example.sales")
+                .module("sales").path("/orders")
+                .navMenu(full)
+                .build(), DomainMetadata.class);
+
+        String json;
+        String absentJson;
+        try {
+            json = mapper.writeValueAsString(full);
+            absentJson = mapper.writeValueAsString(
+                    DomainMetadata.builder("Order", "p").module("m").path("/o").build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        // A declared zero is a position, not an absence; the record is NON_NULL so it survives.
+        assertThat(json).contains("\"order\":0");
+        assertThat(absentJson).doesNotContain("navMenu");
+    }
+
+    @Test
     @DisplayName("DomainEventMetadata round-trips (full payload + empty/minimal)")
     void domainEventMetadataRoundTrips() {
         // Full: EV1 resolved payload field list + sensitive-field subset.
@@ -706,6 +766,28 @@ class AstJsonRoundTripTest {
                 .build();
 
         assertRoundTrip(original, UIMetadata.class);
+    }
+
+    @Test
+    @DisplayName("UIMetadata round-trips with tabs, and writes no tabs key when none are declared")
+    void uiMetadataTabsRoundTrip() {
+        UIMetadata.UITabMetadata full = new UIMetadata.UITabMetadata(
+                "notes", "Notes", 0, "note", true, "notesCount", "accent", true,
+                "status == 'DRAFT'", "hasRole('ADMIN')", "tab-notes", List.of("notes", "notesCount"));
+        UIMetadata original = UIMetadata.builder()
+                .tabs(List.of(full, UIMetadata.UITabMetadata.of("basic", List.of("firstName"))))
+                .build();
+        assertRoundTrip(full, UIMetadata.UITabMetadata.class);
+        assertRoundTrip(original, UIMetadata.class);
+
+        String json;
+        try {
+            json = mapper.writeValueAsString(UIMetadata.builder().build());
+        } catch (Exception e) {
+            throw new AssertionError("serialization failed: " + e.getMessage(), e);
+        }
+        // A producer that reads no @Tab writes the UIMetadata it wrote before the component existed.
+        assertThat(json).doesNotContain("tabs");
     }
 
     @Test
@@ -912,7 +994,9 @@ class AstJsonRoundTripTest {
                 .as("the case is vacuous unless the second constructor is really there")
                 .hasSize(2);
         assertThat(ActionMetadata.class.getConstructors()).hasSize(2);
-        assertThat(DomainMetadata.class.getConstructors()).hasSize(2);
+        assertThat(DomainMetadata.class.getConstructors()).hasSize(3);
+        assertThat(ActionParamMetadata.class.getConstructors()).hasSize(2);
+        assertThat(UIMetadata.class.getConstructors()).hasSize(2);
 
         assertRoundTrip(SystemFieldsMetadata.builder()
                 .tenantIdField("organizationId")
@@ -932,7 +1016,17 @@ class AstJsonRoundTripTest {
                         .build()))
                 .routeAccess(RouteAccess.PUBLIC)
                 .channel(new ChannelMetadata("ArticleEdit", "exeris.edit.v1"))
+                .navMenu(NavMenuMetadata.builder().group("Content").build())
                 .build(), DomainMetadata.class);
+
+        assertRoundTrip(ActionParamMetadata.builder("q", "String")
+                .bindingSource(ParamSource.QUERY)
+                .queryKey("search")
+                .build(), ActionParamMetadata.class);
+
+        assertRoundTrip(UIMetadata.builder()
+                .tabs(List.of(UIMetadata.UITabMetadata.of("basic", List.of("name"))))
+                .build(), UIMetadata.class);
     }
 
     @Test

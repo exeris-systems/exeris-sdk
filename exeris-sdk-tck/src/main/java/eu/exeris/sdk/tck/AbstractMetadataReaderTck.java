@@ -1,9 +1,14 @@
 package eu.exeris.sdk.tck;
 
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -232,6 +237,121 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
         assertThat(saga.compensationTimeout()).isEqualTo("PT2M");
         assertThat(saga.compensationRetryDelay()).isEqualTo("PT30S");
         assertThat(saga.compensationDlq()).isEqualTo("sales.order-compensation.dlq");
+    }
+
+    @Test
+    @DisplayName("@QueryParam binds an action parameter from the query string, under its declared key")
+    void queryParamsAreTheDeclaredOnes() {
+        requireSupported(Facet.QUERY_PARAMS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        ActionMetadata search = order.actions().stream()
+                .filter(a -> "search".equals(a.name()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "Order declares @Action(name = \"search\"); the reader returned "
+                                + order.actions().stream().map(ActionMetadata::name).toList()));
+        ActionParamMetadata term = param(search, "term");
+        assertThat(term.effectiveBindingSource())
+                .withFailMessage(
+                        "Order.search(term) carries @QueryParam(\"q\") and was read with binding "
+                                + "source %s. A query parameter read as a body parameter is generated "
+                                + "into the request document, where no client sends it.",
+                        term.effectiveBindingSource())
+                .isEqualTo(ParamSource.QUERY);
+        assertThat(term.effectiveQueryKey())
+                .withFailMessage(
+                        "Order.search(term) is read under the query key 'q' and was read under '%s'. "
+                                + "The key is @QueryParam.value, not the parameter name.",
+                        term.effectiveQueryKey())
+                .isEqualTo("q");
+        ActionParamMetadata limit = param(search, "limit");
+        assertThat(limit.effectiveBindingSource()).isEqualTo(ParamSource.QUERY);
+        assertThat(limit.effectiveQueryKey()).isEqualTo("limit");
+        assertThat(limit.required())
+                .withFailMessage(
+                        "Order.search(limit) declares @QueryParam(required = false) and was read "
+                                + "as required. A dropped false reads as the annotation default, "
+                                + "true, and a request without the key is refused.")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("@NavMenu is carried as the navigation entry the source declares, a zero order included")
+    void navMenuIsTheDeclaredOne() {
+        requireSupported(Facet.NAV_MENU);
+        NavMenuMetadata nav = read(TckCorpus.sourceOf(TckCorpus.ORDER)).navMenu();
+        assertThat(nav)
+                .withFailMessage("Order declares @NavMenu; the reader returned no navMenu.")
+                .isNotNull();
+        assertThat(nav.order())
+                .withFailMessage(
+                        "Order declares @NavMenu(order = 0) and it was read as %s. Zero is a "
+                                + "position; read as absent it becomes the default 999 and the "
+                                + "entry moves to the end of its group.",
+                        nav.order())
+                .isEqualTo(0);
+        assertThat(nav.group()).isEqualTo("Sales");
+        assertThat(nav.label()).isEqualTo("Orders");
+        assertThat(nav.roles()).containsExactly("SALES");
+        assertThat(nav.divider()).isEqualTo(NavMenuMetadata.Divider.AFTER);
+        assertThat(read(TckCorpus.sourceOf(TckCorpus.CUSTOMER)).navMenu())
+                .withFailMessage("Customer declares no @NavMenu; the reader returned one.")
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("@Tab is carried as the tabs the fields declare, on an entity with no @UI")
+    void tabsAreTheDeclaredOnes() {
+        requireSupported(Facet.TABS);
+        UIMetadata ui = read(TckCorpus.sourceOf(TckCorpus.ORDER)).uiMetadata();
+        assertThat(ui)
+                .withFailMessage(
+                        "Order declares @Tab on three fields and no @UI; the reader returned no "
+                                + "uiMetadata. Tabs are carried whether or not the type declares @UI.")
+                .isNotNull();
+        List<UIMetadata.UITabMetadata> tabs = ui.tabs() == null ? List.of() : ui.tabs();
+        assertThat(tabs.stream().map(UIMetadata.UITabMetadata::name).toList())
+                .withFailMessage(
+                        "Order's fields declare the tabs 'summary' and 'notes', in that order; the "
+                                + "reader returned %s. One tab per name, in the order each name is "
+                                + "first declared.",
+                        tabs.stream().map(UIMetadata.UITabMetadata::name).toList())
+                .containsExactly("summary", "notes");
+        UIMetadata.UITabMetadata summary = tabs.get(0);
+        assertThat(summary.fields())
+                .withFailMessage(
+                        "The 'summary' tab is named on Order.reference and Order.totalCents; the "
+                                + "reader returned members %s.",
+                        summary.fields())
+                .containsExactly("reference", "totalCents");
+        assertThat(summary.order())
+                .withFailMessage(
+                        "Order.reference declares @Tab(order = 0) and the tab was read with order "
+                                + "%s. Zero is a position; read as absent it becomes the default 999.",
+                        summary.order())
+                .isEqualTo(0);
+        assertThat(summary.label()).isEqualTo("Summary");
+        assertThat(tabs.get(1).lazy()).isTrue();
+        assertThat(tabs.get(1).fields()).containsExactly("note");
+    }
+
+    /**
+     * Returns the named parameter of an action, failing the test when it was not read.
+     *
+     * @param action the action to look in
+     * @param name the parameter to find
+     * @return that parameter's metadata
+     * @throws AssertionError when the reader returned no such parameter
+     */
+    private static ActionParamMetadata param(ActionMetadata action, String name) {
+        List<ActionParamMetadata> params = action.params() == null ? List.of() : action.params();
+        return params.stream()
+                .filter(p -> name.equals(p.name()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "No parameter '" + name + "' was read for action '" + action.name() + "'; got "
+                                + params.stream().map(ActionParamMetadata::name).toList()
+                                + ". A parameter carrying @QueryParam alone is an action parameter."));
     }
 
     /**
