@@ -1,10 +1,12 @@
 package eu.exeris.sdk.tck;
 
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -295,6 +297,82 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
             }
             return gaps;
         });
+    }
+
+    /**
+     * Every action parameter's binding: which parameters exist, where each is read from, under
+     * which key, and whether it is required. A side that admits only {@code @ActionParam}
+     * parameters, or reads a query parameter as a body one, still emits a well-formed action.
+     */
+    @Test
+    @DisplayName("producer and reader agree on every action parameter's binding")
+    void queryParamsAgree() {
+        requireSupported(Facet.QUERY_PARAMS);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            Map<String, ActionMetadata> left = byKey(produced.actions(), ActionMetadata::name);
+            Map<String, ActionMetadata> right = byKey(wasRead.actions(), ActionMetadata::name);
+            for (Map.Entry<String, ActionMetadata> entry : left.entrySet()) {
+                ActionMetadata r = right.get(entry.getKey());
+                if (r == null) {
+                    // Presence is the ACTIONS facet's comparison.
+                    continue;
+                }
+                String path = ACTIONS + entry.getKey() + "/params";
+                Map<String, ActionParamMetadata> pl = byKey(entry.getValue().params(), ActionParamMetadata::name);
+                Map<String, ActionParamMetadata> pr = byKey(r.params(), ActionParamMetadata::name);
+                compareKeySets(gaps, path, pl, pr);
+                for (Map.Entry<String, ActionParamMetadata> param : pl.entrySet()) {
+                    ActionParamMetadata p = param.getValue();
+                    ActionParamMetadata q = pr.get(param.getKey());
+                    if (q == null) {
+                        continue;
+                    }
+                    String at = path + "/" + param.getKey();
+                    compare(gaps, at + "/bindingSource", p.effectiveBindingSource(), q.effectiveBindingSource());
+                    compare(gaps, at + "/queryKey", p.effectiveQueryKey(), q.effectiveQueryKey());
+                    compare(gaps, at + "/required", p.required(), q.required());
+                }
+            }
+            return gaps;
+        });
+    }
+
+    @Test
+    @DisplayName("producer and reader agree on the navigation entry")
+    void navMenuAgrees() {
+        requireSupported(Facet.NAV_MENU);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            compare(gaps, "navMenu", produced.navMenu(), wasRead.navMenu());
+            return gaps;
+        });
+    }
+
+    @Test
+    @DisplayName("producer and reader agree on every tab")
+    void tabsAgree() {
+        requireSupported(Facet.TABS);
+        eachEntity((name, produced, wasRead) -> {
+            List<String> gaps = new ArrayList<>();
+            Map<String, UIMetadata.UITabMetadata> left = byKey(tabsOf(produced), UIMetadata.UITabMetadata::name);
+            Map<String, UIMetadata.UITabMetadata> right = byKey(tabsOf(wasRead), UIMetadata.UITabMetadata::name);
+            compareKeySets(gaps, "tabs", left, right);
+            for (Map.Entry<String, UIMetadata.UITabMetadata> entry : left.entrySet()) {
+                UIMetadata.UITabMetadata r = right.get(entry.getKey());
+                if (r != null) {
+                    compare(gaps, "tabs/" + entry.getKey(), entry.getValue(), r);
+                }
+            }
+            if (left.keySet().equals(right.keySet())) {
+                compare(gaps, "tabs (order)", List.copyOf(left.keySet()), List.copyOf(right.keySet()));
+            }
+            return gaps;
+        });
+    }
+
+    private static List<UIMetadata.UITabMetadata> tabsOf(DomainMetadata metadata) {
+        return metadata.uiMetadata() == null ? null : metadata.uiMetadata().tabs();
     }
 
     /** A comparison over one entity, returning the paths on which the two sides disagreed. */

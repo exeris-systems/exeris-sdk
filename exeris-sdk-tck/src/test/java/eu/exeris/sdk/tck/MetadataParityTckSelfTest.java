@@ -1,9 +1,13 @@
 package eu.exeris.sdk.tck;
 
+import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
+import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.SagaMetadata;
+import eu.exeris.sdk.sourcemodel.ast.UIMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
@@ -40,6 +44,9 @@ class MetadataParityTckSelfTest {
             parity.sagaIdentityAgrees();
             parity.sagaCompensationAgrees();
             parity.routeAccessAgrees();
+            parity.queryParamsAgree();
+            parity.navMenuAgrees();
+            parity.tabsAgree();
         }).doesNotThrowAnyException();
     }
 
@@ -251,6 +258,75 @@ class MetadataParityTckSelfTest {
         assertThatCode(notBuiltYet::fieldsAgree).doesNotThrowAnyException();
     }
 
+    @Test
+    @DisplayName("a query parameter one side reads as a body parameter, or does not admit, is caught")
+    void queryParamDivergenceIsCaught() {
+        Parity bodyBound = new Parity(
+                m -> withSearch(m, ActionMetadata.builder("search").httpMethod("GET")
+                        .addParam(ActionParamMetadata.builder("term", "String").required(true).build())
+                        .addParam(ActionParamMetadata.builder("limit", "int").required(false).build())
+                        .build()),
+                UnaryOperator.identity());
+        assertThatThrownBy(bodyBound::queryParamsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("actions/search/params/term/bindingSource — producer: 'BODY', reader: 'QUERY'")
+                .hasMessageContaining("actions/search/params/term/queryKey — producer: 'term', reader: 'q'");
+
+        Parity actionParamOnly = new Parity(
+                m -> withSearch(m, ActionMetadata.builder("search").httpMethod("GET").build()),
+                UnaryOperator.identity());
+        assertThatThrownBy(actionParamOnly::queryParamsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("reader emitted 'term', producer did not");
+    }
+
+    @Test
+    @DisplayName("a navigation entry the sides disagree on is caught")
+    void navMenuDivergenceIsCaught() {
+        Parity zeroBlind = new Parity(
+                m -> m.navMenu() == null ? m : withNavAndUi(m, ReferenceBinding.orderNavMenu().order(null).build(),
+                        m.uiMetadata()),
+                UnaryOperator.identity());
+        assertThatThrownBy(zeroBlind::navMenuAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("navMenu — producer:");
+
+        Parity readerBlind = new Parity(UnaryOperator.identity(), m -> withNavAndUi(m, null, m.uiMetadata()));
+        assertThatThrownBy(readerBlind::navMenuAgrees)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("reader: <absent>");
+    }
+
+    @Test
+    @DisplayName("tabs the sides disagree on, or order differently, are caught")
+    void tabDivergenceIsCaught() {
+        Parity uiOnly = new Parity(UnaryOperator.identity(), m -> withNavAndUi(m, m.navMenu(), null));
+        assertThatThrownBy(uiOnly::tabsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("tabs — producer emitted 'summary', reader did not");
+
+        List<UIMetadata.UITabMetadata> reference = ReferenceBinding.orderTabs();
+        Parity reordered = new Parity(
+                UnaryOperator.identity(),
+                m -> m.uiMetadata() == null ? m : withNavAndUi(m, m.navMenu(),
+                        UIMetadata.builder().tabs(List.of(reference.get(1), reference.get(0))).build()));
+        assertThatThrownBy(reordered::tabsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("tabs (order)");
+
+        Parity memberBlind = new Parity(
+                UnaryOperator.identity(),
+                m -> m.uiMetadata() == null ? m : withNavAndUi(m, m.navMenu(), UIMetadata.builder()
+                        .tabs(List.of(
+                                new UIMetadata.UITabMetadata("summary", "Summary", 0, null, false, null, null,
+                                        false, null, null, null, List.of("reference")),
+                                reference.get(1)))
+                        .build()));
+        assertThatThrownBy(memberBlind::tabsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("tabs/summary");
+    }
+
     /** A parity binding whose two sides are the reference binding, each put through a defect. */
     static class Parity extends AbstractMetadataParityTck {
 
@@ -271,6 +347,22 @@ class MetadataParityTckSelfTest {
         protected DomainMetadata read(String entitySource) {
             return readerDefect.apply(ReferenceBinding.readFrom(entitySource));
         }
+    }
+
+    private static DomainMetadata.Builder copyOf(DomainMetadata source) {
+        return DomainMetadata.builder(source.entityName(), source.packageName())
+                .fields(source.fields()).actions(source.actions()).relationships(source.relationships())
+                .sagaMetadata(source.sagaMetadata()).navMenu(source.navMenu()).uiMetadata(source.uiMetadata());
+    }
+
+    private static DomainMetadata withSearch(DomainMetadata source, ActionMetadata search) {
+        return copyOf(source).actions(source.actions().stream()
+                .map(a -> "search".equals(a.name()) ? search : a)
+                .toList()).build();
+    }
+
+    private static DomainMetadata withNavAndUi(DomainMetadata source, NavMenuMetadata navMenu, UIMetadata ui) {
+        return copyOf(source).navMenu(navMenu).uiMetadata(ui).build();
     }
 
     private static DomainMetadata rebuild(DomainMetadata source, List<RelationshipMetadata> edges) {

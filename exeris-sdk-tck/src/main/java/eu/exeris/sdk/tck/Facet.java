@@ -69,7 +69,34 @@ public enum Facet {
      *
      * @since 0.13
      */
-    ROUTE_ACCESS;
+    ROUTE_ACCESS,
+
+    /**
+     * {@code @QueryParam} on an {@code @Action} parameter, carried on {@code ActionParamMetadata}
+     * as {@code bindingSource = QUERY} and, where it differs from the parameter name, the
+     * {@code queryKey} — including a parameter carrying {@code @QueryParam} alone and a declared
+     * {@code required = false}.
+     *
+     * @since 0.13
+     */
+    QUERY_PARAMS,
+
+    /**
+     * {@code @NavMenu} on an entity, carried as {@code DomainMetadata.navMenu} — including a
+     * declared {@code order = 0}, which a producer that writes only non-default values drops.
+     *
+     * @since 0.13
+     */
+    NAV_MENU,
+
+    /**
+     * {@code @Tab} on an entity's fields, carried as {@code UIMetadata.tabs}: one tab per name, in
+     * the order each is first declared, with its member fields and the attributes the first
+     * declaring member gives it — on an entity that declares no {@code @UI}.
+     *
+     * @since 0.13
+     */
+    TABS;
 
     /** The facets no binder may declare unsupported. */
     public static final Set<Facet> MANDATORY = Set.of(IDENTITY, FIELDS);

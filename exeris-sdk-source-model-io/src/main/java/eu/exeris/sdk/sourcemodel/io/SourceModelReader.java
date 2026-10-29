@@ -40,6 +40,8 @@ import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphEdgeMetadata;
 import eu.exeris.sdk.sourcemodel.ast.GraphMetadata;
 import eu.exeris.sdk.sourcemodel.ast.InternalApiMetadata;
+import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
+import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
@@ -58,6 +60,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -78,10 +81,13 @@ import java.util.stream.Collectors;
  * {@code relationshipType}, and {@code mappedBy} are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, permissions, the return type as {@code resultType}, and
- * {@code @ActionParam} parameters);
+ * the parameters carrying {@code @ActionParam}, {@code @QueryParam} or both, a
+ * {@code @QueryParam} one bound from the query string);
  * {@link #readEnums} extracts enum declarations separately, as the processor
  * does. Class-level {@code @UI} is read into {@link UIMetadata} (view flags,
- * matching the processor's default-true convention). The domain-level
+ * matching the processor's default-true convention), field-level {@code @Tab} into
+ * {@link UIMetadata#tabs()}, and class-level {@code @NavMenu} into
+ * {@link DomainMetadata#navMenu()}. The domain-level
  * {@code @ExerisDomain} string + boolean attributes the processor reads
  * (module, path, aggregate, description, the {@code *Api} flags,
  * tenantScoped, softDelete, audited, versioned, sensitive, cacheable,
@@ -133,12 +139,19 @@ import java.util.stream.Collectors;
  * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), a {@code @SagaStep.order} the reader
  * cannot resolve, and a {@code permissions} element that is not a string literal. A round-trip /
  * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
- * reads and no carrier is scheduled for — {@code @Projection}, {@code @NavMenu},
- * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations — are not
- * divergences.) The guard is
+ * reads and no carrier is scheduled for — {@code @Projection}, {@code @EventHandler},
+ * {@code @GraphQuery}, the {@code security} annotations — are not divergences.) The guard is
  * annotation-level, with those attributes as the exception: attribute completeness
  * of the <em>other</em> read annotations (e.g. {@code @Relationship}, {@code @Action})
  * is verified per-slice, not by it.
+ *
+ * <p>The reverse divergence — a facet this reader carries and a processor does not extract
+ * yet — is not reported by the guard. {@code @QueryParam}, {@code @NavMenu}, {@code @Tab} and
+ * the {@code @Saga} compensation section are read here ahead of a processor that does not
+ * extract them. {@link SourceModelConflictDetector} compares whole actions, so against such a
+ * processor's baseline an action with a {@code @QueryParam} parameter reads as changed, and a
+ * mutation of that action is reported as a conflict rather than applied; it compares no
+ * navigation, tab or saga component.
  *
  * <p><b>Limitations.</b> Annotation matching is by <em>simple name</em>
  * ({@code ExerisDomain}, {@code Field}, {@code Relationship}) without import
@@ -178,6 +191,12 @@ public final class SourceModelReader {
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS =
             Set.of("GraphProperty", "UIGroup", "Blob", "Channel");
+
+    /** Attribute names several annotations share. */
+    private static final String LABEL = "label";
+    private static final String ORDER = "order";
+    private static final String REQUIRED = "required";
+    private static final String VALUE = "value";
 
     /**
      * How many constant references and wrappers {@link #intConstant} follows before giving up,
@@ -278,9 +297,11 @@ public final class SourceModelReader {
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
      * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob} and {@code @Channel}, whose
      * carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
-     * side reads and no carrier is scheduled for ({@code @Projection}, {@code @NavMenu},
-     * {@code @EventHandler}, {@code @GraphQuery}, {@code @Tab}, the {@code security}
-     * annotations).
+     * side reads and no carrier is scheduled for ({@code @Projection},
+     * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations), and
+     * facets this reader reads ahead of the processor ({@code @QueryParam}, {@code @NavMenu},
+     * {@code @Tab}): the guard reports what a round-trip would drop, and the reader drops none
+     * of those.
      *
      * <p>Also detected, as {@code @SagaStep}: a saga step on the {@code @ExerisDomain}
      * type whose {@code order} this reader cannot resolve — a constant from another file,
@@ -388,6 +409,10 @@ public final class SourceModelReader {
         InternalApiMetadata internalApi = internalApi(type);
         if (internalApi != null) {
             builder.internalApi(internalApi);
+        }
+        NavMenuMetadata navMenu = navMenu(type);
+        if (navMenu != null) {
+            builder.navMenu(navMenu);
         }
         return builder.build();
     }
@@ -584,9 +609,12 @@ public final class SourceModelReader {
     }
 
     /**
-     * Class-level standalone {@code @UI} → {@link UIMetadata}, or {@code null} when
-     * absent (matching {@code ExerisDomainProcessor.extractUIMetadata}, which reads
-     * a directly-present {@code @UI} via {@code findAnnotation}).
+     * Class-level standalone {@code @UI} and field-level {@code @Tab} → {@link UIMetadata}, or
+     * {@code null} when the type carries neither. A type-level {@code @UI} is read as
+     * {@code ExerisDomainProcessor.extractUIMetadata} reads it, through a directly-present
+     * annotation. Tabs are read by {@link #tabs}; a type with tabs and no {@code @UI} gets a
+     * {@link UIMetadata} whose other components are the builder defaults, which are the values
+     * an {@code @UI} that declares nothing produces.
      *
      * <p>Parity note: like the processor, the view flags default to {@code true}
      * when their {@code @UI} attribute is absent (and {@code exportable} to
@@ -610,18 +638,143 @@ public final class SourceModelReader {
      */
     private UIMetadata uiMetadata(ClassOrInterfaceDeclaration type) {
         Optional<AnnotationExpr> ui = type.getAnnotationByName("UI");
-        if (ui.isEmpty()) {
+        List<UIMetadata.UITabMetadata> tabs = tabs(type);
+        if (ui.isEmpty() && tabs.isEmpty()) {
             return null;
         }
-        return UIMetadata.builder()
-                .listView(boolAttr(ui.get(), "listView", true))
-                .detailView(boolAttr(ui.get(), "detailView", true))
-                .createForm(boolAttr(ui.get(), "createForm", true))
-                .editForm(boolAttr(ui.get(), "editForm", true))
-                .searchable(boolAttr(ui.get(), "searchable", true))
-                .filterable(boolAttr(ui.get(), "filterable", true))
-                .exportable(boolAttr(ui.get(), "exportable", false))
-                .build();
+        UIMetadata.Builder builder = UIMetadata.builder();
+        ui.ifPresent(annotation -> builder
+                .listView(boolAttr(annotation, "listView", true))
+                .detailView(boolAttr(annotation, "detailView", true))
+                .createForm(boolAttr(annotation, "createForm", true))
+                .editForm(boolAttr(annotation, "editForm", true))
+                .searchable(boolAttr(annotation, "searchable", true))
+                .filterable(boolAttr(annotation, "filterable", true))
+                .exportable(boolAttr(annotation, "exportable", false)));
+        if (!tabs.isEmpty()) {
+            builder.tabs(tabs);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Field-level {@code @Tab} → {@link UIMetadata.UITabMetadata}, one per distinct
+     * {@code name}, in the order each name is first declared. Every field carrying the
+     * annotation is a member, whatever else it carries — a {@code @Relationship} field
+     * included — and each variable of a multi-variable declaration is one member.
+     *
+     * <p>Each attribute takes the value of the first member field, in declaration order, that
+     * declares it; a blank string counts as undeclared. So the attributes may be written on any
+     * one member, the first being the convention the annotation documents, and a later field
+     * that restates one with another value does not change it. An attribute no member declares
+     * is left unset and the record's {@code effective*} accessor applies the annotation default.
+     * A {@code @Tab} whose {@code name} is not a non-blank string literal is skipped.
+     */
+    private List<UIMetadata.UITabMetadata> tabs(ClassOrInterfaceDeclaration type) {
+        Map<String, TabDeclarations> byName = new LinkedHashMap<>();
+        for (FieldDeclaration field : type.getFields()) {
+            field.getAnnotationByName("Tab").ifPresent(tab -> nonBlankStringAttr(tab, "name")
+                    .ifPresent(name -> {
+                        TabDeclarations declarations = byName.computeIfAbsent(name, TabDeclarations::new);
+                        declarations.absorb(tab);
+                        for (VariableDeclarator variable : field.getVariables()) {
+                            declarations.fields.add(variable.getNameAsString());
+                        }
+                    }));
+        }
+        return byName.values().stream().map(TabDeclarations::build).toList();
+    }
+
+    /**
+     * The {@code @Tab} declarations sharing one name, folded attribute by attribute: the first
+     * declaration of each attribute is kept, and a later one is ignored.
+     */
+    private final class TabDeclarations {
+        private final String name;
+        private final List<String> fields = new ArrayList<>();
+        private String label;
+        private Integer order;
+        private String icon;
+        private Boolean lazy;
+        private String badgeField;
+        private String badgeColor;
+        private Boolean disabled;
+        private String disabledWhen;
+        private String visibleWhen;
+        private String cssClass;
+
+        private TabDeclarations(String name) {
+            this.name = name;
+        }
+
+        private void absorb(AnnotationExpr tab) {
+            label = first(label, () -> nonBlankStringAttr(tab, LABEL));
+            order = first(order, () -> signedIntAttr(tab, ORDER));
+            icon = first(icon, () -> nonBlankStringAttr(tab, "icon"));
+            lazy = first(lazy, () -> boolAttr(tab, "lazy"));
+            badgeField = first(badgeField, () -> nonBlankStringAttr(tab, "badgeField"));
+            badgeColor = first(badgeColor, () -> nonBlankStringAttr(tab, "badgeColor"));
+            disabled = first(disabled, () -> boolAttr(tab, "disabled"));
+            disabledWhen = first(disabledWhen, () -> nonBlankStringAttr(tab, "disabledWhen"));
+            visibleWhen = first(visibleWhen, () -> nonBlankStringAttr(tab, "visibleWhen"));
+            cssClass = first(cssClass, () -> nonBlankStringAttr(tab, "cssClass"));
+        }
+
+        private static <T> T first(T kept, Supplier<Optional<T>> declared) {
+            return kept != null ? kept : declared.get().orElse(null);
+        }
+
+        private UIMetadata.UITabMetadata build() {
+            return new UIMetadata.UITabMetadata(name, label, order, icon, Boolean.TRUE.equals(lazy),
+                    badgeField, badgeColor, Boolean.TRUE.equals(disabled), disabledWhen, visibleWhen,
+                    cssClass, fields);
+        }
+    }
+
+    /**
+     * Type-level {@code @NavMenu} → {@link NavMenuMetadata}, or {@code null} when absent. Every
+     * attribute is read present-only: an undeclared one is left unset, and the record's
+     * {@code effective*} accessors apply the annotation default. A blank string is stored as
+     * unset by the record. {@code order} and {@code groupOrder} are read signed, as javac folds
+     * them; {@code divider} is read by constant name, and a name the AST enum does not declare is
+     * left unset. A {@code @NavMenu} that declares nothing is an entry with every component unset,
+     * not an absent one.
+     */
+    private NavMenuMetadata navMenu(ClassOrInterfaceDeclaration type) {
+        Optional<AnnotationExpr> found = type.getAnnotationByName("NavMenu");
+        if (found.isEmpty()) {
+            return null;
+        }
+        AnnotationExpr nav = found.get();
+        NavMenuMetadata.Builder builder = NavMenuMetadata.builder();
+        stringAttr(nav, "group").ifPresent(builder::group);
+        stringAttr(nav, "parent").ifPresent(builder::parent);
+        stringAttr(nav, LABEL).ifPresent(builder::label);
+        stringAttr(nav, "icon").ifPresent(builder::icon);
+        signedIntAttr(nav, ORDER).ifPresent(builder::order);
+        signedIntAttr(nav, "groupOrder").ifPresent(builder::groupOrder);
+        stringAttr(nav, "groupIcon").ifPresent(builder::groupIcon);
+        builder.hidden(boolAttr(nav, "hidden", false));
+        stringArrayAttr(nav, "roles").ifPresent(builder::roles);
+        stringArrayAttr(nav, PERMISSIONS).ifPresent(builder::permissions);
+        stringAttr(nav, "badge").ifPresent(builder::badge);
+        stringAttr(nav, "badgeColor").ifPresent(builder::badgeColor);
+        stringAttr(nav, "tooltip").ifPresent(builder::tooltip);
+        builder.openInNewTab(boolAttr(nav, "openInNewTab", false));
+        stringAttr(nav, "routePath").ifPresent(builder::routePath);
+        stringAttr(nav, "queryParams").ifPresent(builder::queryParams);
+        builder.expanded(boolAttr(nav, "expanded", false));
+        enumAttr(nav, "divider").flatMap(SourceModelReader::divider).ifPresent(builder::divider);
+        return builder.build();
+    }
+
+    private static Optional<NavMenuMetadata.Divider> divider(String constant) {
+        for (NavMenuMetadata.Divider divider : NavMenuMetadata.Divider.values()) {
+            if (divider.name().equals(constant)) {
+                return Optional.of(divider);
+            }
+        }
+        return Optional.empty();
     }
 
     private List<ActionMetadata> actions(ClassOrInterfaceDeclaration type) {
@@ -639,7 +792,7 @@ public final class SourceModelReader {
                     .methodName(method.getNameAsString())
                     .resultType(typeName(method.getType(), method, type))
                     .async(boolAttr(action.get(), "async", false));
-            stringAttr(action.get(), "label").ifPresent(builder::displayName);
+            stringAttr(action.get(), LABEL).ifPresent(builder::displayName);
             stringAttr(action.get(), "description")
                     .filter(s -> !s.isBlank())
                     .ifPresent(builder::description);
@@ -657,8 +810,11 @@ public final class SourceModelReader {
             stringArrayAttr(action.get(), PERMISSIONS).ifPresent(builder::permissions);
             routeAccess(method).ifPresent(builder::routeAccess);
             for (Parameter parameter : method.getParameters()) {
-                parameter.getAnnotationByName("ActionParam")
-                        .ifPresent(ann -> builder.addParam(actionParam(parameter, ann)));
+                AnnotationExpr actionParam = parameter.getAnnotationByName("ActionParam").orElse(null);
+                AnnotationExpr queryParam = parameter.getAnnotationByName("QueryParam").orElse(null);
+                if (actionParam != null || queryParam != null) {
+                    builder.addParam(actionParam(parameter, actionParam, queryParam));
+                }
             }
             actions.add(builder.build());
         }
@@ -798,21 +954,59 @@ public final class SourceModelReader {
                 && java.lang.reflect.Modifier.isPublic(candidate.getModifiers());
     }
 
-    private ActionParamMetadata actionParam(Parameter parameter, AnnotationExpr annotation) {
-        String name = stringAttr(annotation, "name")
-                .filter(s -> !s.isBlank())
+    /**
+     * An action parameter, from {@code @ActionParam}, {@code @QueryParam} or both. Either
+     * annotation makes a parameter an action parameter.
+     *
+     * <p>{@code @QueryParam} binds the parameter from the query string:
+     * {@link ParamSource#QUERY}, with its {@code value} as the query key. {@code @ActionParam}
+     * owns the parameter's identity and label, and is the nearer declaration for the three
+     * attributes both annotations declare — {@code required}, {@code description} and
+     * {@code defaultValue}: each is taken from {@code @ActionParam} when it declares it, else
+     * from {@code @QueryParam}, else the shared default ({@code true}, none, none). A blank
+     * string counts as undeclared.
+     *
+     * @param actionParam the parameter's {@code @ActionParam}, or {@code null}
+     * @param queryParam the parameter's {@code @QueryParam}, or {@code null}
+     */
+    private ActionParamMetadata actionParam(Parameter parameter, AnnotationExpr actionParam,
+                                            AnnotationExpr queryParam) {
+        Optional<AnnotationExpr> nearer = Optional.ofNullable(actionParam);
+        Optional<AnnotationExpr> farther = Optional.ofNullable(queryParam);
+        String name = nearer.flatMap(ann -> nonBlankStringAttr(ann, "name"))
                 .orElse(parameter.getNameAsString());
-        // @ActionParam.required defaults to true (mirrors the annotation default).
+        // required defaults to true on both annotations.
         ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, parameter.getTypeAsString())
-                .required(boolAttr(annotation, "required", true));
-        stringAttr(annotation, "label").ifPresent(builder::displayName);
-        stringAttr(annotation, "description")
-                .filter(s -> !s.isBlank())
+                .required(nearer.flatMap(ann -> boolAttr(ann, REQUIRED))
+                        .or(() -> farther.flatMap(ann -> boolAttr(ann, REQUIRED)))
+                        .orElse(true));
+        nearer.flatMap(ann -> stringAttr(ann, LABEL)).ifPresent(builder::displayName);
+        nearer.flatMap(ann -> nonBlankStringAttr(ann, "description"))
+                .or(() -> farther.flatMap(ann -> nonBlankStringAttr(ann, "description")))
                 .ifPresent(builder::description);
-        stringAttr(annotation, "defaultValue")
-                .filter(s -> !s.isBlank())
+        nearer.flatMap(ann -> nonBlankStringAttr(ann, "defaultValue"))
+                .or(() -> farther.flatMap(ann -> nonBlankStringAttr(ann, "defaultValue")))
                 .ifPresent(builder::defaultValue);
+        if (queryParam != null) {
+            builder.bindingSource(ParamSource.QUERY);
+            queryKey(queryParam).ifPresent(builder::queryKey);
+        }
         return builder.build();
+    }
+
+    /**
+     * {@code @QueryParam}'s {@code value}, in the single-member form {@code @QueryParam("q")} or
+     * the named form {@code @QueryParam(value = "q")}. The record stores a key equal to the
+     * parameter name, or a blank one, as absent.
+     */
+    private Optional<String> queryKey(AnnotationExpr queryParam) {
+        if (queryParam.isSingleMemberAnnotationExpr()) {
+            Expression member = queryParam.asSingleMemberAnnotationExpr().getMemberValue();
+            return member.isStringLiteralExpr()
+                    ? Optional.of(member.asStringLiteralExpr().asString())
+                    : Optional.empty();
+        }
+        return stringAttr(queryParam, VALUE);
     }
 
     /**
@@ -945,7 +1139,7 @@ public final class SourceModelReader {
     private List<AnnotationExpr> containedAnnotations(AnnotationExpr container) {
         Optional<Expression> value = container.isSingleMemberAnnotationExpr()
                 ? Optional.of(container.asSingleMemberAnnotationExpr().getMemberValue())
-                : value(container, "value");
+                : value(container, VALUE);
         List<AnnotationExpr> inner = new ArrayList<>();
         value.ifPresent(expression -> {
             if (expression.isArrayInitializerExpr()) {
@@ -1407,7 +1601,7 @@ public final class SourceModelReader {
      * two apart.
      */
     private Optional<Integer> stepOrder(MethodDeclaration method, AnnotationExpr step) {
-        return value(step, "order").flatMap(expression -> intConstant(expression, method));
+        return value(step, ORDER).flatMap(expression -> intConstant(expression, method));
     }
 
     /**
@@ -1421,7 +1615,7 @@ public final class SourceModelReader {
         }
         for (MethodDeclaration method : type.getMethods()) {
             Optional<AnnotationExpr> step = method.getAnnotationByName("SagaStep");
-            if (step.isPresent() && value(step.get(), "order").isPresent()
+            if (step.isPresent() && value(step.get(), ORDER).isPresent()
                     && stepOrder(method, step.get()).isEmpty()) {
                 return true;
             }
@@ -1705,7 +1899,7 @@ public final class SourceModelReader {
         return element.getAnnotationByName("RouteAccess")
                 .flatMap(annotation -> annotation.isSingleMemberAnnotationExpr()
                         ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
-                        : value(annotation, "value"))
+                        : value(annotation, VALUE))
                 .map(this::constantName)
                 .flatMap(name -> {
                     try {
@@ -1822,9 +2016,9 @@ public final class SourceModelReader {
      */
     private FieldMetadata fieldMetadata(String name, String type, AnnotationExpr field, AnnotationExpr validation) {
         FieldMetadata.Builder builder = FieldMetadata.builder(name, type);
-        stringAttr(field, "label").ifPresent(builder::displayName);
+        stringAttr(field, LABEL).ifPresent(builder::displayName);
         stringAttr(field, "description").ifPresent(builder::description);
-        boolAttr(field, "required").ifPresent(builder::required);
+        boolAttr(field, REQUIRED).ifPresent(builder::required);
         boolAttr(field, "unique").ifPresent(builder::unique);
         boolAttr(field, "indexed").ifPresent(builder::indexed);
         boolAttr(field, "searchable").ifPresent(builder::searchable);
@@ -1873,7 +2067,7 @@ public final class SourceModelReader {
         intAttr(validation, "maxLength").ifPresent(builder::maxLength);
         stringAttr(validation, "pattern").ifPresent(builder::pattern);
 
-        if (boolAttr(validation, "required").orElse(false) && boolAttr(field, "required").isEmpty()) {
+        if (boolAttr(validation, REQUIRED).orElse(false) && boolAttr(field, REQUIRED).isEmpty()) {
             builder.required(true);
         }
         stringAttr(validation, "validateOn").filter(s -> !s.isEmpty()).ifPresent(validateOn -> {

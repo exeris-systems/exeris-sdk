@@ -33,6 +33,9 @@ class MetadataProducerTckSelfTest {
             producer.sagaCompensationReachesTheProducedJson();
             producer.actionResultTypeReachesTheProducedJson();
             producer.routeAccessReachesTheProducedJson();
+            producer.queryParamsReachTheProducedJson();
+            producer.navMenuReachesTheProducedJson();
+            producer.tabsReachTheProducedJson();
             producer.mandatoryFacetsAreNotDeclaredUnsupported();
         }).doesNotThrowAnyException();
     }
@@ -172,6 +175,75 @@ class MetadataProducerTckSelfTest {
         assertThatThrownBy(dropping::actionResultTypeReachesTheProducedJson)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("no such action");
+    }
+
+    @Test
+    @DisplayName("a query binding, key or declared false missing from the JSON is caught")
+    void queryParamCasesAreNotVacuous() {
+        Producer bodyBound = new Producer(json -> json.replace("\"bindingSource\":\"QUERY\"", "\"x\":0"));
+        assertThatThrownBy(bodyBound::queryParamsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Absent means BODY");
+
+        Producer keyBlind = new Producer(json -> json.replace("\"queryKey\":\"q\"", "\"x\":0"));
+        assertThatThrownBy(keyBlind::queryParamsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("query key 'q'");
+
+        Producer falseBlind = new Producer(json -> json.replace(
+                "\"name\":\"limit\",\"type\":\"int\",\"required\":false", "\"name\":\"limit\",\"type\":\"int\""));
+        assertThatThrownBy(falseBlind::queryParamsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("required = false");
+
+        Producer actionParamOnly = new Producer(json -> json.replace("\"name\":\"term\"", "\"name\":\"other\""));
+        assertThatThrownBy(actionParamOnly::queryParamsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("@QueryParam alone");
+    }
+
+    @Test
+    @DisplayName("a dropped navigation entry or zero order is caught")
+    void navMenuCasesAreNotVacuous() {
+        Producer zeroBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            ((ObjectNode) root.get("navMenu")).remove("order");
+            return root.toString();
+        });
+        assertThatThrownBy(zeroBlind::navMenuReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("order = 0");
+
+        Producer navBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            root.remove("navMenu");
+            return root.toString();
+        });
+        assertThatThrownBy(navBlind::navMenuReachesTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("carries no navMenu");
+    }
+
+    @Test
+    @DisplayName("tabs missing from the JSON, or a dropped zero order, are caught")
+    void tabCasesAreNotVacuous() {
+        Producer tabBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            root.remove("uiMetadata");
+            return root.toString();
+        });
+        assertThatThrownBy(tabBlind::tabsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("uiMetadata.tabs");
+
+        Producer zeroBlind = new Producer(json -> {
+            ObjectNode root = (ObjectNode) TckMappers.canonical().readTree(json);
+            ((ObjectNode) root.get("uiMetadata").get("tabs").get(0)).remove("order");
+            return root.toString();
+        });
+        assertThatThrownBy(zeroBlind::tabsReachTheProducedJson)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("@Tab(order = 0)");
     }
 
     private static String withoutSagaKey(String json, String key) {

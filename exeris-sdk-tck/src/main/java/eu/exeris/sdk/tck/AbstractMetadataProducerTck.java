@@ -289,6 +289,108 @@ public abstract class AbstractMetadataProducerTck extends AbstractExerisTck {
     }
 
     /**
+     * Read from the tree, so that what is asserted is the key a declared {@code false} must be
+     * written under, not the record default it reads back as when dropped.
+     */
+    @Test
+    @DisplayName("@QueryParam's binding source, key and declared false reach the produced JSON")
+    void queryParamsReachTheProducedJson() {
+        requireSupported(Facet.QUERY_PARAMS);
+        JsonNode search = element(tree(TckCorpus.ORDER).path("actions"), "search",
+                "Order declares @Action(name = \"search\"); the produced JSON carries no such action.");
+        JsonNode params = search.path("params");
+        String admitted = "A parameter carrying @QueryParam alone is an action parameter.";
+        JsonNode term = element(params, "term", "The produced 'search' action carries no parameter 'term'. "
+                + admitted);
+        assertThat(term.path("bindingSource").asString(""))
+                .withFailMessage(
+                        "Order.search(term) carries @QueryParam(\"q\") and the produced parameter "
+                                + "has bindingSource = %s. Absent means BODY, so a generated handler "
+                                + "reads it from the request document, where no client sends it.",
+                        term.path("bindingSource"))
+                .isEqualTo("QUERY");
+        assertThat(term.path("queryKey").asString(""))
+                .withFailMessage(
+                        "Order.search(term) is read under the query key 'q' and the produced "
+                                + "parameter has queryKey = %s.",
+                        term.path("queryKey"))
+                .isEqualTo("q");
+        JsonNode limit = element(params, "limit", "The produced 'search' action carries no parameter "
+                + "'limit'. " + admitted);
+        assertThat(limit.path("bindingSource").asString("")).isEqualTo("QUERY");
+        assertThat(limit.path("required").isBoolean() && !limit.path("required").asBoolean())
+                .withFailMessage(
+                        "Order.search(limit) declares @QueryParam(required = false) and the produced "
+                                + "parameter has required = %s.",
+                        limit.path("required"))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("@NavMenu reaches the produced JSON, a zero order included")
+    void navMenuReachesTheProducedJson() {
+        requireSupported(Facet.NAV_MENU);
+        JsonNode nav = tree(TckCorpus.ORDER).path("navMenu");
+        assertThat(nav.isObject())
+                .withFailMessage("Order declares @NavMenu; the produced JSON carries no navMenu.")
+                .isTrue();
+        assertThat(nav.path("order").isNumber() && nav.path("order").asInt() == 0)
+                .withFailMessage(
+                        "Order declares @NavMenu(order = 0) and the produced navMenu has order = %s. "
+                                + "A missing key means 'not declared' to every reader, and the "
+                                + "default 999 then applies.",
+                        nav.path("order"))
+                .isTrue();
+        assertThat(nav.path("group").asString("")).isEqualTo("Sales");
+        assertThat(nav.path("label").asString("")).isEqualTo("Orders");
+        assertThat(nav.path("divider").asString("")).isEqualTo("AFTER");
+        assertThat(nav.path("roles").isArray() && nav.path("roles").size() == 1
+                && "SALES".equals(nav.path("roles").get(0).asString(""))).isTrue();
+    }
+
+    @Test
+    @DisplayName("@Tab reaches the produced JSON on an entity with no @UI, a zero order included")
+    void tabsReachTheProducedJson() {
+        requireSupported(Facet.TABS);
+        JsonNode tabs = tree(TckCorpus.ORDER).path("uiMetadata").path("tabs");
+        assertThat(tabs.isArray() && tabs.size() == 2)
+                .withFailMessage(
+                        "Order's fields declare two tabs and the type no @UI; the produced "
+                                + "uiMetadata.tabs is %s.",
+                        tabs)
+                .isTrue();
+        JsonNode summary = tabs.get(0);
+        assertThat(summary.path("name").asString("")).isEqualTo("summary");
+        assertThat(summary.path("order").isNumber() && summary.path("order").asInt() == 0)
+                .withFailMessage(
+                        "Order.reference declares @Tab(order = 0) and the produced tab has order = %s. "
+                                + "A missing key means 'not declared', and the default 999 then applies.",
+                        summary.path("order"))
+                .isTrue();
+        assertThat(summary.path("fields").toString()).isEqualTo("[\"reference\",\"totalCents\"]");
+        assertThat(tabs.get(1).path("name").asString("")).isEqualTo("notes");
+        assertThat(tabs.get(1).path("lazy").asBoolean(false)).isTrue();
+    }
+
+    /**
+     * The element of a JSON array whose {@code name} is {@code name}.
+     *
+     * @param array the array to search
+     * @param name the name to find
+     * @param failure the message to fail with when there is none
+     * @return the element
+     * @throws AssertionError when the array holds no element of that name
+     */
+    private static JsonNode element(JsonNode array, String name, String failure) {
+        for (JsonNode candidate : array) {
+            if (name.equals(candidate.path("name").asString(""))) {
+                return candidate;
+            }
+        }
+        throw new AssertionError(failure);
+    }
+
+    /**
      * Produces the entity's metadata JSON and parses it as a tree.
      *
      * @param entityName one of {@link TckCorpus#entityNames()}

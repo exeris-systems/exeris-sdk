@@ -118,6 +118,7 @@ public final class TckCorpus {
         types.put("lineCount", "int");
         types.put("approve", "void");
         types.put("track", "void");
+        types.put("search", "void");
         return types;
     }
 

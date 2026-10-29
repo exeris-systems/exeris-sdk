@@ -62,7 +62,8 @@ class BriefSchemaContractTest {
             Map.entry("internalApi", "{\"hidden\":[\"total\"]}"),
             Map.entry("systemFields", "{\"primaryKey\":\"id\",\"tenantField\":\"tenantId\"}"),
             Map.entry("rules", "[{\"name\":\"positive\",\"expression\":\"total > 0\"}]"),
-            Map.entry("channel", "{\"messageType\":\"InvoiceUpdate\"}")));
+            Map.entry("channel", "{\"messageType\":\"InvoiceUpdate\"}"),
+            Map.entry("navMenu", "{\"group\":\"Billing\",\"label\":\"Invoices\",\"order\":0}")));
 
     /**
      * The nested structures ADR-106 names, written under the keys an author would use: a type, a

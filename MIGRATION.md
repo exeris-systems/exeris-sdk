@@ -399,6 +399,82 @@ private City next;
 - **Processor:** `exeris-tooling` reads none of them, so there is no fallback to keep; javac's
   `[removal]` warning is the build-time signal.
 
+### `@QueryParam`, `@NavMenu` and `@Tab` have AST carriers; six `@QueryParam` attributes are deprecated — removal in 1.0.0
+
+**Impact on code: none required.** Three records grew trailing, nullable components and keep
+their 0.12.0 constructors, and two records are new:
+
+| Record | Components 0.12.0 → 0.13.0 | Added | Kept constructor |
+|---|---|---|---|
+| `ActionParamMetadata` | 11 → 13 | `bindingSource` (`ParamSource`), `queryKey` | 11 arguments |
+| `DomainMetadata` | 41 → 42 | `navMenu` (`NavMenuMetadata`) | 39 and 41 arguments |
+| `UIMetadata` | 14 → 15 | `tabs` (`List<UIMetadata.UITabMetadata>`) | 14 arguments |
+
+`NavMenuMetadata` carries the eighteen `@NavMenu` attributes and `UIMetadata.UITabMetadata` the
+eleven `@Tab` attributes plus the member field names. An undeclared attribute is `null`, and the
+`effective*` accessors apply the annotation default (`999` for an order, `"accent"` / `"primary"`
+for a badge colour, `Divider.NONE`, `ParamSource.BODY`, the parameter name for the query key). A
+declared `0` order is written. With none of the three declared, every producer writes the JSON it
+wrote on 0.12.0: the components are absent, not empty. `SchemaVersion.CURRENT` stays `"0.13.0"`.
+
+**What the `-io` reader reads.**
+
+- An `@Action` parameter is an action parameter when it carries `@ActionParam`, `@QueryParam`,
+  or both. `@QueryParam` sets `bindingSource = QUERY` and its `value` as `queryKey`. With both,
+  `@ActionParam` owns the name and label, and is the nearer declaration for `required`,
+  `description` and `defaultValue`; `@QueryParam` supplies what it leaves undeclared.
+- `@NavMenu` → `DomainMetadata.navMenu`, every attribute present-only. A bare `@NavMenu` is an
+  entry with every component unset, not an absent one.
+- `@Tab` → `UIMetadata.tabs`, one tab per `name`, in the order each name is first declared. Each
+  attribute is taken from the first member field that declares it, so writing the attributes on
+  the first member, as the annotation documents, and writing them on any one member read the same.
+  A type that declares tabs and no `@UI` gets a `UIMetadata` at its builder defaults.
+
+```java
+// read as: search(term ← ?q=, limit ← ?limit=, optional)
+@Action(name = "search", label = "Search", httpMethod = "GET")
+public void search(@QueryParam("q") String term,
+                   @QueryParam(value = "limit", required = false) int limit) { }
+```
+
+**Processor.** The `exeris-tooling` processor does not extract the three yet, so no generated
+handler, sidebar or form uses them. `SourceModelConflictDetector` compares whole actions: against
+a processor baseline, an action with a `@QueryParam` parameter reads as changed, and a mutation
+of that action is reported as a conflict rather than applied. It compares no navigation or tab
+component.
+
+**TCK binders.** The 0.13.0 kit adds `Facet.QUERY_PARAMS`, `Facet.NAV_MENU` and `Facet.TABS`, and
+the corpus `Order` declares all three. A producer or parity binding whose producer does not
+extract one of them fails its cases until it adds the facet to `unsupportedFacets()`.
+
+**Six `@QueryParam` attributes are deprecated.** None was read by any producer, and none has a
+component:
+
+| Attribute | Replacement |
+|---|---|
+| `type`, `elementType` | none — the declared parameter type, carried as `ActionParamMetadata.type` with its type arguments |
+| `validation`, `validationMessage` | `@ActionParam(validation = @Validation(...))` for bounds; anything further in the action method |
+| `transform` | none — convert in the action method |
+| `sanitize` | none — the value is bound as a typed parameter, never spliced into query text |
+
+The three SpEL attributes cannot be honoured because a generated handler runs on the Spring-free
+kernel tier, which evaluates no SpEL. A source that sets any of the six compiles with a
+`[removal]` warning from javac.
+
+```java
+// before
+@QueryParam(value = "tags", type = List.class, elementType = String.class,
+            validation = "#value.size() < 10", sanitize = true) List<String> tags
+
+// after
+@QueryParam("tags") List<String> tags
+```
+
+- **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).
+- **Removed:** 1.0.0 ([`MIGRATION-0.x-to-1.0.md` §1](MIGRATION-0.x-to-1.0.md)).
+- **Processor:** `exeris-tooling` reads none of the six, so there is no fallback to keep; javac's
+  `[removal]` warning is the build-time signal.
+
 ---
 
 ## 0.11.x → 0.12.x

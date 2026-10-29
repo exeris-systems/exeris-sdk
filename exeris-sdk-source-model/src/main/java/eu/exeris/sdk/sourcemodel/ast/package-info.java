@@ -336,6 +336,30 @@
  * annotation's. The record keeps its 16-component constructor, which passes {@code null} for all
  * six. They arrived with {@code SchemaVersion} {@code "0.13.0"}.
  *
+ * <h2>Query parameters, navigation entry, tabs</h2>
+ * <p>Three trailing, nullable components, each the AST twin of an annotation:
+ * <ul>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata#bindingSource()} /
+ *       {@link eu.exeris.sdk.sourcemodel.ast.ActionParamMetadata#queryKey()}</strong>
+ *       ({@link eu.exeris.sdk.sourcemodel.ast.ParamSource}: {@code BODY} / {@code QUERY}) —
+ *       {@code @QueryParam}, where a generated handler reads an action parameter from, and the
+ *       query-string key when it differs from the parameter name. Absent is a body parameter
+ *       read under its name.</li>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.DomainMetadata#navMenu()}</strong>
+ *       ({@link eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata}) — {@code @NavMenu}, the
+ *       entity's entry in the generated navigation. A record whose presence is the
+ *       declaration, as {@code channel} is.</li>
+ *   <li><strong>{@link eu.exeris.sdk.sourcemodel.ast.UIMetadata#tabs()}</strong>
+ *       ({@link eu.exeris.sdk.sourcemodel.ast.UIMetadata.UITabMetadata}) — {@code @Tab}, one
+ *       tab per name with its member fields, beside {@code groups}.</li>
+ * </ul>
+ * <p>An undeclared attribute is {@code null} and an {@code effective*} accessor applies the
+ * annotation default, so a declared {@code 0} order, which the {@code NON_NULL} records write,
+ * stays distinguishable from none. The {@code -io} reader populates all three; the processor
+ * does not extract them yet, and ADR-042 asks that it read them as the reader does. Each grown
+ * record keeps its 0.12.0 arity as a public constructor that delegates with {@code null}. They
+ * arrived with {@code SchemaVersion} {@code "0.13.0"} and are frozen at 1.0.0 as declared.
+ *
  * <h2>Capability surface (0.4.0)</h2>
  * <p>Capabilities are a top-level concept, parallel to entities — a
  * {@code @CapabilityModule} class is read into a

@@ -114,6 +114,16 @@ survives into 1.x unchanged.
   `weightField` / `staticWeight`, `sync = false` → do not declare the edge. The full table is in
   `MIGRATION.md` (0.12.x → 0.13.x). None is extracted, so the removal changes no metadata and no
   generated output.
+- **`@QueryParam.transform`, `.validation`, `.validationMessage`, `.type`, `.elementType` and
+  `.sanitize`** — deprecated since 0.13.0 (`forRemoval = true`). `type` and `elementType` restate
+  the parameter's declared type, which `ActionParamMetadata.type` carries with its type arguments:
+  remove them. `transform`, `validation` and `validationMessage` are SpEL, which the kernel tier
+  does not evaluate: convert or check in the action method, and declare bounds with
+  `@ActionParam(validation = @Validation(...))`. `sanitize` has nothing to switch, because the
+  value is bound as a typed parameter. No replacement for `transform` or `sanitize`. No producer
+  reads any of the six and no AST component carries them, so the removal changes no metadata and
+  no generated output. `@QueryParam` itself stays: `value`, `required`, `description` and
+  `defaultValue` are carried on `ActionParamMetadata`.
 
 *(The 0.9.0 final deprecation sweep closed with zero additions to this list —
 see the sweep disposition in [`ROADMAP.md`](ROADMAP.md). `ValidationMetadata`
@@ -442,8 +452,9 @@ freeze or is explicitly re-dispositioned here.
     `@GraphEdge` into `edges`; neither reads `@GraphProperty` or `@GraphQuery`,
     so `GraphMetadata` arrives with `properties = null` and empty `queries` —
     symmetrically, on both sides, which makes it an ADR-042 parity pair rather
-    than a divergence. `@QueryParam` is the one with no AST twin:
-    it binds parameters of a `@GraphQuery` method, and its twin belongs to the
+    than a divergence. `@QueryParam` binds an `@Action` parameter from the query
+    string and is carried on `ActionParamMetadata` (`bindingSource`, `queryKey`);
+    on a `@GraphQuery` method it is read by nobody, and a twin there belongs to the
     change that starts extracting `@GraphQuery` — an `exeris-tooling` slice, same
     lockstep shape as the entry below, not SDK work now.
 - [x] **`@since 1.0.0` on annotations that shipped in 0.1.0** — **fixed.** All

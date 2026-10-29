@@ -3,9 +3,12 @@ package eu.exeris.sdk.tck.corpus;
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
+import eu.exeris.sdk.annotation.NavMenu;
+import eu.exeris.sdk.annotation.QueryParam;
 import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Saga;
 import eu.exeris.sdk.annotation.SagaStep;
+import eu.exeris.sdk.annotation.Tab;
 import eu.exeris.sdk.annotation.Validation;
 import java.util.List;
 
@@ -36,6 +39,16 @@ import java.util.List;
  * that carries the written form instead of the fully-qualified name javac reports disagrees with
  * every side that does not.
  *
+ * <p>{@code @NavMenu}, the {@code @Tab}s and the {@code search} action are the cases behind the
+ * {@code NAV_MENU}, {@code TABS} and {@code QUERY_PARAMS} facets. {@code order = 0} on the menu
+ * entry and on the {@code summary} tab is a declared position that a side writing only
+ * non-default values drops, and which then reads as the default {@code 999}. The {@code summary}
+ * tab's attributes are declared on its first member only, and {@code totalCents} joins it by
+ * name. {@code Order} declares no {@code @UI}, so a side that hangs tabs off {@code @UI} carries
+ * none. On {@code search}, {@code term} is read under a query key that differs from its name, and
+ * {@code limit} declares {@code required = false}, the opposite of the default; neither carries
+ * {@code @ActionParam}, so a side that admits only {@code @ActionParam} parameters reads none.
+ *
  * <p>The actions are the case behind the {@code ACTION_RESULT_TYPE} facet: one returns nothing,
  * one an entity, one a {@code record}, one a {@code List} of it, and one a primitive. The entity
  * is declared in another file, and the record is a member type named by its simple name, so a
@@ -57,6 +70,13 @@ import java.util.List;
         dataScope = ExerisDomain.DataScope.TENANT,
         permissions = {"order:read", "order:write"}
 )
+@NavMenu(
+        group = "Sales",
+        label = "Orders",
+        order = 0,
+        roles = {"SALES"},
+        divider = NavMenu.Divider.AFTER
+)
 @RouteAccess(RouteAccess.Level.AUTHENTICATED)
 @Saga(
         name = "OrderFulfillmentSaga",
@@ -73,6 +93,7 @@ public class Order {
 
     @Field(label = "Reference", required = true)
     @Validation(minLength = 3, maxLength = 32, pattern = "^ORD-[0-9]+$")
+    @Tab(name = "summary", label = "Summary", order = 0)
     private String reference;
 
     /**
@@ -83,9 +104,11 @@ public class Order {
      */
     @Field(label = "Total (cents)", required = true)
     @Validation(min = 0, max = 1000000)
+    @Tab(name = "summary")
     private Long totalCents;
 
     @Field(label = "Note")
+    @Tab(name = "notes", label = "Notes", lazy = true)
     private String note;
 
     @Action(name = "submit", label = "Submit", httpMethod = "POST")
@@ -119,6 +142,11 @@ public class Order {
     @Action(name = "track", label = "Track", httpMethod = "GET")
     @RouteAccess(RouteAccess.Level.PUBLIC)
     public void track() {
+    }
+
+    @Action(name = "search", label = "Search", httpMethod = "GET")
+    public void search(@QueryParam("q") String term,
+                       @QueryParam(value = "limit", required = false) int limit) {
     }
 
     @SagaStep(order = 1, name = "charge", service = "payments", command = "charge")
