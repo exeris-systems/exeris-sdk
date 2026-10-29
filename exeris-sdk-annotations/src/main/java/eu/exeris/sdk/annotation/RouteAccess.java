@@ -80,11 +80,10 @@ import java.lang.annotation.Target;
  * extracts it, compiling the URL-to-policy table, in the release that pins this reader
  * (exeris-tooling ADR-105); until then every generated route is registered as if the
  * annotation were absent. The kernel holds route authorization at tier
- * {@code preview} in its {@code docs/stability-matrix.md}, so this surface is
- * <strong>excluded from the 1.0.0 freeze</strong> and a 1.x minor may still
- * change it; it is promoted when the kernel moves the surface out of
- * {@code preview} <em>and</em> the tooling transcription exists. See
- * {@code docs/adr/ADR-072} and {@code ROADMAP.md}.
+ * {@code stable} in its {@code docs/stability-matrix.md} (kernel ADR-100), so this
+ * surface is part of the 1.0.0 freeze: frozen as declared, with the route-policy
+ * emission arriving additively. See {@code docs/adr/ADR-072} and
+ * {@code ROADMAP.md}.
  *
  * @since 0.12
  * @see ExerisDomain#permissions()

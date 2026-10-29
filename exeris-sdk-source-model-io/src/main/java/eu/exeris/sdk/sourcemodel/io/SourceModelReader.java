@@ -136,7 +136,8 @@ import java.util.stream.Collectors;
  * attribute-complete against {@code extractFieldMetadata}. {@link #unmodeledFacets} reports
  * what {@code read()} cannot vouch for: the annotations whose carrier the processor fills, or
  * is scheduled to fill, in a shape this reader does not read ({@code @GraphProperty},
- * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), a {@code @SagaStep.order} the reader
+ * {@code @UIGroup}, {@code @Blob}, {@code @Channel}), the reserved {@code @Schedule} whose carrier
+ * this reader leaves empty, a {@code @SagaStep.order} the reader
  * cannot resolve, and a {@code permissions} element that is not a string literal. A round-trip /
  * reattach caller consults it and refuses (or warns) when it is non-empty. (Facets neither side
  * reads and no carrier is scheduled for — {@code @Projection}, {@code @EventHandler},
@@ -182,15 +183,19 @@ public final class SourceModelReader {
      *
      * <p>Each member has an AST carrier whose extraction rules the processor has not fixed:
      * {@code @GraphProperty} ({@code GraphMetadata.properties}), {@code @UIGroup}
-     * ({@code UIMetadata.groups}), {@code @Blob} ({@code FieldMetadata.blob}) and
-     * {@code @Channel} ({@code DomainMetadata.channel}). Reading one before those rules are
-     * fixed would produce a value the processor may not, which is the drift this guard
-     * reports, so the reader leaves the carrier at its default and the guard names the
-     * annotation instead. A member leaves the set in the change that reads it the way the
-     * processor does. Matched by simple name (no import resolution).
+     * ({@code UIMetadata.groups}), {@code @Blob} ({@code FieldMetadata.blob}),
+     * {@code @Channel} ({@code DomainMetadata.channel}) and {@code @Schedule}
+     * ({@code ActionMetadata.schedule}). Reading one before those rules are fixed would
+     * produce a value the processor may not, which is the drift this guard reports, so the
+     * reader leaves the carrier at its default and the guard names the annotation instead.
+     * {@code @Schedule} has no extraction rule at all while the kernel issues no service
+     * principal: a declared job is refused at build time (kernel ADR-057 Amendment A1), and
+     * a round-trip that dropped the declaration would hide it. A member leaves the set in
+     * the change that reads it the way the processor does. Matched by simple name (no import
+     * resolution).
      */
     private static final Set<String> UNMODELED_FACET_ANNOTATIONS =
-            Set.of("GraphProperty", "UIGroup", "Blob", "Channel");
+            Set.of("GraphProperty", "UIGroup", "Blob", "Channel", "Schedule");
 
     /** Attribute names several annotations share. */
     private static final String LABEL = "label";
@@ -295,8 +300,8 @@ public final class SourceModelReader {
      * facets the processor would for this source.
      *
      * <p>Detected: presence of any annotation in {@link #UNMODELED_FACET_ANNOTATIONS} —
-     * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob} and {@code @Channel}, whose
-     * carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
+     * {@code @GraphProperty}, {@code @UIGroup}, {@code @Blob}, {@code @Channel} and
+     * {@code @Schedule}, whose carriers {@link #read} leaves at their defaults. <b>Not</b> flagged: facets neither
      * side reads and no carrier is scheduled for ({@code @Projection},
      * {@code @EventHandler}, {@code @GraphQuery}, the {@code security} annotations), and
      * facets this reader reads ahead of the processor ({@code @QueryParam}, {@code @NavMenu},
