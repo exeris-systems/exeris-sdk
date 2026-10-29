@@ -27,7 +27,7 @@ for per-version upgrade steps.
 
 ### Breaking
 
-- **`exeris-sdk-source-model` no longer depends on `exeris-sdk-annotations`.** No source-model type uses `eu.exeris.sdk.annotation`, so the compile-scope dependency is gone and the module's classpath is `jackson-annotations` alone. A consumer that compiled against the annotations through source-model declares `eu.exeris:exeris-sdk-annotations` directly; see `MIGRATION.md` (0.12.x → 0.13.x).
+- **`exeris-sdk-source-model` no longer depends on `exeris-sdk-annotations`.** No source-model main type uses `eu.exeris.sdk.annotation`, so the compile-scope dependency is gone and the module's compile and runtime classpath is `jackson-annotations` alone; the module's tests keep the annotations at test scope. A consumer that compiled against the annotations through source-model declares `eu.exeris:exeris-sdk-annotations` directly; see `MIGRATION.md` (0.12.x → 0.13.x).
 - **`@exeris/ui-kit` 0.3.0: 25 component classes move to `@exeris/ui-kit/preview`.** No generator
   emits them; `exeris-tooling` 0.9.0 uses the 22 that stay in `@exeris/ui-kit/styles`, which are the
   classes the package freezes at its 1.0. The moved classes keep their names and declarations, sit
