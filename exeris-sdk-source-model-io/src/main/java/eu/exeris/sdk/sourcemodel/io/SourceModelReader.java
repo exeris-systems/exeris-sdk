@@ -196,6 +196,7 @@ public final class SourceModelReader {
     private static final String LABEL = "label";
     private static final String ORDER = "order";
     private static final String REQUIRED = "required";
+    private static final String VALUE = "value";
 
     /**
      * How many constant references and wrappers {@link #intConstant} follows before giving up,
@@ -1005,7 +1006,7 @@ public final class SourceModelReader {
                     ? Optional.of(member.asStringLiteralExpr().asString())
                     : Optional.empty();
         }
-        return stringAttr(queryParam, "value");
+        return stringAttr(queryParam, VALUE);
     }
 
     /**
@@ -1138,7 +1139,7 @@ public final class SourceModelReader {
     private List<AnnotationExpr> containedAnnotations(AnnotationExpr container) {
         Optional<Expression> value = container.isSingleMemberAnnotationExpr()
                 ? Optional.of(container.asSingleMemberAnnotationExpr().getMemberValue())
-                : value(container, "value");
+                : value(container, VALUE);
         List<AnnotationExpr> inner = new ArrayList<>();
         value.ifPresent(expression -> {
             if (expression.isArrayInitializerExpr()) {
@@ -1898,7 +1899,7 @@ public final class SourceModelReader {
         return element.getAnnotationByName("RouteAccess")
                 .flatMap(annotation -> annotation.isSingleMemberAnnotationExpr()
                         ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
-                        : value(annotation, "value"))
+                        : value(annotation, VALUE))
                 .map(this::constantName)
                 .flatMap(name -> {
                     try {
