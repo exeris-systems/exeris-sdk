@@ -85,6 +85,15 @@ for per-version upgrade steps.
   obligation 18). No signature or wire key changes. `MIGRATION-0.x-to-1.0.md` §2, `ROADMAP.md` and
   the javadoc of the annotations, records and package-infos follow.
 
+- **Javadoc states the kernel 0.13 behaviour of row-level security, graph depth and saga retention.**
+  `@SharedScope` and `@RowLevelSecurity` say that a statement without a tenant bound fails and
+  does not read an empty table, that a written row's shared-scope tag is pinned to the scope the
+  request published, and that the platform refuses a role with `SUPERUSER` or `BYPASSRLS`
+  (kernel ADR-012 §4c.2 to §4c.4). `@GraphQuery.maxDepth` and `@Graph.defaultMaxDepth` state the
+  Community cap of 64 and its refusal, and that graph is `preview` at 1.0.0 (kernel ADR-102). `@Saga`
+  states that finished instances keep their row and that a redelivered `Start` is a no-op while it
+  exists (kernel ADR-013 A1). No attribute, default or signature changes.
+
 - **Both `permissions` attributes state that they are any-of.** `@ExerisDomain.permissions` and
   `@Action.permissions` admit a caller holding at least one listed permission, and an action's
   non-empty list replaces the entity's for its route (exeris-tooling ADR-105 obligations 10 and

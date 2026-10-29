@@ -58,6 +58,14 @@ import java.lang.annotation.*;
  * next to a fulfilment, say — is a second type carrying its own {@code @Saga}, with its own
  * {@link #name()} and its own {@link SagaStep} methods.
  *
+ * <h2>Finished instances</h2>
+ * With a snapshot store bound, a completed instance leaves a {@code COMPLETED} row and a failed
+ * one a {@code FAILED_ROLLEDBACK} row; the kernel never deletes either, so retention belongs to
+ * whoever binds the store. While that row exists a redelivered {@code Start} for the same
+ * instance is a no-op, whatever definition its plan names, and the retention window is therefore
+ * the deduplication window. Deleting the row lets the instance id run again. With no store bound,
+ * the no-op holds only for the life of the engine (kernel ADR-013 A1).
+ *
  * <p><strong>Status: LIVE</strong> — extracted into {@code SagaMetadata} and read by {@code KernelSagaGenerator} and the TypeScript saga emitter. What is <em>not</em> carried is how
  * the flow starts and how it retries: {@link #trigger()} and {@link #retryPolicy()} are
  * unextracted, and the emitted saga runs its steps as a strict linear chain in declaration

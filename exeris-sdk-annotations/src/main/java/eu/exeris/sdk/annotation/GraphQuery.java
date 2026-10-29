@@ -163,6 +163,10 @@ public @interface GraphQuery {
     /**
      * Maximum traversal depth.
      *
+     * <p>The kernel's Community graph binding refuses a traversal whose depth exceeds 64 before
+     * any I/O ({@code EX-GRPH-5002}, {@code PATH_LIMIT}); it does not clamp it. The graph SPI is
+     * at tier {@code preview} at 1.0.0 (kernel ADR-102).
+     *
      * @return max depth
      */
     int maxDepth() default 3;
