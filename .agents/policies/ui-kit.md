@@ -15,7 +15,7 @@
 3. **Dark mode answers to the `.dark` class:**
    `@custom-variant dark (&:where(.dark, .dark *));` in `src/styles/theme.css`. Omitting it reverts consumers to `@media (prefers-color-scheme: dark)`; a consumer's own `@custom-variant dark` after the import must still win. Verified by `tests/dark-mode-signal.test.js`.
 4. **Independent release cadence:**
-   The UI kit versions independently from the Java modules (e.g. `0.2.x` while Java is at `0.12.x`).
+   The UI kit versions independently from the Java modules: its version is the one in `exeris-sdk-ui-kit/package.json`, and it does not follow the Java line.
 5. **Public surface snapshot:**
    `tests/public-surface.txt` snapshot-gates exported CSS class names and token names. At 1.0:
    - Token names (`--exeris-primary`) and the component classes in `src/styles/index.css`

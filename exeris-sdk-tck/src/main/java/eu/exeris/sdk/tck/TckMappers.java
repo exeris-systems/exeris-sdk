@@ -14,12 +14,8 @@ import tools.jackson.databind.json.JsonMapper;
  * misconfiguration as the binder's defect.
  *
  * <p>Note what this is <em>not</em>: absent properties are fine either way. An absent property
- * binds the primitive's own default and raises nothing, on any mapper. The version of this
- * paragraph that shipped in the first draft of this class said otherwise — that
- * {@code @JsonInclude(NON_DEFAULT)} makes absent fields "arrive as {@code null}" — which is the
- * same folklore {@link AbstractMapperPostureTck}'s self-test falsified by measurement, and it is
- * recorded here rather than quietly deleted because it had already survived one correction pass in
- * two other files.
+ * binds the primitive's own default and raises nothing, on any mapper, and
+ * {@code @JsonInclude(NON_DEFAULT)} does not make an absent field arrive as {@code null}.
  *
  * <p>This is the kit's <em>internal</em> reference posture. It is deliberately <strong>not</strong>
  * what {@link AbstractMapperPostureTck} tests a consumer against: that suite takes no Jackson type
