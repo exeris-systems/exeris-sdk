@@ -86,6 +86,41 @@ class MetadataParityTckSelfTest {
     }
 
     @Test
+    @DisplayName("a cascade one side leaves unread is caught")
+    void cascadeDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.relationships() == null || m.relationships().isEmpty()
+                        ? m
+                        : rebuild(m, m.relationships().stream()
+                                .map(r -> RelationshipMetadata.builder(r.name(), r.targetEntity())
+                                        .type(r.type()).mappedBy(r.mappedBy()).displayField(r.displayField())
+                                        .build())
+                                .toList()));
+        assertThatThrownBy(parity::relationshipsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("relationships/orders/cascade");
+    }
+
+    @Test
+    @DisplayName("a target one side takes from the field type is caught")
+    void targetEntityDivergenceIsCaught() {
+        Parity parity = new Parity(
+                UnaryOperator.identity(),
+                m -> m.relationships() == null || m.relationships().isEmpty()
+                        ? m
+                        : rebuild(m, m.relationships().stream()
+                                .map(r -> "lastOrderId".equals(r.name())
+                                        ? RelationshipMetadata.builder(r.name(), "UUID")
+                                                .displayField(r.displayField()).build()
+                                        : r)
+                                .toList()));
+        assertThatThrownBy(parity::relationshipsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("relationships/lastOrderId/targetEntity");
+    }
+
+    @Test
     @DisplayName("a field one side extracts and the other does not is caught")
     void missingFieldIsCaught() {
         Parity parity = new Parity(

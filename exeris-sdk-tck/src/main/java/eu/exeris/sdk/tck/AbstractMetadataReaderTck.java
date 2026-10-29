@@ -148,7 +148,7 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
         requireSupported(Facet.RELATIONSHIPS);
         DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
         assertThat(customer.relationships())
-                .withFailMessage("Customer declares one @Relationship; the reader returned none.")
+                .withFailMessage("Customer declares two @Relationships; the reader returned none.")
                 .isNotEmpty();
         RelationshipMetadata orders = customer.relationships().stream()
                 .filter(r -> "orders".equals(r.fieldName()) || "orders".equals(r.name()))
@@ -189,6 +189,35 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(
                         "No relationship read for " + entity + "." + field + "; got " + domain.relationships()));
+    }
+
+    @Test
+    @DisplayName("the relationship carries the cascade its two booleans declare")
+    void relationshipCascadeIsTheDeclaredOne() {
+        requireSupported(Facet.RELATIONSHIPS);
+        RelationshipMetadata orders = relationship(TckCorpus.CUSTOMER, "orders");
+        assertThat(orders.cascade())
+                .withFailMessage(
+                        "Customer.orders declares cascadeDelete = true alone and was read as %s. "
+                                + "Delete alone is REMOVE: an unread pair leaves NONE, so the emitted "
+                                + "foreign key loses ON DELETE CASCADE, and a pair collapsed into ALL "
+                                + "claims an update cascade nobody declared.",
+                        orders.cascade())
+                .isEqualTo(RelationshipMetadata.CascadeType.REMOVE);
+    }
+
+    @Test
+    @DisplayName("a declared targetEntity names the target, not the field type")
+    void relationshipTargetIsTheDeclaredEntity() {
+        requireSupported(Facet.RELATIONSHIPS);
+        RelationshipMetadata lastOrder = relationship(TckCorpus.CUSTOMER, "lastOrderId");
+        assertThat(lastOrder.targetEntity())
+                .withFailMessage(
+                        "Customer.lastOrderId is a UUID declaring targetEntity = Order.class and was "
+                                + "read with target '%s'. A target taken from the field type makes "
+                                + "the explicit-key style point at UUID, an entity that does not exist.",
+                        lastOrder.targetEntity())
+                .isEqualTo(TckCorpus.ORDER);
     }
 
     @Test

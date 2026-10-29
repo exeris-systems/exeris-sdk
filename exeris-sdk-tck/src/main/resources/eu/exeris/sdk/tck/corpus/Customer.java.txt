@@ -17,6 +17,13 @@ import eu.exeris.sdk.annotation.Validation;
  * index, constraint and finder that belong on the other side. The defect was invisible because
  * both sides still produced a well-formed baseline.
  *
+ * <p>{@code displayField = "reference"} is not {@code name}, the value a side that never reads
+ * the attribute reports. {@code orders} declares {@code cascadeDelete} alone, so a side that skips
+ * the two booleans reads no cascade, and one that collapses them into {@code ALL} reads the wrong
+ * one. {@code lastOrderId} is the explicit-key style: a {@code UUID} field whose
+ * {@code targetEntity} names {@code Order}, so a side that takes the target from the field type
+ * reads {@code UUID}.
+ *
  * <p>{@code permissions} without a {@code @RouteAccess} is the entity-level case of a route that
  * declares its scopes alone: the metadata carries the list and no {@code routeAccess}.
  *
@@ -63,6 +70,10 @@ public class Customer {
             targetEntity = Order.class,
             displayField = "reference",
             relationshipType = RelationshipType.ONE_TO_MANY,
-            mappedBy = "customer")
+            mappedBy = "customer",
+            cascadeDelete = true)
     private java.util.List<Order> orders;
+
+    @Relationship(targetEntity = Order.class, displayField = "reference")
+    private java.util.UUID lastOrderId;
 }

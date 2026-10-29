@@ -46,6 +46,7 @@ import eu.exeris.sdk.sourcemodel.ast.NavMenuMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ParamSource;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
+import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.CascadeType;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata.RelationType;
 import eu.exeris.sdk.sourcemodel.ast.RequiresMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RouteAccess;
@@ -79,8 +80,9 @@ import java.util.stream.Collectors;
  * deprecated {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
- * For relationships, {@code targetEntity} (collection element type unwrapped),
- * {@code relationshipType}, {@code mappedBy} and {@code displayField} are read; other attributes keep
+ * For relationships, {@code targetEntity} (declared, else the field type with a collection's
+ * element type unwrapped), {@code relationshipType}, {@code mappedBy}, {@code displayField} and
+ * {@code cascadeDelete}/{@code cascadeUpdate} (as {@code cascade}) are read; other attributes keep
  * builder defaults. {@code @Action} methods are read into {@link ActionMetadata}
  * (name, label, httpMethod, async, permissions, the return type as {@code resultType}, and
  * the parameters carrying {@code @ActionParam}, {@code @QueryParam} or both, a
@@ -1942,8 +1944,9 @@ public final class SourceModelReader {
                 String fieldName = var.getNameAsString();
                 // builder(name, target) already sets fieldName = name.
                 RelationshipMetadata.Builder builder =
-                        RelationshipMetadata.builder(fieldName, targetEntity(var.getType()));
+                        RelationshipMetadata.builder(fieldName, targetEntity(rel.get(), var.getType()));
                 relationType(rel.get()).ifPresent(builder::type);
+                cascade(rel.get()).ifPresent(builder::cascade);
                 stringAttr(rel.get(), "mappedBy")
                         .filter(s -> !s.isBlank())
                         .ifPresent(builder::mappedBy);
@@ -1952,6 +1955,38 @@ public final class SourceModelReader {
             }
         }
         return relationships;
+    }
+
+    /**
+     * The related entity's simple type name, in parity with {@code ExerisDomainProcessor}'s
+     * {@code resolveTargetEntity}: a declared {@code targetEntity = Foo.class} wins, so the
+     * explicit-key style ({@code @Relationship(targetEntity = Owner.class) UUID ownerId}) names
+     * {@code Owner}, not {@code UUID}. An absent attribute or {@code void.class} falls back to
+     * the field type.
+     */
+    private String targetEntity(AnnotationExpr annotation, Type fieldType) {
+        return value(annotation, "targetEntity")
+                .filter(Expression::isClassExpr)
+                .map(declared -> declared.asClassExpr().getType())
+                .filter(Type::isClassOrInterfaceType)
+                .map(declared -> declared.asClassOrInterfaceType().getNameAsString())
+                .orElseGet(() -> targetEntity(fieldType));
+    }
+
+    /**
+     * The AST cascade for {@code @Relationship}'s two booleans, in parity with
+     * {@code ExerisDomainProcessor}: both declared {@code true} is {@code ALL}, delete alone
+     * {@code REMOVE}, update alone {@code MERGE}. Neither leaves the builder default.
+     */
+    private Optional<CascadeType> cascade(AnnotationExpr annotation) {
+        boolean delete = boolAttr(annotation, "cascadeDelete").orElse(false);
+        boolean update = boolAttr(annotation, "cascadeUpdate").orElse(false);
+        if (!delete && !update) {
+            return Optional.empty();
+        }
+        return Optional.of(delete && update
+                ? CascadeType.ALL
+                : delete ? CascadeType.REMOVE : CascadeType.MERGE);
     }
 
     /**

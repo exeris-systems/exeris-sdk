@@ -48,6 +48,8 @@ class MetadataReaderTckSelfTest {
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
             reader.relationshipDisplayFieldIsTheDeclaredOne();
+            reader.relationshipCascadeIsTheDeclaredOne();
+            reader.relationshipTargetIsTheDeclaredEntity();
             reader.actionIsReadUnderTheDeclaredName();
             reader.actionResultTypeIsTheDeclaredOne();
             reader.sagaVersionIsTheDeclaredOne();
@@ -132,17 +134,56 @@ class MetadataReaderTckSelfTest {
     @Test
     @DisplayName("a relationship read under another field name is reported as missing")
     void missingRelationshipIsReported() {
-        Reader renaming = new Reader(m -> m.relationships() == null || m.relationships().isEmpty()
+        Reader renaming = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : List.of(RelationshipMetadata.oneToMany("purchases", TckCorpus.ORDER, "customer"))));
+        assertThatThrownBy(renaming::relationshipDisplayFieldIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("No relationship read for Customer.orders");
+    }
+
+    @Test
+    @DisplayName("a cascade pair left unread is caught")
+    void cascadeCaseIsNotVacuous() {
+        Reader unread = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : m.relationships().stream()
+                        .map(r -> "orders".equals(r.name())
+                                ? RelationshipMetadata.builder(r.name(), r.targetEntity())
+                                        .type(r.type()).mappedBy(r.mappedBy()).displayField(r.displayField())
+                                        .build()
+                                : r)
+                        .toList()));
+        assertThatThrownBy(unread::relationshipCascadeIsTheDeclaredOne)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("read as NONE");
+    }
+
+    @Test
+    @DisplayName("a target taken from the field type is caught")
+    void targetEntityCaseIsNotVacuous() {
+        Reader fromFieldType = new Reader(m -> withRelationships(m, m.relationships() == null
+                ? null
+                : m.relationships().stream()
+                        .map(r -> "lastOrderId".equals(r.name())
+                                ? RelationshipMetadata.builder(r.name(), "UUID")
+                                        .displayField(r.displayField())
+                                        .build()
+                                : r)
+                        .toList()));
+        assertThatThrownBy(fromFieldType::relationshipTargetIsTheDeclaredEntity)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("target 'UUID'");
+    }
+
+    private static DomainMetadata withRelationships(DomainMetadata m, List<RelationshipMetadata> edges) {
+        return edges == null
                 ? m
                 : DomainMetadata.builder(m.entityName(), m.packageName())
                         .fields(m.fields())
                         .actions(m.actions())
-                        .relationships(List.of(
-                                RelationshipMetadata.oneToMany("purchases", TckCorpus.ORDER, "customer")))
-                        .build());
-        assertThatThrownBy(renaming::relationshipDisplayFieldIsTheDeclaredOne)
-                .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("No relationship read for Customer.orders");
+                        .relationships(edges)
+                        .build();
     }
 
     @Test
