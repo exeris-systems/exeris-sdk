@@ -15,11 +15,11 @@
 
     <name>Exeris SDK :: Examples (teaching material)</name>
     <description>
-        Annotated example sources that docs/guides and docs/examples quote. javac compiles
+        Annotated example sources of the SDK surface, compiled and read back. javac compiles
         them against exeris-sdk-annotations, so every annotation target and attribute is
         checked, and the tests read the same .java files through SourceModelReader and
-        assert the metadata they declare, so an API change breaks this build instead of a
-        page. Not published: nothing resolves this coordinate.
+        assert the metadata they declare, so an API change breaks this build. Not published:
+        nothing resolves this coordinate.
     </description>
 
     <properties>
@@ -28,6 +28,11 @@
 
         <!-- Teaching material, not a coordinate anyone resolves. -->
         <maven.deploy.skip>true</maven.deploy.skip>
+
+        <!-- The main sources are read as text by the tests, not executed: an entity's fields and
+             an action's empty body carry no behaviour to cover. Coverage of this module measures
+             nothing, so it is excluded here; its tests are what prove the examples. -->
+        <sonar.coverage.exclusions>src/main/java/**</sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
