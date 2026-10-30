@@ -23,6 +23,17 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [0.13.2] — unreleased
+
+### Fixed
+
+- **`BriefReadiness` reads blank text as `brief-schema.json` does.** `@SchemaRules.NonBlank` is
+  emitted as `pattern: "\S"`, an ECMA-262 expression, where `\s` covers U+00A0, U+FEFF, the other
+  `Zs` spaces, U+2028 and U+2029. `BriefReadiness` checked the rule with Java's ASCII-only `\s`, so
+  a `purpose` of non-breaking spaces was valid there and invalid in a JSON Schema validator such as
+  exeris-ai-bridge's. The check now uses the ECMA-262 set, and `BriefReadinessTest` pins every
+  character the two engines differ on. See [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
 ## [0.13.1] — 2026-10-30
 
 ### Fixed

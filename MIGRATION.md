@@ -18,6 +18,16 @@ the upgrade steps required.
 
 ---
 
+## 0.13.1 → 0.13.2
+
+### `BriefReadiness` treats non-ASCII whitespace as blank
+
+**Impact on code: none.** A brief whose required text holds only ECMA-262 whitespace outside ASCII
+(U+00A0, U+FEFF, a `Zs` space, U+2028, U+2029) was valid and could be ready; it is now invalid at
+that pointer, as `brief-schema.json` already made it for a JSON Schema validator.
+
+---
+
 ## 0.13.0 → 0.13.1
 
 ### The TCK corpus entities declare `id`

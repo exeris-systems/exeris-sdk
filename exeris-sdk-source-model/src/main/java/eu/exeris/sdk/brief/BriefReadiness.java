@@ -43,7 +43,12 @@ import java.util.regex.Pattern;
  */
 public final class BriefReadiness {
 
-    private static final Pattern NON_BLANK = Pattern.compile("\\S");
+    /**
+     * A character outside ECMA-262's {@code \s}, which is what the schema's {@code pattern: "\S"}
+     * means to a JSON Schema validator: Java's {@code \s} is ASCII-only, so it leaves out U+00A0,
+     * U+FEFF, the other {@code Zs} spaces, U+2028 and U+2029.
+     */
+    private static final Pattern NON_BLANK = Pattern.compile("[^\\s\\p{Zs}\\u2028\\u2029\\uFEFF]");
     private static final Pattern SDK_VERSION = Pattern.compile(Brief.SDK_VERSION_PATTERN);
     private static final Pattern ENTITY_REF = Pattern.compile(FulfilledBy.ENTITY_REF_PATTERN);
     private static final Pattern MEMBER_REF = Pattern.compile(FulfilledBy.MEMBER_REF_PATTERN);
