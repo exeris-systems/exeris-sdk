@@ -588,10 +588,6 @@ public final class SourceModelReader {
     }
 
     /**
-     * Whether the {@code @PrimaryKey} on {@code type}'s fields declares a {@code strategy} the
-     * processor refuses. Called with exactly one carrier, so at most one marker is inspected.
-     */
-    /**
      * The fields that describe an entity's state: every field declaration except a {@code static}
      * or {@code transient} one, in declaration order. A constant belongs to the class and a
      * transient field is not persisted, so neither is an entity field, a key, a system field, a
@@ -605,6 +601,10 @@ public final class SourceModelReader {
                 .toList();
     }
 
+    /**
+     * Whether the {@code @PrimaryKey} on {@code type}'s fields declares a {@code strategy} the
+     * processor refuses. Called with exactly one carrier, so at most one marker is inspected.
+     */
     private boolean refusedPrimaryKeyStrategy(ClassOrInterfaceDeclaration type) {
         return entityFields(type).stream()
                 .flatMap(field -> field.getAnnotations().stream())
