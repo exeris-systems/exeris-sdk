@@ -112,6 +112,39 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("a field's type is the compiler's qualified form, type arguments included")
+    void fieldTypesAreQualified() {
+        requireSupported(Facet.FIELDS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
+        String orders = "java.util.List<" + TckCorpus.packageName() + "." + TckCorpus.ORDER + ">";
+        assertThat(List.of(field(order, "reference").type(), field(order, "totalCents").type(),
+                field(customer, "orders").type()))
+                .withFailMessage(
+                        "Order.reference, Order.totalCents and Customer.orders were read as types %s; "
+                                + "expected [java.lang.String, java.lang.Long, %s]. A producer writes the "
+                                + "type javac resolves, and every generator reads that form, so a simple "
+                                + "name as written in source is a different type to them.",
+                        List.of(field(order, "reference").type(), field(order, "totalCents").type(),
+                                field(customer, "orders").type()), orders)
+                .containsExactly("java.lang.String", "java.lang.Long", orders);
+    }
+
+    @Test
+    @DisplayName("a @Relationship field is an entity field as well as a relationship")
+    void relationshipFieldsAreFields() {
+        requireSupported(Facet.FIELDS);
+        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
+        List<String> names = customer.fields().stream().map(FieldMetadata::name).toList();
+        assertThat(names)
+                .withFailMessage(
+                        "Customer declares the relationship fields orders and lastOrderId, and the "
+                                + "reader returned fields %s. A relationship field is also a field: the "
+                                + "owning side's column and its accessors come from it.", names)
+                .contains("orders", "lastOrderId");
+    }
+
+    @Test
     @DisplayName("@Field(required) is carried on the field")
     void requiredIsCarriedOnTheField() {
         requireSupported(Facet.FIELDS);

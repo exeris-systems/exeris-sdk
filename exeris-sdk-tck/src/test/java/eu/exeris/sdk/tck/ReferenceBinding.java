@@ -108,20 +108,20 @@ final class ReferenceBinding {
                 .routeAccess(RouteAccess.AUTHENTICATED)
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("reference", "String")
+                        FieldMetadata.builder("reference", "java.lang.String")
                                 .displayName("Reference")
                                 .required(true)
                                 .minLength(3)
                                 .maxLength(32)
                                 .pattern("^ORD-[0-9]+$")
                                 .build(),
-                        FieldMetadata.builder("totalCents", "Long")
+                        FieldMetadata.builder("totalCents", "java.lang.Long")
                                 .displayName("Total (cents)")
                                 .required(true)
                                 .min(0L)
                                 .max(1_000_000L)
                                 .build(),
-                        FieldMetadata.builder("note", "String")
+                        FieldMetadata.builder("note", "java.lang.String")
                                 .displayName("Note")
                                 .build()))
                 .actions(orderActions())
@@ -266,28 +266,30 @@ final class ReferenceBinding {
                 .permissions(List.of("customer:read"))
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("email", "String")
+                        FieldMetadata.builder("email", "java.lang.String")
                                 .displayName("E-mail")
                                 .required(true)
                                 .unique(true)
                                 .maxLength(254)
                                 .build(),
-                        FieldMetadata.builder("displayName", "String")
+                        FieldMetadata.builder("displayName", "java.lang.String")
                                 .displayName("Display name")
                                 .required(true)
                                 .minLength(1)
                                 .maxLength(120)
                                 .build(),
-                        FieldMetadata.builder("avatar", "String")
+                        FieldMetadata.builder("avatar", "java.lang.String")
                                 .displayName("Avatar")
                                 .blob(BlobMetadata.ofContentTypes(List.of("image/png", "image/jpeg")))
                                 .build(),
-                        FieldMetadata.builder("contract", "String")
+                        FieldMetadata.builder("contract", "java.lang.String")
                                 .searchable(true)
                                 .sortable(true)
                                 .filterable(true)
                                 .blob(new BlobMetadata("contracts", List.of()))
-                                .build()))
+                                .build(),
+                        FieldMetadata.simple("orders", "java.util.List<" + TckCorpus.packageName() + "." + TckCorpus.ORDER + ">"),
+                        FieldMetadata.simple("lastOrderId", "java.util.UUID")))
                 .relationships(List.of(
                         RelationshipMetadata.builder("orders", TckCorpus.ORDER)
                                 .type(RelationshipMetadata.RelationType.ONE_TO_MANY)
@@ -395,11 +397,11 @@ final class ReferenceBinding {
                 .routeAccess(RouteAccess.PUBLIC)
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("name", "String")
+                        FieldMetadata.builder("name", "java.lang.String")
                                 .displayName("Name")
                                 .required(true)
                                 .build(),
-                        FieldMetadata.builder("sku", "String")
+                        FieldMetadata.builder("sku", "java.lang.String")
                                 .displayName("SKU")
                                 .build()))
                 .graphMetadata(new GraphMetadata(TckCorpus.PRODUCT, productProperties(), List.of(), null))

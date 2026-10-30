@@ -67,7 +67,7 @@ class SourceModelReaderGraphPropertyUiGroupBlobTest {
             // AUTO leaves the type to the field's Java type, which FieldMetadata.type carries.
             GraphPropertyMetadata title = read(PRODUCT).graphMetadata().properties().getFirst();
             assertThat(title.type()).isNull();
-            assertThat(field(read(PRODUCT), title.effectiveField()).type()).isEqualTo("String");
+            assertThat(field(read(PRODUCT), title.effectiveField()).type()).isEqualTo("java.lang.String");
         }
 
         @Test
@@ -199,7 +199,7 @@ class SourceModelReaderGraphPropertyUiGroupBlobTest {
         void aBlobWithoutFieldIsOnTheSimpleField() {
             FieldMetadata raw = field(read(ASSET), "raw");
             assertThat(raw.blob()).isEqualTo(BlobMetadata.unrestricted());
-            assertThat(raw).isEqualTo(FieldMetadata.builder("raw", "String")
+            assertThat(raw).isEqualTo(FieldMetadata.builder("raw", "java.lang.String")
                     .searchable(true).sortable(true).filterable(true).blob(BlobMetadata.unrestricted()).build());
         }
 
@@ -212,7 +212,7 @@ class SourceModelReaderGraphPropertyUiGroupBlobTest {
         @Test
         void aFieldWithoutBlobCarriesNone() {
             assertThat(field(read(ASSET), "plain").blob()).isNull();
-            assertThat(field(read(ASSET), "plain")).isEqualTo(FieldMetadata.simple("plain", "String"));
+            assertThat(field(read(ASSET), "plain")).isEqualTo(FieldMetadata.simple("plain", "java.lang.String"));
         }
 
         @Test

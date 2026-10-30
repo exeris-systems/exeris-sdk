@@ -80,6 +80,9 @@ import java.util.stream.Collectors;
  * deprecated {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
+ * A field's type is the processor's {@code asType().toString()} form, resolved syntactically
+ * (a {@code String} field reads {@code java.lang.String}), and a {@code @Relationship} field is
+ * a field as well as a relationship.
  * A {@code static} or {@code transient} field is not an entity field and is read by no facet.
  * For relationships, {@code targetEntity} (declared, else the field type with a collection's
  * element type unwrapped), {@code relationshipType}, {@code mappedBy}, {@code displayField} and
@@ -933,14 +936,14 @@ public final class SourceModelReader {
      * arguments kept and joined by {@code ,} with no space, wildcards as {@code ?},
      * {@code ? extends …} and {@code ? super …}, arrays with {@code []} per dimension, and a
      * type variable by its simple name. Names are resolved syntactically from inside
-     * {@code method}'s body — see {@link #qualifyInBody}.
+     * {@code site} — see {@link #qualifyInBody}.
      *
      * @param type the type as written
-     * @param method the method whose signature carries it
-     * @param declaring the type declaring {@code method}
+     * @param site the method or field declaration whose type it is
+     * @param declaring the type declaring {@code site}
      * @return the rendered type
      */
-    private String typeName(Type type, MethodDeclaration method, ClassOrInterfaceDeclaration declaring) {
+    private String typeName(Type type, Node site, ClassOrInterfaceDeclaration declaring) {
         if (type.isVoidType()) {
             return "void";
         }
@@ -948,24 +951,24 @@ public final class SourceModelReader {
             return type.asPrimitiveType().getType().asString();
         }
         if (type.isArrayType()) {
-            return typeName(type.asArrayType().getComponentType(), method, declaring) + "[]";
+            return typeName(type.asArrayType().getComponentType(), site, declaring) + "[]";
         }
         if (type.isWildcardType()) {
             WildcardType wildcard = type.asWildcardType();
             return wildcard.getExtendedType()
-                    .map(bound -> "? extends " + typeName(bound, method, declaring))
-                    .or(() -> wildcard.getSuperType().map(bound -> "? super " + typeName(bound, method, declaring)))
+                    .map(bound -> "? extends " + typeName(bound, site, declaring))
+                    .or(() -> wildcard.getSuperType().map(bound -> "? super " + typeName(bound, site, declaring)))
                     .orElse("?");
         }
         if (type.isClassOrInterfaceType()) {
-            return classTypeName(type.asClassOrInterfaceType(), method, declaring);
+            return classTypeName(type.asClassOrInterfaceType(), site, declaring);
         }
         // Union, intersection and var types cannot be a method's return type.
         return type.asString();
     }
 
     /** A class or interface type per {@link #typeName}: its first segment resolved, the rest kept. */
-    private String classTypeName(ClassOrInterfaceType type, MethodDeclaration method,
+    private String classTypeName(ClassOrInterfaceType type, Node site,
                                  ClassOrInterfaceDeclaration declaring) {
         List<ClassOrInterfaceType> segments = new ArrayList<>();
         for (ClassOrInterfaceType segment = type; segment != null; segment = segment.getScope().orElse(null)) {
@@ -975,20 +978,20 @@ public final class SourceModelReader {
         for (int i = 0; i < segments.size(); i++) {
             ClassOrInterfaceType segment = segments.get(i);
             if (i == 0) {
-                name.append(qualifyInBody(segment.getNameAsString(), segments.size() > 1, method, declaring));
+                name.append(qualifyInBody(segment.getNameAsString(), segments.size() > 1, site, declaring));
             } else {
                 name.append('.').append(segment.getNameAsString());
             }
             segment.getTypeArguments().ifPresent(arguments -> name.append(arguments.stream()
-                    .map(argument -> typeName(argument, method, declaring))
+                    .map(argument -> typeName(argument, site, declaring))
                     .collect(Collectors.joining(",", "<", ">"))));
         }
         return name.toString();
     }
 
     /**
-     * The first segment of a type named in {@code method}'s signature, resolved syntactically in
-     * the order javac's scoping gives it: a type variable of {@code method} or of a type
+     * The first segment of a type named in {@code site}'s declaration, resolved syntactically in
+     * the order javac's scoping gives it: a type variable of {@code site} or of a type
      * enclosing it, kept as written; then a member type of {@code declaring} or {@code declaring}
      * itself, then a type enclosing it or a member type of one, innermost first; then a
      * top-level type of the compilation unit; then a single-type import; then a public
@@ -1003,13 +1006,13 @@ public final class SourceModelReader {
      *
      * @param head the segment's simple name
      * @param qualified whether further segments follow it
-     * @param method the method whose signature names it
-     * @param declaring the type declaring {@code method}
+     * @param site the method or field declaration that names it
+     * @param declaring the type declaring {@code site}
      * @return the resolved prefix
      */
-    private String qualifyInBody(String head, boolean qualified, MethodDeclaration method,
+    private String qualifyInBody(String head, boolean qualified, Node site,
                                  ClassOrInterfaceDeclaration declaring) {
-        if (!qualified && isTypeVariable(head, method)) {
+        if (!qualified && isTypeVariable(head, site)) {
             return head;
         }
         Optional<CompilationUnit> unit = declaring.findCompilationUnit();
@@ -1030,9 +1033,9 @@ public final class SourceModelReader {
         return pkg.isEmpty() ? head : pkg + "." + head;
     }
 
-    /** Whether {@code name} is a type parameter of {@code method} or of a type enclosing it. */
-    private boolean isTypeVariable(String name, Node method) {
-        for (Node node = method; node != null; node = node.getParentNode().orElse(null)) {
+    /** Whether {@code name} is a type parameter of {@code site} or of a type enclosing it. */
+    private boolean isTypeVariable(String name, Node site) {
+        for (Node node = site; node != null; node = node.getParentNode().orElse(null)) {
             if (node instanceof NodeWithTypeParameters<?> generic
                     && generic.getTypeParameters().stream().anyMatch(p -> p.getNameAsString().equals(name))) {
                 return true;
@@ -2223,22 +2226,20 @@ public final class SourceModelReader {
      * </ul>
      * The two paths intentionally differ on the search/sort/filter defaults — that
      * asymmetry <em>is</em> the processor's behaviour, so the reader reproduces it
-     * exactly to stay in lock-step. {@code @Relationship} fields are skipped (they
-     * are modelled separately). On either path a {@code @Blob} adds {@link FieldMetadata#blob()}
-     * ({@link #blob}).
+     * exactly to stay in lock-step. A {@code @Relationship} field is listed here as well as in
+     * {@link #relationships}, as the processor lists it: the owning side's column comes from it.
+     * The type is {@link #typeName}'s, the form the processor's {@code asType().toString()}
+     * gives. On either path a {@code @Blob} adds {@link FieldMetadata#blob()} ({@link #blob}).
      */
     private List<FieldMetadata> fields(ClassOrInterfaceDeclaration type) {
         List<FieldMetadata> fields = new ArrayList<>();
         for (FieldDeclaration field : entityFields(type)) {
-            if (field.getAnnotationByName("Relationship").isPresent()) {
-                continue;
-            }
             Optional<AnnotationExpr> fieldAnn = field.getAnnotationByName("Field");
             Optional<AnnotationExpr> validationAnn = field.getAnnotationByName("Validation");
             Optional<BlobMetadata> blob = field.getAnnotationByName("Blob").map(this::blob);
             for (VariableDeclarator var : field.getVariables()) {
                 String name = var.getNameAsString();
-                String fieldType = var.getTypeAsString();
+                String fieldType = typeName(var.getType(), field, type);
                 FieldMetadata.Builder builder = fieldAnn.isPresent()
                         ? fieldMetadata(name, fieldType, fieldAnn.get(), validationAnn.orElse(null))
                         : FieldMetadata.builder(name, fieldType).searchable(true).sortable(true).filterable(true);

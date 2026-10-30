@@ -77,6 +77,36 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("a field type read as the source text is caught")
+    void fieldTypeCaseIsNotVacuous() {
+        Reader asWritten = new Reader(m -> withFields(m, m.fields().stream()
+                .map(f -> FieldMetadata.builder(f.name(), f.type().replace("java.lang.", "")).build())
+                .toList()));
+        assertThatThrownBy(asWritten::fieldTypesAreQualified)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("java.lang.String");
+    }
+
+    @Test
+    @DisplayName("a relationship field left out of the fields is caught")
+    void relationshipFieldCaseIsNotVacuous() {
+        Reader skippingRelationships = new Reader(m -> withFields(m, m.fields().stream()
+                .filter(f -> m.relationships().stream().noneMatch(r -> r.fieldName().equals(f.name())))
+                .toList()));
+        assertThatThrownBy(skippingRelationships::relationshipFieldsAreFields)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("lastOrderId");
+    }
+
+    private static DomainMetadata withFields(DomainMetadata m, List<FieldMetadata> fields) {
+        return DomainMetadata.builder(m.entityName(), m.packageName())
+                .fields(fields)
+                .actions(m.actions())
+                .relationships(m.relationships())
+                .build();
+    }
+
+    @Test
     @DisplayName("a constant read as an entity field is caught")
     void staticFieldCaseIsNotVacuous() {
         Reader listingEveryDeclaration = new Reader(m -> {

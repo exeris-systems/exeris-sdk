@@ -27,6 +27,19 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **`exeris-sdk-source-model-io` writes the processor's field shape.** The exeris-tooling processor
+  writes a field's type as `TypeMirror.toString()` (`java.lang.String`,
+  `java.util.List<com.acme.Order>`) and lists a `@Relationship` field in `fields` as well as in
+  `relationships`. `SourceModelReader` wrote the type as written in source (`String`) and left
+  relationship fields out, so the TCK parity suite bound to the processor reported 11 `FIELDS`
+  disagreements on the corpus, and a processor baseline read as drifted on every field typed by a
+  simple name (ADR-042). The reader now resolves a field's type as it already resolves
+  `ActionMetadata.resultType` and lists relationship fields. `SourceModelConflictDetector` compares
+  an operation's type, which is source text, with the read type once package qualifiers are dropped,
+  so `ChangeFieldType(…, "BigDecimal")` is convergent with `java.math.BigDecimal`. The reader TCK
+  gains `fieldTypesAreQualified` and `relationshipFieldsAreFields`. See
+  [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
 - **`BriefReadiness` reads blank text as `brief-schema.json` does.** `@SchemaRules.NonBlank` is
   emitted as `pattern: "\S"`, an ECMA-262 expression, where `\s` covers U+00A0, U+FEFF, the other
   `Zs` spaces, U+2028 and U+2029. `BriefReadiness` checked the rule with Java's ASCII-only `\s`, so

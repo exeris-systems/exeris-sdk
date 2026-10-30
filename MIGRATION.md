@@ -20,6 +20,19 @@ the upgrade steps required.
 
 ## 0.13.1 → 0.13.2
 
+### The reader writes qualified field types and lists relationship fields
+
+**Impact on code: none; the reader's output changes.** `SourceModelReader` returns
+`FieldMetadata.type` in the processor's form: `java.lang.String` where it returned `String`, and
+`java.util.List<com.acme.Order>` where it returned `List<Order>`. A primitive, an array's brackets,
+a type variable and a name the reader cannot resolve under an on-demand import are unchanged. A
+`@Relationship` field now also appears in `fields`, as a field without `@Field`. Code that matched a
+read type against a simple name compares with the qualified one, or with both.
+
+A mutation operation still carries a type as source text. `SourceModelConflictDetector` matches it
+with the read type once package qualifiers are dropped. A TCK reader binding returns the new shape;
+the reader suite asserts it in `fieldTypesAreQualified` and `relationshipFieldsAreFields`.
+
 ### `BriefReadiness` treats non-ASCII whitespace as blank
 
 **Impact on code: none.** A brief whose required text holds only ECMA-262 whitespace outside ASCII
