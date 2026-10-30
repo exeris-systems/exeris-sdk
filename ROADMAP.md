@@ -693,6 +693,19 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   tooling picks the shape. The SDK surface is then an `@Action` attribute carried by a
   trailing, nullable `ActionMetadata` component, under the record-growth rule
 
+## 0.13.1 — the TCK binds the processor it was written for
+
+> Goal: let exeris-tooling 0.11.0 bind `exeris-sdk-tck` and agree with the reader on which
+> fields an entity has. A patch: no signature change, no `SchemaVersion` change. Released
+> alongside kernel v0.13.1; the CHANGELOG `[0.13.1]` entry has the detail.
+
+- [x] **TCK corpus declares its primary keys** — `Order`, `Customer` and `Product` declare `id`, so
+  the processor no longer refuses them (EXT-PROC-1015), and `CorpusCompilesTest` holds the corpus
+  to the processor's key rule (#249, #250)
+- [x] **Reader skips `static` and `transient` fields** — in every field enumeration, as the
+  processor does from exeris-tooling#451; the corpus `Order` declares one of each and the reader
+  TCK asserts neither is read (#251)
+
 ## 1.0.0 GA — frozen contract
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
