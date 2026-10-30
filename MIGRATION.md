@@ -18,6 +18,30 @@ the upgrade steps required.
 
 ---
 
+## 0.13.0 → 0.13.1
+
+### The TCK corpus entities declare `id`
+
+**Impact on code: none for a consumer of the annotations or the AST.** For a TCK binder, each
+corpus entity (`Order`, `Customer`, `Product`) gains a first field, `private java.util.UUID id;`,
+with no `@Field`. A reader binding returns it as a plain field (`FieldMetadata.simple("id",
+"java.util.UUID")`), and the reader and parity suites expect it. A producer binding that compiles
+the corpus under the exeris-tooling processor no longer stops at EXT-PROC-1015.
+
+### `SourceModelReader` reads no `static` or `transient` field
+
+**Impact on code: none; the reader's output changes.** No signature changes. For an entity that
+declares a `static` or `transient` field, `read()` no longer returns it as a `FieldMetadata`, an
+event payload field, a relationship, a system field, a graph property or a `@UIGroup`/`@Tab`
+member, matching the exeris-tooling processor from 0.11.0. A baseline written by an earlier
+processor still lists such a field, so the entity reads as changed until it is regenerated.
+
+TCK binders: the corpus `Order` gains `public static final String DRAFT` and
+`private transient String renderedSummary`. `AbstractMetadataReaderTck` asserts neither is in
+`fields`, and `fieldsAgree` reports a side that lists them.
+
+---
+
 ## `@exeris/ui-kit` 0.3.x → 0.4.0
 
 The opt-in brand theme, `@exeris/ui-kit/theme-exeris`, follows brand kit v6. Its `--ex-*` tokens and

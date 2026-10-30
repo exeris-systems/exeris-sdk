@@ -44,6 +44,7 @@ class MetadataReaderTckSelfTest {
         assertThatCode(() -> {
             reader.entityNameIsTheClassSimpleName();
             reader.requiredIsCarriedOnTheField();
+            reader.staticAndTransientFieldsAreNotEntityFields();
             reader.validationConstraintsLandOnFieldMetadata();
             reader.aZeroValuedBoundIsNotLostToItsOwnValue();
             reader.relationshipCardinalityIsTheDeclaredOne();
@@ -73,6 +74,26 @@ class MetadataReaderTckSelfTest {
         assertThatThrownBy(renaming::entityNameIsTheClassSimpleName)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Entity-First");
+    }
+
+    @Test
+    @DisplayName("a constant read as an entity field is caught")
+    void staticFieldCaseIsNotVacuous() {
+        Reader listingEveryDeclaration = new Reader(m -> {
+            if (!TckCorpus.ORDER.equals(m.entityName())) {
+                return m;
+            }
+            List<FieldMetadata> fields = new java.util.ArrayList<>(m.fields());
+            fields.add(FieldMetadata.simple("DRAFT", "String"));
+            return DomainMetadata.builder(m.entityName(), m.packageName())
+                    .fields(fields)
+                    .actions(m.actions())
+                    .relationships(m.relationships())
+                    .build();
+        });
+        assertThatThrownBy(listingEveryDeclaration::staticAndTransientFieldsAreNotEntityFields)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("DRAFT");
     }
 
     @Test

@@ -146,7 +146,7 @@
              dropping a dependency from its published set, is recorded as a CHANGELOG Breaking
              entry with a MIGRATION.md section. -->
         <japicmp.version>0.23.1</japicmp.version>
-        <japicmp.baseline.version>0.13.0</japicmp.baseline.version>
+        <japicmp.baseline.version>0.13.1</japicmp.baseline.version>
         <!-- Per-module opt-out, for use inside the `semver` profile only: the profile binds the
              gate reactor-wide, and a module outside it sets this to true in its own pom
              (exeris-sdk-annotations, which is @Retention(SOURCE) and gated by

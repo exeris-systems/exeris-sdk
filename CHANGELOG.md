@@ -20,16 +20,37 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.13.0` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.13.1` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
 ## [Unreleased]
 
 ### Changed
 
-- **The semver gate compares with `0.13.0`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.0`,
+- **The semver gate compares with `0.13.1`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.1`,
   the last release on Maven Central, so `-Psemver` in `build.yml` and `release.yml` checks the 1.0.0
   line against it.
+
+## [0.13.1] — 2026-10-30
+
+### Fixed
+
+- **`exeris-sdk-tck`: every corpus entity declares its primary key.** `Order`, `Customer` and
+  `Product` declared no `id` field, and the exeris-tooling processor refuses an `@ExerisDomain`
+  type without its key field (EXT-PROC-1015). A producer binding therefore failed at `produce()`
+  for all three entities before any case ran, the mandatory `IDENTITY` and `FIELDS` cases included.
+  Each entity now declares `private java.util.UUID id;`, and `CorpusCompilesTest` holds the corpus
+  to the processor's rule: the field named by `primaryKeyField`, else `id`. A reader binding reads
+  one more field per entity. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
+
+- **`exeris-sdk-source-model-io` reads no `static` or `transient` field.** `SourceModelReader`
+  listed every field declaration, so a constant (`public static final String CHARGING = …`) or a
+  transient field became a `FieldMetadata`, an event payload field, and, when annotated, a
+  relationship, a system field, a graph property or a `@UIGroup` member. The exeris-tooling
+  processor skips both in every field enumeration from 0.11.0 (exeris-tooling#451), so the two
+  sides disagreed for any entity declaring one (ADR-042). The reader now skips both everywhere it
+  lists an entity's fields. The TCK corpus `Order` declares a constant and a transient field, and
+  the reader TCK asserts neither is read. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
 
 ## [0.13.0] — 2026-10-29
 
@@ -2292,6 +2313,7 @@ None — the first milestone.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.13.1]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.1
 [0.13.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.0
 [0.12.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.12.0
 [0.11.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.11.0

@@ -107,6 +107,7 @@ final class ReferenceBinding {
                 .permissions(List.of("order:read", "order:write"))
                 .routeAccess(RouteAccess.AUTHENTICATED)
                 .fields(List.of(
+                        FieldMetadata.simple("id", "java.util.UUID"),
                         FieldMetadata.builder("reference", "String")
                                 .displayName("Reference")
                                 .required(true)
@@ -264,6 +265,7 @@ final class ReferenceBinding {
                 .dataScope(DataScope.TENANT)
                 .permissions(List.of("customer:read"))
                 .fields(List.of(
+                        FieldMetadata.simple("id", "java.util.UUID"),
                         FieldMetadata.builder("email", "String")
                                 .displayName("E-mail")
                                 .required(true)
@@ -392,6 +394,7 @@ final class ReferenceBinding {
                 .description("An item offered for sale.")
                 .routeAccess(RouteAccess.PUBLIC)
                 .fields(List.of(
+                        FieldMetadata.simple("id", "java.util.UUID"),
                         FieldMetadata.builder("name", "String")
                                 .displayName("Name")
                                 .required(true)

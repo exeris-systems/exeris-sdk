@@ -4,6 +4,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -74,6 +82,91 @@ class CorpusCompilesTest {
         assertThat(String.join(" ", reported)).contains("tenantScoped");
     }
 
+    @Test
+    @DisplayName("every corpus entity declares its primary-key field")
+    void everyEntityDeclaresItsPrimaryKey(@TempDir Path classes) throws IOException {
+        PrimaryKeyCheck check = new PrimaryKeyCheck();
+        compile(classes, sourcesOf(TckCorpus.all()), check);
+        assertThat(check.entities)
+                .withFailMessage("The check saw no @ExerisDomain type; it is not looking at the corpus.")
+                .containsExactlyInAnyOrder(TckCorpus.ORDER, TckCorpus.CUSTOMER, TckCorpus.PRODUCT);
+        assertThat(check.missing)
+                .withFailMessage(
+                        "Corpus entities without their primary-key field: %s. The exeris-tooling "
+                                + "processor refuses such an entity (EXT-PROC-1015), so a producer "
+                                + "binding fails at produce() before any case runs.",
+                        check.missing)
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("an entity without its primary-key field would be caught")
+    void thePrimaryKeyRuleIsNotVacuous(@TempDir Path classes) throws IOException {
+        String keyless = """
+                package eu.exeris.sdk.tck.corpus;
+
+                import eu.exeris.sdk.annotation.ExerisDomain;
+
+                @ExerisDomain(module = "sales", path = "/probes", primaryKeyField = "probeId")
+                public class Probe {
+                    private java.util.UUID id;
+                }
+                """;
+        PrimaryKeyCheck check = new PrimaryKeyCheck();
+        compile(classes, List.of(new InMemorySource("Probe", keyless)), check);
+        assertThat(check.missing).containsExactly("Probe.probeId");
+    }
+
+    /**
+     * The rule the exeris-tooling processor applies: an {@code @ExerisDomain} type declares a field
+     * named after its primary key, which is {@code primaryKeyField} when that is non-blank and
+     * {@code id} otherwise.
+     */
+    @SupportedAnnotationTypes("eu.exeris.sdk.annotation.ExerisDomain")
+    private static final class PrimaryKeyCheck extends AbstractProcessor {
+
+        private final List<String> entities = new ArrayList<>();
+        private final List<String> missing = new ArrayList<>();
+
+        @Override
+        public SourceVersion getSupportedSourceVersion() {
+            return SourceVersion.latestSupported();
+        }
+
+        @Override
+        public boolean process(java.util.Set<? extends TypeElement> annotations, RoundEnvironment round) {
+            for (TypeElement annotation : annotations) {
+                for (Element entity : round.getElementsAnnotatedWith(annotation)) {
+                    String key = primaryKeyField(entity);
+                    String name = entity.getSimpleName().toString();
+                    entities.add(name);
+                    boolean declared = entity.getEnclosedElements().stream()
+                            .anyMatch(e -> e.getKind() == ElementKind.FIELD
+                                    && e.getSimpleName().contentEquals(key));
+                    if (!declared) {
+                        missing.add(name + "." + key);
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static String primaryKeyField(Element entity) {
+            for (AnnotationMirror mirror : entity.getAnnotationMirrors()) {
+                if (!mirror.getAnnotationType().toString().equals("eu.exeris.sdk.annotation.ExerisDomain")) {
+                    continue;
+                }
+                return mirror.getElementValues().entrySet().stream()
+                        .filter(e -> e.getKey().getSimpleName().contentEquals("primaryKeyField"))
+                        .map(e -> String.valueOf(e.getValue().getValue()))
+                        .filter(value -> !value.isBlank())
+                        .findFirst()
+                        .orElse("id");
+            }
+            return "id";
+        }
+    }
+
     private static List<JavaFileObject> sourcesOf(java.util.Map<String, String> corpus) {
         List<JavaFileObject> sources = new ArrayList<>();
         corpus.forEach((name, source) -> sources.add(new InMemorySource(name, source)));
@@ -86,6 +179,17 @@ class CorpusCompilesTest {
      * @return every error and warning javac reported, empty when it was happy
      */
     private static List<String> compile(Path classes, List<JavaFileObject> sources) throws IOException {
+        return compile(classes, sources, null);
+    }
+
+    /**
+     * @param classes where to put the class files
+     * @param sources what to compile
+     * @param processor an annotation processor to run over them, or {@code null} for none
+     * @return every error and warning javac reported, empty when it was happy
+     */
+    private static List<String> compile(Path classes, List<JavaFileObject> sources,
+            AbstractProcessor processor) throws IOException {
         JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
         assertThat(javac)
                 .withFailMessage("No system Java compiler; run this on a JDK, not a JRE.")
@@ -93,13 +197,17 @@ class CorpusCompilesTest {
 
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         try (StandardJavaFileManager files = javac.getStandardFileManager(diagnostics, null, null)) {
-            javac.getTask(
+            JavaCompiler.CompilationTask task = javac.getTask(
                     null,
                     files,
                     diagnostics,
                     List.of("-Werror", "-Xlint:deprecation", "-d", classes.toString()),
                     null,
-                    sources).call();
+                    sources);
+            if (processor != null) {
+                task.setProcessors(List.of(processor));
+            }
+            task.call();
         }
         return diagnostics.getDiagnostics().stream()
                 .filter(d -> d.getKind() == Diagnostic.Kind.ERROR

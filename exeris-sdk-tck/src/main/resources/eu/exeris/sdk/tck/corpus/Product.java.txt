@@ -31,6 +31,8 @@ import eu.exeris.sdk.annotation.RouteAccess;
 @Graph
 public class Product {
 
+    private java.util.UUID id;
+
     @Field(label = "Name", required = true)
     @GraphProperty(indexed = true)
     private String name;

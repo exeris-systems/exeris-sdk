@@ -47,7 +47,7 @@ A facet listed as unsupported is a claim that the binding emits nothing for it a
 ### Rules the kit holds itself to
 
 - **Implementation-agnostic.** An enforcer rule in the module's `pom.xml`, `ban-javaparser-implementation-agnostic`, fails the build if JavaParser or `exeris-sdk-source-model-io` appears on the dependency tree. The reader implementation that ships in the SDK is bound to the kit from its own side: `exeris-sdk-source-model-io` depends on this module at test scope, never the reverse.
-- **Compiled corpus.** `CorpusCompilesTest` compiles the corpus with `-Werror -Xlint:deprecation`. Every mandatory annotation attribute must be supplied, and nothing deprecated for removal may be used.
+- **Compiled corpus.** `CorpusCompilesTest` compiles the corpus with `-Werror -Xlint:deprecation`. Every mandatory annotation attribute must be supplied, and nothing deprecated for removal may be used. Each entity declares its primary-key field (`id`, or the field `primaryKeyField` names), because the exeris-tooling processor refuses an entity without one.
 - **No case that cannot fail.** Each case is driven in this module's own tests against a conforming binding and one broken in exactly the way the case describes. The second must fail.
 
 ## Hot path
