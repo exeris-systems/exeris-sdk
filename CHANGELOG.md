@@ -23,6 +23,18 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [0.13.1] — unreleased
+
+### Fixed
+
+- **`exeris-sdk-tck`: every corpus entity declares its primary key.** `Order`, `Customer` and
+  `Product` declared no `id` field, and the exeris-tooling processor refuses an `@ExerisDomain`
+  type without its key field (EXT-PROC-1015). A producer binding therefore failed at `produce()`
+  for all three entities before any case ran, the mandatory `IDENTITY` and `FIELDS` cases included.
+  Each entity now declares `private java.util.UUID id;`, and `CorpusCompilesTest` holds the corpus
+  to the processor's rule: the field named by `primaryKeyField`, else `id`. A reader binding reads
+  one more field per entity. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
+
 ## [0.13.0] — 2026-10-29
 
 ### Breaking

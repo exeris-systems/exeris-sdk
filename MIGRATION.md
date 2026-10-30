@@ -3,7 +3,7 @@ title: Migration guide
 type: migration-guide
 visibility: public
 owning-repo: exeris-sdk
-last-verified: 2026-10-29
+last-verified: 2026-10-30
 ---
 
 # Migration guide
@@ -15,6 +15,18 @@ the upgrade steps required.
 > may land in any 0.x release; downstream consumers pin exact versions.
 > Once 1.0.0 ships, semver applies (minor bumps additive only, patch bumps
 > bug-fix only). See [`ROADMAP.md`](ROADMAP.md).
+
+---
+
+## 0.13.0 → 0.13.1
+
+### The TCK corpus entities declare `id`
+
+**Impact on code: none for a consumer of the annotations or the AST.** For a TCK binder, each
+corpus entity (`Order`, `Customer`, `Product`) gains a first field, `private java.util.UUID id;`,
+with no `@Field`. A reader binding returns it as a plain field (`FieldMetadata.simple("id",
+"java.util.UUID")`), and the reader and parity suites expect it. A producer binding that compiles
+the corpus under the exeris-tooling processor no longer stops at EXT-PROC-1015.
 
 ---
 

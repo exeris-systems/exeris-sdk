@@ -48,6 +48,8 @@ import eu.exeris.sdk.annotation.Validation;
 )
 public class Customer {
 
+    private java.util.UUID id;
+
     @Field(label = "E-mail", required = true, unique = true)
     @Validation(email = true, maxLength = 254)
     @UIGroup(name = "identity", label = "Identity", order = 2)
