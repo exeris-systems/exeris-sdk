@@ -113,6 +113,12 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
     /** The document's root type. */
     public static final String ROOT_TYPE = BRIEF_PACKAGE + ".Brief";
 
+    /**
+     * Where the concern-hint vocabulary lands as plain text, one name per line, sorted: the same
+     * names as the {@value #CONCERN_HINT_DEFINITION} enum, for a reader with no JSON parser.
+     */
+    static final String HINTS_RESOURCE_PATH = "META-INF/exeris/concern-hints.txt";
+
     /** The definition the concern-hint vocabulary is published under. */
     public static final String CONCERN_HINT_DEFINITION = "ConcernHint";
 
@@ -594,6 +600,16 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
         } catch (IOException e) {
             error("Could not write " + RESOURCE_PATH + ": " + e);
         }
+        try (Writer out = processingEnv.getFiler()
+                .createResource(StandardLocation.CLASS_OUTPUT, "", HINTS_RESOURCE_PATH)
+                .openWriter()) {
+            for (String name : new TreeSet<>(vocabulary)) {
+                out.write(name);
+                out.write('\n');
+            }
+        } catch (IOException e) {
+            error("Could not write " + HINTS_RESOURCE_PATH + ": " + e);
+        }
     }
 
     private static ObjectNode concernHintDefinition(Set<String> vocabulary) {
@@ -620,6 +636,22 @@ public final class BriefSchemaProcessor extends AbstractProcessor {
                         + "an action signature, a saga step) would enter a brief. A Jackson 3 reader ignores "
                         + "unknown properties by default, so binding alone would drop such a property silently "
                         + "and the brief would look valid.");
+        ObjectNode questionIds = requirements.addObject();
+        questionIds.put("id", "QUESTION_IDS_ARE_UNIQUE");
+        questionIds.put("statement",
+                "Treat a brief in which two open questions share an id as invalid, at the later one's id.");
+        questionIds.put("why",
+                "An answer, an assumption and its owner are recorded against a question by its id, so a "
+                        + "repeated id makes it ambiguous which question they settle. JSON Schema cannot compare "
+                        + "values across array items.");
+        ObjectNode actors = requirements.addObject();
+        actors.put("id", "WORKFLOW_ACTORS_ARE_DECLARED");
+        actors.put("statement",
+                "Treat a brief in which a workflow names an actor that no entry of actors declares by name "
+                        + "as invalid, at that workflow actor.");
+        actors.put("why",
+                "A workflow names its actors by Actor name; a name with no declaration is a participant "
+                        + "the brief never describes. JSON Schema cannot resolve a value against another array.");
         return requirements;
     }
 

@@ -39,6 +39,22 @@ the reader suite asserts it in `fieldTypesAreQualified` and `relationshipFieldsA
 (U+00A0, U+FEFF, a `Zs` space, U+2028, U+2029) was valid and could be ready; it is now invalid at
 that pointer, as `brief-schema.json` already made it for a JSON Schema validator.
 
+### `BriefReadiness` checks hints by default and two rules outside the schema
+
+**Impact on code: none; the verdict changes.** No signature changes. A brief that
+`BriefReadiness.evaluate(brief)` reported valid, and so possibly ready, may now be reported invalid
+and not ready, at one of three pointers:
+
+- a concern hint that names no annotation in the SDK catalog, which `brief-schema.json` already
+  rejected;
+- the `id` of an open question repeating an earlier question's `id`;
+- a workflow actor that names no entry of `actors`.
+
+`evaluate(brief, null, source)` still leaves hints unchecked. A caller that gates on `valid()` or
+`ready()` stops at such a brief; to accept one, fix the brief. A consumer that validates briefs
+with a JSON Schema validator applies the two rules from the schema's
+`x-exeris-reader-requirements`.
+
 ---
 
 ## 0.13.0 → 0.13.1
