@@ -89,7 +89,7 @@ public final class BriefReadiness {
      * @return the verdict
      */
     public static Report evaluate(Brief brief) {
-        return evaluate(brief, ShippedVocabulary.NAMES, null);
+        return evaluate(brief, ShippedVocabulary.names(), null);
     }
 
     /**
@@ -139,7 +139,8 @@ public final class BriefReadiness {
 
     /**
      * The concern-hint names this jar's {@code brief-schema.json} admits, from the plain-text list
-     * the same processor writes beside it. Loaded on first use.
+     * the same processor writes beside it. Loaded on first use; a missing list is reported on
+     * every call as an {@link IllegalStateException}, never as a failed class initialization.
      */
     private static final class ShippedVocabulary {
         private static final String RESOURCE = "/META-INF/exeris/concern-hints.txt";
@@ -148,11 +149,19 @@ public final class BriefReadiness {
         private ShippedVocabulary() {
         }
 
+        static Set<String> names() {
+            if (NAMES == null) {
+                throw new IllegalStateException(RESOURCE + " is missing from the classpath: the jar "
+                        + "holding BriefReadiness was built without BriefSchemaProcessor.");
+            }
+            return NAMES;
+        }
+
+        /** The listed names, or {@code null} when the list is not on the classpath. */
         private static Set<String> load() {
             try (InputStream in = BriefReadiness.class.getResourceAsStream(RESOURCE)) {
                 if (in == null) {
-                    throw new IllegalStateException(RESOURCE + " is missing from the classpath: the jar "
-                            + "holding BriefReadiness was built without BriefSchemaProcessor.");
+                    return null;
                 }
                 Set<String> names = new HashSet<>();
                 new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)).lines()

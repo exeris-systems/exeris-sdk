@@ -50,7 +50,7 @@ The SDK reports outcomes. Whether to merge, prompt or auto-apply is the host's d
 
 ### Brief
 
-`Brief` is the shape of `docs/briefs/<area>.brief.yaml`. `BriefReadiness.evaluate` returns a `Report` with `valid`, `ready`, `errors`, `assumed`, `unresolved` and `unchecked`. A brief is ready when it is valid and no blocking question is open. Valid means the schema's constraints plus its two reader requirements, which JSON Schema cannot express: open-question ids are unique, and every workflow actor names a declared actor. `evaluate(brief)` checks concern hints against `META-INF/exeris/concern-hints.txt`, which ships in this jar. Unresolved references do not change readiness. The wire format moves with `briefSchemaFormat`, an integer a consumer pins to. Rules are in ADR-106.
+`Brief` is the shape of `docs/briefs/<area>.brief.yaml`. `BriefReadiness.evaluate` returns a `Report` with `valid`, `ready`, `errors`, `assumed`, `unresolved` and `unchecked`. A brief is ready when it is valid and no blocking question is open. Valid means the schema's constraints plus the two reader requirements `BriefReadiness` enforces beyond them, which JSON Schema cannot express: open-question ids are unique, and every workflow actor names a declared actor. `evaluate(brief)` checks concern hints against `META-INF/exeris/concern-hints.txt`, which ships in this jar. Unresolved references do not change readiness. The wire format moves with `briefSchemaFormat`, an integer a consumer pins to. Rules are in ADR-106.
 
 ### Guard tests
 
