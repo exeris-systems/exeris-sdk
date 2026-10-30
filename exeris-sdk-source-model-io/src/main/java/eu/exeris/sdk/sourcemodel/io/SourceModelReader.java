@@ -80,6 +80,7 @@ import java.util.stream.Collectors;
  * deprecated {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
+ * A {@code static} or {@code transient} field is not an entity field and is read by no facet.
  * For relationships, {@code targetEntity} (declared, else the field type with a collection's
  * element type unwrapped), {@code relationshipType}, {@code mappedBy}, {@code displayField} and
  * {@code cascadeDelete}/{@code cascadeUpdate} (as {@code cascade}) are read; other attributes keep
@@ -590,8 +591,22 @@ public final class SourceModelReader {
      * Whether the {@code @PrimaryKey} on {@code type}'s fields declares a {@code strategy} the
      * processor refuses. Called with exactly one carrier, so at most one marker is inspected.
      */
-    private boolean refusedPrimaryKeyStrategy(ClassOrInterfaceDeclaration type) {
+    /**
+     * The fields that describe an entity's state: every field declaration except a {@code static}
+     * or {@code transient} one, in declaration order. A constant belongs to the class and a
+     * transient field is not persisted, so neither is an entity field, a key, a system field, a
+     * relationship, a graph member or a layout member. {@code ExerisDomainProcessor} skips both
+     * in every field enumeration; reading them here would put a field in the metadata that the
+     * processor leaves out (ADR-042).
+     */
+    private static List<FieldDeclaration> entityFields(ClassOrInterfaceDeclaration type) {
         return type.getFields().stream()
+                .filter(field -> !field.isStatic() && !field.isTransient())
+                .toList();
+    }
+
+    private boolean refusedPrimaryKeyStrategy(ClassOrInterfaceDeclaration type) {
+        return entityFields(type).stream()
                 .flatMap(field -> field.getAnnotations().stream())
                 .filter(annotation -> "PrimaryKey".equals(simpleName(annotation.getNameAsString())))
                 .anyMatch(marker -> enumAttr(marker, "strategy")
@@ -618,7 +633,7 @@ public final class SourceModelReader {
      */
     private List<String> fieldsAnnotated(ClassOrInterfaceDeclaration type, String annotationSimpleName) {
         List<String> names = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             boolean carries = field.getAnnotations().stream()
                     .anyMatch(annotation -> annotationSimpleName.equals(simpleName(annotation.getNameAsString())));
             if (carries) {
@@ -699,7 +714,7 @@ public final class SourceModelReader {
      */
     private List<UIMetadata.UIGroupMetadata> groups(ClassOrInterfaceDeclaration type) {
         Map<String, GroupDeclarations> byName = new LinkedHashMap<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             field.getAnnotationByName("UIGroup").ifPresent(group -> nonBlankStringAttr(group, "name")
                     .ifPresent(name -> {
                         GroupDeclarations declarations = byName.computeIfAbsent(name, GroupDeclarations::new);
@@ -762,7 +777,7 @@ public final class SourceModelReader {
      */
     private List<UIMetadata.UITabMetadata> tabs(ClassOrInterfaceDeclaration type) {
         Map<String, TabDeclarations> byName = new LinkedHashMap<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             field.getAnnotationByName("Tab").ifPresent(tab -> nonBlankStringAttr(tab, "name")
                     .ifPresent(name -> {
                         TabDeclarations declarations = byName.computeIfAbsent(name, TabDeclarations::new);
@@ -1187,7 +1202,7 @@ public final class SourceModelReader {
      */
     private List<String> entityFieldNames(ClassOrInterfaceDeclaration type) {
         List<String> names = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             if (field.getAnnotationByName("Field").isEmpty()) {
                 continue;
             }
@@ -1481,7 +1496,7 @@ public final class SourceModelReader {
      */
     private List<GraphPropertyMetadata> graphProperties(ClassOrInterfaceDeclaration type) {
         List<GraphPropertyMetadata> properties = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             field.getAnnotationByName("GraphProperty").ifPresent(property -> {
                 String graphType = enumAttr(property, "graphType")
                         .filter(constant -> !"AUTO".equals(constant))
@@ -1509,7 +1524,7 @@ public final class SourceModelReader {
      */
     private List<GraphEdgeMetadata> graphEdges(ClassOrInterfaceDeclaration type) {
         List<GraphEdgeMetadata> edges = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             List<AnnotationExpr> declared = new ArrayList<>();
             for (AnnotationExpr annotation : field.getAnnotations()) {
                 String name = simpleName(annotation.getNameAsString());
@@ -1935,7 +1950,7 @@ public final class SourceModelReader {
 
     private List<RelationshipMetadata> relationships(ClassOrInterfaceDeclaration type) {
         List<RelationshipMetadata> relationships = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             Optional<AnnotationExpr> rel = field.getAnnotationByName("Relationship");
             if (rel.isEmpty()) {
                 continue;
@@ -2214,7 +2229,7 @@ public final class SourceModelReader {
      */
     private List<FieldMetadata> fields(ClassOrInterfaceDeclaration type) {
         List<FieldMetadata> fields = new ArrayList<>();
-        for (FieldDeclaration field : type.getFields()) {
+        for (FieldDeclaration field : entityFields(type)) {
             if (field.getAnnotationByName("Relationship").isPresent()) {
                 continue;
             }
