@@ -27,6 +27,14 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **`exeris-sdk-tck`: every corpus entity declares its primary key.** `Order`, `Customer` and
+  `Product` declared no `id` field, and the exeris-tooling processor refuses an `@ExerisDomain`
+  type without its key field (EXT-PROC-1015). A producer binding therefore failed at `produce()`
+  for all three entities before any case ran, the mandatory `IDENTITY` and `FIELDS` cases included.
+  Each entity now declares `private java.util.UUID id;`, and `CorpusCompilesTest` holds the corpus
+  to the processor's rule: the field named by `primaryKeyField`, else `id`. A reader binding reads
+  one more field per entity. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
+
 - **`exeris-sdk-source-model-io` reads no `static` or `transient` field.** `SourceModelReader`
   listed every field declaration, so a constant (`public static final String CHARGING = …`) or a
   transient field became a `FieldMetadata`, an event payload field, and, when annotated, a

@@ -20,6 +20,14 @@ the upgrade steps required.
 
 ## 0.13.0 → 0.13.1
 
+### The TCK corpus entities declare `id`
+
+**Impact on code: none for a consumer of the annotations or the AST.** For a TCK binder, each
+corpus entity (`Order`, `Customer`, `Product`) gains a first field, `private java.util.UUID id;`,
+with no `@Field`. A reader binding returns it as a plain field (`FieldMetadata.simple("id",
+"java.util.UUID")`), and the reader and parity suites expect it. A producer binding that compiles
+the corpus under the exeris-tooling processor no longer stops at EXT-PROC-1015.
+
 ### `SourceModelReader` reads no `static` or `transient` field
 
 **Impact on code: none; the reader's output changes.** No signature changes. For an entity that

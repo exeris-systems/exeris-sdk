@@ -106,6 +106,8 @@ import java.util.List;
 )
 public class Order {
 
+    private java.util.UUID id;
+
     @Field(label = "Reference", required = true)
     @Validation(minLength = 3, maxLength = 32, pattern = "^ORD-[0-9]+$")
     @Tab(name = "summary", label = "Summary", order = 0)
