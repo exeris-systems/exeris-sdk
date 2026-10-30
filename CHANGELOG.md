@@ -35,6 +35,15 @@ for per-version upgrade steps.
   to the processor's rule: the field named by `primaryKeyField`, else `id`. A reader binding reads
   one more field per entity. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` reads no `static` or `transient` field.** `SourceModelReader`
+  listed every field declaration, so a constant (`public static final String CHARGING = …`) or a
+  transient field became a `FieldMetadata`, an event payload field, and, when annotated, a
+  relationship, a system field, a graph property or a `@UIGroup` member. The exeris-tooling
+  processor skips both in every field enumeration from 0.11.0 (exeris-tooling#451), so the two
+  sides disagreed for any entity declaring one (ADR-042). The reader now skips both everywhere it
+  lists an entity's fields. The TCK corpus `Order` declares a constant and a transient field, and
+  the reader TCK asserts neither is read. See [`MIGRATION.md` §0.13.0 → 0.13.1](MIGRATION.md).
+
 ## [0.13.0] — 2026-10-29
 
 ### Breaking

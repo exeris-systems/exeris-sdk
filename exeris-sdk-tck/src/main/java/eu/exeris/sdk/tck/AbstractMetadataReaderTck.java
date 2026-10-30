@@ -97,6 +97,21 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("a static or transient field is not an entity field")
+    void staticAndTransientFieldsAreNotEntityFields() {
+        requireSupported(Facet.FIELDS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        assertThat(order.fields().stream().map(FieldMetadata::name).toList())
+                .withFailMessage(
+                        "Order declares the constant DRAFT and the transient renderedSummary, and "
+                                + "the reader returned fields %s. Neither is entity state: a constant "
+                                + "belongs to the class and a transient field is not persisted, so a "
+                                + "generator handed one emits a column and accessors for it.",
+                        order.fields().stream().map(FieldMetadata::name).toList())
+                .doesNotContain("DRAFT", "renderedSummary");
+    }
+
+    @Test
     @DisplayName("@Field(required) is carried on the field")
     void requiredIsCarriedOnTheField() {
         requireSupported(Facet.FIELDS);

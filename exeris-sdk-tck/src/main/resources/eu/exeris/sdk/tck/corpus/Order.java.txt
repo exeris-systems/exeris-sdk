@@ -61,6 +61,10 @@ import java.util.List;
  * side that carries the return type as written disagrees with one carrying the fully-qualified
  * name javac reports.
  *
+ * <p>{@code DRAFT} and {@code renderedSummary} are not entity fields: a constant belongs to the
+ * class and a transient field is not persisted. A side that lists every field declaration reads
+ * two fields the other side leaves out.
+ *
  * <p>The route-access declarations are the cases behind the {@code ROUTE_ACCESS} facet. The entity
  * declares {@code AUTHENTICATED} together with two permissions, in an order a side must keep.
  * {@code submit} declares nothing and inherits the entity's requirement when the route policy is
@@ -123,6 +127,10 @@ public class Order {
     @Field(label = "Note")
     @Tab(name = "notes", label = "Notes", lazy = true)
     private String note;
+
+    public static final String DRAFT = "DRAFT";
+
+    private transient String renderedSummary;
 
     @Action(name = "submit", label = "Submit", httpMethod = "POST")
     public void submit() {
