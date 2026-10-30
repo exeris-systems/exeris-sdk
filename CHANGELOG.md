@@ -40,9 +40,12 @@ for per-version upgrade steps.
   gains `fieldTypesAreQualified` and `relationshipFieldsAreFields`. See
   [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
 
-## [0.13.2] — unreleased
-
-### Fixed
+- **`BriefReadiness` reads blank text as `brief-schema.json` does.** `@SchemaRules.NonBlank` is
+  emitted as `pattern: "\S"`, an ECMA-262 expression, where `\s` covers U+00A0, U+FEFF, the other
+  `Zs` spaces, U+2028 and U+2029. `BriefReadiness` checked the rule with Java's ASCII-only `\s`, so
+  a `purpose` of non-breaking spaces was valid there and invalid in a JSON Schema validator such as
+  exeris-ai-bridge's. The check now uses the ECMA-262 set, and `BriefReadinessTest` pins every
+  character the two engines differ on. See [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
 
 - **`BriefReadiness` checks concern hints by default and enforces the brief's two prose rules.**
   `evaluate(brief)` left concern hints unchecked, so a hint naming no annotation was valid there
