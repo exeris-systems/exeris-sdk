@@ -23,7 +23,7 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [0.13.2] — unreleased
+## [0.13.2] — 2026-10-30
 
 ### Fixed
 

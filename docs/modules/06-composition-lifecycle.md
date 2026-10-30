@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Composition lifecycle
 
-**Module:** `eu.exeris:exeris-sdk-composition-lifecycle` (0.13.1)
+**Module:** `eu.exeris:exeris-sdk-composition-lifecycle` (0.13.2)
 **Dependencies:** none at compile or runtime scope. JUnit and AssertJ are test scope only.
 
 `exeris-sdk-composition-lifecycle` holds one interface, `eu.exeris.sdk.composition.lifecycle.CapabilityLifecycleHooks`. A capability marks the class that implements it with `@CapabilityLifecycle`. The module exists so a capability author compiles against the annotations jar and this jar only. It never drives the hooks; that is the job of [the composition runtime](07-composition-runtime.md).

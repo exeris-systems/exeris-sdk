@@ -706,6 +706,24 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   processor does from exeris-tooling#451; the corpus `Order` declares one of each and the reader
   TCK asserts neither is read (#251)
 
+## 0.13.2 — the reader and the brief agree with what they are checked against
+
+> Goal: let exeris-tooling bind the parity suite with `FIELDS` supported, and make
+> `BriefReadiness` agree with `brief-schema.json` as exeris-ai-bridge applies it. A patch: no
+> signature change, no `SchemaVersion` change, `briefSchemaFormat` stays 1. The CHANGELOG
+> `[0.13.2]` entry has the detail.
+
+- [x] **Reader writes the processor's field shape** — field types in the qualified
+  `TypeMirror.toString()` form and `@Relationship` fields listed in `fields`; the conflict
+  detector matches an operation's source-text type with the read one; two reader TCK cases
+  (#253, #256)
+- [x] **Blank brief text is ECMA-262 whitespace** — `BriefReadiness` treats U+00A0, U+FEFF, the
+  `Zs` spaces, U+2028 and U+2029 as blank, as the schema's `\S` pattern does (#254, #255)
+- [x] **Brief rules outside the schema** — `evaluate(brief)` checks concern hints against the
+  shipped `concern-hints.txt`; a repeated question id and an undeclared workflow actor make a brief
+  invalid, and the schema lists both as reader requirements (ADR-106 amendment 2026-10-30; #257,
+  #258)
+
 ## 1.0.0 GA — frozen contract
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
