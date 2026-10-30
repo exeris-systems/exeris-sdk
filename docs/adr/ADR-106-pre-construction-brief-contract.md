@@ -96,3 +96,27 @@ A brief is `docs/briefs/<area>.brief.yaml` in an application project, one per bo
 2. `BriefDependencyDirectionTest` — the one-way dependency.
 3. `BriefSchemaProcessorTest` — the emitter, including byte-identical output across two runs.
 4. `RecordComponentOrderTest` and `RecordConstructorLedgerTest` — growth at the tail only, via `WireRecords`, which names `eu.exeris.sdk.brief`.
+
+## Amendments
+
+- **2026-10-30 — two rules outside the schema, and the hint vocabulary shipped as text.**
+  Obligation 7 defined validity as the schema's constraints. Two rules were stated in the schema's
+  prose and enforced nowhere: an `OpenQuestion.id` is unique within the brief, and each entry of
+  `Workflow.actors` is the name of a declared `Actor`. JSON Schema cannot compare values across
+  array items or resolve one array against another, so a brief breaking either was ready for a
+  validator and for `BriefReadiness` alike. Both are now validity rules. `BriefReadiness` reports
+  a repeated id at the later question's `id`, and an undeclared workflow actor at that actor. The
+  schema lists both in `x-exeris-reader-requirements` (`QUESTION_IDS_ARE_UNIQUE`,
+  `WORKFLOW_ACTORS_ARE_DECLARED`) beside `UNKNOWN_PROPERTIES_ARE_ERRORS`, so a consumer validating
+  with a JSON Schema validator applies them from the document. Validity is therefore the schema's
+  constraints plus its reader requirements. On a fixture, `BriefReadiness` may reject what the
+  schema accepts only under one of these rules, and never accepts what the schema rejects.
+  `briefSchemaFormat` stays `1`: the two rules were part of format 1's text, and a brief that
+  breaks one was never valid under it.
+  `BriefSchemaProcessor` also writes the concern-hint vocabulary as
+  `META-INF/exeris/concern-hints.txt`, one name per line, from the same sources and in the same
+  build as the `ConcernHint` enum. `BriefReadiness.evaluate(brief)` checks hints against it, so the
+  one-argument form agrees with the schema on hints; before this, it left them unchecked. Each
+  rule has a planted-gap fixture, and `BriefSchemaContractTest` holds the text list equal to the
+  enum. Shipped in 0.13.2 (#257). Rejected: dropping the two prose claims, which would leave a
+  brief whose question ids or actor names do not resolve indistinguishable from a sound one.

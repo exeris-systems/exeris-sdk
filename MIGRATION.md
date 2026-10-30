@@ -35,6 +35,24 @@ the reader suite asserts it in `fieldTypesAreQualified` and `relationshipFieldsA
 
 ---
 
+## 0.13.1 → 0.13.2
+
+### `BriefReadiness` checks hints by default and two rules outside the schema
+
+**Impact on code: none.** A brief that `BriefReadiness.evaluate(brief)` called valid may now be
+invalid at one of three pointers:
+
+- a concern hint that names no annotation in the SDK catalog, which `brief-schema.json` already
+  rejected;
+- the `id` of an open question repeating an earlier question's `id`;
+- a workflow actor that names no entry of `actors`.
+
+`evaluate(brief, null, source)` still leaves hints unchecked. A consumer that validates briefs
+with a JSON Schema validator applies the two rules from the schema's
+`x-exeris-reader-requirements`.
+
+---
+
 ## 0.13.0 → 0.13.1
 
 ### The TCK corpus entities declare `id`

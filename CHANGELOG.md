@@ -40,6 +40,19 @@ for per-version upgrade steps.
   gains `fieldTypesAreQualified` and `relationshipFieldsAreFields`. See
   [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
 
+## [0.13.2] — unreleased
+
+### Fixed
+
+- **`BriefReadiness` checks concern hints by default and enforces the brief's two prose rules.**
+  `evaluate(brief)` left concern hints unchecked, so a hint naming no annotation was valid there
+  and invalid against `brief-schema.json`. `BriefSchemaProcessor` now also writes the vocabulary as
+  `META-INF/exeris/concern-hints.txt`, and the one-argument form checks hints against it. A
+  repeated `OpenQuestion.id` and a `Workflow.actors` entry naming no declared actor, both stated
+  in the schema's prose and checked nowhere, now make a brief invalid. The schema lists both in
+  `x-exeris-reader-requirements` (ADR-106, 2026-10-30 amendment); `briefSchemaFormat` stays `1`.
+  Three planted-gap fixtures cover them. See [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
 ## [0.13.1] — 2026-10-30
 
 ### Fixed

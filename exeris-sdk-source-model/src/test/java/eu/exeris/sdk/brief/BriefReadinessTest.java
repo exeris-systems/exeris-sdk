@@ -127,6 +127,41 @@ class BriefReadinessTest {
     }
 
     @Test
+    @DisplayName("question ids: a repeat is reported at the later question, a blank id only as blank")
+    void questionIdsAreUnique() {
+        Brief brief = brief(List.of(
+                question("Q1", false, OpenQuestion.Status.OPEN, null, null),
+                question(" ", false, OpenQuestion.Status.OPEN, null, null),
+                question(" ", false, OpenQuestion.Status.OPEN, null, null),
+                question("Q1", false, OpenQuestion.Status.OPEN, null, null),
+                question("q1", false, OpenQuestion.Status.OPEN, null, null)));
+        assertThat(BriefReadiness.evaluate(brief).errors()).containsExactly(
+                new BriefReadiness.Problem("/openQuestions/1/id", "must not be blank"),
+                new BriefReadiness.Problem("/openQuestions/2/id", "must not be blank"),
+                new BriefReadiness.Problem("/openQuestions/3/id", "repeats the id of /openQuestions/0"));
+    }
+
+    @Test
+    @DisplayName("workflow actors: each names a declared actor exactly; a blank one is reported only as blank")
+    void workflowActorsAreDeclared() {
+        Brief brief = withWorkflow(new Workflow("W", List.of("A", "a", " "), List.of(ALWAYS), null));
+        assertThat(BriefReadiness.evaluate(brief).errors()).containsExactly(
+                new BriefReadiness.Problem("/workflows/0/actors/2", "must not be blank"),
+                new BriefReadiness.Problem("/workflows/0/actors/1", "names no actor the brief declares"));
+    }
+
+    @Test
+    @DisplayName("concern hints: the one-argument form checks the shipped vocabulary, a null vocabulary skips them")
+    void concernHintsUseTheShippedVocabulary() {
+        Brief brief = new Brief("0.13.0", "P", null, List.of("N"), List.of(new Actor("A", null, null)),
+                List.of(new GlossaryTerm("T", "M", null, List.of("Saga", "NoSuchAnnotation"), null)),
+                List.of(new Workflow("W", null, List.of(ALWAYS), null)), null, null, null, null);
+        assertThat(BriefReadiness.evaluate(brief).errors()).extracting(BriefReadiness.Problem::path)
+                .containsExactly("/glossary/0/concernHints/1");
+        assertThat(BriefReadiness.evaluate(brief, null, null).errors()).isEmpty();
+    }
+
+    @Test
     @DisplayName("EARS: each kind's fields, checked by structure")
     void ears() {
         List<EarsCriterion> criteria = List.of(

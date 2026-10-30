@@ -4,8 +4,17 @@
  */
 package eu.exeris.sdk.brief;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -29,9 +38,16 @@ import java.util.regex.Pattern;
  *       the record. Validate the document against the schema, or bind with unknown properties
  *       failing, before calling this.</li>
  *   <li><b>The concern-hint vocabulary.</b> The schema admits the annotation names of the SDK
- *       catalog. Pass those names to check hints here; pass {@code null} to leave them to the
- *       schema.</li>
+ *       catalog. {@link #evaluate(Brief)} checks hints against the names this jar's schema admits;
+ *       the three-argument form checks them against the names passed, and {@code null} leaves
+ *       them to the schema.</li>
  * </ul>
+ *
+ * <p>Two rules the schema states in prose and cannot express are checked here, and listed in its
+ * {@code x-exeris-reader-requirements}: an open question's {@code id} is unique within the brief
+ * ({@code QUESTION_IDS_ARE_UNIQUE}), and each of a workflow's {@code actors} is the
+ * {@linkplain Actor#name() name} of a declared actor ({@code WORKFLOW_ACTORS_ARE_DECLARED}). A
+ * brief that breaks either is invalid here although a schema validator accepts it.
  *
  * <p>References ({@link FulfilledBy}) are resolved only against a set of known source elements
  * the caller builds from the project's emitted metadata. Without one they are reported
@@ -61,13 +77,14 @@ public final class BriefReadiness {
     }
 
     /**
-     * Evaluates a brief with concern hints left to the schema and references unchecked.
+     * Evaluates a brief with concern hints checked against the vocabulary this jar's
+     * {@code brief-schema.json} admits, and references unchecked.
      *
      * @param brief the bound brief, or {@code null} when there is none
      * @return the verdict
      */
     public static Report evaluate(Brief brief) {
-        return evaluate(brief, null, null);
+        return evaluate(brief, ShippedVocabulary.NAMES, null);
     }
 
     /**
@@ -90,11 +107,15 @@ public final class BriefReadiness {
         document(check.errors, brief);
         actors(check.errors, brief.actors());
         glossary(check, brief.glossary(), concernVocabulary);
-        workflows(check, brief.workflows());
+        workflows(check, brief.workflows(), declaredActors(brief.actors()));
         nonFunctional(check.errors, brief.nonFunctional());
         integrations(check.errors, brief.integrations());
+        Map<String, String> questionIds = new HashMap<>();
         for (int i = 0; i < brief.openQuestions().size(); i++) {
-            question(check, "/openQuestions/" + i, brief.openQuestions().get(i));
+            String at = "/openQuestions/" + i;
+            OpenQuestion question = brief.openQuestions().get(i);
+            question(check, at, question);
+            uniqueId(check.errors, at, question.id(), questionIds);
         }
 
         List<FulfilledBy> unresolved = new ArrayList<>();
@@ -109,6 +130,35 @@ public final class BriefReadiness {
 
         boolean valid = check.errors.isEmpty();
         return new Report(valid, valid && !check.blockingOpen, check.errors, check.assumed, unresolved, unchecked);
+    }
+
+    /**
+     * The concern-hint names this jar's {@code brief-schema.json} admits, from the plain-text list
+     * the same processor writes beside it. Loaded on first use.
+     */
+    private static final class ShippedVocabulary {
+        private static final String RESOURCE = "/META-INF/exeris/concern-hints.txt";
+        private static final Set<String> NAMES = load();
+
+        private ShippedVocabulary() {
+        }
+
+        private static Set<String> load() {
+            try (InputStream in = BriefReadiness.class.getResourceAsStream(RESOURCE)) {
+                if (in == null) {
+                    throw new IllegalStateException(RESOURCE + " is missing from the classpath: the jar "
+                            + "holding BriefReadiness was built without BriefSchemaProcessor.");
+                }
+                Set<String> names = new HashSet<>();
+                new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)).lines()
+                        .map(String::strip)
+                        .filter(line -> !line.isEmpty())
+                        .forEach(names::add);
+                return Set.copyOf(names);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
     }
 
     /** What one evaluation accumulates as it walks the brief. */
@@ -165,12 +215,18 @@ public final class BriefReadiness {
         }
     }
 
-    private static void workflows(Check check, List<Workflow> workflows) {
+    private static void workflows(Check check, List<Workflow> workflows, Set<String> declaredActors) {
         for (int i = 0; i < workflows.size(); i++) {
             Workflow workflow = workflows.get(i);
             String at = "/workflows/" + i;
             requiredText(check.errors, at + NAME, workflow.name());
             texts(check.errors, at + "/actors", workflow.actors());
+            for (int a = 0; a < workflow.actors().size(); a++) {
+                String actor = workflow.actors().get(a);
+                if (isText(actor) && !declaredActors.contains(actor)) {
+                    check.errors.add(new Problem(at + "/actors/" + a, "names no actor the brief declares"));
+                }
+            }
             minItems(check.errors, at + "/criteria", workflow.criteria());
             for (int c = 0; c < workflow.criteria().size(); c++) {
                 criterion(check.errors, at + "/criteria/" + c, workflow.criteria().get(c));
@@ -178,6 +234,32 @@ public final class BriefReadiness {
             references(check, at + FULFILLED_BY, workflow.fulfilledBy(),
                     Set.of(FulfilledBy.Kind.ACTION, FulfilledBy.Kind.RULE, FulfilledBy.Kind.SAGA));
         }
+    }
+
+    /** The names {@code actors} declares; a workflow names its actors by these. */
+    private static Set<String> declaredActors(List<Actor> actors) {
+        Set<String> names = new HashSet<>();
+        for (Actor actor : actors) {
+            if (isText(actor.name())) {
+                names.add(actor.name());
+            }
+        }
+        return names;
+    }
+
+    /** Reports {@code id} at {@code at} when an earlier question took it; records it otherwise. */
+    private static void uniqueId(List<Problem> errors, String at, String id, Map<String, String> seen) {
+        if (!isText(id)) {
+            return;
+        }
+        String first = seen.putIfAbsent(id, at);
+        if (first != null) {
+            errors.add(new Problem(at + "/id", "repeats the id of " + first));
+        }
+    }
+
+    private static boolean isText(String value) {
+        return value != null && NON_BLANK.matcher(value).find();
     }
 
     private static void nonFunctional(List<Problem> errors, List<NonFunctionalRequirement> requirements) {
