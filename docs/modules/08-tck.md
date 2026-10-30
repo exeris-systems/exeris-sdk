@@ -4,7 +4,7 @@ type: module
 visibility: public
 owning-repo: exeris-sdk
 status: active
-last-verified: 2026-10-30
+last-verified: 2026-10-29
 ---
 
 # Technology Compatibility Kit
