@@ -42,6 +42,8 @@ All public types are in `eu.exeris.sdk.sourcemodel.io`.
 
 The reader matches annotations by simple name, with no import resolution, and reads attribute values from their literals. A constant reference or expression is not folded. `@SagaStep.order` is the one exception: it also folds a same-file `final` field initialized with a literal.
 
+A field's type is the form the processor writes, `TypeMirror.toString()`: `String` reads as `java.lang.String` and `List<Order>` as `java.util.List<com.acme.Order>`. The reader resolves names from the file alone. It looks at member and enclosing types, the file's top-level types, single-type imports and `java.lang`. A name it cannot resolve is taken to be in the file's package, or kept as written when the file has an on-demand import. A `@Relationship` field is listed in `fields` as well as in `relationships`, because the processor takes the owning side's column from it.
+
 The reader mirrors the annotation processor's extraction, with two stated differences. It reads some facets ahead of the processor, and the `SourceModelReader` javadoc lists them with the shape ADR-042 fixes. It leaves `@Channel` and `@Schedule` unread.
 
 `unmodeledFacets` is the safety check for reattach. For a source with an `@ExerisDomain` or `@CapabilityModule` type, its result is non-empty when the source carries `@Channel`, `@Schedule`, a `@SagaStep` whose order cannot be resolved, or a non-literal `permissions` element. A caller doing a round trip should refuse or warn when it is non-empty, because a baseline from the processor may hold what the reader dropped.
@@ -53,6 +55,8 @@ The writer uses JavaParser's `LexicalPreservingPrinter`, so untouched nodes keep
 ### Detector
 
 The conflict rule is written once, in ADR-042 obligation 4 and the `SourceModelConflictDetector` javadoc. A user who already made the edit produces `Success`, not a conflict.
+
+A type in an operation is source text, the text the writer puts in the declaration. When the detector checks whether the user already made a `ChangeFieldType` or `AddField` edit, that text matches the qualified type the reader gives if the two are equal once package qualifiers are dropped and whitespace is normalised. So `BigDecimal` matches `java.math.BigDecimal`.
 
 The two-`DomainMetadata` `detect` is pure. The overloads that take baseline JSON and source text add the trust gate first, through `checkBaselineTrust`. The gate returns `NoBaseline` for a null, blank or unparseable baseline (`MISSING_BASELINE`) and for a `schemaVersion` other than `SchemaVersion.CURRENT` (`SCHEMA_VERSION_SKEW`). A baseline without a `sourceDigest` is still trusted. Overloads taking a `List<MutationOp>` check each op independently against the same pair.
 

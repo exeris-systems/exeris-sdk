@@ -4,6 +4,7 @@ import eu.exeris.sdk.sourcemodel.ast.CapabilityModuleMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DataScope;
 import eu.exeris.sdk.sourcemodel.ast.DomainEventMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
+import eu.exeris.sdk.sourcemodel.ast.FieldMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
 import eu.exeris.sdk.sourcemodel.ast.ProvidesMetadata;
 import eu.exeris.sdk.sourcemodel.ast.RelationshipMetadata;
@@ -737,9 +738,12 @@ class SourceModelIoTest {
         }
 
         @Test
-        void relationshipFieldsAreNotAlsoPlainFields() {
+        void relationshipFieldsAreAlsoFields() {
+            // The processor lists a @Relationship field in fields too: the owning side's column comes from it.
             DomainMetadata domain = reader.read(ORDER).orElseThrow();
-            assertThat(domain.fields()).isEmpty();
+            assertThat(domain.fields()).extracting(FieldMetadata::name, FieldMetadata::type).containsExactly(
+                    tuple("customer", "app.budgethq.order.Customer"),
+                    tuple("lines", "java.util.List<app.budgethq.order.OrderLine>"));
         }
     }
 
