@@ -19,7 +19,10 @@ public enum Facet {
     /** Entity name and package — the identity the whole baseline is addressed by. Mandatory. */
     IDENTITY,
 
-    /** Field names, types and {@code required} — the shape of the entity. Mandatory. */
+    /**
+     * Field names, types in the compiler's qualified form, and {@code required} — the shape of the
+     * entity, a {@code @Relationship} field included. Mandatory.
+     */
     FIELDS,
 
     /** {@code @Validation} constraint values carried on {@code FieldMetadata} (ADR-054). */
