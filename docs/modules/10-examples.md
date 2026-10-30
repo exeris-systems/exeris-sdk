@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Examples
 
-**Module:** `eu.exeris:exeris-sdk-examples` (0.13.0, not published)
+**Module:** `eu.exeris:exeris-sdk-examples` (0.13.1, not published)
 
 `exeris-sdk-examples` holds small annotated domains and the tests that read them back. Its purpose
 is to keep examples of the SDK surface compiling and true: each example is a `.java` file javac
