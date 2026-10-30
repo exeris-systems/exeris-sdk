@@ -138,7 +138,7 @@ class BriefReadinessTest {
             assertThat(paths(BriefReadiness.evaluate(withPurpose(blank))))
                     .as("U+%04X", c).containsExactly("/purpose");
         }
-        // Outside ECMA-262's \s: a zero-width space, NEL and U+180E (no longer Zs) are text.
+        // Outside ECMA-262's \s: a zero-width space, NEL and U+180E (format, not Zs) are text.
         for (int c : new int[] {0x200B, 0x0085, 0x180E}) {
             assertThat(BriefReadiness.evaluate(withPurpose(Character.toString(c))).errors())
                     .as("U+%04X", c).isEmpty();
