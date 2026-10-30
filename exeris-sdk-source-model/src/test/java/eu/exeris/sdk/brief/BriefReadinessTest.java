@@ -127,6 +127,26 @@ class BriefReadinessTest {
     }
 
     @Test
+    @DisplayName("blank is ECMA-262 whitespace, as the schema's pattern means it, not Java's ASCII \\s")
+    void blankIsEcmaWhitespace() {
+        // ECMA-262 WhiteSpace and LineTerminator beyond Java's [ \t\n\x0B\f\r]: U+00A0, U+FEFF,
+        // the Zs spaces, U+2028 and U+2029.
+        int[] ecmaOnly = {0x00A0, 0xFEFF, 0x1680, 0x2000, 0x2005, 0x200A, 0x202F, 0x205F, 0x3000,
+                0x2028, 0x2029};
+        for (int c : ecmaOnly) {
+            String blank = Character.toString(c).repeat(2);
+            assertThat(paths(BriefReadiness.evaluate(withPurpose(blank))))
+                    .as("U+%04X", c).containsExactly("/purpose");
+        }
+        // Outside ECMA-262's \s: a zero-width space, NEL and U+180E (format, not Zs) are text.
+        for (int c : new int[] {0x200B, 0x0085, 0x180E}) {
+            assertThat(BriefReadiness.evaluate(withPurpose(Character.toString(c))).errors())
+                    .as("U+%04X", c).isEmpty();
+        }
+        assertThat(BriefReadiness.evaluate(withPurpose("\u00A0Keep customers.\u00A0")).errors()).isEmpty();
+    }
+
+    @Test
     @DisplayName("EARS: each kind's fields, checked by structure")
     void ears() {
         List<EarsCriterion> criteria = List.of(
@@ -216,5 +236,10 @@ class BriefReadinessTest {
     private static Brief withWorkflow(Workflow workflow) {
         return new Brief("0.13.0", "P", null, List.of("N"), List.of(new Actor("A", null, null)),
                 null, List.of(workflow), null, null, null, null);
+    }
+
+    private static Brief withPurpose(String purpose) {
+        return new Brief("0.13.0", purpose, null, List.of("N"), List.of(new Actor("A", null, null)),
+                null, List.of(new Workflow("W", null, List.of(ALWAYS), null)), null, null, null, null);
     }
 }
