@@ -717,6 +717,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   `TypeMirror.toString()` form and `@Relationship` fields listed in `fields`; the conflict
   detector matches an operation's source-text type with the read one; two reader TCK cases
   (#253, #256)
+- [x] **Action parameter types and labels in parity** — parameter types in the same qualified form,
+  and `actionsAgree` compares each action's `displayName` and parameter types (#253, #261)
 - [x] **Blank brief text is ECMA-262 whitespace** — `BriefReadiness` treats U+00A0, U+FEFF, the
   `Zs` spaces, U+2028 and U+2029 as blank, as the schema's `\S` pattern does (#254, #255)
 - [x] **Brief rules outside the schema** — `evaluate(brief)` checks concern hints against the
