@@ -80,9 +80,9 @@ import java.util.stream.Collectors;
  * deprecated {@code required}/{@code validateOn} fallbacks); a field <b>without</b>
  * {@code @Field} uses {@link FieldMetadata#simple} (search/sort/filter default
  * {@code true}) — the processor's deliberate default asymmetry, reproduced exactly.
- * A field's type is the processor's {@code asType().toString()} form, resolved syntactically
- * (a {@code String} field reads {@code java.lang.String}), and a {@code @Relationship} field is
- * a field as well as a relationship.
+ * A field's type, and an action parameter's, is the processor's {@code asType().toString()}
+ * form, resolved syntactically (a {@code String} field reads {@code java.lang.String}), and a
+ * {@code @Relationship} field is a field as well as a relationship.
  * A {@code static} or {@code transient} field is not an entity field and is read by no facet.
  * For relationships, {@code targetEntity} (declared, else the field type with a collection's
  * element type unwrapped), {@code relationshipType}, {@code mappedBy}, {@code displayField} and
@@ -921,7 +921,7 @@ public final class SourceModelReader {
                 AnnotationExpr actionParam = parameter.getAnnotationByName("ActionParam").orElse(null);
                 AnnotationExpr queryParam = parameter.getAnnotationByName("QueryParam").orElse(null);
                 if (actionParam != null || queryParam != null) {
-                    builder.addParam(actionParam(parameter, actionParam, queryParam));
+                    builder.addParam(actionParam(parameter, method, type, actionParam, queryParam));
                 }
             }
             actions.add(builder.build());
@@ -1072,19 +1072,26 @@ public final class SourceModelReader {
      * attributes both annotations declare — {@code required}, {@code description} and
      * {@code defaultValue}: each is taken from {@code @ActionParam} when it declares it, else
      * from {@code @QueryParam}, else the shared default ({@code true}, none, none). A blank
-     * string counts as undeclared.
+     * string counts as undeclared. The type is {@link #typeName}'s, the form the processor's
+     * {@code asType().toString()} gives, with a varargs parameter written {@code T...} as javac
+     * writes it.
      *
+     * @param parameter the parameter
+     * @param method the action method declaring it
+     * @param declaring the type declaring {@code method}
      * @param actionParam the parameter's {@code @ActionParam}, or {@code null}
      * @param queryParam the parameter's {@code @QueryParam}, or {@code null}
      */
-    private ActionParamMetadata actionParam(Parameter parameter, AnnotationExpr actionParam,
-                                            AnnotationExpr queryParam) {
+    private ActionParamMetadata actionParam(Parameter parameter, MethodDeclaration method,
+                                            ClassOrInterfaceDeclaration declaring,
+                                            AnnotationExpr actionParam, AnnotationExpr queryParam) {
         Optional<AnnotationExpr> nearer = Optional.ofNullable(actionParam);
         Optional<AnnotationExpr> farther = Optional.ofNullable(queryParam);
         String name = nearer.flatMap(ann -> nonBlankStringAttr(ann, "name"))
                 .orElse(parameter.getNameAsString());
         // required defaults to true on both annotations.
-        ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, parameter.getTypeAsString())
+        String type = typeName(parameter.getType(), method, declaring) + (parameter.isVarArgs() ? "..." : "");
+        ActionParamMetadata.Builder builder = ActionParamMetadata.builder(name, type)
                 .required(nearer.flatMap(ann -> boolAttr(ann, REQUIRED))
                         .or(() -> farther.flatMap(ann -> boolAttr(ann, REQUIRED)))
                         .orElse(true));

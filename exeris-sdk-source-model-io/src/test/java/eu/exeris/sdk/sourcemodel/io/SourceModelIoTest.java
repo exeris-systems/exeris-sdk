@@ -879,7 +879,7 @@ class SourceModelIoTest {
 
             assertThat(approve.params()).anySatisfy(p -> {
                 assertThat(p.name()).isEqualTo("reason");
-                assertThat(p.type()).isEqualTo("String");
+                assertThat(p.type()).isEqualTo("java.lang.String");
                 assertThat(p.required()).isTrue();
                 assertThat(p.description()).isEqualTo("Why it is approved");
             });

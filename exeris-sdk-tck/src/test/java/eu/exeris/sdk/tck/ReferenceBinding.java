@@ -138,17 +138,19 @@ final class ReferenceBinding {
      */
     static List<ActionMetadata> orderActions() {
         return List.of(
-                action("submit", "POST", "void"),
-                action("customer", "GET", TckCorpus.packageName() + "." + TckCorpus.CUSTOMER),
-                action("receipt", "GET", ORDER_RECEIPT),
-                action("receipts", "GET", "java.util.List<" + ORDER_RECEIPT + ">"),
-                action("lineCount", "GET", "int"),
+                action("submit", "Submit", "POST", "void"),
+                action("customer", "Customer", "GET", TckCorpus.packageName() + "." + TckCorpus.CUSTOMER),
+                action("receipt", "Receipt", "GET", ORDER_RECEIPT),
+                action("receipts", "Receipts", "GET", "java.util.List<" + ORDER_RECEIPT + ">"),
+                action("lineCount", "Line count", "GET", "int"),
                 ActionMetadata.builder("approve")
+                        .displayName("Approve")
                         .methodName("approve")
                         .resultType("void")
                         .permissions(List.of("order:approve"))
                         .build(),
                 ActionMetadata.builder("track")
+                        .displayName("Track")
                         .methodName("track")
                         .httpMethod("GET")
                         .resultType("void")
@@ -161,12 +163,14 @@ final class ReferenceBinding {
      * One reference action, so a self-test can rebuild it with a single component changed.
      *
      * @param name the action and method name
+     * @param label the declared label, carried as {@code displayName}
      * @param httpMethod the declared HTTP method
      * @param resultType the return type as javac reports it
      * @return the action
      */
-    static ActionMetadata action(String name, String httpMethod, String resultType) {
+    static ActionMetadata action(String name, String label, String httpMethod, String resultType) {
         return ActionMetadata.builder(name)
+                .displayName(label)
                 .methodName(name)
                 .httpMethod(httpMethod)
                 .resultType(resultType)
@@ -184,7 +188,7 @@ final class ReferenceBinding {
                 .httpMethod("GET")
                 .methodName("search")
                 .resultType("void")
-                .addParam(ActionParamMetadata.builder("term", "String")
+                .addParam(ActionParamMetadata.builder("term", "java.lang.String")
                         .required(true)
                         .bindingSource(ParamSource.QUERY)
                         .queryKey("q")
@@ -406,6 +410,7 @@ final class ReferenceBinding {
                                 .build()))
                 .graphMetadata(new GraphMetadata(TckCorpus.PRODUCT, productProperties(), List.of(), null))
                 .actions(List.of(ActionMetadata.builder("reprice")
+                        .displayName("Reprice")
                         .methodName("reprice")
                         .resultType("void")
                         .permissions(List.of("product:reprice"))

@@ -408,6 +408,31 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("an action carries its label, and each parameter's type as javac writes it")
+    void actionLabelAndParameterTypesAreTheDeclaredOnes() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.QUERY_PARAMS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        ActionMetadata search = order.actions().stream()
+                .filter(a -> "search".equals(a.name()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "Order declares @Action(name = \"search\"); the reader returned "
+                                + order.actions().stream().map(ActionMetadata::name).toList()));
+        assertThat(search.displayName())
+                .withFailMessage("Order.search declares label = \"Search\"; displayName was read as %s.",
+                        search.displayName())
+                .isEqualTo("Search");
+        List<String> types = List.of(param(search, "term").type(), param(search, "limit").type());
+        assertThat(types)
+                .withFailMessage(
+                        "Order.search(String term, int limit) was read with parameter types %s; expected "
+                                + "[java.lang.String, int]. A producer writes the type javac resolves, "
+                                + "and a generated client reads that form.", types)
+                .containsExactly("java.lang.String", "int");
+    }
+
+    @Test
     @DisplayName("@NavMenu is carried as the navigation entry the source declares, a zero order included")
     void navMenuIsTheDeclaredOne() {
         requireSupported(Facet.NAV_MENU);
