@@ -20,16 +20,58 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.13.1` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.13.2` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
 ## [Unreleased]
 
 ### Changed
 
-- **The semver gate compares with `0.13.1`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.1`,
+- **The semver gate compares with `0.13.2`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.2`,
   the last release on Maven Central, so `-Psemver` in `build.yml` and `release.yml` checks the 1.0.0
   line against it.
+
+## [0.13.2] — 2026-10-31
+
+### Fixed
+
+- **`exeris-sdk-source-model-io` writes the processor's field shape.** The exeris-tooling processor
+  writes a field's type as `TypeMirror.toString()` (`java.lang.String`,
+  `java.util.List<com.acme.Order>`) and lists a `@Relationship` field in `fields` as well as in
+  `relationships`. `SourceModelReader` wrote the type as written in source (`String`) and left
+  relationship fields out, so the TCK parity suite bound to the processor reported 11 `FIELDS`
+  disagreements on the corpus, and a processor baseline read as drifted on every field typed by a
+  simple name (ADR-042). The reader now resolves a field's type as it already resolves
+  `ActionMetadata.resultType` and lists relationship fields. `SourceModelConflictDetector` compares
+  an operation's type, which is source text, with the read type once package qualifiers are dropped,
+  so `ChangeFieldType(…, "BigDecimal")` is convergent with `java.math.BigDecimal`. The reader TCK
+  gains `fieldTypesAreQualified` and `relationshipFieldsAreFields`. See
+  [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
+- **`exeris-sdk-source-model-io` writes action parameter types as the processor does, and the TCK
+  compares actions in full.** `ActionParamMetadata.type` was the source text (`String`) where the
+  processor writes `java.lang.String`; the reader now resolves it as it resolves a field type, with
+  a varargs parameter as `T...`. The parity case `actionsAgree` compares each action's
+  `displayName` and the type of each parameter both sides read, and the reader TCK gains
+  `actionLabelAndParameterTypesAreTheDeclaredOnes`. The processor does not write `@Action.label`
+  yet, so a binding to it fails `actionsAgree` until exeris-tooling does. See
+  [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
+- **`BriefReadiness` reads blank text as `brief-schema.json` does.** `@SchemaRules.NonBlank` is
+  emitted as `pattern: "\S"`, an ECMA-262 expression, where `\s` covers U+00A0, U+FEFF, the other
+  `Zs` spaces, U+2028 and U+2029. `BriefReadiness` checked the rule with Java's ASCII-only `\s`, so
+  a `purpose` of non-breaking spaces was valid there and invalid in a JSON Schema validator such as
+  exeris-ai-bridge's. The check now uses the ECMA-262 set, and `BriefReadinessTest` pins every
+  character the two engines differ on. See [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
+- **`BriefReadiness` checks concern hints by default and enforces the brief's two prose rules.**
+  `evaluate(brief)` left concern hints unchecked, so a hint naming no annotation was valid there
+  and invalid against `brief-schema.json`. `BriefSchemaProcessor` now also writes the vocabulary as
+  `META-INF/exeris/concern-hints.txt`, and the one-argument form checks hints against it. A
+  repeated `OpenQuestion.id` and a `Workflow.actors` entry naming no declared actor, both stated
+  in the schema's prose and checked nowhere, now make a brief invalid. The schema lists both in
+  `x-exeris-reader-requirements` (ADR-106, 2026-10-30 amendment); `briefSchemaFormat` stays `1`.
+  Three planted-gap fixtures cover them. See [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
 
 ## [0.13.1] — 2026-10-30
 
@@ -2313,6 +2355,7 @@ None — the first milestone.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.13.2]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.2
 [0.13.1]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.1
 [0.13.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.0
 [0.12.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.12.0

@@ -34,7 +34,7 @@ The processors need javac's Compiler Tree API to read javadoc. Each processor th
 |---|---|---|---|
 | `AnnotationCatalogProcessor` | In `META-INF/services/javax.annotation.processing.Processor` | `exeris-sdk-annotations` | `META-INF/exeris/annotation-catalog.json` |
 | `AstSchemaProcessor` | Named explicitly in the `exeris-sdk-source-model` compiler configuration | `exeris-sdk-source-model` | `META-INF/exeris/ast-schema.json` |
-| `BriefSchemaProcessor` | Named explicitly in the `exeris-sdk-source-model` compiler configuration | `exeris-sdk-source-model` | `META-INF/exeris/brief-schema.json` |
+| `BriefSchemaProcessor` | Named explicitly in the `exeris-sdk-source-model` compiler configuration | `exeris-sdk-source-model` | `META-INF/exeris/brief-schema.json`, `META-INF/exeris/concern-hints.txt` |
 
 All three are observers: `process` returns `false`, claiming nothing. Each writes once, when `roundEnv.processingOver()` is true. The AST and brief processors write only if they saw their records.
 
@@ -68,7 +68,7 @@ A JSON Schema of the `eu.exeris.sdk.brief.Brief` record, rooted there, with `bri
 - **Constraints.** `required`, `minItems`, patterns and the per-kind EARS and open-question rules come from the package-private `SchemaRules` annotations on the records.
 - **Reachable types only.** Definitions are the types reachable from `Brief`, so a helper such as the readiness report never becomes wire format.
 
-The concern-hint vocabulary is the set of top-level annotation names from the annotation sources, minus annotations deprecated for removal and minus repeatable containers. The processor reads those sources directly, so it does not depend on the catalog processor's output or on module build order.
+The concern-hint vocabulary is the set of top-level annotation names from the annotation sources, minus annotations deprecated for removal and minus repeatable containers. The processor reads those sources directly, so it does not depend on the catalog processor's output or on module build order. It writes the vocabulary twice, as the schema's `ConcernHint` enum and as `concern-hints.txt`, one name per line, for `BriefReadiness`, which has no JSON parser.
 
 Options: `-Aexeris.schema.sdkVersion`, `-Aexeris.brief.schemaFormat` (an integer) and `-Aexeris.brief.annotationSources` (a directory, set to the `exeris-sdk-annotations` source root).
 

@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -141,11 +142,13 @@ public final class SourceModelConflictDetector {
 
         return switch (op) {
             case MutationOp.AddField a -> field(path, baseline, current,
-                    cur -> cur.isPresent() && cur.get().equals(a.field()), render(a.field()));
+                    cur -> cur.isPresent() && sameType(cur.get().type(), a.field().type())
+                            && cur.get().equals(withType(a.field(), cur.get().type())),
+                    render(a.field()));
             case MutationOp.RemoveField ignored -> field(path, baseline, current,
                     Optional::isEmpty, null);
             case MutationOp.ChangeFieldType c -> field(path, baseline, current,
-                    cur -> cur.isPresent() && cur.get().type().equals(c.newType()), "type=" + c.newType());
+                    cur -> cur.isPresent() && sameType(cur.get().type(), c.newType()), "type=" + c.newType());
             case MutationOp.RenameField r -> renameField(r, path, baseline, current);
             case MutationOp.AddRelationship a -> relationship(path, baseline, current,
                     cur -> cur.isPresent() && cur.get().equals(a.relationship()), render(a.relationship()));
@@ -396,6 +399,64 @@ public final class SourceModelConflictDetector {
         return domain.actions().stream()
                 .filter(a -> name.equals(a.name()))
                 .findFirst();
+    }
+
+    /**
+     * Whether a field read as {@code read} already has the type a mutation writes as
+     * {@code written}. The reader gives a type in the processor's qualified form
+     * ({@code java.util.List<java.math.BigDecimal>}); an op carries the source text its writer puts
+     * in the declaration, which may name the same type by its simple name
+     * ({@code List<BigDecimal>}). The two agree when they are equal, or equal once package
+     * qualifiers are dropped from both and their whitespace normalised.
+     */
+    static boolean sameType(String read, String written) {
+        return read.equals(written) || simpleForm(read).equals(simpleForm(written));
+    }
+
+    /**
+     * {@code type} with whitespace dropped around {@code , < > [ ]} and collapsed elsewhere, and, in
+     * each dotted name, the leading segments that
+     * start with a lower-case letter (the package) dropped: {@code java.util.Map.Entry<java.lang.String,K>}
+     * becomes {@code Map.Entry<String,K>}. A primitive or a type variable is unchanged.
+     */
+    private static String simpleForm(String type) {
+        String compact = type.strip().replaceAll("\\s*([,<>\\[\\]])\\s*", "$1").replaceAll("\\s+", " ");
+        StringBuilder out = new StringBuilder(compact.length());
+        int start = 0;
+        for (int i = 0; i <= compact.length(); i++) {
+            if (i == compact.length() || !isNamePart(compact.charAt(i))) {
+                out.append(withoutPackage(compact.substring(start, i)));
+                if (i < compact.length()) {
+                    out.append(compact.charAt(i));
+                }
+                start = i + 1;
+            }
+        }
+        return out.toString();
+    }
+
+    private static boolean isNamePart(char c) {
+        return c == '.' || Character.isJavaIdentifierPart(c);
+    }
+
+    private static String withoutPackage(String name) {
+        String[] segments = name.split("\\.", -1);
+        int first = 0;
+        while (first < segments.length - 1
+                && !segments[first].isEmpty() && Character.isLowerCase(segments[first].charAt(0))) {
+            first++;
+        }
+        return String.join(".", Arrays.copyOfRange(segments, first, segments.length));
+    }
+
+    private FieldMetadata withType(FieldMetadata field, String type) {
+        return new FieldMetadata(field.name(), type, field.columnName(), field.displayName(),
+                field.description(), field.required(), field.unique(), field.indexed(), field.searchable(),
+                field.sortable(), field.filterable(), field.audited(), field.readOnly(), field.hidden(),
+                field.defaultValue(), field.minLength(), field.maxLength(), field.min(), field.max(),
+                field.pattern(), field.format(), field.dataType(), field.enumType(), field.computed(),
+                field.computedFrom(), field.inCreate(), field.inUpdate(),
+                field.displayNameKey(), field.descriptionKey(), field.derived(), field.blob());
     }
 
     private FieldMetadata withName(FieldMetadata field, String newName) {

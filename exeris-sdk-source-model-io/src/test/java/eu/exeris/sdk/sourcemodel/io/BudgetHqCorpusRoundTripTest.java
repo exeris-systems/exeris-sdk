@@ -1,5 +1,7 @@
 package eu.exeris.sdk.sourcemodel.io;
 
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import eu.exeris.sdk.sourcemodel.ast.ActionMetadata;
 import eu.exeris.sdk.sourcemodel.ast.DomainMetadata;
 import eu.exeris.sdk.sourcemodel.ast.EnumMetadata;
@@ -184,7 +186,10 @@ class BudgetHqCorpusRoundTripTest {
     void changeFieldTypeThereAndBackRestoresSourceExactly(CorpusFile file) {
         DomainMetadata domain = reader.read(file.source()).orElseThrow();
         FieldMetadata first = domain.fields().getFirst();
-        String originalType = first.type();
+        // the writer writes source text; the AST carries the qualified form, so take the declared text
+        String originalType = StaticJavaParser.parse(file.source())
+                .findFirst(VariableDeclarator.class, v -> v.getNameAsString().equals(first.name()))
+                .orElseThrow().getTypeAsString();
         // a sentinel type guaranteed different from any corpus field's declared type
         String sentinel = "ProbeType";
         assertThat(originalType).isNotEqualTo(sentinel);
@@ -210,8 +215,8 @@ class BudgetHqCorpusRoundTripTest {
         assertThat(account.module()).isEqualTo("sync");
         assertThat(account.relationships()).extracting("fieldName", "targetEntity")
                 .containsExactly(tuple("connection", "BankConnection"));
-        // FK fields stay plain fields; the relationship is modelled separately
-        assertThat(account.findField("connection")).isEmpty();
+        // a relationship field is a field too, as the processor lists it
+        assertThat(account.findField("connection")).isPresent();
     }
 
     @Test

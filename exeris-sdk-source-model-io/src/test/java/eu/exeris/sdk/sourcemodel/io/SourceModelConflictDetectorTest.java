@@ -84,6 +84,47 @@ class SourceModelConflictDetectorTest {
     }
 
     @Test
+    @DisplayName("changeFieldType written by simple name is convergent with the qualified type the reader gives")
+    void changeFieldTypeConvergentAcrossForms() {
+        DomainMetadata baseline = domainWithFields(field("amount", "java.math.BigDecimal"));
+        DomainMetadata current = domainWithFields(field("amount", "java.util.List<java.lang.Long>"));
+        String path = MutationPath.field(ENTITY, "amount").toString();
+
+        assertThat(detector.detect(new MutationOp.ChangeFieldType(path, "List<Long>"), baseline, current))
+                .isInstanceOf(MutationResult.Success.class);
+        assertThat(detector.detect(new MutationOp.ChangeFieldType(path, "List<Integer>"), baseline, current))
+                .isInstanceOf(MutationResult.Conflict.class);
+    }
+
+    @Test
+    @DisplayName("addField written by simple name is convergent with the field the reader gives")
+    void addFieldConvergentAcrossForms() {
+        DomainMetadata baseline = domainWithFields();
+        DomainMetadata current = domainWithFields(field("discount", "java.math.BigDecimal"));
+        String path = MutationPath.field(ENTITY, "discount").toString();
+
+        assertThat(detector.detect(new MutationOp.AddField(path, field("discount", "BigDecimal")), baseline, current))
+                .isInstanceOf(MutationResult.Success.class);
+        assertThat(detector.detect(new MutationOp.AddField(path, field("discount", "Long")), baseline, current))
+                .isInstanceOf(MutationResult.Conflict.class);
+    }
+
+    @Test
+    @DisplayName("sameType drops package qualifiers and whitespace, and nothing else")
+    void sameType() {
+        assertThat(SourceModelConflictDetector.sameType("java.lang.String", "String")).isTrue();
+        assertThat(SourceModelConflictDetector.sameType(
+                "java.util.Map.Entry<java.lang.String,K>", "Map.Entry<String, K>")).isTrue();
+        assertThat(SourceModelConflictDetector.sameType(
+                "java.util.List<? extends java.lang.Number>", "List<? extends Number>")).isTrue();
+        assertThat(SourceModelConflictDetector.sameType("java.lang.String[]", "String[]")).isTrue();
+        assertThat(SourceModelConflictDetector.sameType("int", "int")).isTrue();
+        assertThat(SourceModelConflictDetector.sameType("java.lang.String", "Strings")).isFalse();
+        assertThat(SourceModelConflictDetector.sameType("java.util.List<java.lang.Long>", "List")).isFalse();
+        assertThat(SourceModelConflictDetector.sameType("java.lang.Integer", "int")).isFalse();
+    }
+
+    @Test
     @DisplayName("changeFieldType conflicts when the user retyped to a different type")
     void changeFieldTypeConflict() {
         DomainMetadata baseline = domainWithFields(field("amount", "BigDecimal"));

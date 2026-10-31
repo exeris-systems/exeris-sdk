@@ -178,7 +178,18 @@ public abstract class AbstractMetadataParityTck extends AbstractExerisTck {
                 if (r == null) {
                     continue;
                 }
-                compare(gaps, ACTIONS + entry.getKey() + "/httpMethod", p.httpMethod(), r.httpMethod());
+                String path = ACTIONS + entry.getKey();
+                compare(gaps, path + "/httpMethod", p.httpMethod(), r.httpMethod());
+                compare(gaps, path + "/displayName", p.displayName(), r.displayName());
+                // Which parameters each side has is the QUERY_PARAMS facet's comparison; the
+                // type of one both sides have is the action's shape.
+                Map<String, ActionParamMetadata> pr = byKey(r.params(), ActionParamMetadata::name);
+                for (ActionParamMetadata param : p.params()) {
+                    ActionParamMetadata q = pr.get(param.name());
+                    if (q != null) {
+                        compare(gaps, path + "/params/" + param.name() + "/type", param.type(), q.type());
+                    }
+                }
             }
             return gaps;
         });

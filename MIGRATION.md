@@ -18,6 +18,50 @@ the upgrade steps required.
 
 ---
 
+## 0.13.1 → 0.13.2
+
+### The reader writes qualified field types and lists relationship fields
+
+**Impact on code: none; the reader's output changes.** `SourceModelReader` returns
+`FieldMetadata.type` in the processor's form: `java.lang.String` where it returned `String`, and
+`java.util.List<com.acme.Order>` where it returned `List<Order>`. A primitive, an array's brackets,
+a type variable and a name the reader cannot resolve under an on-demand import are unchanged. A
+`@Relationship` field now also appears in `fields`, as a field without `@Field`. Code that matched a
+read type against a simple name compares with the qualified one, or with both.
+
+A mutation operation still carries a type as source text. `SourceModelConflictDetector` matches it
+with the read type once package qualifiers are dropped. A TCK reader binding returns the new shape;
+the reader suite asserts it in `fieldTypesAreQualified` and `relationshipFieldsAreFields`.
+
+`ActionParamMetadata.type` follows the same form: `java.lang.String` where the reader returned
+`String`, and `java.lang.String...` for a varargs parameter. A TCK parity binding now also compares
+each action's `displayName` and its parameters' types under `ACTIONS`; a producer that writes no
+`@Action.label` fails `actionsAgree`.
+
+### `BriefReadiness` treats non-ASCII whitespace as blank
+
+**Impact on code: none.** A brief whose required text holds only ECMA-262 whitespace outside ASCII
+(U+00A0, U+FEFF, a `Zs` space, U+2028, U+2029) was valid and could be ready; it is now invalid at
+that pointer, as `brief-schema.json` already made it for a JSON Schema validator.
+
+### `BriefReadiness` checks hints by default and two rules outside the schema
+
+**Impact on code: none; the verdict changes.** No signature changes. A brief that
+`BriefReadiness.evaluate(brief)` reported valid, and so possibly ready, may now be reported invalid
+and not ready, at one of three pointers:
+
+- a concern hint that names no annotation in the SDK catalog, which `brief-schema.json` already
+  rejected;
+- the `id` of an open question repeating an earlier question's `id`;
+- a workflow actor that names no entry of `actors`.
+
+`evaluate(brief, null, source)` still leaves hints unchecked. A caller that gates on `valid()` or
+`ready()` stops at such a brief; to accept one, fix the brief. A consumer that validates briefs
+with a JSON Schema validator applies the two rules from the schema's
+`x-exeris-reader-requirements`.
+
+---
+
 ## 0.13.0 → 0.13.1
 
 ### The TCK corpus entities declare `id`

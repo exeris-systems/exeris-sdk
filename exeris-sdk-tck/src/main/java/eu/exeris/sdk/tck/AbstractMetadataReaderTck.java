@@ -112,6 +112,39 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
     }
 
     @Test
+    @DisplayName("a field's type is the compiler's qualified form, type arguments included")
+    void fieldTypesAreQualified() {
+        requireSupported(Facet.FIELDS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
+        String orders = "java.util.List<" + TckCorpus.packageName() + "." + TckCorpus.ORDER + ">";
+        assertThat(List.of(field(order, "reference").type(), field(order, "totalCents").type(),
+                field(customer, "orders").type()))
+                .withFailMessage(
+                        "Order.reference, Order.totalCents and Customer.orders were read as types %s; "
+                                + "expected [java.lang.String, java.lang.Long, %s]. A producer writes the "
+                                + "type javac resolves, and every generator reads that form, so a simple "
+                                + "name as written in source is a different type to them.",
+                        List.of(field(order, "reference").type(), field(order, "totalCents").type(),
+                                field(customer, "orders").type()), orders)
+                .containsExactly("java.lang.String", "java.lang.Long", orders);
+    }
+
+    @Test
+    @DisplayName("a @Relationship field is an entity field as well as a relationship")
+    void relationshipFieldsAreFields() {
+        requireSupported(Facet.FIELDS);
+        DomainMetadata customer = read(TckCorpus.sourceOf(TckCorpus.CUSTOMER));
+        List<String> names = customer.fields().stream().map(FieldMetadata::name).toList();
+        assertThat(names)
+                .withFailMessage(
+                        "Customer declares the relationship fields orders and lastOrderId, and the "
+                                + "reader returned fields %s. A relationship field is also a field: the "
+                                + "owning side's column and its accessors come from it.", names)
+                .contains("orders", "lastOrderId");
+    }
+
+    @Test
     @DisplayName("@Field(required) is carried on the field")
     void requiredIsCarriedOnTheField() {
         requireSupported(Facet.FIELDS);
@@ -372,6 +405,31 @@ public abstract class AbstractMetadataReaderTck extends AbstractExerisTck {
                                 + "as required. A dropped false reads as the annotation default, "
                                 + "true, and a request without the key is refused.")
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("an action carries its label, and each parameter's type as javac writes it")
+    void actionLabelAndParameterTypesAreTheDeclaredOnes() {
+        requireSupported(Facet.ACTIONS);
+        requireSupported(Facet.QUERY_PARAMS);
+        DomainMetadata order = read(TckCorpus.sourceOf(TckCorpus.ORDER));
+        ActionMetadata search = order.actions().stream()
+                .filter(a -> "search".equals(a.name()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "Order declares @Action(name = \"search\"); the reader returned "
+                                + order.actions().stream().map(ActionMetadata::name).toList()));
+        assertThat(search.displayName())
+                .withFailMessage("Order.search declares label = \"Search\"; displayName was read as %s.",
+                        search.displayName())
+                .isEqualTo("Search");
+        List<String> types = List.of(param(search, "term").type(), param(search, "limit").type());
+        assertThat(types)
+                .withFailMessage(
+                        "Order.search(String term, int limit) was read with parameter types %s; expected "
+                                + "[java.lang.String, int]. A producer writes the type javac resolves, "
+                                + "and a generated client reads that form.", types)
+                .containsExactly("java.lang.String", "int");
     }
 
     @Test

@@ -57,6 +57,29 @@ class MetadataParityTckSelfTest {
     }
 
     @Test
+    @DisplayName("an action label one side does not write, or a parameter type in another form, is caught")
+    void actionLabelAndParameterTypeDivergenceIsCaught() {
+        // The producer as it stands: no @Action.label written.
+        Parity labelBlind = new Parity(m -> copyOf(m).actions(m.actions().stream()
+                .map(a -> ReferenceBinding.action(a.name(), null, a.httpMethod(), a.resultType()))
+                .toList()).build(), UnaryOperator.identity());
+        assertThatThrownBy(labelBlind::actionsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("actions/submit/displayName");
+
+        ActionMetadata search = ReferenceBinding.orderSearch();
+        ActionMetadata.Builder asWritten = ActionMetadata.builder(search.name()).displayName(search.displayName())
+                .httpMethod(search.httpMethod()).methodName(search.methodName()).resultType(search.resultType());
+        search.params().forEach(p -> asWritten.addParam(ActionParamMetadata
+                .builder(p.name(), p.type().replace("java.lang.", ""))
+                .required(p.required()).bindingSource(p.bindingSource()).queryKey(p.queryKey()).build()));
+        Parity typeSplit = new Parity(UnaryOperator.identity(), m -> withSearch(m, asWritten.build()));
+        assertThatThrownBy(typeSplit::actionsAgree)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("actions/search/params/term/type");
+    }
+
+    @Test
     @DisplayName("a cardinality read under the wrong key is caught")
     void cardinalityDivergenceIsCaught() {
         // The exact shape of the shipped defect: the reader takes the declared attribute, the
@@ -524,7 +547,7 @@ class MetadataParityTckSelfTest {
                 .fields(source.fields())
                 .actions(source.actions().stream()
                         .map(a -> actionName.equals(a.name())
-                                ? ReferenceBinding.action(a.name(), a.httpMethod(), resultType)
+                                ? ReferenceBinding.action(a.name(), a.displayName(), a.httpMethod(), resultType)
                                 : a)
                         .toList())
                 .relationships(source.relationships())

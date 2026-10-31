@@ -50,7 +50,7 @@ The SDK reports outcomes. Whether to merge, prompt or auto-apply is the host's d
 
 ### Brief
 
-`Brief` is the shape of `docs/briefs/<area>.brief.yaml`. `BriefReadiness.evaluate` returns a `Report` with `valid`, `ready`, `errors`, `assumed`, `unresolved` and `unchecked`. A brief is ready when it is valid and no blocking question is open. Unresolved references do not change readiness. The wire format moves with `briefSchemaFormat`, an integer a consumer pins to. Rules are in ADR-106.
+`Brief` is the shape of `docs/briefs/<area>.brief.yaml`. `BriefReadiness.evaluate` returns a `Report` with `valid`, `ready`, `errors`, `assumed`, `unresolved` and `unchecked`. A brief is ready when it is valid and no blocking question is open. Valid means the schema's constraints plus the two reader requirements `BriefReadiness` enforces beyond them, which JSON Schema cannot express: open-question ids are unique, and every workflow actor names a declared actor. `evaluate(brief)` checks concern hints against `META-INF/exeris/concern-hints.txt`, which ships in this jar. Unresolved references do not change readiness. The wire format moves with `briefSchemaFormat`, an integer a consumer pins to. Rules are in ADR-106.
 
 ### Guard tests
 
@@ -87,6 +87,7 @@ The records are immutable. Lists are copied on construction, so a constructed re
 | A baseline stamped with another `SchemaVersion`, or with none | Reported as `SCHEMA_VERSION_SKEW` by the `-io` layer. The SDK never assumes compatibility |
 | A brief with an unknown property, bound with a lenient reader | The property is dropped silently. Validate against `brief-schema.json` first |
 | `BriefReadiness.evaluate(null)` | A `Report` that is not valid and not ready, with one problem; it does not throw |
+| A brief with a repeated question id or an undeclared workflow actor | A schema validator accepts it; `BriefReadiness` reports it invalid at the offending pointer. The schema names both rules in `x-exeris-reader-requirements` |
 
 Trade-off: records with many trailing components are awkward to construct by position. That cost is accepted for wire stability. Prefer the builders, and note that `SystemFieldsMetadata` is built through `builder()` so a non-canonical name is set by name.
 

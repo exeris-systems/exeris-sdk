@@ -346,20 +346,25 @@ class BriefSchemaContractTest {
     // ---- fixtures --------------------------------------------------------
 
     @Test
-    @DisplayName("every fixture: the schema and BriefReadiness agree, and each planted gap is reported")
+    @DisplayName("every fixture: BriefReadiness agrees with the schema, and adds only the rules outside it")
     void fixturesMeetTheirExpectations() throws Exception {
-        record Expect(boolean schemaValid, boolean ready) {
+        // valid differs from schemaValid only for a rule the schema states in
+        // x-exeris-reader-requirements and cannot express.
+        record Expect(boolean schemaValid, boolean valid, boolean ready) {
         }
         Map<String, Expect> expected = new LinkedHashMap<>();
-        expected.put("ready.brief.yaml", new Expect(true, true));
-        expected.put("minimal.brief.yaml", new Expect(true, true));
-        expected.put("gap-workflow-without-response.brief.yaml", new Expect(false, false));
-        expected.put("gap-blocking-question-open.brief.yaml", new Expect(true, false));
-        expected.put("gap-assumption-without-owner.brief.yaml", new Expect(false, false));
-        expected.put("gap-re-encoded-structure.brief.yaml", new Expect(false, false));
-        expected.put("gap-dangling-fulfilled-by.brief.yaml", new Expect(true, true));
-        expected.put("empty.brief.yaml", new Expect(false, false));
-        expected.put("empty-object.brief.yaml", new Expect(false, false));
+        expected.put("ready.brief.yaml", new Expect(true, true, true));
+        expected.put("minimal.brief.yaml", new Expect(true, true, true));
+        expected.put("gap-workflow-without-response.brief.yaml", new Expect(false, false, false));
+        expected.put("gap-blocking-question-open.brief.yaml", new Expect(true, true, false));
+        expected.put("gap-assumption-without-owner.brief.yaml", new Expect(false, false, false));
+        expected.put("gap-re-encoded-structure.brief.yaml", new Expect(false, false, false));
+        expected.put("gap-dangling-fulfilled-by.brief.yaml", new Expect(true, true, true));
+        expected.put("gap-unknown-concern-hint.brief.yaml", new Expect(false, false, false));
+        expected.put("gap-repeated-question-id.brief.yaml", new Expect(true, false, false));
+        expected.put("gap-undeclared-workflow-actor.brief.yaml", new Expect(true, false, false));
+        expected.put("empty.brief.yaml", new Expect(false, false, false));
+        expected.put("empty-object.brief.yaml", new Expect(false, false, false));
 
         assertThat(fixtureNames()).as("a fixture without an expectation here is a gap nobody checks")
                 .isEqualTo(new TreeSet<>(expected.keySet()));
@@ -370,12 +375,26 @@ class BriefSchemaContractTest {
             boolean schemaValid = BriefDocuments.schemaErrors(document).isEmpty();
             Brief brief = BriefDocuments.bind(document);
             BriefReadiness.Report report = BriefReadiness.evaluate(brief, vocabulary, null);
+            BriefReadiness.Report shipped = BriefReadiness.evaluate(brief);
 
             assertThat(schemaValid).as("schema validity of %s", e.getKey()).isEqualTo(e.getValue().schemaValid());
-            assertThat(report.valid()).as("BriefReadiness must agree with the schema on %s", e.getKey())
-                    .isEqualTo(schemaValid);
+            assertThat(report.valid()).as("validity of %s", e.getKey()).isEqualTo(e.getValue().valid());
+            assertThat(shipped).as("evaluate(brief) checks %s as the schema's vocabulary does", e.getKey())
+                    .isEqualTo(report);
+            assertThat(!report.valid() || schemaValid)
+                    .as("BriefReadiness accepts %s, which the schema rejects", e.getKey()).isTrue();
             assertThat(report.ready()).as("readiness of %s", e.getKey()).isEqualTo(e.getValue().ready());
         }
+
+        assertThat(BriefReadiness.evaluate(BriefDocuments.bind(BriefDocuments.fixture(
+                "gap-unknown-concern-hint.brief.yaml"))).errors()).extracting(BriefReadiness.Problem::path)
+                .containsExactly("/glossary/0/concernHints/0");
+        assertThat(BriefReadiness.evaluate(BriefDocuments.bind(BriefDocuments.fixture(
+                "gap-repeated-question-id.brief.yaml"))).errors())
+                .containsExactly(new BriefReadiness.Problem("/openQuestions/1/id", "repeats the id of /openQuestions/0"));
+        assertThat(BriefReadiness.evaluate(BriefDocuments.bind(BriefDocuments.fixture(
+                "gap-undeclared-workflow-actor.brief.yaml"))).errors())
+                .containsExactly(new BriefReadiness.Problem("/workflows/0/actors/1", "names no actor the brief declares"));
 
         BriefReadiness.Report ready = BriefReadiness.evaluate(
                 BriefDocuments.bind(BriefDocuments.fixture("ready.brief.yaml")));
@@ -422,6 +441,26 @@ class BriefSchemaContractTest {
         assertThat(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES.enabledByDefault()).isFalse();
         JsonNode requirement = BriefDocuments.schemaDocument().get("x-exeris-reader-requirements").get(0);
         assertThat(requirement.get("id").asString()).isEqualTo("UNKNOWN_PROPERTIES_ARE_ERRORS");
+    }
+
+    @Test
+    @DisplayName("the schema lists, as reader requirements, the two rules BriefReadiness adds to it")
+    void rulesOutsideTheSchemaAreListed() {
+        List<String> ids = new ArrayList<>();
+        BriefDocuments.schemaDocument().get("x-exeris-reader-requirements")
+                .forEach(r -> ids.add(r.get("id").asString()));
+        assertThat(ids).containsExactly(
+                "UNKNOWN_PROPERTIES_ARE_ERRORS", "QUESTION_IDS_ARE_UNIQUE", "WORKFLOW_ACTORS_ARE_DECLARED");
+    }
+
+    @Test
+    @DisplayName("the shipped hint list is the schema's ConcernHint enum, sorted, one name per line")
+    void shippedHintsAreTheSchemaVocabulary() throws Exception {
+        try (var in = BriefSchemaContractTest.class.getResourceAsStream("/META-INF/exeris/concern-hints.txt")) {
+            assertThat(in).as("concern-hints.txt is written beside brief-schema.json").isNotNull();
+            List<String> lines = new String(in.readAllBytes(), StandardCharsets.UTF_8).lines().toList();
+            assertThat(lines).isEqualTo(new ArrayList<>(BriefDocuments.schemaVocabulary()));
+        }
     }
 
     // ---- helpers ---------------------------------------------------------

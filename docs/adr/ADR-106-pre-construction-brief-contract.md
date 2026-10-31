@@ -44,7 +44,7 @@ A brief is `docs/briefs/<area>.brief.yaml` in an application project, one per bo
 4. **One-way dependency.** `eu.exeris.sdk.brief` may use enums from `eu.exeris.sdk.sourcemodel.ast`; nothing under `eu.exeris.sdk.sourcemodel` may use `eu.exeris.sdk.brief`. `BriefDependencyDirectionTest` checks both halves on the compiled classes. The module's compile classpath stays `jackson-annotations` alone.
 5. **EARS by structure.** A criterion is `{ kind: ubiquitous | when | if | while, trigger?, condition?, response }`. `ubiquitous` has neither trigger nor condition; `when` and `if` require a trigger and admit a condition; `while` requires a condition and admits no trigger; every kind requires a response. No text is inspected.
 6. **Typed references.** `fulfilledBy: [{ kind: entity | action | rule | saga, ref }]`. For `entity`, `ref` is the qualified class name; for the others it is `<entity qualified name>#<member name>`. A glossary term admits only `entity`; a workflow admits `action`, `rule` and `saga`. The source wins any disagreement.
-7. **Minimum content and readiness.** Validity requires a non-blank `purpose`, at least one actor, at least one workflow with at least one criterion, at least one non-goal, and an `assumption` and `owner` on every `assumed` question; these are `required` / `minItems` / conditional constraints in the schema. A brief is **ready** when it is valid and no blocking question is `open`. An absent or empty brief is never ready. `BriefReadiness.evaluate` is that function, and every fixture runs through both it and a draft 2020-12 validator, which must agree.
+7. **Minimum content and readiness.** Validity requires a non-blank `purpose`, at least one actor, at least one workflow with at least one criterion, at least one non-goal, and an `assumption` and `owner` on every `assumed` question; these are `required` / `minItems` / conditional constraints in the schema. A brief is **ready** when it is valid and no blocking question is `open`. An absent or empty brief is never ready. `BriefReadiness.evaluate` is that function, and every fixture runs through both it and a draft 2020-12 validator, which must agree. *(amended 2026-10-30: validity adds the schema's reader requirements, and `evaluate(brief)` checks concern hints — see ## Amendments)*
 8. **Versioning.** The schema carries `briefSchemaFormat`, an integer (`brief.schema.format` in the module's POM), and `sdkVersion`. A consumer pins to `briefSchemaFormat`; it moves only when a brief valid under the previous number would stop validating.
 9. **Freeze.** Before SDK 1.0, a change to the brief is recorded in the SDK changelog and ships with the brief fixtures updated in the same change. From 1.0 it is additive only; removing or renaming a brief property is a breaking change under the rule for an annotation attribute. The brief records are covered by `RecordComponentOrderTest` and `RecordConstructorLedgerTest` like the AST.
 
@@ -96,3 +96,27 @@ A brief is `docs/briefs/<area>.brief.yaml` in an application project, one per bo
 2. `BriefDependencyDirectionTest` — the one-way dependency.
 3. `BriefSchemaProcessorTest` — the emitter, including byte-identical output across two runs.
 4. `RecordComponentOrderTest` and `RecordConstructorLedgerTest` — growth at the tail only, via `WireRecords`, which names `eu.exeris.sdk.brief`.
+
+## Amendments
+
+- **2026-10-30 — two rules outside the schema, and the hint vocabulary shipped as text.**
+  Obligation 7 defined validity as the schema's constraints. Two rules were stated in the schema's
+  prose and enforced nowhere: an `OpenQuestion.id` is unique within the brief, and each entry of
+  `Workflow.actors` is the name of a declared `Actor`. JSON Schema cannot compare values across
+  array items or resolve one array against another, so a brief breaking either was ready for a
+  validator and for `BriefReadiness` alike. Both are now validity rules. `BriefReadiness` reports
+  a repeated id at the later question's `id`, and an undeclared workflow actor at that actor. The
+  schema lists both in `x-exeris-reader-requirements` (`QUESTION_IDS_ARE_UNIQUE`,
+  `WORKFLOW_ACTORS_ARE_DECLARED`) beside `UNKNOWN_PROPERTIES_ARE_ERRORS`, so a consumer validating
+  with a JSON Schema validator applies them from the document. Validity is therefore the schema's
+  constraints plus its reader requirements. On a fixture, `BriefReadiness` may reject what the
+  schema accepts only under one of these rules, and never accepts what the schema rejects.
+  `briefSchemaFormat` stays `1`: the two rules were part of format 1's text, and a brief that
+  breaks one was never valid under it.
+  `BriefSchemaProcessor` also writes the concern-hint vocabulary as
+  `META-INF/exeris/concern-hints.txt`, one name per line, from the same sources and in the same
+  build as the `ConcernHint` enum. `BriefReadiness.evaluate(brief)` checks hints against it, so the
+  one-argument form agrees with the schema on hints; before this, it left them unchecked. Each
+  rule has a planted-gap fixture, and `BriefSchemaContractTest` holds the text list equal to the
+  enum. Shipped in 0.13.2 (#258). Rejected: dropping the two prose claims, which would leave a
+  brief whose question ids or actor names do not resolve indistinguishable from a sound one.

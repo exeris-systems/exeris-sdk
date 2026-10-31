@@ -108,20 +108,20 @@ final class ReferenceBinding {
                 .routeAccess(RouteAccess.AUTHENTICATED)
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("reference", "String")
+                        FieldMetadata.builder("reference", "java.lang.String")
                                 .displayName("Reference")
                                 .required(true)
                                 .minLength(3)
                                 .maxLength(32)
                                 .pattern("^ORD-[0-9]+$")
                                 .build(),
-                        FieldMetadata.builder("totalCents", "Long")
+                        FieldMetadata.builder("totalCents", "java.lang.Long")
                                 .displayName("Total (cents)")
                                 .required(true)
                                 .min(0L)
                                 .max(1_000_000L)
                                 .build(),
-                        FieldMetadata.builder("note", "String")
+                        FieldMetadata.builder("note", "java.lang.String")
                                 .displayName("Note")
                                 .build()))
                 .actions(orderActions())
@@ -138,17 +138,19 @@ final class ReferenceBinding {
      */
     static List<ActionMetadata> orderActions() {
         return List.of(
-                action("submit", "POST", "void"),
-                action("customer", "GET", TckCorpus.packageName() + "." + TckCorpus.CUSTOMER),
-                action("receipt", "GET", ORDER_RECEIPT),
-                action("receipts", "GET", "java.util.List<" + ORDER_RECEIPT + ">"),
-                action("lineCount", "GET", "int"),
+                action("submit", "Submit", "POST", "void"),
+                action("customer", "Customer", "GET", TckCorpus.packageName() + "." + TckCorpus.CUSTOMER),
+                action("receipt", "Receipt", "GET", ORDER_RECEIPT),
+                action("receipts", "Receipts", "GET", "java.util.List<" + ORDER_RECEIPT + ">"),
+                action("lineCount", "Line count", "GET", "int"),
                 ActionMetadata.builder("approve")
+                        .displayName("Approve")
                         .methodName("approve")
                         .resultType("void")
                         .permissions(List.of("order:approve"))
                         .build(),
                 ActionMetadata.builder("track")
+                        .displayName("Track")
                         .methodName("track")
                         .httpMethod("GET")
                         .resultType("void")
@@ -161,12 +163,14 @@ final class ReferenceBinding {
      * One reference action, so a self-test can rebuild it with a single component changed.
      *
      * @param name the action and method name
+     * @param label the declared label, carried as {@code displayName}
      * @param httpMethod the declared HTTP method
      * @param resultType the return type as javac reports it
      * @return the action
      */
-    static ActionMetadata action(String name, String httpMethod, String resultType) {
+    static ActionMetadata action(String name, String label, String httpMethod, String resultType) {
         return ActionMetadata.builder(name)
+                .displayName(label)
                 .methodName(name)
                 .httpMethod(httpMethod)
                 .resultType(resultType)
@@ -184,7 +188,7 @@ final class ReferenceBinding {
                 .httpMethod("GET")
                 .methodName("search")
                 .resultType("void")
-                .addParam(ActionParamMetadata.builder("term", "String")
+                .addParam(ActionParamMetadata.builder("term", "java.lang.String")
                         .required(true)
                         .bindingSource(ParamSource.QUERY)
                         .queryKey("q")
@@ -266,28 +270,30 @@ final class ReferenceBinding {
                 .permissions(List.of("customer:read"))
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("email", "String")
+                        FieldMetadata.builder("email", "java.lang.String")
                                 .displayName("E-mail")
                                 .required(true)
                                 .unique(true)
                                 .maxLength(254)
                                 .build(),
-                        FieldMetadata.builder("displayName", "String")
+                        FieldMetadata.builder("displayName", "java.lang.String")
                                 .displayName("Display name")
                                 .required(true)
                                 .minLength(1)
                                 .maxLength(120)
                                 .build(),
-                        FieldMetadata.builder("avatar", "String")
+                        FieldMetadata.builder("avatar", "java.lang.String")
                                 .displayName("Avatar")
                                 .blob(BlobMetadata.ofContentTypes(List.of("image/png", "image/jpeg")))
                                 .build(),
-                        FieldMetadata.builder("contract", "String")
+                        FieldMetadata.builder("contract", "java.lang.String")
                                 .searchable(true)
                                 .sortable(true)
                                 .filterable(true)
                                 .blob(new BlobMetadata("contracts", List.of()))
-                                .build()))
+                                .build(),
+                        FieldMetadata.simple("orders", "java.util.List<" + TckCorpus.packageName() + "." + TckCorpus.ORDER + ">"),
+                        FieldMetadata.simple("lastOrderId", "java.util.UUID")))
                 .relationships(List.of(
                         RelationshipMetadata.builder("orders", TckCorpus.ORDER)
                                 .type(RelationshipMetadata.RelationType.ONE_TO_MANY)
@@ -395,15 +401,16 @@ final class ReferenceBinding {
                 .routeAccess(RouteAccess.PUBLIC)
                 .fields(List.of(
                         FieldMetadata.simple("id", "java.util.UUID"),
-                        FieldMetadata.builder("name", "String")
+                        FieldMetadata.builder("name", "java.lang.String")
                                 .displayName("Name")
                                 .required(true)
                                 .build(),
-                        FieldMetadata.builder("sku", "String")
+                        FieldMetadata.builder("sku", "java.lang.String")
                                 .displayName("SKU")
                                 .build()))
                 .graphMetadata(new GraphMetadata(TckCorpus.PRODUCT, productProperties(), List.of(), null))
                 .actions(List.of(ActionMetadata.builder("reprice")
+                        .displayName("Reprice")
                         .methodName("reprice")
                         .resultType("void")
                         .permissions(List.of("product:reprice"))

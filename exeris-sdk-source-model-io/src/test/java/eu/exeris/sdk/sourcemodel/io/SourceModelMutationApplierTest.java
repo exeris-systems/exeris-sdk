@@ -43,7 +43,7 @@ class SourceModelMutationApplierTest {
     @Test
     @DisplayName("a clean op is applied and the new source carries the change")
     void cleanApply() {
-        String baseline = baseline(field("amount", "String"));   // in sync with the source
+        String baseline = baseline(field("amount", "java.lang.String"));   // in sync with the source
         MutationOp op = new MutationOp.AddField(
                 MutationPath.field("Order", "discount").toString(), field("discount", "BigDecimal"));
 
@@ -56,7 +56,7 @@ class SourceModelMutationApplierTest {
     @DisplayName("a conflicting op is not applied; the source is returned unchanged")
     void conflictLeavesSourceUnchanged() {
         // baseline says amount:Long, the source says String (user drift); op wants BigDecimal
-        String baseline = baseline(field("amount", "Long"));
+        String baseline = baseline(field("amount", "java.lang.Long"));
         MutationOp op = new MutationOp.ChangeFieldType(MutationPath.field("Order", "amount").toString(), "BigDecimal");
 
         ApplyResult result = applier.apply(op, baseline, SOURCE);
@@ -78,7 +78,7 @@ class SourceModelMutationApplierTest {
     @DisplayName("a convergent op is an idempotent no-op success")
     void convergentNoOp() {
         // baseline amount:Long, source already amount:String, op targets String -> convergent
-        String baseline = baseline(field("amount", "Long"));
+        String baseline = baseline(field("amount", "java.lang.Long"));
         MutationOp op = new MutationOp.ChangeFieldType(MutationPath.field("Order", "amount").toString(), "String");
 
         ApplyResult result = applier.apply(op, baseline, SOURCE);
@@ -91,7 +91,7 @@ class SourceModelMutationApplierTest {
     @Test
     @DisplayName("a stale concurrency token rejects the write (STALE_DIGEST)")
     void staleTokenRejected() {
-        String baseline = baseline(field("amount", "String"));
+        String baseline = baseline(field("amount", "java.lang.String"));
         MutationOp op = new MutationOp.AddField(
                 MutationPath.field("Order", "discount").toString(), field("discount", "BigDecimal"));
 
@@ -105,7 +105,7 @@ class SourceModelMutationApplierTest {
     @Test
     @DisplayName("a matching concurrency token lets the write proceed")
     void matchingTokenProceeds() {
-        String baseline = baseline(field("amount", "String"));
+        String baseline = baseline(field("amount", "java.lang.String"));
         MutationOp op = new MutationOp.AddField(
                 MutationPath.field("Order", "discount").toString(), field("discount", "BigDecimal"));
 
@@ -136,7 +136,7 @@ class SourceModelMutationApplierTest {
         // Characterizes the documented slice-4 gap: the strict "rename of a
         // non-existent field" VALIDATION_ERROR is deferred; today the writer
         // no-ops and detection sees no drift, so the verdict is Success.
-        String baseline = baseline(field("amount", "String"));
+        String baseline = baseline(field("amount", "java.lang.String"));
         MutationOp op = new MutationOp.RenameField(MutationPath.field("Order", "ghost").toString(), "phantom");
 
         ApplyResult result = applier.apply(op, baseline, SOURCE);
@@ -147,7 +147,7 @@ class SourceModelMutationApplierTest {
     @Test
     @DisplayName("an unparseable current source maps to VALIDATION_ERROR, not a thrown exception")
     void invalidSourceIsValidationError() {
-        String baseline = baseline(field("amount", "String"));
+        String baseline = baseline(field("amount", "java.lang.String"));
         MutationOp op = new MutationOp.ChangeFieldType(MutationPath.field("Order", "amount").toString(), "Long");
 
         ApplyResult result = applier.apply(op, baseline, "this is not valid java @@@");

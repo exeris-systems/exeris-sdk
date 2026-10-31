@@ -73,7 +73,7 @@ class SourceModelReaderQueryNavTabTest {
             ActionParamMetadata term = param("term");
             assertThat(term.bindingSource()).isEqualTo(ParamSource.QUERY);
             assertThat(term.queryKey()).isEqualTo("q");
-            assertThat(term.type()).isEqualTo("String");
+            assertThat(term.type()).isEqualTo("java.lang.String");
             assertThat(term.required()).isTrue();
             assertThat(term.displayName()).isNull();
         }

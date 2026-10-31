@@ -63,7 +63,7 @@ class SourceModelConflictDetectorBaselineTest {
     @Test
     @DisplayName("current schemaVersion → trustworthy (gate returns empty)")
     void trustworthy() {
-        assertThat(detector.checkBaselineTrust(baselineJson("amount", "String", SchemaVersion.CURRENT))).isEmpty();
+        assertThat(detector.checkBaselineTrust(baselineJson("amount", "java.lang.String", SchemaVersion.CURRENT))).isEmpty();
     }
 
     // ---- JSON/source detect overload -------------------------------------
@@ -81,12 +81,12 @@ class SourceModelConflictDetectorBaselineTest {
     @DisplayName("a trustworthy baseline delegates to three-way detection (SUCCESS / CONFLICT)")
     void trustworthyDelegatesToDetection() {
         // baseline agrees with the source (amount:String) -> no drift -> SUCCESS
-        String inSync = baselineJson("amount", "String", SchemaVersion.CURRENT);
+        String inSync = baselineJson("amount", "java.lang.String", SchemaVersion.CURRENT);
         assertThat(detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"), inSync, SOURCE))
                 .isInstanceOf(MutationResult.Success.class);
 
         // baseline says amount:Long but the source says String (user drift) -> non-convergent -> CONFLICT
-        String drifted = baselineJson("amount", "Long", SchemaVersion.CURRENT);
+        String drifted = baselineJson("amount", "java.lang.Long", SchemaVersion.CURRENT);
         assertThat(detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"), drifted, SOURCE))
                 .isInstanceOf(MutationResult.Conflict.class);
     }
@@ -96,7 +96,7 @@ class SourceModelConflictDetectorBaselineTest {
     void staleDigestDoesNotBlockDetection() {
         // digest doesn't match the current source, but schemaVersion is current:
         // detection must still run (this is what makes three-way detection useful).
-        String wrongDigest = baselineJsonWithDigest("amount", "String", SchemaVersion.CURRENT, "deadbeefstale");
+        String wrongDigest = baselineJsonWithDigest("amount", "java.lang.String", SchemaVersion.CURRENT, "deadbeefstale");
         assertThat(detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"), wrongDigest, SOURCE))
                 .isInstanceOf(MutationResult.Success.class);   // not NO_BASELINE
     }
@@ -117,7 +117,7 @@ class SourceModelConflictDetectorBaselineTest {
     @Test
     @DisplayName("current source with no @ExerisDomain type → VALIDATION_ERROR")
     void currentSourceWithoutEntity() {
-        String inSync = baselineJson("amount", "String", SchemaVersion.CURRENT);
+        String inSync = baselineJson("amount", "java.lang.String", SchemaVersion.CURRENT);
         MutationResult result = detector.detect(new MutationOp.ChangeFieldType(PATH, "BigDecimal"),
                 inSync, "package com.acme; public class Plain {}");
         assertThat(result).isInstanceOf(MutationResult.ValidationError.class);
@@ -126,7 +126,7 @@ class SourceModelConflictDetectorBaselineTest {
     @Test
     @DisplayName("batch detect applies the gate once and delegates per op")
     void batchDetect() {
-        String drifted = baselineJson("amount", "Long", SchemaVersion.CURRENT);
+        String drifted = baselineJson("amount", "java.lang.Long", SchemaVersion.CURRENT);
         List<MutationOp> ops = List.of(
                 new MutationOp.ChangeFieldType(PATH, "String"),       // convergent with the source
                 new MutationOp.ChangeFieldType(PATH, "BigDecimal"));  // conflict
