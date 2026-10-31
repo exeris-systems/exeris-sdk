@@ -31,7 +31,10 @@ public enum Facet {
     /** {@code @Relationship} edges, including the declared cardinality. */
     RELATIONSHIPS,
 
-    /** {@code @Action} methods and their HTTP framing. */
+    /**
+     * {@code @Action} methods: their HTTP framing, the {@code label} as {@code displayName}, and
+     * the type of each parameter in the compiler's qualified form.
+     */
     ACTIONS,
 
     /** The ADR-042 {@code sourceDigest} / {@code schemaVersion} baseline-trust siblings. */

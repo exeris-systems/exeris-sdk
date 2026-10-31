@@ -107,6 +107,33 @@ class MetadataReaderTckSelfTest {
     }
 
     @Test
+    @DisplayName("an action label left unread, or a parameter type read as written, is caught")
+    void actionLabelAndParameterTypeCasesAreNotVacuous() {
+        Reader labelBlind = new Reader(m -> withSearch(m, UnaryOperator.identity()));
+        assertThatThrownBy(labelBlind::actionLabelAndParameterTypesAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("displayName was read as null");
+
+        Reader asWritten = new Reader(m -> withActions(m, m.actions().stream()
+                .map(a -> {
+                    if (!"search".equals(a.name())) {
+                        return a;
+                    }
+                    ActionMetadata.Builder search = ActionMetadata.builder(a.name())
+                            .displayName(a.displayName()).httpMethod(a.httpMethod());
+                    a.params().forEach(p -> search.addParam(ActionParamMetadata
+                            .builder(p.name(), p.type().replace("java.lang.", ""))
+                            .required(p.required()).bindingSource(p.bindingSource()).queryKey(p.queryKey())
+                            .build()));
+                    return search.build();
+                })
+                .toList()));
+        assertThatThrownBy(asWritten::actionLabelAndParameterTypesAreTheDeclaredOnes)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("java.lang.String, int");
+    }
+
+    @Test
     @DisplayName("a constant read as an entity field is caught")
     void staticFieldCaseIsNotVacuous() {
         Reader listingEveryDeclaration = new Reader(m -> {
@@ -702,7 +729,7 @@ class MetadataReaderTckSelfTest {
         }
         return withActions(source, source.actions().stream()
                 .map(a -> actionName.equals(a.name())
-                        ? ReferenceBinding.action(a.name(), a.httpMethod(), resultType)
+                        ? ReferenceBinding.action(a.name(), a.displayName(), a.httpMethod(), resultType)
                         : a)
                 .toList());
     }

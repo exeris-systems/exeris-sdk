@@ -40,6 +40,15 @@ for per-version upgrade steps.
   gains `fieldTypesAreQualified` and `relationshipFieldsAreFields`. See
   [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
 
+- **`exeris-sdk-source-model-io` writes action parameter types as the processor does, and the TCK
+  compares actions in full.** `ActionParamMetadata.type` was the source text (`String`) where the
+  processor writes `java.lang.String`; the reader now resolves it as it resolves a field type, with
+  a varargs parameter as `T...`. The parity case `actionsAgree` compares each action's
+  `displayName` and the type of each parameter both sides read, and the reader TCK gains
+  `actionLabelAndParameterTypesAreTheDeclaredOnes`. The processor does not write `@Action.label`
+  yet, so a binding to it fails `actionsAgree` until exeris-tooling does. See
+  [`MIGRATION.md` §0.13.1 → 0.13.2](MIGRATION.md).
+
 - **`BriefReadiness` reads blank text as `brief-schema.json` does.** `@SchemaRules.NonBlank` is
   emitted as `pattern: "\S"`, an ECMA-262 expression, where `\s` covers U+00A0, U+FEFF, the other
   `Zs` spaces, U+2028 and U+2029. `BriefReadiness` checked the rule with Java's ASCII-only `\s`, so

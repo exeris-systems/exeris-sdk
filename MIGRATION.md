@@ -33,6 +33,11 @@ A mutation operation still carries a type as source text. `SourceModelConflictDe
 with the read type once package qualifiers are dropped. A TCK reader binding returns the new shape;
 the reader suite asserts it in `fieldTypesAreQualified` and `relationshipFieldsAreFields`.
 
+`ActionParamMetadata.type` follows the same form: `java.lang.String` where the reader returned
+`String`, and `java.lang.String...` for a varargs parameter. A TCK parity binding now also compares
+each action's `displayName` and its parameters' types under `ACTIONS`; a producer that writes no
+`@Action.label` fails `actionsAgree`.
+
 ### `BriefReadiness` treats non-ASCII whitespace as blank
 
 **Impact on code: none.** A brief whose required text holds only ECMA-262 whitespace outside ASCII
