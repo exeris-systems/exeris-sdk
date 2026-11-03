@@ -726,6 +726,19 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   invalid, and the schema lists both as reader requirements (ADR-106 amendment 2026-10-30; #257,
   #258)
 
+## 0.13.3 — the kit and the examples compile under the tooling processor as shipped
+
+> Goal: let exeris-tooling compile the TCK corpus and `exeris-sdk-examples` with its processor
+> without rewriting them, and give the ADR-072 link stubs their owner's current text. A patch: no
+> signature change, no `SchemaVersion` change. The CHANGELOG `[0.13.3]` entry has the detail.
+
+- [x] **TCK corpus `@Blob` fields are `BlobRef`** — the kernel blob handle the processor admits
+  under `@Blob` (EXT-PROC-1032); `CorpusCompilesTest` holds every `@Blob` field to it (#265, #268)
+- [x] **Example entities in `.domain` packages with accessors** — the layout and JavaBean accessors
+  the generated application compiles against (#267, #270)
+- [x] **ADR-072 link-stub text** — obligation 37 states the status and promotion-criterion
+  paragraphs a stub mirrors; registry `upd.` in exeris-docs#235 (#266, #269)
+
 ## 1.0.0 GA — frozen contract
 
 > Goal: any 1.x release is binary- and source-compatible with 1.0.0.
