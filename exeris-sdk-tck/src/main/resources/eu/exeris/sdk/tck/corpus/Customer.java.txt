@@ -1,5 +1,6 @@
 package eu.exeris.sdk.tck.corpus;
 
+import eu.exeris.kernel.spi.storage.blob.BlobRef;
 import eu.exeris.sdk.annotation.Blob;
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
@@ -37,7 +38,10 @@ import eu.exeris.sdk.annotation.Validation;
  * <p>The {@code @Blob}s are the case behind the {@code BLOBS} facet: {@code avatar} beside
  * {@code @Field} with two media types, {@code contract} on a field that carries no {@code @Field},
  * so a side that reads {@code @Blob} only beside {@code @Field} drops it. The entity is
- * {@code TENANT}-scoped, so neither is the {@code GLOBAL} combination the platform refuses.
+ * {@code TENANT}-scoped, so neither is the {@code GLOBAL} combination the platform refuses. Both
+ * are typed {@code BlobRef}, the kernel SPI handle a generated application serves the bytes
+ * through and the only type the processor admits under {@code @Blob}, so a producer compiles the
+ * corpus with {@code exeris-kernel-spi} on its classpath.
  */
 @ExerisDomain(
         module = "sales",
@@ -63,10 +67,10 @@ public class Customer {
     @Field(label = "Avatar")
     @Blob(contentTypes = {"image/png", "image/jpeg"})
     @UIGroup(name = "media", label = "Media", order = 0, collapsible = false)
-    private String avatar;
+    private BlobRef avatar;
 
     @Blob(container = "contracts")
-    private String contract;
+    private BlobRef contract;
 
     @Relationship(
             targetEntity = Order.class,

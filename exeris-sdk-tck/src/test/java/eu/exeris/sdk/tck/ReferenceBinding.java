@@ -52,6 +52,9 @@ final class ReferenceBinding {
     /** The record {@code Order}'s {@code receipt} action returns, fully qualified as javac reports it. */
     static final String ORDER_RECEIPT = TckCorpus.packageName() + ".Order.Receipt";
 
+    /** The kernel blob handle the corpus types its {@code @Blob} fields with. */
+    static final String BLOB_REF = "eu.exeris.kernel.spi.storage.blob.BlobRef";
+
     private ReferenceBinding() {
     }
 
@@ -282,11 +285,11 @@ final class ReferenceBinding {
                                 .minLength(1)
                                 .maxLength(120)
                                 .build(),
-                        FieldMetadata.builder("avatar", "java.lang.String")
+                        FieldMetadata.builder("avatar", BLOB_REF)
                                 .displayName("Avatar")
                                 .blob(BlobMetadata.ofContentTypes(List.of("image/png", "image/jpeg")))
                                 .build(),
-                        FieldMetadata.builder("contract", "java.lang.String")
+                        FieldMetadata.builder("contract", BLOB_REF)
                                 .searchable(true)
                                 .sortable(true)
                                 .filterable(true)

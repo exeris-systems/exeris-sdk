@@ -27,6 +27,14 @@ for per-version upgrade steps.
 
 ### Fixed
 
+- **`exeris-sdk-tck`: the corpus types its `@Blob` fields `BlobRef`.** `Customer.avatar` and
+  `Customer.contract` were `String`. The exeris-tooling processor refuses `@Blob` on any type but
+  the kernel's `eu.exeris.kernel.spi.storage.blob.BlobRef` (EXT-PROC-1032, tooling ADR-108), so a
+  producer binding had to rewrite the corpus before compiling it. Both fields are now `BlobRef`. A
+  producer compiles the corpus with `exeris-kernel-spi` on its classpath, and `CorpusCompilesTest`
+  holds every `@Blob` field to the type. A reader binding reads the two fields typed
+  `eu.exeris.kernel.spi.storage.blob.BlobRef`. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
 - **`exeris-sdk-examples` entities sit in `.domain` packages and declare accessors.** An application
   the exeris-tooling processor generates places its infrastructure beside the entity package, which
   must end in `.domain`, and reads and writes entity state through JavaBean accessors. The example
