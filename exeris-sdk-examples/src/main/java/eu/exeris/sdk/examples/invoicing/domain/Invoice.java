@@ -13,6 +13,7 @@ import eu.exeris.sdk.annotation.Relationship;
 import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Validation;
 import eu.exeris.sdk.annotation.system.AuditCreatedAt;
+import eu.exeris.sdk.annotation.system.AuditUpdatedAt;
 import eu.exeris.sdk.annotation.system.PrimaryKey;
 import eu.exeris.sdk.annotation.system.TenantId;
 import eu.exeris.sdk.annotation.system.Version;
@@ -49,6 +50,9 @@ public class Invoice {
     @AuditCreatedAt
     private Instant createdAt;
 
+    @AuditUpdatedAt
+    private Instant updatedAt;
+
     /** Assigned by the server rather than supplied by the client. */
     @Field(label = "Number", required = true, inCreate = false, inUpdate = false,
             readOnly = true, unique = true)
@@ -58,13 +62,13 @@ public class Invoice {
             targetEntity = Customer.class,
             displayField = "name",
             relationshipType = Relationship.RelationshipType.MANY_TO_ONE)
-    private Customer customer;
+    private UUID customerId;
 
     @Relationship(
             targetEntity = InvoiceLine.class,
             displayField = "description",
             relationshipType = Relationship.RelationshipType.ONE_TO_MANY,
-            mappedBy = "invoice",
+            mappedBy = "invoiceId",
             cascadeDelete = true)
     private List<InvoiceLine> lines;
 
@@ -123,6 +127,14 @@ public class Invoice {
         this.createdAt = createdAt;
     }
 
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public String getNumber() {
         return number;
     }
@@ -131,12 +143,12 @@ public class Invoice {
         this.number = number;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public UUID getCustomerId() {
+        return customerId;
     }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
+    public void setCustomerId(UUID customerId) {
+        this.customerId = customerId;
     }
 
     public List<InvoiceLine> getLines() {
