@@ -46,6 +46,10 @@ the to-one references are `UUID` key fields: `Invoice.customerId`, `InvoiceLine.
 and `Invoice` adds `updatedAt` beside `createdAt`. A copy of an example that read the entity-typed
 field reads the key instead.
 
+The `Product.related` graph edge is `List<UUID> relatedIds`, with `getRelatedIds()` and
+`setRelatedIds(...)`. The `@GraphEdge` Javadoc examples hold keys in the same way; the annotation
+itself is unchanged.
+
 ---
 
 ## 0.13.1 → 0.13.2

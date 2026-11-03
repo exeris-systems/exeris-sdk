@@ -58,16 +58,16 @@ The reader carries `name`, `graphType` and `indexed`, and keeps the entity field
 
 ### 3. Declare the edges
 
-`@GraphEdge` sits on the field that holds the neighbour, or its key. `type` is the relation type, and `target` is the entity class, which the reader turns into the target label. The edge name is the field name.
+`@GraphEdge` sits on the field that holds the neighbour's key: a `UUID` for one edge, a `List<UUID>` for many. `type` is the relation type, and `target` is the entity class, which the reader turns into the target label. The edge name is the field name.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `categoryId` and `related` fields (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `categoryId` and `relatedIds` fields (quoted).
 
 ```java
 @GraphEdge(type = "BELONGS_TO", target = Category.class)
 private UUID categoryId;
 
 @GraphEdge(type = "RELATED_TO", target = Product.class, description = "Bought together")
-private List<Product> related;
+private List<UUID> relatedIds;
 ```
 
 ### 4. Leave the kernel-model edge attributes alone
@@ -88,7 +88,7 @@ assertThat(graph.properties()).containsExactly(
         new GraphPropertyMetadata("title", null, true, "name"),
         new GraphPropertyMetadata("price", "DOUBLE", false, null));
 assertThat(graph.edges()).extracting(GraphEdgeMetadata::name)
-        .containsExactly("categoryId", "related");
+        .containsExactly("categoryId", "relatedIds");
 
 GraphEdgeMetadata category = graph.edges().getFirst();
 assertThat(category.relationType()).isEqualTo("BELONGS_TO");
