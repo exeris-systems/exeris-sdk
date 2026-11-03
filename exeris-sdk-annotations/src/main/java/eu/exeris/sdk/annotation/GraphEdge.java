@@ -9,17 +9,22 @@ import java.lang.annotation.*;
  * between entities. Supports weighted edges, edges traversed both ways,
  * and edge properties.
  *
+ * <p>The annotated field holds the target's key, not the target: a {@code UUID} for one edge and
+ * a {@code List<UUID>} for many. {@link #target()} names the target entity. A generated
+ * application stores a reference as the key, and the {@code exeris-tooling} generator refuses a
+ * field typed as the entity.
+ *
  * <h2>Basic Usage:</h2>
  * {@snippet lang="java" :
  * @GraphEdge(type = "BELONGS_TO", target = Category.class)
- * private Category category;
+ * private UUID categoryId;
  *
  * @GraphEdge(
  *     type = "PURCHASED_BY",
  *     target = Customer.class,
  *     direction = Direction.INCOMING
  * )
- * private Customer customer;
+ * private UUID customerId;
  * }
  *
  * <h2>Weighted Edge:</h2>
@@ -31,7 +36,7 @@ import java.lang.annotation.*;
  *     weightField = "rating",
  *     properties = {"rating", "reviewDate"}
  * )
- * private Product ratedProduct;
+ * private UUID ratedProductId;
  * }
  *
  * <h2>Bidirectional:</h2>
@@ -41,7 +46,7 @@ import java.lang.annotation.*;
  *     target = User.class,
  *     bidirectional = true
  * )
- * private List<User> friends;
+ * private List<UUID> friendIds;
  * }
  *
  * <h2>Two edges on one field:</h2>
