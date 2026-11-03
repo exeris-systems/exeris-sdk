@@ -19,7 +19,7 @@ slug: adr/ADR-072
 | **Owning Repo** | `exeris-sdk`                                                                                              |
 | **Driven By**   | [`ROADMAP.md`](../../ROADMAP.md) §"Kernel 0.11 SPI — dispositioned, deliberately not pre-1.0" — this ADR amends that disposition |
 | **Compliance**  | AST wire-format contract; record-growth stance ([`MIGRATION-0.x-to-1.0.md`](../../MIGRATION-0.x-to-1.0.md) §3); Field/Validation canonical scoping ([ADR-054](ADR-054-field-validation-min-max-pattern-cut.md)); inert-attribute honesty rule |
-| **Amended**     | 2026-08-28 (`@RouteAccess`); 2026-09-03 (`@Channel`); 2026-10-29 (`-io` reader reads route access); 2026-10-29 (0.13.0: `@RouteAccess` and `@Blob` frozen); 2026-10-29 (`-io` reader reads `@Blob`, ADR-042); 2026-10-29 (`roles` deprecated, obligation 36) |
+| **Amended**     | 2026-08-28 (`@RouteAccess`); 2026-09-03 (`@Channel`); 2026-10-29 (`-io` reader reads route access); 2026-10-29 (0.13.0: `@RouteAccess` and `@Blob` frozen); 2026-10-29 (`-io` reader reads `@Blob`, ADR-042); 2026-10-29 (`roles` deprecated, obligation 36); 2026-11-03 (the text a link stub mirrors, obligation 37) |
 
 > **Current status (2026-10-29 amendment, obligations 29–35).** The title and the decision below record the reservation as accepted. Since kernel v0.13.0, `@RouteAccess` and `@Blob` and their carriers are part of the 1.0.0 freeze; `@Schedule` and `@Channel` remain reserved and outside it.
 
@@ -148,6 +148,14 @@ What is *not* the same is what the SDK was missing. `@Blob` and `@Schedule` clos
 ## Amendment — 2026-10-29 (0.13.0): `roles` is deprecated for removal; the premise quoted in obligation 31 does not hold
 
 36. **`@ExerisDomain.roles` and `@Action.roles` are deprecated for removal in 1.0.0, and obligation 31's quoted premise is not a property of the SDK.** Obligation 31 quotes kernel ADR-057 A1: "Every SDK `@Action` either names roles or, with an empty role set, requires an authenticated caller". That sentence describes the `@Action.roles` javadoc, not its behaviour. Neither `roles` attribute is extracted by the `exeris-tooling` processor or the `-io` reader, and neither has a destination: the kernel's `RouteRequirement` decides on scopes and declares no role kind, and the kernel enforces a role only through its own `@RequiresRole` against a build-time method id no SDK declaration generates. So an `@Action` neither requires the roles it names nor, with none named, an authenticated caller. Route authorization is `permissions` plus `@RouteAccess`; role-based access has no SDK declaration at 1.0. A1's conclusion, that every declared job is refused at build time, does not depend on the premise, because A1 refuses a declaration whatever its action requires. Obligation 31's decision for `@Schedule` stands unchanged.
+
+## Amendment — 2026-11-03 (0.13.3): the text a link stub mirrors
+
+37. **A `.link.md` stub for this ADR mirrors the status set by obligations 29–35, not the 0.11.0 reservation.** The decision above, and the stubs written from it, say that the surfaces "ship reserved and outside the 1.0.0 freeze", and that promotion needs the kernel tier and a consumer's transcription both. Obligations 29–32 superseded both statements, and a stub mirrors its owner. A stub in another repository therefore carries the two paragraphs below as written, under its title, in place of any status and promotion-condition text it has. It keeps its own measured-state sections, which describe that repository and are not mirrored. This changes no obligation.
+
+    > **Status.** ADR-072 is a cross-repo decision owned by `exeris-sdk`. It gave four kernel SPI packages that were `preview` a design-time surface, reserved outside the 1.0.0 freeze: `@Blob` (`FieldMetadata.blob`; `…spi.storage.blob`), `@Schedule` (`ActionMetadata.schedule`; `…spi.scheduling`), `@RouteAccess` (`DomainMetadata.routeAccess`, `ActionMetadata.routeAccess`; route authorization) and `@Channel` (`…spi.websocket`). Since kernel v0.13.0, `@Blob` and `@RouteAccess` and their carriers are part of the SDK 1.0.0 freeze. `@Schedule` and `@Channel` stay reserved and outside it (obligations 29–32).
+    >
+    > **Promotion criterion.** A reserved surface enters the freeze when the kernel moves its SPI package to `stable`, and on that alone. A transcription in a consumer repository is not part of the condition (the 2026-10-29 settlement amendment). `@Channel` waits on `…spi.websocket` (kernel ADR-100). `@Schedule` stays reserved although `…spi.scheduling` is `stable`, because kernel ADR-057 Amendment A1 refuses every declaration at build time at 1.0 (obligation 31).
 
 ## Consequences
 
