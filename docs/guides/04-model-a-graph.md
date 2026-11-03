@@ -74,11 +74,11 @@ private List<UUID> relatedIds;
 
 `@GraphEdge` also has attributes that encode the kernel graph SPI, such as direction and weighting. They are at the preview tier. A 1.x minor may change or drop them, and you should pin the exact SDK version if you use one. This example uses none, and stays on `type`, `target` and `description`, which are frozen as declared.
 
-The raw `direction` of `related` is `null` because the source declares none. `effectiveDirection()` applies the default and returns `OUTGOING`. The ruling and the list of those attributes live in [MIGRATION section 2](../../MIGRATION-0.x-to-1.0.md#2-what-is-deliberately-not-removed-carried-through-1x) and the [stability matrix](../stability-matrix.md), and the kernel side is [kernel ADR-102](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-102-graph-spi-anchor-and-multi-hop-traversal.md).
+The raw `direction` of `relatedIds` is `null` because the source declares none. `effectiveDirection()` applies the default and returns `OUTGOING`. The ruling and the list of those attributes live in [MIGRATION section 2](../../MIGRATION-0.x-to-1.0.md#2-what-is-deliberately-not-removed-carried-through-1x) and the [stability matrix](../stability-matrix.md), and the kernel side is [kernel ADR-102](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-102-graph-spi-anchor-and-multi-hop-traversal.md).
 
 ### 5. Read the graph back
 
-Source: `exeris-sdk-examples/src/test/java/eu/exeris/sdk/examples/graph/GraphExampleTest.java`, the `node`, `properties` and `edges` tests (adapted — lines of the three tests joined under one `graph` variable, with the `related`, `description` and `effectiveField` assertions removed).
+Source: `exeris-sdk-examples/src/test/java/eu/exeris/sdk/examples/graph/GraphExampleTest.java`, the `node`, `properties` and `edges` tests (adapted — lines of the three tests joined under one `graph` variable, with the assertions on the `relatedIds` edge, `description` and `effectiveField` removed).
 
 ```java
 GraphMetadata graph = read("Product").graphMetadata();

@@ -766,11 +766,11 @@ from javac.
 ```java
 // before
 @GraphEdge(type = "ROUTE", target = City.class, traversalCost = 4.5, unique = true, indexed = true)
-private City next;
+private UUID nextId;
 
 // after
 @GraphEdge(type = "ROUTE", target = City.class, staticWeight = 4.5)
-private City next;
+private UUID nextId;
 ```
 
 - **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).

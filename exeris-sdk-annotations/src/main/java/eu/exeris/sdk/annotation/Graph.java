@@ -22,7 +22,7 @@ import java.lang.annotation.*;
  *     private BigDecimal amount;
  *
  *     @GraphEdge(type = "BELONGS_TO", target = Category.class)
- *     private Category category;
+ *     private UUID categoryId;
  * }
  * }
  *

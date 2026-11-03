@@ -55,7 +55,7 @@ for per-version upgrade steps.
   Guides 02 and 04 quote the new fields. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
 
 - **A collection `@GraphEdge` holds target keys.** The generated application holds a graph edge's
-  targets as their keys, a `List<UUID>` for a collection edge as a `UUID` for one, and the
+  targets as their keys, a `List<UUID>` for a collection edge and a `UUID` for a single edge, and the
   generator refuses `List<Entity>` on an edge (EXT-GEN-3003). The example `Product.related` is now
   `List<UUID> relatedIds`. Every `@GraphEdge` Javadoc example holds keys (`categoryId`,
   `customerId`, `ratedProductId`, `friendIds`), and the Javadoc states the rule. Guide 04 quotes
