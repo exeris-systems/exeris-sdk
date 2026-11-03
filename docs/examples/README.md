@@ -63,4 +63,4 @@ The tests prove that the SDK reads each source the way the guides say. They do n
 
 - **Published artifacts.** The module is not released and is not a template to copy as a project layout.
 - **Runtime behavior.** The annotations are `@Retention(SOURCE)`. Nothing here runs an application.
-- **Capability composition.** No scenario covers it.
+- **Composing several capabilities.** The `capability` scenario declares one capability alone, so no scenario resolves one capability's `@Requires` against another's `@Provides`.
