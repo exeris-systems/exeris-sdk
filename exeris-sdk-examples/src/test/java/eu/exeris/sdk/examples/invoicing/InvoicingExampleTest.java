@@ -72,12 +72,17 @@ class InvoicingExampleTest {
     @Test
     @DisplayName("system fields are named by their marker annotations")
     void systemFields() throws IOException {
-        var system = read("Invoice").systemFields();
+        DomainMetadata invoice = read("Invoice");
+        var system = invoice.systemFields();
 
         assertThat(system.primaryKeyField()).isEqualTo("id");
         assertThat(system.tenantIdField()).isEqualTo("tenantId");
         assertThat(system.versionField()).isEqualTo("version");
         assertThat(system.createdAtField()).isEqualTo("createdAt");
+        assertThat(system.updatedAtField()).isEqualTo("updatedAt");
+        // An audited entity's table carries both timestamps, so both are declared fields.
+        assertThat(invoice.findField("createdAt")).isPresent();
+        assertThat(invoice.findField("updatedAt")).isPresent();
     }
 
     @Test
