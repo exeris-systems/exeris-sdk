@@ -31,11 +31,11 @@ surface it shows is in that surface's module page and javadoc.
 
 | Scenario package (`eu.exeris.sdk.examples.…`) | Main sources | Test |
 |---|---|---|
-| `invoicing` | `Customer`, `Invoice`, `InvoiceLine` | `InvoicingExampleTest` |
-| `ordering` | `Order` | `OrderingExampleTest` |
-| `graph` | `Product`, `Category` | `GraphExampleTest` |
-| `presentation` | `Employee`, `EmployeeDirectory` | `PresentationExampleTest` |
-| `studioedit` | reuses `invoicing.Invoice` | `StudioEditExampleTest` |
+| `invoicing` | `domain.Customer`, `domain.Invoice`, `domain.InvoiceLine` | `InvoicingExampleTest` |
+| `ordering` | `domain.Order` | `OrderingExampleTest` |
+| `graph` | `domain.Product`, `domain.Category` | `GraphExampleTest` |
+| `presentation` | `domain.Employee`, `EmployeeDirectory` | `PresentationExampleTest` |
+| `studioedit` | reuses `invoicing.domain.Invoice` | `StudioEditExampleTest` |
 | `capability` | `LedgerCapLifecycle` and, in the same file, `LedgerCap` | `CapabilityExampleTest` |
 | `tckbinding` | none | `TckBindingExampleTest` |
 
@@ -47,6 +47,11 @@ What the module guarantees on a green build:
   A PARTIAL or RESERVED surface an example does use is named in its class javadoc.
 - Each test reads its examples from `src/main/java`, resolved against the module base directory,
   through `SourceModelReader`. What it asserts is what the reader carries for that exact file.
+- Every `@ExerisDomain` entity sits in its scenario's `.domain` subpackage and declares a public
+  JavaBean getter and setter for each instance field (`isX()` for a primitive `boolean`), so the
+  application the build-time processor generates beside that package compiles against it.
+- The `capability` scenario declares one capability alone: no module here provides its mandatory
+  `AuditTrail` requirement.
 
 ## Hot path
 

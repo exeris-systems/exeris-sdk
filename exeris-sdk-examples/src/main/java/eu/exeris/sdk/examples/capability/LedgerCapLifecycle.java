@@ -74,7 +74,11 @@ public class LedgerCapLifecycle implements CapabilityLifecycleHooks {
 interface LedgerService {
 }
 
-/** A service the ledger capability depends on, supplied by another capability. */
+/**
+ * A service the ledger capability depends on, supplied by another capability. No module in this
+ * example provides it: the example declares one capability alone, so resolving its requirements
+ * within this module leaves this one unsatisfied by design.
+ */
 interface AuditTrail {
 }
 

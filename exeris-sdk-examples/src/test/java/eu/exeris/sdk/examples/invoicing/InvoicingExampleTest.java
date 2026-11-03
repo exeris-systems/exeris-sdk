@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("examples: invoicing")
 class InvoicingExampleTest {
 
-    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/invoicing");
+    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/invoicing/domain");
 
     private final SourceModelReader reader = new SourceModelReader();
 
@@ -60,7 +60,7 @@ class InvoicingExampleTest {
         DomainMetadata invoice = read("Invoice");
 
         assertThat(invoice.entityName()).isEqualTo("Invoice");
-        assertThat(invoice.packageName()).isEqualTo("eu.exeris.sdk.examples.invoicing");
+        assertThat(invoice.packageName()).isEqualTo("eu.exeris.sdk.examples.invoicing.domain");
         assertThat(invoice.module()).isEqualTo("invoicing");
         assertThat(invoice.path()).isEqualTo("/invoices");
         assertThat(invoice.dataScope()).isEqualTo(DataScope.TENANT);

@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.invoicing;
+package eu.exeris.sdk.examples.invoicing.domain;
 
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
@@ -51,4 +51,60 @@ public class InvoiceLine {
     @Field(label = "Unit price (cents)", required = true)
     @Validation(min = 0)
     private long unitPriceCents;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(UUID tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public Invoice getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(Invoice invoice) {
+        this.invoice = invoice;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public long getUnitPriceCents() {
+        return unitPriceCents;
+    }
+
+    public void setUnitPriceCents(long unitPriceCents) {
+        this.unitPriceCents = unitPriceCents;
+    }
 }

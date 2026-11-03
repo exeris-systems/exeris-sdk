@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.graph;
+package eu.exeris.sdk.examples.graph.domain;
 
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
@@ -52,5 +52,53 @@ public class Product {
     @GraphQuery(type = GraphQuery.QueryType.NEIGHBORS, name = "neighbours", maxDepth = 1)
     public List<Product> neighbours() {
         return List.of();
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
+    public List<Product> getRelated() {
+        return related;
+    }
+
+    public void setRelated(List<Product> related) {
+        this.related = related;
     }
 }

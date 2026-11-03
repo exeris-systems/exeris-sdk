@@ -29,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("examples: ordering")
 class OrderingExampleTest {
 
-    private static final Path ORDER = Path.of("src/main/java/eu/exeris/sdk/examples/ordering/Order.java");
+    private static final Path ORDER =
+            Path.of("src/main/java/eu/exeris/sdk/examples/ordering/domain/Order.java");
 
     private final SourceModelReader reader = new SourceModelReader();
 

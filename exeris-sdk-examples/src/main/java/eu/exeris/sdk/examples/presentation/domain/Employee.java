@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.presentation;
+package eu.exeris.sdk.examples.presentation.domain;
 
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
@@ -11,6 +11,7 @@ import eu.exeris.sdk.annotation.Tab;
 import eu.exeris.sdk.annotation.UI;
 import eu.exeris.sdk.annotation.UIGroup;
 import eu.exeris.sdk.annotation.system.PrimaryKey;
+import eu.exeris.sdk.examples.presentation.EmployeeDirectory;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -56,4 +57,52 @@ public class Employee {
     @UIGroup(name = "employment")
     @Tab(name = "employment")
     private String position;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public LocalDate getHiredOn() {
+        return hiredOn;
+    }
+
+    public void setHiredOn(LocalDate hiredOn) {
+        this.hiredOn = hiredOn;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
 }

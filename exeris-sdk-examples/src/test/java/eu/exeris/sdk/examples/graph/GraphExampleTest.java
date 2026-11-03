@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("examples: graph")
 class GraphExampleTest {
 
-    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/graph");
+    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/graph/domain");
 
     private final SourceModelReader reader = new SourceModelReader();
 
