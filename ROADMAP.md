@@ -736,6 +736,9 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
   under `@Blob` (EXT-PROC-1032); `CorpusCompilesTest` holds every `@Blob` field to it (#265, #268)
 - [x] **Example entities in `.domain` packages with accessors** — the layout and JavaBean accessors
   the generated application compiles against (#267, #270)
+- [x] **Example references are keys, and the audited `Invoice` has both timestamps** — to-one
+  references as `UUID` keys (EXT-GEN-3003) and `@AuditUpdatedAt` beside `@AuditCreatedAt`
+  (EXT-PROC-1034) (#267, #272)
 - [x] **ADR-072 link-stub text** — obligation 37 states the status and promotion-criterion
   paragraphs a stub mirrors; registry `upd.` in exeris-docs#235 (#266, #269)
 
