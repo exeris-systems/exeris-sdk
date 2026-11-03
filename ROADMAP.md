@@ -739,6 +739,8 @@ This file tracks scope per milestone. Items marked `[ ]` are open; `[x]` shipped
 - [x] **Example references are keys, and the audited `Invoice` has both timestamps** — to-one
   references as `UUID` keys (EXT-GEN-3003) and `@AuditUpdatedAt` beside `@AuditCreatedAt`
   (EXT-PROC-1034) (#267, #272)
+- [x] **A collection graph edge holds target keys** — `Product.relatedIds` is a `List<UUID>`, and
+  every documented `@GraphEdge` field holds the target's key (#274, #275)
 - [x] **ADR-072 link-stub text** — obligation 37 states the status and promotion-criterion
   paragraphs a stub mirrors; registry `upd.` in exeris-docs#235 (#266, #269)
 
