@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.invoicing;
+package eu.exeris.sdk.examples.invoicing.domain;
 
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.ActionParam;
@@ -89,5 +89,69 @@ public class Invoice {
     public Invoice viewShared(
             @QueryParam(value = "token", description = "Payment link token") String shareToken) {
         return this;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(UUID tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public List<InvoiceLine> getLines() {
+        return lines;
+    }
+
+    public void setLines(List<InvoiceLine> lines) {
+        this.lines = lines;
+    }
+
+    public long getTotalCents() {
+        return totalCents;
+    }
+
+    public void setTotalCents(long totalCents) {
+        this.totalCents = totalCents;
     }
 }

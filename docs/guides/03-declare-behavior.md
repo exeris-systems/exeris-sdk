@@ -18,7 +18,7 @@ last-verified: 2026-10-29
 ## Prerequisites
 
 - [01 Platform and dependencies](01-platform-and-dependencies.md) done, and an entity as in [02 Model a domain](02-model-a-domain.md).
-- The `ordering` example: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/Order.java`.
+- The `ordering` example: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/domain/Order.java`.
 
 ## Steps
 
@@ -26,7 +26,7 @@ last-verified: 2026-10-29
 
 `@DomainEvent` is repeatable. Each one names its trigger and its topic. This example uses `CREATE`, `ACTION` (with the action name) and `FIELD_CHANGED` (with the field name). `includeFields` lists the payload, and `excludeFields` removes names from it.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/Order.java`, the class-level `@DomainEvent` annotations (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/domain/Order.java`, the class-level `@DomainEvent` annotations (quoted).
 
 ```java
 @DomainEvent(name = "OrderPlaced", trigger = DomainEvent.Trigger.CREATE,
@@ -45,7 +45,7 @@ The reader resolves `payloadFields` for you, from the fields that carry `@Field`
 
 `@Saga` names the process, its timeout, its retry budget and its trigger. Here the trigger declares that an event on the topic of `OrderPlaced` starts it.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/Order.java`, the class-level `@Saga` annotation (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/domain/Order.java`, the class-level `@Saga` annotation (quoted).
 
 ```java
 @Saga(name = "OrderFulfilment",
@@ -62,7 +62,7 @@ Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/Order
 
 A step is a method marked `@SagaStep`. The reader sorts steps by `order` and carries `service`, `command`, `timeout` and `compensation`. `compensation` names a plain method declared on the same class.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/Order.java`, the `capturePayment` and `scheduleShipment` methods (adapted — Javadoc removed).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/ordering/domain/Order.java`, the `capturePayment` and `scheduleShipment` methods (adapted — Javadoc removed).
 
 ```java
 @SagaStep(order = 1, name = "capturePayment", service = "payments", command = "CapturePayment",

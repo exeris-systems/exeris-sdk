@@ -23,6 +23,20 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [0.13.3] — unreleased
+
+### Fixed
+
+- **`exeris-sdk-examples` entities sit in `.domain` packages and declare accessors.** An application
+  the exeris-tooling processor generates places its infrastructure beside the entity package, which
+  must end in `.domain`, and reads and writes entity state through JavaBean accessors. The example
+  entities sat in the scenario package and declared private fields only, so the generated Java did
+  not compile. Each `@ExerisDomain` entity moves to `<scenario>.domain` (`invoicing`, `ordering`,
+  `graph`, `presentation`) and declares a public getter and setter for every instance field. The
+  `capability` example states that no module in it provides the `AuditTrail` service `LedgerCap`
+  requires. The guides, the examples index and the module page cite the new paths. See
+  [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
 ## [0.13.2] — 2026-10-31
 
 ### Fixed

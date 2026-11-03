@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StudioEditExampleTest {
 
     private static final Path INVOICE =
-            Path.of("src/main/java/eu/exeris/sdk/examples/invoicing/Invoice.java");
+            Path.of("src/main/java/eu/exeris/sdk/examples/invoicing/domain/Invoice.java");
 
     private final SourceModelReader reader = new SourceModelReader();
     private final SourceModelWriter writer = new SourceModelWriter();

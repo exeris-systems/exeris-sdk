@@ -27,7 +27,7 @@ last-verified: 2026-10-29
 
 `@UI` on the entity type turns the standard views on and sets the flags you name. `@NavMenu` places the entity in the navigation menu.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/presentation/Employee.java`, `Employee` (adapted, imports, javadoc and fields removed)
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/presentation/domain/Employee.java`, `Employee` (adapted, imports, javadoc, fields and accessors removed)
 
 ```java
 @ExerisDomain(module = "people", path = "/employees", description = "A person employed by the company")
@@ -42,7 +42,7 @@ public class Employee {
 
 `@UIGroup` and `@Tab` go on fields. Fields that name the same group or tab are collected under it. A tab takes its attributes from its first member.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/presentation/Employee.java`, `firstName` (quoted)
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/presentation/domain/Employee.java`, `firstName` (quoted)
 
 ```java
     @Field(label = "First name", required = true)

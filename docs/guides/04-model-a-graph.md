@@ -18,7 +18,7 @@ last-verified: 2026-10-29
 ## Prerequisites
 
 - [01 Platform and dependencies](01-platform-and-dependencies.md) done, and an entity as in [02 Model a domain](02-model-a-domain.md).
-- The `graph` example under `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/`: `Product` and `Category`.
+- The `graph` example under `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/`: `Product` and `Category`.
 - A clear scope: the `@Graph` family is about graph-database projection. There is no GraphQL emitter, and `@ExerisDomain(graphqlApi = true)` is read by no generator.
 
 ## Steps
@@ -27,7 +27,7 @@ last-verified: 2026-10-29
 
 `@Graph(nodeClass = ...)` turns an entity into a node and sets the node label. The label defaults to the entity's simple name; `Product` sets `CatalogItem`, so the label you read back is the declared one. `Category` carries no `@Graph`, so the reader returns `null` graph metadata for it, and it appears only as an edge target.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/Product.java`, the `Product` class declaration (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `Product` class declaration (quoted).
 
 ```java
 @ExerisDomain(module = "catalog", path = "/products", description = "A product for sale")
@@ -39,7 +39,7 @@ public class Product {
 
 Only fields marked `@GraphProperty` are node properties. `name` renames the property, `graphType` sets its type and `indexed` marks it indexed. No generator reads these yet. `note` carries no `@GraphProperty`, so it stays out of the node.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/Product.java`, the `name`, `price` and `note` fields (adapted — `@PrimaryKey` field and imports removed).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `name`, `price` and `note` fields (adapted — `@PrimaryKey` field and imports removed).
 
 ```java
 @Field(label = "Name", required = true)
@@ -60,7 +60,7 @@ The reader carries `name`, `graphType` and `indexed`, and keeps the entity field
 
 `@GraphEdge` sits on the field that holds the neighbour. `type` is the relation type, and `target` is the entity class, which the reader turns into the target label. The edge name is the field name.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/Product.java`, the `category` and `related` fields (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `category` and `related` fields (quoted).
 
 ```java
 @GraphEdge(type = "BELONGS_TO", target = Category.class)
