@@ -117,6 +117,77 @@ class CorpusCompilesTest {
         assertThat(check.missing).containsExactly("Probe.probeId");
     }
 
+    @Test
+    @DisplayName("every corpus @Blob field is typed BlobRef")
+    void everyBlobFieldIsABlobRef(@TempDir Path classes) throws IOException {
+        BlobTypeCheck check = new BlobTypeCheck();
+        compile(classes, sourcesOf(TckCorpus.all()), check);
+        assertThat(check.seen)
+                .withFailMessage("The check saw no @Blob field; it is not looking at the corpus.")
+                .containsExactlyInAnyOrder("Customer.avatar", "Customer.contract");
+        assertThat(check.mistyped)
+                .withFailMessage(
+                        "Corpus @Blob fields not typed %s: %s. The exeris-tooling processor refuses "
+                                + "@Blob on any other type (EXT-PROC-1032), so a producer binding fails "
+                                + "at produce() or rewrites the corpus first.",
+                        BlobTypeCheck.BLOB_REF, check.mistyped)
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a @Blob field of another type would be caught")
+    void theBlobTypeRuleIsNotVacuous(@TempDir Path classes) throws IOException {
+        String stringBlob = """
+                package eu.exeris.sdk.tck.corpus;
+
+                import eu.exeris.sdk.annotation.Blob;
+                import eu.exeris.sdk.annotation.ExerisDomain;
+
+                @ExerisDomain(module = "sales", path = "/probes")
+                public class Probe {
+                    private java.util.UUID id;
+
+                    @Blob
+                    private String scan;
+                }
+                """;
+        BlobTypeCheck check = new BlobTypeCheck();
+        compile(classes, List.of(new InMemorySource("Probe", stringBlob)), check);
+        assertThat(check.mistyped).containsExactly("Probe.scan");
+    }
+
+    /**
+     * The rule the exeris-tooling processor applies to {@code @Blob}: the field's type is the
+     * kernel's {@code BlobRef}, the handle the generated application serves the bytes through.
+     */
+    @SupportedAnnotationTypes("eu.exeris.sdk.annotation.Blob")
+    private static final class BlobTypeCheck extends AbstractProcessor {
+
+        static final String BLOB_REF = "eu.exeris.kernel.spi.storage.blob.BlobRef";
+
+        private final List<String> seen = new ArrayList<>();
+        private final List<String> mistyped = new ArrayList<>();
+
+        @Override
+        public SourceVersion getSupportedSourceVersion() {
+            return SourceVersion.latestSupported();
+        }
+
+        @Override
+        public boolean process(java.util.Set<? extends TypeElement> annotations, RoundEnvironment round) {
+            for (TypeElement annotation : annotations) {
+                for (Element field : round.getElementsAnnotatedWith(annotation)) {
+                    String name = field.getEnclosingElement().getSimpleName() + "." + field.getSimpleName();
+                    seen.add(name);
+                    if (!field.asType().toString().equals(BLOB_REF)) {
+                        mistyped.add(name);
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
     /**
      * The rule the exeris-tooling processor applies: an {@code @ExerisDomain} type declares a field
      * named after its primary key, which is {@code primaryKeyField} when that is non-blank and
@@ -167,11 +238,25 @@ class CorpusCompilesTest {
         }
     }
 
+    /**
+     * The corpus, with a stand-in for the kernel's {@code BlobRef}. The corpus types its
+     * {@code @Blob} fields with it, and a producer compiles them against {@code exeris-kernel-spi};
+     * the SDK takes no kernel dependency, so this compile declares the record with the kernel's
+     * shape instead. The stand-in is never shipped with the corpus.
+     */
     private static List<JavaFileObject> sourcesOf(java.util.Map<String, String> corpus) {
         List<JavaFileObject> sources = new ArrayList<>();
         corpus.forEach((name, source) -> sources.add(new InMemorySource(name, source)));
+        sources.add(new InMemorySource("BlobRef", BLOB_REF_STAND_IN));
         return sources;
     }
+
+    private static final String BLOB_REF_STAND_IN = """
+            package eu.exeris.kernel.spi.storage.blob;
+
+            public record BlobRef(String container, String key) {
+            }
+            """;
 
     /**
      * @param classes where to put the class files
