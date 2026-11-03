@@ -38,6 +38,14 @@ a public getter and setter for every instance field. `EmployeeDirectory`, `Ledge
 the scenario tests stay in their scenario package. A local copy of an example, or a build that
 compiles the module by path, uses the new package and path.
 
+### The example references are keys
+
+**Impact on code: none.** The module is not published. In the `invoicing` and `graph` scenarios,
+the to-one references are `UUID` key fields: `Invoice.customerId`, `InvoiceLine.invoiceId` and
+`Product.categoryId`, with their accessors renamed to match. `Invoice.lines` maps by `invoiceId`,
+and `Invoice` adds `updatedAt` beside `createdAt`. A copy of an example that read the entity-typed
+field reads the key instead.
+
 ---
 
 ## 0.13.1 → 0.13.2

@@ -64,7 +64,7 @@ class GraphExampleTest {
         GraphMetadata graph = read("Product").graphMetadata();
 
         assertThat(graph.edges()).extracting(GraphEdgeMetadata::name)
-                .containsExactly("category", "related");
+                .containsExactly("categoryId", "related");
 
         GraphEdgeMetadata category = graph.edges().getFirst();
         assertThat(category.relationType()).isEqualTo("BELONGS_TO");

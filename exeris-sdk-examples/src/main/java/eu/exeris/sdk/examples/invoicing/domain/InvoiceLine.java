@@ -38,7 +38,7 @@ public class InvoiceLine {
             targetEntity = Invoice.class,
             displayField = "number",
             relationshipType = Relationship.RelationshipType.MANY_TO_ONE)
-    private Invoice invoice;
+    private UUID invoiceId;
 
     @Field(label = "Description", required = true)
     @Validation(maxLength = 200)
@@ -76,12 +76,12 @@ public class InvoiceLine {
         this.version = version;
     }
 
-    public Invoice getInvoice() {
-        return invoice;
+    public UUID getInvoiceId() {
+        return invoiceId;
     }
 
-    public void setInvoice(Invoice invoice) {
-        this.invoice = invoice;
+    public void setInvoiceId(UUID invoiceId) {
+        this.invoiceId = invoiceId;
     }
 
     public String getDescription() {
