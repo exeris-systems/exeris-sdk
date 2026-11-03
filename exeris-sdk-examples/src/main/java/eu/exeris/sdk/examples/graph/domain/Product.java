@@ -43,7 +43,7 @@ public class Product {
     private String note;
 
     @GraphEdge(type = "BELONGS_TO", target = Category.class)
-    private Category category;
+    private UUID categoryId;
 
     @GraphEdge(type = "RELATED_TO", target = Product.class, description = "Bought together")
     private List<Product> related;
@@ -86,12 +86,12 @@ public class Product {
         this.note = note;
     }
 
-    public Category getCategory() {
-        return category;
+    public UUID getCategoryId() {
+        return categoryId;
     }
 
-    public void setCategory(Category category) {
-        this.category = category;
+    public void setCategoryId(UUID categoryId) {
+        this.categoryId = categoryId;
     }
 
     public List<Product> getRelated() {

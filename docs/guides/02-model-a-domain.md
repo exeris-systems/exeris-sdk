@@ -76,25 +76,25 @@ The scoping rule has one home, [field and validation scoping](../../.agents/poli
 
 A `@Relationship` names the target entity and the cardinality. The one-to-many side names the field on the other side in `mappedBy`. The reader takes the target from `targetEntity` when it is declared, and from the field type otherwise, unwrapping a collection; a `UUID` key field declaring `targetEntity = Customer.class` targets `Customer`. It carries `displayField` as declared, the target field a picker or label shows for the association, and reads `cascadeDelete` and `cascadeUpdate` into one `cascade`: both are `ALL`, delete alone `REMOVE`, update alone `MERGE`.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/Invoice.java`, the `customer` and `lines` fields (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/Invoice.java`, the `customerId` and `lines` fields (quoted).
 
 ```java
 @Relationship(
         targetEntity = Customer.class,
         displayField = "name",
         relationshipType = Relationship.RelationshipType.MANY_TO_ONE)
-private Customer customer;
+private UUID customerId;
 
 @Relationship(
         targetEntity = InvoiceLine.class,
         displayField = "description",
         relationshipType = Relationship.RelationshipType.ONE_TO_MANY,
-        mappedBy = "invoice",
+        mappedBy = "invoiceId",
         cascadeDelete = true)
 private List<InvoiceLine> lines;
 ```
 
-`InvoiceLine` carries the inverse `MANY_TO_ONE` back to `Invoice`. The reader preserves declaration order, so `customer` precedes `lines` in the result.
+`InvoiceLine` carries the inverse `MANY_TO_ONE` back to `Invoice`. The reader preserves declaration order, so `customerId` precedes `lines` in the result.
 
 ### 4. Add an action and a query parameter
 

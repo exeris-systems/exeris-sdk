@@ -117,7 +117,7 @@ class InvoicingExampleTest {
         DomainMetadata invoice = read("Invoice");
 
         assertThat(invoice.relationships()).extracting(RelationshipMetadata::fieldName)
-                .containsExactly("customer", "lines");
+                .containsExactly("customerId", "lines");
 
         RelationshipMetadata customer = invoice.relationships().getFirst();
         assertThat(customer.targetEntity()).isEqualTo("Customer");
@@ -127,7 +127,7 @@ class InvoicingExampleTest {
         RelationshipMetadata lines = invoice.relationships().get(1);
         assertThat(lines.targetEntity()).isEqualTo("InvoiceLine");
         assertThat(lines.type()).isEqualTo(RelationshipMetadata.RelationType.ONE_TO_MANY);
-        assertThat(lines.mappedBy()).isEqualTo("invoice");
+        assertThat(lines.mappedBy()).isEqualTo("invoiceId");
         assertThat(lines.displayField()).isEqualTo("description");
         assertThat(lines.cascade()).isEqualTo(RelationshipMetadata.CascadeType.REMOVE);
 

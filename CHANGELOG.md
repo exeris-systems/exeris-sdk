@@ -45,6 +45,15 @@ for per-version upgrade steps.
   requires. The guides, the examples index and the module page cite the new paths. See
   [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
 
+- **`exeris-sdk-examples`: references are keys, and the audited `Invoice` has both audit
+  timestamps.** The generated application persists a to-one reference as the target's key, so the
+  processor's generator refuses a field typed as the target entity (EXT-GEN-3003), and an audited
+  entity's table carries both `created_at` and `updated_at` (EXT-PROC-1034). `Invoice.customer`,
+  `InvoiceLine.invoice` and the `Product.category` graph edge are now `UUID` keys named
+  `customerId`, `invoiceId` and `categoryId`, keeping `targetEntity` or `target`, and
+  `Invoice.lines` names `mappedBy = "invoiceId"`. `Invoice` declares `@AuditUpdatedAt updatedAt`.
+  Guides 02 and 04 quote the new fields. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
 ## [0.13.2] — 2026-10-31
 
 ### Fixed
