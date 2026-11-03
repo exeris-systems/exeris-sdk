@@ -58,27 +58,27 @@ The reader carries `name`, `graphType` and `indexed`, and keeps the entity field
 
 ### 3. Declare the edges
 
-`@GraphEdge` sits on the field that holds the neighbour, or its key. `type` is the relation type, and `target` is the entity class, which the reader turns into the target label. The edge name is the field name.
+`@GraphEdge` sits on the field that holds the neighbour's key: a `UUID` for one edge, a `List<UUID>` for many. `type` is the relation type, and `target` is the entity class, which the reader turns into the target label. The edge name is the field name.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `categoryId` and `related` fields (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/graph/domain/Product.java`, the `categoryId` and `relatedIds` fields (quoted).
 
 ```java
 @GraphEdge(type = "BELONGS_TO", target = Category.class)
 private UUID categoryId;
 
 @GraphEdge(type = "RELATED_TO", target = Product.class, description = "Bought together")
-private List<Product> related;
+private List<UUID> relatedIds;
 ```
 
 ### 4. Leave the kernel-model edge attributes alone
 
 `@GraphEdge` also has attributes that encode the kernel graph SPI, such as direction and weighting. They are at the preview tier. A 1.x minor may change or drop them, and you should pin the exact SDK version if you use one. This example uses none, and stays on `type`, `target` and `description`, which are frozen as declared.
 
-The raw `direction` of `related` is `null` because the source declares none. `effectiveDirection()` applies the default and returns `OUTGOING`. The ruling and the list of those attributes live in [MIGRATION section 2](../../MIGRATION-0.x-to-1.0.md#2-what-is-deliberately-not-removed-carried-through-1x) and the [stability matrix](../stability-matrix.md), and the kernel side is [kernel ADR-102](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-102-graph-spi-anchor-and-multi-hop-traversal.md).
+The raw `direction` of `relatedIds` is `null` because the source declares none. `effectiveDirection()` applies the default and returns `OUTGOING`. The ruling and the list of those attributes live in [MIGRATION section 2](../../MIGRATION-0.x-to-1.0.md#2-what-is-deliberately-not-removed-carried-through-1x) and the [stability matrix](../stability-matrix.md), and the kernel side is [kernel ADR-102](https://github.com/exeris-systems/exeris-kernel/blob/main/docs/adr/ADR-102-graph-spi-anchor-and-multi-hop-traversal.md).
 
 ### 5. Read the graph back
 
-Source: `exeris-sdk-examples/src/test/java/eu/exeris/sdk/examples/graph/GraphExampleTest.java`, the `node`, `properties` and `edges` tests (adapted — lines of the three tests joined under one `graph` variable, with the `related`, `description` and `effectiveField` assertions removed).
+Source: `exeris-sdk-examples/src/test/java/eu/exeris/sdk/examples/graph/GraphExampleTest.java`, the `node`, `properties` and `edges` tests (adapted — lines of the three tests joined under one `graph` variable, with the assertions on the `relatedIds` edge, `description` and `effectiveField` removed).
 
 ```java
 GraphMetadata graph = read("Product").graphMetadata();
@@ -88,7 +88,7 @@ assertThat(graph.properties()).containsExactly(
         new GraphPropertyMetadata("title", null, true, "name"),
         new GraphPropertyMetadata("price", "DOUBLE", false, null));
 assertThat(graph.edges()).extracting(GraphEdgeMetadata::name)
-        .containsExactly("categoryId", "related");
+        .containsExactly("categoryId", "relatedIds");
 
 GraphEdgeMetadata category = graph.edges().getFirst();
 assertThat(category.relationType()).isEqualTo("BELONGS_TO");

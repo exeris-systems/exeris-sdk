@@ -46,7 +46,7 @@ public class Product {
     private UUID categoryId;
 
     @GraphEdge(type = "RELATED_TO", target = Product.class, description = "Bought together")
-    private List<Product> related;
+    private List<UUID> relatedIds;
 
     /** Products whose nodes are one hop from this one. */
     @GraphQuery(type = GraphQuery.QueryType.NEIGHBORS, name = "neighbours", maxDepth = 1)
@@ -94,11 +94,11 @@ public class Product {
         this.categoryId = categoryId;
     }
 
-    public List<Product> getRelated() {
-        return related;
+    public List<UUID> getRelatedIds() {
+        return relatedIds;
     }
 
-    public void setRelated(List<Product> related) {
-        this.related = related;
+    public void setRelatedIds(List<UUID> relatedIds) {
+        this.relatedIds = relatedIds;
     }
 }
