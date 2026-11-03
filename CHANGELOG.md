@@ -23,6 +23,18 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
+## [0.13.3] — unreleased
+
+### Fixed
+
+- **`exeris-sdk-tck`: the corpus types its `@Blob` fields `BlobRef`.** `Customer.avatar` and
+  `Customer.contract` were `String`. The exeris-tooling processor refuses `@Blob` on any type but
+  the kernel's `eu.exeris.kernel.spi.storage.blob.BlobRef` (EXT-PROC-1032, tooling ADR-108), so a
+  producer binding had to rewrite the corpus before compiling it. Both fields are now `BlobRef`. A
+  producer compiles the corpus with `exeris-kernel-spi` on its classpath, and `CorpusCompilesTest`
+  holds every `@Blob` field to the type. A reader binding reads the two fields typed
+  `eu.exeris.kernel.spi.storage.blob.BlobRef`. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
 ## [0.13.2] — 2026-10-31
 
 ### Fixed
