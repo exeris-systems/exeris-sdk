@@ -17,7 +17,7 @@ last-verified: 2026-10-29
 
 - [01 Platform and dependencies](01-platform-and-dependencies.md) done: JDK 25, and the annotations and `exeris-sdk-source-model-io` on your classpath.
 - A clone of this repository, because the example and its test live in `exeris-sdk-examples`.
-- The `invoicing` example, which you read and build here: `Customer`, `Invoice` and `InvoiceLine` under `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/`.
+- The `invoicing` example, which you read and build here: `Customer`, `Invoice` and `InvoiceLine` under `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/`.
 
 ## What you are building
 
@@ -29,7 +29,7 @@ You are writing three plain Java classes that describe a billing domain. The ann
 
 `@ExerisDomain` marks a class as an entity and sets its module, its path and its data scope. System fields are named by marker annotations, not by convention: the reader records which field is the key, the tenant, the version and the creation time.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/Customer.java`, the `Customer` class (adapted — imports, Javadoc and the `email` field removed).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/Customer.java`, the `Customer` class (adapted — imports, Javadoc, the `email` field and the accessors removed).
 
 ```java
 @ExerisDomain(
@@ -76,31 +76,31 @@ The scoping rule has one home, [field and validation scoping](../../.agents/poli
 
 A `@Relationship` names the target entity and the cardinality. The one-to-many side names the field on the other side in `mappedBy`. The reader takes the target from `targetEntity` when it is declared, and from the field type otherwise, unwrapping a collection; a `UUID` key field declaring `targetEntity = Customer.class` targets `Customer`. It carries `displayField` as declared, the target field a picker or label shows for the association, and reads `cascadeDelete` and `cascadeUpdate` into one `cascade`: both are `ALL`, delete alone `REMOVE`, update alone `MERGE`.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/Invoice.java`, the `customer` and `lines` fields (quoted).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/Invoice.java`, the `customerId` and `lines` fields (quoted).
 
 ```java
 @Relationship(
         targetEntity = Customer.class,
         displayField = "name",
         relationshipType = Relationship.RelationshipType.MANY_TO_ONE)
-private Customer customer;
+private UUID customerId;
 
 @Relationship(
         targetEntity = InvoiceLine.class,
         displayField = "description",
         relationshipType = Relationship.RelationshipType.ONE_TO_MANY,
-        mappedBy = "invoice",
+        mappedBy = "invoiceId",
         cascadeDelete = true)
 private List<InvoiceLine> lines;
 ```
 
-`InvoiceLine` carries the inverse `MANY_TO_ONE` back to `Invoice`. The reader preserves declaration order, so `customer` precedes `lines` in the result.
+`InvoiceLine` carries the inverse `MANY_TO_ONE` back to `Invoice`. The reader preserves declaration order, so `customerId` precedes `lines` in the result.
 
 ### 4. Add an action and a query parameter
 
 An action is a method marked `@Action`. `@ActionParam` carries `required` and `defaultValue` for a parameter. `@QueryParam` binds a parameter to the query string under a key.
 
-Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/Invoice.java`, the `issue` and `viewShared` methods (adapted — Javadoc removed).
+Source: `exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/invoicing/domain/Invoice.java`, the `issue` and `viewShared` methods (adapted — Javadoc removed).
 
 ```java
 @Action(name = "issue", label = "Issue", description = "Issue a draft invoice")

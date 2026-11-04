@@ -18,6 +18,41 @@ the upgrade steps required.
 
 ---
 
+## 0.13.2 → 0.13.3
+
+### The TCK corpus types its `@Blob` fields `BlobRef`
+
+**Impact on code: none for a consumer of the annotations or the AST. A TCK binder compiles the
+corpus with `exeris-kernel-spi` on its classpath.** For a TCK binder,
+`Customer.avatar` and `Customer.contract` are typed `eu.exeris.kernel.spi.storage.blob.BlobRef`,
+imported in the corpus source. A producer binding compiles the corpus with `exeris-kernel-spi` on
+its classpath and needs no rewrite of the two fields. A reader binding returns both fields with
+that type.
+
+### The example entities move to `.domain` packages and declare accessors
+
+**Impact on code: none.** `exeris-sdk-examples` is not published, so no build resolves it, and only
+its package names change. The `@ExerisDomain` entities of the `invoicing`, `ordering`, `graph` and
+`presentation` scenarios move to `eu.exeris.sdk.examples.<scenario>.domain`, and their sources to
+`exeris-sdk-examples/src/main/java/eu/exeris/sdk/examples/<scenario>/domain/`. Each entity declares
+a public getter and setter for every instance field. `EmployeeDirectory`, `LedgerCapLifecycle` and
+the scenario tests stay in their scenario package. A local copy of an example, or a build that
+compiles the module by path, uses the new package and path.
+
+### The example references are keys
+
+**Impact on code: none.** The module is not published. In the `invoicing` and `graph` scenarios,
+the to-one references are `UUID` key fields: `Invoice.customerId`, `InvoiceLine.invoiceId` and
+`Product.categoryId`, with their accessors renamed to match. `Invoice.lines` maps by `invoiceId`,
+and `Invoice` adds `updatedAt` beside `createdAt`. A copy of an example that read the entity-typed
+field reads the key instead.
+
+The `Product.related` graph edge is `List<UUID> relatedIds`, with `getRelatedIds()` and
+`setRelatedIds(...)`. The `@GraphEdge` Javadoc examples hold keys in the same way; the annotation
+itself is unchanged.
+
+---
+
 ## 0.13.1 → 0.13.2
 
 ### The reader writes qualified field types and lists relationship fields
@@ -732,11 +767,11 @@ from javac.
 ```java
 // before
 @GraphEdge(type = "ROUTE", target = City.class, traversalCost = 4.5, unique = true, indexed = true)
-private City next;
+private UUID nextId;
 
 // after
 @GraphEdge(type = "ROUTE", target = City.class, staticWeight = 4.5)
-private City next;
+private UUID nextId;
 ```
 
 - **Deprecated:** 0.13.0 (`@Deprecated(since = "0.13.0", forRemoval = true)`).

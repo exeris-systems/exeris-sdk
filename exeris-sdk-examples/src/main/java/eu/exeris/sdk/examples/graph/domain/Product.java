@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.graph;
+package eu.exeris.sdk.examples.graph.domain;
 
 import eu.exeris.sdk.annotation.ExerisDomain;
 import eu.exeris.sdk.annotation.Field;
@@ -43,14 +43,62 @@ public class Product {
     private String note;
 
     @GraphEdge(type = "BELONGS_TO", target = Category.class)
-    private Category category;
+    private UUID categoryId;
 
     @GraphEdge(type = "RELATED_TO", target = Product.class, description = "Bought together")
-    private List<Product> related;
+    private List<UUID> relatedIds;
 
     /** Products whose nodes are one hop from this one. */
     @GraphQuery(type = GraphQuery.QueryType.NEIGHBORS, name = "neighbours", maxDepth = 1)
     public List<Product> neighbours() {
         return List.of();
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public UUID getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(UUID categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public List<UUID> getRelatedIds() {
+        return relatedIds;
+    }
+
+    public void setRelatedIds(List<UUID> relatedIds) {
+        this.relatedIds = relatedIds;
     }
 }

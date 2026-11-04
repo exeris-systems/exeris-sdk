@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.ordering;
+package eu.exeris.sdk.examples.ordering.domain;
 
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.Derived;
@@ -95,5 +95,53 @@ public class Order {
 
     /** Undoes {@code reserveStock} when a later step fails. */
     public void releaseStock() {
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public long getSubtotalCents() {
+        return subtotalCents;
+    }
+
+    public void setSubtotalCents(long subtotalCents) {
+        this.subtotalCents = subtotalCents;
+    }
+
+    public long getDiscountCents() {
+        return discountCents;
+    }
+
+    public void setDiscountCents(long discountCents) {
+        this.discountCents = discountCents;
+    }
+
+    public long getTotalCents() {
+        return totalCents;
+    }
+
+    public void setTotalCents(long totalCents) {
+        this.totalCents = totalCents;
     }
 }

@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("examples: invoicing")
 class InvoicingExampleTest {
 
-    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/invoicing");
+    private static final Path SOURCES = Path.of("src/main/java/eu/exeris/sdk/examples/invoicing/domain");
 
     private final SourceModelReader reader = new SourceModelReader();
 
@@ -60,7 +60,7 @@ class InvoicingExampleTest {
         DomainMetadata invoice = read("Invoice");
 
         assertThat(invoice.entityName()).isEqualTo("Invoice");
-        assertThat(invoice.packageName()).isEqualTo("eu.exeris.sdk.examples.invoicing");
+        assertThat(invoice.packageName()).isEqualTo("eu.exeris.sdk.examples.invoicing.domain");
         assertThat(invoice.module()).isEqualTo("invoicing");
         assertThat(invoice.path()).isEqualTo("/invoices");
         assertThat(invoice.dataScope()).isEqualTo(DataScope.TENANT);
@@ -72,12 +72,17 @@ class InvoicingExampleTest {
     @Test
     @DisplayName("system fields are named by their marker annotations")
     void systemFields() throws IOException {
-        var system = read("Invoice").systemFields();
+        DomainMetadata invoice = read("Invoice");
+        var system = invoice.systemFields();
 
         assertThat(system.primaryKeyField()).isEqualTo("id");
         assertThat(system.tenantIdField()).isEqualTo("tenantId");
         assertThat(system.versionField()).isEqualTo("version");
         assertThat(system.createdAtField()).isEqualTo("createdAt");
+        assertThat(system.updatedAtField()).isEqualTo("updatedAt");
+        // An audited entity's table carries both timestamps, so both are declared fields.
+        assertThat(invoice.findField("createdAt")).isPresent();
+        assertThat(invoice.findField("updatedAt")).isPresent();
     }
 
     @Test
@@ -117,7 +122,7 @@ class InvoicingExampleTest {
         DomainMetadata invoice = read("Invoice");
 
         assertThat(invoice.relationships()).extracting(RelationshipMetadata::fieldName)
-                .containsExactly("customer", "lines");
+                .containsExactly("customerId", "lines");
 
         RelationshipMetadata customer = invoice.relationships().getFirst();
         assertThat(customer.targetEntity()).isEqualTo("Customer");
@@ -127,7 +132,7 @@ class InvoicingExampleTest {
         RelationshipMetadata lines = invoice.relationships().get(1);
         assertThat(lines.targetEntity()).isEqualTo("InvoiceLine");
         assertThat(lines.type()).isEqualTo(RelationshipMetadata.RelationType.ONE_TO_MANY);
-        assertThat(lines.mappedBy()).isEqualTo("invoice");
+        assertThat(lines.mappedBy()).isEqualTo("invoiceId");
         assertThat(lines.displayField()).isEqualTo("description");
         assertThat(lines.cascade()).isEqualTo(RelationshipMetadata.CascadeType.REMOVE);
 

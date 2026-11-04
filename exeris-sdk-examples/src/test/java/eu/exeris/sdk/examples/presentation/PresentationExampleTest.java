@@ -46,7 +46,7 @@ class PresentationExampleTest {
     }
 
     private DomainMetadata employee() throws IOException {
-        return reader.read(source("Employee")).orElseThrow();
+        return reader.read(source("domain/Employee")).orElseThrow();
     }
 
     @Test

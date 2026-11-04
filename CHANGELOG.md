@@ -20,16 +20,61 @@ for per-version upgrade steps.
 > entries are ROADMAP milestones that shipped on a single pre-release line — the
 > POM version went `0.1.0-SNAPSHOT` → `0.5.0-SNAPSHOT` → `0.6.0`, so `0.2.0` /
 > `0.3.0` / `0.4.0` were milestone labels, never cut as artifacts. Dates below
-> are when each milestone landed. `0.6.0`–`0.13.2` are tagged releases (with
+> are when each milestone landed. `0.6.0`–`0.13.3` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
 ## [Unreleased]
 
 ### Changed
 
-- **The semver gate compares with `0.13.2`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.2`,
+- **The semver gate compares with `0.13.3`.** `japicmp.baseline.version` moves `0.12.0` → `0.13.3`,
   the last release on Maven Central, so `-Psemver` in `build.yml` and `release.yml` checks the 1.0.0
   line against it.
+
+## [0.13.3] — 2026-11-04
+
+### Fixed
+
+- **`exeris-sdk-tck`: the corpus types its `@Blob` fields `BlobRef`.** `Customer.avatar` and
+  `Customer.contract` were `String`. The exeris-tooling processor refuses `@Blob` on any type but
+  the kernel's `eu.exeris.kernel.spi.storage.blob.BlobRef` (EXT-PROC-1032, tooling ADR-108), so a
+  producer binding had to rewrite the corpus before compiling it. Both fields are now `BlobRef`. A
+  producer compiles the corpus with `exeris-kernel-spi` on its classpath, and `CorpusCompilesTest`
+  holds every `@Blob` field to the type. A reader binding reads the two fields typed
+  `eu.exeris.kernel.spi.storage.blob.BlobRef`. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
+- **`exeris-sdk-examples` entities sit in `.domain` packages and declare accessors.** An application
+  the exeris-tooling processor generates places its infrastructure beside the entity package, which
+  must end in `.domain`, and reads and writes entity state through JavaBean accessors. The example
+  entities sat in the scenario package and declared private fields only, so the generated Java did
+  not compile. Each `@ExerisDomain` entity moves to `<scenario>.domain` (`invoicing`, `ordering`,
+  `graph`, `presentation`) and declares a public getter and setter for every instance field. The
+  `capability` example states that no module in it provides the `AuditTrail` service `LedgerCap`
+  requires. The guides, the examples index and the module page cite the new paths. See
+  [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
+- **`exeris-sdk-examples`: references are keys, and the audited `Invoice` has both audit
+  timestamps.** The generated application persists a to-one reference as the target's key, so the
+  processor's generator refuses a field typed as the target entity (EXT-GEN-3003), and an audited
+  entity's table carries both `created_at` and `updated_at` (EXT-PROC-1034). `Invoice.customer`,
+  `InvoiceLine.invoice` and the `Product.category` graph edge are now `UUID` keys named
+  `customerId`, `invoiceId` and `categoryId`, keeping `targetEntity` or `target`, and
+  `Invoice.lines` names `mappedBy = "invoiceId"`. `Invoice` declares `@AuditUpdatedAt updatedAt`.
+  Guides 02 and 04 quote the new fields. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
+- **A collection `@GraphEdge` holds target keys.** The generated application holds a graph edge's
+  targets as their keys, a `List<UUID>` for a collection edge and a `UUID` for a single edge, and the
+  generator refuses `List<Entity>` on an edge (EXT-GEN-3003). The example `Product.related` is now
+  `List<UUID> relatedIds`. Every `@GraphEdge` Javadoc example holds keys (`categoryId`,
+  `customerId`, `ratedProductId`, `friendIds`), and the Javadoc states the rule. Guide 04 quotes
+  the new field. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
+- **ADR-072 states the text its link stubs mirror.** The `.link.md` stubs, exeris-tooling's among
+  them, mirrored the 0.11.0 wording: the surfaces reserved outside the freeze, promoted on the
+  kernel tier and a consumer's transcription. A 2026-11-03 amendment, obligation 37, gives the
+  status and promotion-criterion paragraphs a stub carries as written. `@Blob` and `@RouteAccess`
+  are frozen, `@Schedule` and `@Channel` reserved, and the kernel tier alone decides. The registry
+  row carries `upd. 2026-11-03` (exeris-docs#235). No obligation changes.
 
 ## [0.13.2] — 2026-10-31
 
@@ -2355,6 +2400,7 @@ None — the first milestone.
   (`@Retention(SOURCE)`, Apache-2.0) and the canonical Jackson-serializable AST
   under `eu.exeris.sdk.sourcemodel.ast.*`.
 
+[0.13.3]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.3
 [0.13.2]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.2
 [0.13.1]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.1
 [0.13.0]: https://github.com/exeris-systems/exeris-sdk/releases/tag/v0.13.0

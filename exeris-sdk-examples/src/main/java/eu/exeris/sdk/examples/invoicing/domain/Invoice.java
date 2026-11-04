@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Exeris Systems.
  * SPDX-License-Identifier: Apache-2.0
  */
-package eu.exeris.sdk.examples.invoicing;
+package eu.exeris.sdk.examples.invoicing.domain;
 
 import eu.exeris.sdk.annotation.Action;
 import eu.exeris.sdk.annotation.ActionParam;
@@ -13,6 +13,7 @@ import eu.exeris.sdk.annotation.Relationship;
 import eu.exeris.sdk.annotation.RouteAccess;
 import eu.exeris.sdk.annotation.Validation;
 import eu.exeris.sdk.annotation.system.AuditCreatedAt;
+import eu.exeris.sdk.annotation.system.AuditUpdatedAt;
 import eu.exeris.sdk.annotation.system.PrimaryKey;
 import eu.exeris.sdk.annotation.system.TenantId;
 import eu.exeris.sdk.annotation.system.Version;
@@ -49,6 +50,9 @@ public class Invoice {
     @AuditCreatedAt
     private Instant createdAt;
 
+    @AuditUpdatedAt
+    private Instant updatedAt;
+
     /** Assigned by the server rather than supplied by the client. */
     @Field(label = "Number", required = true, inCreate = false, inUpdate = false,
             readOnly = true, unique = true)
@@ -58,13 +62,13 @@ public class Invoice {
             targetEntity = Customer.class,
             displayField = "name",
             relationshipType = Relationship.RelationshipType.MANY_TO_ONE)
-    private Customer customer;
+    private UUID customerId;
 
     @Relationship(
             targetEntity = InvoiceLine.class,
             displayField = "description",
             relationshipType = Relationship.RelationshipType.ONE_TO_MANY,
-            mappedBy = "invoice",
+            mappedBy = "invoiceId",
             cascadeDelete = true)
     private List<InvoiceLine> lines;
 
@@ -89,5 +93,77 @@ public class Invoice {
     public Invoice viewShared(
             @QueryParam(value = "token", description = "Payment link token") String shareToken) {
         return this;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(UUID tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public UUID getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(UUID customerId) {
+        this.customerId = customerId;
+    }
+
+    public List<InvoiceLine> getLines() {
+        return lines;
+    }
+
+    public void setLines(List<InvoiceLine> lines) {
+        this.lines = lines;
+    }
+
+    public long getTotalCents() {
+        return totalCents;
+    }
+
+    public void setTotalCents(long totalCents) {
+        this.totalCents = totalCents;
     }
 }
