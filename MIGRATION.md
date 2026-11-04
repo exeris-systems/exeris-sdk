@@ -22,7 +22,8 @@ the upgrade steps required.
 
 ### The TCK corpus types its `@Blob` fields `BlobRef`
 
-**Impact on code: none for a consumer of the annotations or the AST.** For a TCK binder,
+**Impact on code: none for a consumer of the annotations or the AST. A TCK binder compiles the
+corpus with `exeris-kernel-spi` on its classpath.** For a TCK binder,
 `Customer.avatar` and `Customer.contract` are typed `eu.exeris.kernel.spi.storage.blob.BlobRef`,
 imported in the corpus source. A producer binding compiles the corpus with `exeris-kernel-spi` on
 its classpath and needs no rewrite of the two fields. A reader binding returns both fields with
