@@ -23,7 +23,7 @@ for per-version upgrade steps.
 > are when each milestone landed. `0.6.0`–`0.12.0` are tagged releases (with
 > links); the earlier entries are milestone labels only.
 
-## [0.13.3] — unreleased
+## [0.13.3] — 2026-11-04
 
 ### Fixed
 
@@ -60,6 +60,13 @@ for per-version upgrade steps.
   `List<UUID> relatedIds`. Every `@GraphEdge` Javadoc example holds keys (`categoryId`,
   `customerId`, `ratedProductId`, `friendIds`), and the Javadoc states the rule. Guide 04 quotes
   the new field. See [`MIGRATION.md` §0.13.2 → 0.13.3](MIGRATION.md).
+
+- **ADR-072 states the text its link stubs mirror.** The `.link.md` stubs, exeris-tooling's among
+  them, mirrored the 0.11.0 wording: the surfaces reserved outside the freeze, promoted on the
+  kernel tier and a consumer's transcription. A 2026-11-03 amendment, obligation 37, gives the
+  status and promotion-criterion paragraphs a stub carries as written. `@Blob` and `@RouteAccess`
+  are frozen, `@Schedule` and `@Channel` reserved, and the kernel tier alone decides. The registry
+  row carries `upd. 2026-11-03` (exeris-docs#235). No obligation changes.
 
 ## [0.13.2] — 2026-10-31
 
