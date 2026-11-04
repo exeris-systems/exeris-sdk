@@ -9,7 +9,7 @@ last-verified: 2026-10-29
 
 # Technology Compatibility Kit
 
-**Module:** `eu.exeris:exeris-sdk-tck` (0.13.3), depended on with `<scope>test</scope>`
+**Module:** `eu.exeris:exeris-sdk-tck` (1.0.0-SNAPSHOT), depended on with `<scope>test</scope>`
 **Dependencies:** `exeris-sdk-source-model`, `junit-jupiter` and `assertj-core` (both at compile scope on purpose), and `jackson-databind`. No JavaParser and no `exeris-sdk-source-model-io`.
 
 `exeris-sdk-tck` ships abstract JUnit 5 test classes that a producer of `exeris-metadata/<entity>.json`, a reader of `@ExerisDomain` source, or a consumer of the AST wire format extends to prove it meets the contract the SDK publishes. It turns the ADR-042 rule "the reader reads what the processor writes" into an executable gate. It never supplies an implementation of its own.
@@ -47,7 +47,7 @@ A facet listed as unsupported is a claim that the binding emits nothing for it a
 ### Rules the kit holds itself to
 
 - **Implementation-agnostic.** An enforcer rule in the module's `pom.xml`, `ban-javaparser-implementation-agnostic`, fails the build if JavaParser or `exeris-sdk-source-model-io` appears on the dependency tree. The reader implementation that ships in the SDK is bound to the kit from its own side: `exeris-sdk-source-model-io` depends on this module at test scope, never the reverse.
-- **Compiled corpus.** `CorpusCompilesTest` compiles the corpus with `-Werror -Xlint:deprecation`. Every mandatory annotation attribute must be supplied, and nothing deprecated for removal may be used. Each entity declares its primary-key field (`id`, or the field `primaryKeyField` names), because the exeris-tooling processor refuses an entity without one. Each `@Blob` field is typed `BlobRef` from `eu.exeris.kernel.spi.storage.blob`, the only type the processor admits under `@Blob` (EXT-PROC-1032). A producer binding therefore compiles the corpus with `exeris-kernel-spi` on its classpath. The SDK takes no kernel dependency, so its own compile declares a stand-in record with the kernel's shape.
+- **Compiled corpus.** `CorpusCompilesTest` compiles the corpus with `-Werror -Xlint:deprecation`. Every mandatory annotation attribute must be supplied, and nothing deprecated for removal may be used. Each entity declares its primary-key field (`id`, or the field `primaryKeyField` names), because the exeris-tooling processor refuses an entity without one.
 - **No case that cannot fail.** Each case is driven in this module's own tests against a conforming binding and one broken in exactly the way the case describes. The second must fail.
 
 ## Hot path

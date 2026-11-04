@@ -6,7 +6,7 @@
     <parent>
         <groupId>eu.exeris</groupId>
         <artifactId>exeris-sdk-parent</artifactId>
-        <version>0.13.3</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../exeris-sdk-parent</relativePath>
     </parent>
 
@@ -33,12 +33,6 @@
              an action's empty body carry no behaviour to cover. Coverage of this module measures
              nothing, so it is excluded here; its tests are what prove the examples. -->
         <sonar.coverage.exclusions>src/main/java/**</sonar.coverage.exclusions>
-
-        <!-- Each entity spells out the JavaBean accessors a generated application calls, so two
-             entities with the same fields repeat the same accessor blocks. That repetition is the
-             example, not logic to share, so the main sources are left out of duplication
-             detection. -->
-        <sonar.cpd.exclusions>src/main/java/**</sonar.cpd.exclusions>
     </properties>
 
     <dependencies>
